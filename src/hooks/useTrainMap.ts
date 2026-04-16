@@ -198,7 +198,7 @@ export function useTrainMap(
     clearRouteLine();
 
     // Bind and open popup immediately with initial content
-    marker.bindPopup(buildPopupHTML(train), { maxWidth: 520, minWidth: 380 }).openPopup();
+    marker.bindPopup(buildPopupHTML(train), { maxWidth: 520, minWidth: 380, autoPan: false }).openPopup();
 
     // Fetch detailed movements in the background
     try {
@@ -454,7 +454,7 @@ export function useTrainMap(
     const map = leafletMap.current;
     const entry = markers.current.get(code);
     if (!map || !entry) return;
-    map.setView(entry.marker.getLatLng(), 13);
+    map.setView(entry.marker.getLatLng(), 13, { animate: false });
     onMarkerClick(code);
   }
 
