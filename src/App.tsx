@@ -63,5 +63,16 @@ function App() {
   );
 }
 
+// PWA manifest & icon (injected via JS to avoid Bun bundler resolving them)
+const manifest = document.createElement("link");
+manifest.rel = "manifest";
+manifest.href = "/manifest.json";
+document.head.appendChild(manifest);
+
+const appleIcon = document.createElement("link");
+appleIcon.rel = "apple-touch-icon";
+appleIcon.href = "/icon-192.png";
+document.head.appendChild(appleIcon);
+
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);

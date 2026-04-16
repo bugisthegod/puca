@@ -14,9 +14,9 @@ Bun.serve({
   port: 3000,
   routes: {
     "/": index,
-    "/manifest.json": new Response(Bun.file("./public/manifest.json")),
-    "/icon-192.png": new Response(Bun.file("./public/icon-192.png")),
-    "/icon-512.png": new Response(Bun.file("./public/icon-512.png")),
+    "/manifest.json": () => new Response(Bun.file("./public/manifest.json")),
+    "/icon-192.png": () => new Response(Bun.file("./public/icon-192.png")),
+    "/icon-512.png": () => new Response(Bun.file("./public/icon-512.png")),
     "/api/trains": async (_req) => {
       try {
         const trains = await getCurrentTrains();
