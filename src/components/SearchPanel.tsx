@@ -17,6 +17,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[] | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
@@ -31,6 +32,11 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
     function handleClick(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         setFocusedField(null);
+        // Auto-collapse on mobile only when tapping the map
+        const target = e.target as HTMLElement;
+        if (window.innerWidth <= 600 && target.closest("#map")) {
+          setCollapsed(true);
+        }
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -136,7 +142,12 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
   }
 
   return (
-    <div id="search-panel" ref={panelRef}>
+    <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
+      {collapsed ? (
+        <button className="search-fab" onClick={() => setCollapsed(false)}>
+          🔍
+        </button>
+      ) : <>
       <div className="search-field">
         <input
           type="text"
@@ -217,7 +228,11 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
                   <li
                     key={r.code}
                     className={`train-item train-item--${r.status}`}
-                    onClick={() => canFocus && onTrainSelect(r.code)}
+                    onClick={() => {
+                      if (!canFocus) return;
+                      onTrainSelect(r.code);
+                      if (window.innerWidth <= 600) setCollapsed(true);
+                    }}
                   >
                     <div className="train-item-header">
                       <span className="train-item-code">{r.code}</span>
@@ -240,6 +255,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
           <div className="search-result-msg no-results">No active trains on this route</div>
         )
       )}
+      </>}
     </div>
   );
 }
