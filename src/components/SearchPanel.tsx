@@ -8,11 +8,14 @@ interface SearchPanelProps {
 }
 
 export default function SearchPanel({ onSearch, onClear, onTrainSelect }: SearchPanelProps) {
+  const saved = sessionStorage.getItem("search");
+  const init = saved ? JSON.parse(saved) : null;
+
   const [stations, setStations] = useState<Station[]>([]);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [fromQuery, setFromQuery] = useState("");
-  const [toQuery, setToQuery] = useState("");
+  const [from, setFrom] = useState(init?.from ?? "");
+  const [to, setTo] = useState(init?.to ?? "");
+  const [fromQuery, setFromQuery] = useState(init?.fromQuery ?? "");
+  const [toQuery, setToQuery] = useState(init?.toQuery ?? "");
   const [focusedField, setFocusedField] = useState<"from" | "to" | null>(null);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
@@ -26,6 +29,10 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
       .then((r) => r.json())
       .then((data: Station[]) => setStations(data))
       .catch(() => {});
+    // Re-run search if we had saved state
+    if (init?.from && init?.to) {
+      handleSearchWith(init.from, init.to);
+    }
   }, []);
 
   useEffect(() => {
@@ -102,16 +109,15 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
     }
   }
 
-  async function handleSearch() {
-    if (!from || !to) return;
+  async function handleSearchWith(f: string, t: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/trains/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+      const res = await fetch(`/api/trains/search?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`);
       const data: SearchResult[] = await res.json();
       setResults(data);
-      // Only filter map to trains that actually have markers
       const activeCodes = data.filter((r) => r.status !== "scheduled").map((r) => r.code);
       onSearch(activeCodes);
+      sessionStorage.setItem("search", JSON.stringify({ from: f, to: t, fromQuery, toQuery }));
     } catch {
       setResults([]);
       onSearch([]);
@@ -126,6 +132,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
     setFromQuery("");
     setToQuery("");
     setResults(null);
+    sessionStorage.removeItem("search");
     onClear();
   }
 
@@ -206,7 +213,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
         )}
       </div>
       <div className="search-actions">
-        <button className="search-btn" onClick={handleSearch} disabled={!from || !to || loading}>
+        <button className="search-btn" onClick={() => handleSearchWith(from, to)} disabled={!from || !to || loading}>
           {loading ? "Searching..." : "Search"}
         </button>
         {results !== null && (
