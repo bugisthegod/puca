@@ -524,15 +524,21 @@ body {
    Mobile adjustments
    ============================================================ */
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+  #search-panel {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+
   #info-panel {
     top: auto;
-    bottom: 12px;
+    bottom: 8px;
     right: 8px;
     left: 8px;
     min-width: unset;
     padding: 10px 12px;
-    border-radius: 10px;
   }
 
   #train-count {
@@ -545,12 +551,22 @@ body {
   }
 
   .popup-content {
-    font-size: 0.8rem;
-    min-width: 200px;
-    max-width: 280px;
+    font-size: 0.78rem;
+    min-width: 180px;
+    max-width: calc(100vw - 60px);
   }
 
   .popup-table-wrap {
-    max-height: 200px;
+    max-height: 180px;
+  }
+
+  .movements-table th,
+  .movements-table td {
+    padding: 3px 5px;
+    font-size: 0.7rem;
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 8px;
   }
 }
