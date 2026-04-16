@@ -1,15 +1,10 @@
-# fly.toml app configuration file generated for irishrailtracker-bu-hlg on 2026-04-16T15:49:27Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
-app = 'irishrailtracker-bu-hlg'
+app = 'irishrailtracker'
 primary_region = 'lhr'
 
 [build]
 
 [http_service]
-  internal_port = 8080
+  internal_port = 3000
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -21,3 +16,6 @@ primary_region = 'lhr'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 256
+
+[deploy]
+  strategy = 'immediate'
