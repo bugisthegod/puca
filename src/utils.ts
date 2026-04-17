@@ -71,3 +71,16 @@ export function isInServiceHours(mode: "train" | "bus", now: Date = new Date()):
 
 /** Label shown when off-hours — always next 05:00 service resume. */
 export const SERVICE_RESUME_LABEL = "05:00";
+
+/** Escape a string for safe interpolation into innerHTML. Popups are built
+ *  by concatenating raw HTML strings, so any upstream-derived field (Irish Rail
+ *  PublicMessage, station names, GTFS-R route labels, etc.) must go through
+ *  this before being interpolated into a popup template. */
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

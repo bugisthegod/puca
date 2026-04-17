@@ -9,6 +9,7 @@ import {
   parseLateMinutes,
   parseRoute,
   fmtTime,
+  escapeHtml,
   type Filter,
 } from "../utils";
 import type { Mode } from "./useTrainMap";
@@ -45,6 +46,12 @@ function lateClass(status: string, late: number | null): string {
   return "popup-status--yellow";
 }
 
+// Irish Rail's PublicMessage sometimes contains literal "\n" (two chars)
+// instead of an actual newline — escape first, then normalize both to <br>.
+function formatMessage(message: string): string {
+  return escapeHtml(message).replace(/\\r?\\n|\r?\n/g, "<br>");
+}
+
 function buildPopupHTML(train: Train): string {
   const route = parseRoute(train.message);
   const late = parseLateMinutes(train.message);
@@ -57,13 +64,13 @@ function buildPopupHTML(train: Train): string {
 
   return `
     <div class="popup-content">
-      <div class="popup-title">${train.code}</div>
-      ${route ? `<div class="popup-route">${route.origin} → ${route.destination}</div>` : ""}
+      <div class="popup-title">${escapeHtml(train.code)}</div>
+      ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
       <div class="popup-meta">
         <span class="popup-status ${lateClass(train.status, late)}">${statusText}</span>
-        ${train.direction ? `<span class="popup-dir">${train.direction}</span>` : ""}
+        ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
       </div>
-      <div class="popup-message">${train.message.replace(/\n/g, "<br>")}</div>
+      <div class="popup-message">${formatMessage(train.message)}</div>
       <div class="popup-loading">Loading movements…</div>
     </div>
   `;
@@ -114,8 +121,8 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
 
       return `
         <tr class="${rowClass}">
-          <td>${m.stationName}${isCurrent ? " ▶" : ""}</td>
-          <td>${stopTypeLabel[m.stopType] ?? m.stopType}</td>
+          <td>${escapeHtml(m.stationName)}${isCurrent ? " ▶" : ""}</td>
+          <td>${escapeHtml(stopTypeLabel[m.stopType] ?? m.stopType)}</td>
           <td>${showArr}</td>
           <td>${showDep}</td>
           ${bellCell}
@@ -126,11 +133,11 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
 
   return `
     <div class="popup-content">
-      <div class="popup-title">${train.code}</div>
-      ${route ? `<div class="popup-route">${route.origin} → ${route.destination}</div>` : ""}
+      <div class="popup-title">${escapeHtml(train.code)}</div>
+      ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
       <div class="popup-meta">
         <span class="popup-status ${lateClass(train.status, late)}">${statusText}</span>
-        ${train.direction ? `<span class="popup-dir">${train.direction}</span>` : ""}
+        ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
       </div>
       ${
         movements.length > 0
@@ -148,7 +155,7 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
                  <tbody>${rows}</tbody>
                </table>
              </div>`
-          : `<div class="popup-message">${train.message.replace(/\n/g, "<br>")}</div>`
+          : `<div class="popup-message">${formatMessage(train.message)}</div>`
       }
     </div>
   `;

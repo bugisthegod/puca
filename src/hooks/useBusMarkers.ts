@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react";
 import type { BusVehicle, BusOperator } from "../types";
 import type { Feature, LineString } from "geojson";
 import { buildRouteLine, projectOntoRoute } from "./routeProjection";
+import { escapeHtml } from "../utils";
 import type { Mode } from "./useTrainMap";
 
 // ---------------------------------------------------------------------------
@@ -138,7 +139,7 @@ export function useBusMarkers({
             return `
             <tr class="${isCurrent ? "movement-current" : ""}">
               <td>${s.sequence}${isCurrent ? " ▶" : ""}</td>
-              <td>${s.name}</td>
+              <td>${escapeHtml(s.name)}</td>
               <td>${fmtSec(s.scheduledArrivalSec)}</td>
               <td>${fmtSec(s.expectedArrivalSec)}</td>
               <td class="${delayClass(s.arrivalDelaySec)}">${fmtDelay(s.arrivalDelaySec)}</td>
@@ -161,20 +162,20 @@ export function useBusMarkers({
         : `<div class="popup-message">No upcoming stop data available.</div>`;
     const showJump = onSelectBusRouteRef.current && currentBusRouteRef.current !== bus.routeShortName;
     const jumpBtn = showJump
-      ? `<button class="popup-route-jump" type="button" data-route="${encodeURIComponent(bus.routeShortName)}" data-dir="${bus.directionId}">Show all ${bus.routeShortName}</button>`
+      ? `<button class="popup-route-jump" type="button" data-route="${encodeURIComponent(bus.routeShortName)}" data-dir="${bus.directionId}">Show all ${escapeHtml(bus.routeShortName)}</button>`
       : "";
     const stops = trip?.stops ?? [];
     const originDest = stops.length >= 2
-      ? `<div class="popup-route">${stops[0]!.name} → ${stops[stops.length - 1]!.name}</div>`
+      ? `<div class="popup-route">${escapeHtml(stops[0]!.name)} → ${escapeHtml(stops[stops.length - 1]!.name)}</div>`
       : "";
     return `
       <div class="popup-content">
         <div class="popup-header-row">
-          <div class="popup-title">${bus.routeShortName}</div>
+          <div class="popup-title">${escapeHtml(bus.routeShortName)}</div>
           ${jumpBtn}
         </div>
         ${originDest}
-        <div class="popup-vehicle">Vehicle ${bus.label || bus.tripId}</div>
+        <div class="popup-vehicle">Vehicle ${escapeHtml(bus.label || bus.tripId)}</div>
         ${body}
       </div>
     `;
@@ -233,7 +234,7 @@ export function useBusMarkers({
       "";
     const icon = L.divIcon({
       className: `bus-marker ${operatorClass}`.trim(),
-      html: `<div class="bus-triangle"></div><div class="bus-label">${bus.routeShortName}</div>`,
+      html: `<div class="bus-triangle"></div><div class="bus-label">${escapeHtml(bus.routeShortName)}</div>`,
       iconSize: [40, 20],
       iconAnchor: [20, 10],
     });

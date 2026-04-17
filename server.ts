@@ -1,6 +1,7 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements, getAllStations } from "./src/api.ts";
 import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, type Operator } from "./src/gtfsr.ts";
+import { isInServiceHours } from "./src/utils.ts";
 
 function todayFormatted(): string {
   const d = new Date();
@@ -184,6 +185,9 @@ Bun.serve({
       });
     }),
     "/api/bus/vehicles": rateLimit(async (req) => {
+      // Off-hours short-circuit: don't pay an NTA round-trip when no buses run.
+      // Frontend stops polling too, but stale tabs / other clients can still hit us.
+      if (!isInServiceHours("bus")) return Response.json([]);
       try {
         const url = new URL(req.url);
         const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
@@ -209,6 +213,7 @@ Bun.serve({
       });
     }),
     "/api/bus/trip/:tripId": rateLimit(async (req) => {
+      if (!isInServiceHours("bus")) return Response.json({});
       try {
         const url = new URL(req.url);
         const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
