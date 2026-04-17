@@ -16,7 +16,7 @@ function todayFormatted(): string {
 // ---------------------------------------------------------------------------
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX = 60;
 const rateLimitMap = new Map<string, number[]>();
 
 function getClientIp(req: Request): string {
@@ -90,7 +90,9 @@ Bun.serve({
     "/api/stations": rateLimit(async (_req) => {
       try {
         const stations = await getAllStations();
-        return Response.json(stations);
+        return Response.json(stations, {
+          headers: { "Cache-Control": "public, max-age=3600" }, // 1 hour; station list is static
+        });
       } catch {
         return Response.json([], { status: 502 });
       }
@@ -176,7 +178,9 @@ Bun.serve({
     }),
     "/api/bus/routes": rateLimit(async (req) => {
       const operator = (new URL(req.url).searchParams.get("operator") ?? "dublinbus") as Operator;
-      return Response.json(getBusRoutes(operator));
+      return Response.json(getBusRoutes(operator), {
+        headers: { "Cache-Control": "public, max-age=3600" }, // 1 hour; route list is static
+      });
     }),
     "/api/bus/vehicles": rateLimit(async (req) => {
       try {
@@ -196,7 +200,9 @@ Bun.serve({
       const url = new URL(req.url);
       const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
       const shape = getBusRouteShape(operator, req.params.route);
-      return Response.json(shape ?? {});
+      return Response.json(shape ?? {}, {
+        headers: { "Cache-Control": "public, max-age=86400" }, // 1 day; shapes are static
+      });
     }),
     "/api/bus/trip/:tripId": rateLimit(async (req) => {
       try {
@@ -216,7 +222,9 @@ Bun.serve({
         return Response.json({ error: "from and to required" }, { status: 400 });
       }
       const shape = getTrainRouteShape(from, to);
-      return Response.json(shape ?? {});
+      return Response.json(shape ?? {}, {
+        headers: { "Cache-Control": "public, max-age=86400" }, // 1 day; shapes are static
+      });
     }),
   },
   development: {

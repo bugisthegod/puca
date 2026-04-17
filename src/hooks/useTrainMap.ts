@@ -27,6 +27,7 @@ type TrainShapeCacheEntry =
   | "not-found";
 
 const trainShapeCache = new Map<string, TrainShapeCacheEntry>();
+const trainShapeInFlight = new Map<string, Promise<{ routeLine: Feature<LineString>; routeLengthMeters: number } | null>>();
 
 // ---------------------------------------------------------------------------
 // Popup HTML builders
@@ -921,6 +922,8 @@ export function useTrainMap(
 
   // Async fetch of a train shape, populating the module-level cache.
   // Returns the cache entry (or null if not found/error).
+  // Dedupes concurrent requests for the same key to avoid burst on page load.
+  // On 429/transient error, does NOT cache "not-found" (so retry on next tick).
   async function fetchTrainShape(
     origin: string,
     destination: string,
@@ -930,26 +933,42 @@ export function useTrainMap(
     if (cached !== undefined) {
       return cached === "not-found" ? null : cached;
     }
+    const inFlight = trainShapeInFlight.get(key);
+    if (inFlight) return inFlight;
 
-    try {
-      const res = await fetch(
-        `/api/train/shape?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}`,
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json() as { coords?: [number, number][] };
-      if (data.coords && data.coords.length >= 2) {
-        const built = buildRouteLine(data.coords);
-        if (built) {
-          trainShapeCache.set(key, built);
-          return built;
+    const promise = (async (): Promise<{ routeLine: Feature<LineString>; routeLengthMeters: number } | null> => {
+      try {
+        const res = await fetch(
+          `/api/train/shape?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}`,
+        );
+        if (res.status === 429) {
+          // Transient: don't poison cache; next sync tick will retry
+          return null;
         }
+        if (!res.ok) {
+          trainShapeCache.set(key, "not-found");
+          return null;
+        }
+        const data = await res.json() as { coords?: [number, number][] };
+        if (data.coords && data.coords.length >= 2) {
+          const built = buildRouteLine(data.coords);
+          if (built) {
+            trainShapeCache.set(key, built);
+            return built;
+          }
+        }
+        trainShapeCache.set(key, "not-found");
+        return null;
+      } catch {
+        // Network error — don't poison cache; retry later
+        return null;
+      } finally {
+        trainShapeInFlight.delete(key);
       }
-    } catch {
-      // fall through to not-found
-    }
+    })();
 
-    trainShapeCache.set(key, "not-found");
-    return null;
+    trainShapeInFlight.set(key, promise);
+    return promise;
   }
 
   // -------------------------------------------------------------------------
