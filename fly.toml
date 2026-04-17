@@ -1,4 +1,4 @@
-app = 'irishrailtracker'
+app = 'puca'
 primary_region = 'lhr'
 
 [build]

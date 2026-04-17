@@ -23,7 +23,7 @@ function App() {
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
+  const { focusTrain, locateStation } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
@@ -146,6 +146,7 @@ function App() {
           onSearch={(codes) => setSearchCodes(codes.length > 0 ? codes : [])}
           onClear={() => setSearchCodes(null)}
           onTrainSelect={focusTrain}
+          onLocateStation={locateStation}
         />
       ) : (
         <BusSearchPanel

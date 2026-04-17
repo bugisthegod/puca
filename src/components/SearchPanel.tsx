@@ -5,9 +5,10 @@ interface SearchPanelProps {
   onSearch: (codes: string[]) => void;
   onClear: () => void;
   onTrainSelect: (code: string) => void;
+  onLocateStation: (station: Station) => void;
 }
 
-export default function SearchPanel({ onSearch, onClear, onTrainSelect }: SearchPanelProps) {
+export default function SearchPanel({ onSearch, onClear, onTrainSelect, onLocateStation }: SearchPanelProps) {
   const saved = sessionStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
 
@@ -176,7 +177,20 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
                 onMouseDown={() => selectStation("from", s)}
                 onMouseEnter={() => setHighlightIndex(i)}
               >
-                {s.name}
+                <span className="station-name">{s.name}</span>
+                <button
+                  className="locate-btn"
+                  title="Show on map"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onLocateStation(s);
+                    setFocusedField(null);
+                    if (window.innerWidth <= 600) setCollapsed(true);
+                  }}
+                >
+                  📍
+                </button>
               </li>
             ))}
           </ul>
@@ -206,7 +220,20 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
                 onMouseDown={() => selectStation("to", s)}
                 onMouseEnter={() => setHighlightIndex(i)}
               >
-                {s.name}
+                <span className="station-name">{s.name}</span>
+                <button
+                  className="locate-btn"
+                  title="Show on map"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onLocateStation(s);
+                    setFocusedField(null);
+                    if (window.innerWidth <= 600) setCollapsed(true);
+                  }}
+                >
+                  📍
+                </button>
               </li>
             ))}
           </ul>

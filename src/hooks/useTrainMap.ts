@@ -1,5 +1,5 @@
-import { useRef, useEffect, type RefObject } from "react";
-import type { Train, BusVehicle, BusOperator } from "../types";
+import { useRef, useEffect, useCallback, type RefObject } from "react";
+import type { Train, BusVehicle, BusOperator, Station } from "../types";
 import { along } from "./routeProjection";
 import type { Filter } from "../utils";
 import { useMapInstance } from "./useMapInstance";
@@ -31,7 +31,7 @@ export function useTrainMap(
   busDirection: string | null = null,
   busOperator: BusOperator = "dublinbus",
   options: UseTrainMapOptions = {},
-): { focusTrain: (code: string) => void } {
+): { focusTrain: (code: string) => void; locateStation: (station: Station) => void } {
   const { currentBusRoute = null, onSelectBusRoute } = options;
 
   const onSelectBusRouteRef = useRef(onSelectBusRoute);
@@ -242,5 +242,23 @@ export function useTrainMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { focusTrain };
+  const locateStation = useCallback((station: Station): void => {
+    const map = leafletMap.current;
+    if (!map) return;
+    const targetZoom = Math.max(map.getZoom(), 14);
+    map.flyTo([station.lat, station.lng], targetZoom, { duration: 0.8 });
+    const pulse = L.circleMarker([station.lat, station.lng], {
+      radius: 18,
+      color: "#25a864",
+      weight: 3,
+      fillColor: "#25a864",
+      fillOpacity: 0.25,
+      interactive: false,
+    }).addTo(map);
+    setTimeout(() => {
+      if (map.hasLayer(pulse)) map.removeLayer(pulse);
+    }, 2500);
+  }, [leafletMap]);
+
+  return { focusTrain, locateStation };
 }

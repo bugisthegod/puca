@@ -1,4 +1,4 @@
-# irishrailtracker
+# puca
 
 To install dependencies:
 
