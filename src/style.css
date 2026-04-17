@@ -485,6 +485,73 @@ td.delay-red {
 }
 
 /* ============================================================
+   Back-to-all-buses floating button
+   ============================================================ */
+
+.back-to-all-btn {
+  position: fixed;
+  top: 170px;
+  left: 12px;
+  z-index: 1000;
+  background: #1a4a2e;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.back-to-all-btn:hover {
+  background: #25a864;
+}
+
+@media (max-width: 600px) {
+  .back-to-all-btn {
+    top: auto;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+}
+
+/* ============================================================
+   Popup header row (title + route-jump button side by side)
+   ============================================================ */
+
+.popup-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.popup-route-jump {
+  background: #1a7a4a;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.popup-route-jump:hover {
+  background: #25a864;
+}
+
+/* ============================================================
    Movements table
    ============================================================ */
 
@@ -647,6 +714,45 @@ td.delay-red {
 }
 
 .bus-marker--goahead .bus-label {
+  background: #1e6bb8;
+  color: #fff;
+}
+
+/* ============================================================
+   Bus cluster icons
+   ============================================================ */
+
+.bus-cluster {
+  background: #f9a825;
+  color: #3d2800;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font-family: inherit;
+}
+
+.bus-cluster--small {
+  font-size: 0.75rem;
+}
+
+.bus-cluster--medium {
+  font-size: 0.85rem;
+}
+
+.bus-cluster--large {
+  font-size: 0.95rem;
+}
+
+.bus-cluster--buseireann {
+  background: #d52b1e;
+  color: #fff;
+}
+
+.bus-cluster--goahead {
   background: #1e6bb8;
   color: #fff;
 }

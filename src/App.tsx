@@ -23,7 +23,13 @@ function App() {
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator);
+  const { focusTrain } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
+    currentBusRoute: busRoute,
+    onSelectBusRoute: (route, direction) => {
+      setBusRoute(route);
+      setBusDirection(direction);
+    },
+  });
 
   async function fetchTrains() {
     try {
@@ -53,6 +59,18 @@ function App() {
     }
   }
 
+  async function fetchAllBuses(operator: BusOperator) {
+    try {
+      const res = await fetch(`/api/bus/vehicles?operator=${encodeURIComponent(operator)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: BusVehicle[] = await res.json();
+      setBuses(data);
+      setLastUpdated(`Updated: ${new Date().toLocaleTimeString()}`);
+    } catch (err) {
+      console.error("Failed to fetch all buses:", err);
+    }
+  }
+
   useEffect(() => {
     const update = () => setInService(isInServiceHours(mode));
     update();
@@ -76,6 +94,10 @@ function App() {
       if (busRoute && busDirection) {
         fetchBuses(busOperator, busRoute, busDirection);
         const interval = setInterval(() => fetchBuses(busOperator, busRoute, busDirection), 25_000);
+        return () => clearInterval(interval);
+      } else if (!busRoute) {
+        fetchAllBuses(busOperator);
+        const interval = setInterval(() => fetchAllBuses(busOperator), 25_000);
         return () => clearInterval(interval);
       } else {
         setBuses([]);
@@ -133,6 +155,14 @@ function App() {
           onSelectDirection={setBusDirection}
           selectedDirection={busDirection}
         />
+      )}
+      {mode === "bus" && busRoute !== null && (
+        <button
+          className="back-to-all-btn"
+          onClick={() => { setBusRoute(null); setBusDirection(null); }}
+        >
+          &larr; All buses
+        </button>
       )}
       <InfoPanel
         vehicleCount={vehicleCount}

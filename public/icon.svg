@@ -1,11 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="96" fill="#16161c"/>
-  <g fill="none" stroke="#25a864" stroke-width="28" stroke-linecap="round">
-    <line x1="128" y1="380" x2="384" y2="380"/>
-    <line x1="160" y1="420" x2="352" y2="420"/>
+  <g transform="translate(56 52) scale(0.78)" fill="none">
+    <path
+      d="
+        M 112 152
+        C 112 88, 168 72, 220 72
+        L 292 72
+        C 344 72, 400 88, 400 152
+        L 400 392
+        Q 376 444, 340 416
+        Q 304 390, 272 416
+        Q 240 442, 210 416
+        Q 180 390, 148 416
+        Q 118 442, 112 396
+        Z
+      "
+      fill="#ffffff"
+      stroke="#16161c"
+      stroke-width="16"
+      stroke-linejoin="round"
+    />
+    <path
+      d="
+        M 110 260
+        C 70 256, 54 292, 64 324
+        C 74 348, 104 346, 116 330
+        Z
+      "
+      fill="#ffffff"
+      stroke="#16161c"
+      stroke-width="16"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M 184 218 L 214 244 L 184 270"
+      stroke="#16161c"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M 328 218 L 298 244 L 328 270"
+      stroke="#16161c"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M 240 318 L 272 318"
+      stroke="#16161c"
+      stroke-width="14"
+      stroke-linecap="round"
+    />
   </g>
-  <rect x="148" y="140" width="216" height="220" rx="32" fill="#25a864"/>
-  <rect x="180" y="172" width="152" height="60" rx="8" fill="#16161c"/>
-  <circle cx="200" cy="310" r="18" fill="#16161c"/>
-  <circle cx="312" cy="310" r="18" fill="#16161c"/>
 </svg>

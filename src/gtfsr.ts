@@ -437,6 +437,20 @@ export async function getBusVehiclesByRoute(operator: Operator, shortName: strin
     .map((v) => ({ ...v, routeShortName: route.shortName }));
 }
 
+export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[]> {
+  const routes = operatorRoutes[operator];
+  const routeIdToShortName = new Map<string, string>();
+  for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
+
+  const all = await pollVehicles();
+  const result: BusVehicle[] = [];
+  for (const v of all) {
+    const shortName = routeIdToShortName.get(v.routeId);
+    if (shortName) result.push({ ...v, routeShortName: shortName });
+  }
+  return result;
+}
+
 export function getTrainRouteShape(origin: string, destination: string): {
   headsign: string;
   coords: [number, number][];

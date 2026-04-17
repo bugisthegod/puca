@@ -1,6 +1,6 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements, getAllStations } from "./src/api.ts";
-import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getBusRouteShape, getBusTripStops, getTrainRouteShape, type Operator } from "./src/gtfsr.ts";
+import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, type Operator } from "./src/gtfsr.ts";
 
 function todayFormatted(): string {
   const d = new Date();
@@ -187,7 +187,10 @@ Bun.serve({
         const url = new URL(req.url);
         const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
         const route = url.searchParams.get("route");
-        if (!route) return Response.json({ error: "route required" }, { status: 400 });
+        if (!route) {
+          const vehicles = await getAllBusVehicles(operator);
+          return Response.json(vehicles);
+        }
         const dirParam = url.searchParams.get("direction");
         const direction = dirParam !== null ? Number(dirParam) : undefined;
         const vehicles = await getBusVehiclesByRoute(operator, route, direction);
