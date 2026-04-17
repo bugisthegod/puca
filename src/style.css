@@ -126,6 +126,35 @@ body {
   height: 100vh;
 }
 
+/* Hide Leaflet's default +/- zoom control on mobile (pinch-to-zoom handles it). */
+@media (max-width: 600px) {
+  .leaflet-control-zoom {
+    display: none !important;
+  }
+}
+
+/* Leaflet attribution — strip white background (ugly on dark tiles) but
+   keep the text visible for OSM/Carto attribution compliance. */
+.leaflet-control-attribution.leaflet-control {
+  background: transparent !important;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 0.62rem;
+  padding: 0 4px;
+}
+
+.leaflet-control-attribution a {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  .leaflet-control-attribution.leaflet-control {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  .leaflet-control-attribution a {
+    color: rgba(255, 255, 255, 0.65);
+  }
+}
+
 /* ============================================================
    Info panel
    ============================================================ */
@@ -135,14 +164,15 @@ body {
   top: calc(12px + env(safe-area-inset-top));
   right: calc(12px + env(safe-area-inset-right));
   z-index: 1000;
-  background: rgba(22, 22, 28, 0.92);
+  background: rgba(22, 22, 28, 0.78);
   color: #f0f0f0;
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 12px 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
   min-width: 200px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 #panel-header {
@@ -225,14 +255,15 @@ body {
   top: calc(12px + env(safe-area-inset-top));
   left: calc(12px + env(safe-area-inset-left));
   z-index: 1000;
-  background: rgba(22, 22, 28, 0.92);
+  background: rgba(22, 22, 28, 0.78);
   color: #f0f0f0;
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 12px 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
   width: 260px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -270,12 +301,14 @@ body {
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
-  background: rgba(30, 30, 36, 0.97);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
+  background: rgba(30, 30, 36, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   max-height: 180px;
   overflow-y: auto;
   z-index: 1001;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 .station-dropdown li {
@@ -925,13 +958,14 @@ td.delay-red {
     height: 44px;
     border-radius: 50%;
     border: none;
-    background: rgba(22, 22, 28, 0.92);
+    background: rgba(22, 22, 28, 0.78);
     color: #f0f0f0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     font-size: 1.3rem;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
   }
 
   .search-fab:active {
