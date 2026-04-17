@@ -163,13 +163,18 @@ export function useBusMarkers({
     const jumpBtn = showJump
       ? `<button class="popup-route-jump" type="button" data-route="${encodeURIComponent(bus.routeShortName)}" data-dir="${bus.directionId}">Show all ${bus.routeShortName}</button>`
       : "";
+    const stops = trip?.stops ?? [];
+    const originDest = stops.length >= 2
+      ? `<div class="popup-route">${stops[0]!.name} → ${stops[stops.length - 1]!.name}</div>`
+      : "";
     return `
       <div class="popup-content">
         <div class="popup-header-row">
           <div class="popup-title">${bus.routeShortName}</div>
           ${jumpBtn}
         </div>
-        <div class="popup-route">Vehicle ${bus.label || bus.tripId}</div>
+        ${originDest}
+        <div class="popup-vehicle">Vehicle ${bus.label || bus.tripId}</div>
         ${body}
       </div>
     `;

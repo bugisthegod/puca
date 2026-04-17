@@ -426,6 +426,12 @@ body {
   margin-bottom: 6px;
 }
 
+.popup-vehicle {
+  font-size: 0.72rem;
+  color: #888;
+  margin-bottom: 6px;
+}
+
 .popup-meta {
   display: flex;
   align-items: center;

@@ -67,6 +67,7 @@ Bun.serve({
     "/manifest.json": () => new Response(Bun.file("./public/manifest.json")),
     "/icon-192.png": () => new Response(Bun.file("./public/icon-192.png")),
     "/icon-512.png": () => new Response(Bun.file("./public/icon-512.png")),
+    "/icon.svg": () => new Response(Bun.file("./public/icon.svg")),
     "/api/trains": rateLimit(async (_req) => {
       try {
         const trains = await getCurrentTrains();

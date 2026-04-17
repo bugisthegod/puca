@@ -196,5 +196,18 @@ appleIcon.rel = "apple-touch-icon";
 appleIcon.href = "/icon-192.png";
 document.head.appendChild(appleIcon);
 
+const faviconSvg = document.createElement("link");
+faviconSvg.rel = "icon";
+faviconSvg.type = "image/svg+xml";
+faviconSvg.href = "/icon.svg";
+document.head.appendChild(faviconSvg);
+
+const faviconPng = document.createElement("link");
+faviconPng.rel = "icon";
+faviconPng.type = "image/png";
+faviconPng.setAttribute("sizes", "192x192");
+faviconPng.href = "/icon-192.png";
+document.head.appendChild(faviconPng);
+
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
