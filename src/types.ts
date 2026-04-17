@@ -44,6 +44,34 @@ export type SearchResult = {
   status: "running" | "ready" | "scheduled"; // running=在跑, ready=即将发车(灰点), scheduled=时刻表上有但没检测到
 };
 
+export type BusOperator = "dublinbus" | "buseireann" | "goahead";
+
+export type BusRoute = {
+  id: string;
+  shortName: string;
+  longName: string;
+};
+
+export type BusStop = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+};
+
+export type BusVehicle = {
+  tripId: string;
+  routeId: string;
+  routeShortName: string;
+  lat: number;
+  lng: number;
+  bearing: number | null;
+  speed: number | null;
+  timestamp: number;
+  label: string;
+  directionId: number;
+};
+
 export type TrainMovement = {
   trainCode: string;
   stationName: string;

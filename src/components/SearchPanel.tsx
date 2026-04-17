@@ -74,7 +74,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
     setHighlightIndex(-1);
   }
 
-  function handleKeyDown(e: React.KeyboardEvent, field: "from" | "to") {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>, field: "from" | "to") {
     if (!focusedField) return;
     const list = currentList;
 
@@ -161,7 +161,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
           placeholder="From station..."
           value={fromQuery}
           onChange={(e) => {
-            setFromQuery(e.target.value);
+            setFromQuery(e.currentTarget.value);
             setFrom("");
           }}
           onFocus={() => setFocusedField("from")}
@@ -191,7 +191,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
           placeholder="To station..."
           value={toQuery}
           onChange={(e) => {
-            setToQuery(e.target.value);
+            setToQuery(e.currentTarget.value);
             setTo("");
           }}
           onFocus={() => setFocusedField("to")}

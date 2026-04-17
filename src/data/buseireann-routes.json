@@ -1,0 +1,1032 @@
+[
+  {
+    "id": "5502_126904",
+    "shortName": "310",
+    "longName": "Sarsfield Street - National Technology Park"
+  },
+  {
+    "id": "5549_127721",
+    "shortName": "2",
+    "longName": "Dublin Airport - Gorey - Wexford"
+  },
+  {
+    "id": "5549_127722",
+    "shortName": "4",
+    "longName": "Dublin Airport - Waterford"
+  },
+  {
+    "id": "5549_127723",
+    "shortName": "13",
+    "longName": "Limerick - Adare - Listowel - Tralee"
+  },
+  {
+    "id": "5549_127724",
+    "shortName": "14",
+    "longName": "Limerick - Kerry Airport - Killarney"
+  },
+  {
+    "id": "5549_127725",
+    "shortName": "22",
+    "longName": "Dublin - Airport - Longford - Ballina"
+  },
+  {
+    "id": "5549_127726",
+    "shortName": "23",
+    "longName": "Dublin - Airport - Longford - Sligo"
+  },
+  {
+    "id": "5549_127727",
+    "shortName": "30",
+    "longName": "Dublin - Airport - Cavan - Donegal"
+  },
+  {
+    "id": "5549_127728",
+    "shortName": "32",
+    "longName": "Dublin Airport - Monaghan - Letterkenny"
+  },
+  {
+    "id": "5549_127729",
+    "shortName": "40",
+    "longName": "Tralee - Cork - Waterford - Rosslare"
+  },
+  {
+    "id": "5549_127730",
+    "shortName": "51",
+    "longName": "Cork - Limerick - Galway"
+  },
+  {
+    "id": "5549_127731",
+    "shortName": "52",
+    "longName": "Ballina - Castlebar - Galway"
+  },
+  {
+    "id": "5549_127732",
+    "shortName": "55",
+    "longName": "Limerick - Waterford"
+  },
+  {
+    "id": "5549_127733",
+    "shortName": "64",
+    "longName": "Galway - Killea"
+  },
+  {
+    "id": "5549_127734",
+    "shortName": "65",
+    "longName": "Galway - Athlone - Monaghan"
+  },
+  {
+    "id": "5549_127735",
+    "shortName": "70",
+    "longName": "Galway - Mullingar - Dundalk"
+  },
+  {
+    "id": "5549_127736",
+    "shortName": "72",
+    "longName": "Limerick - Birr - Athlone"
+  },
+  {
+    "id": "5549_127737",
+    "shortName": "73",
+    "longName": "Waterford - Athlone - Longford"
+  },
+  {
+    "id": "5549_127738",
+    "shortName": "100",
+    "longName": "Drogheda - Dundalk - Newry"
+  },
+  {
+    "id": "5549_127739",
+    "shortName": "101",
+    "longName": "Dublin - Airport - Drogheda"
+  },
+  {
+    "id": "5549_127740",
+    "shortName": "103",
+    "longName": "Dublin - Ashbourne - Ratoath"
+  },
+  {
+    "id": "5549_127741",
+    "shortName": "B1",
+    "longName": "Rail Station - Millfield Centre"
+  },
+  {
+    "id": "5549_127742",
+    "shortName": "105",
+    "longName": "Blanchardstown - Ashbourne - Ashbourne - Drogheda"
+  },
+  {
+    "id": "5549_127743",
+    "shortName": "115",
+    "longName": "Dublin - Mullingar"
+  },
+  {
+    "id": "5549_127744",
+    "shortName": "131",
+    "longName": "Bray - Wicklow"
+  },
+  {
+    "id": "5549_127745",
+    "shortName": "132",
+    "longName": "Dublin - Carnew - Bunclody"
+  },
+  {
+    "id": "5549_127746",
+    "shortName": "133",
+    "longName": "Dublin - Wicklow"
+  },
+  {
+    "id": "5549_127747",
+    "shortName": "160",
+    "longName": "Dundalk - Ravensdale - Newry"
+  },
+  {
+    "id": "5549_127748",
+    "shortName": "161",
+    "longName": "Dundalk - Carlingford - Newry"
+  },
+  {
+    "id": "5549_127749",
+    "shortName": "162",
+    "longName": "Dundalk - Monaghan - Clones - Cavan"
+  },
+  {
+    "id": "5549_127750",
+    "shortName": "167",
+    "longName": "Dundalk - Louth - Ardee"
+  },
+  {
+    "id": "5549_127751",
+    "shortName": "168",
+    "longName": "Dundalk - Annagassan"
+  },
+  {
+    "id": "5549_127752",
+    "shortName": "170",
+    "longName": "Cavan - Dundalk"
+  },
+  {
+    "id": "5549_127753",
+    "shortName": "173",
+    "longName": "Drogheda West St - Dominck St"
+  },
+  {
+    "id": "5549_127754",
+    "shortName": "174",
+    "longName": "Long Walk - Muirhevnamuir"
+  },
+  {
+    "id": "5549_127755",
+    "shortName": "175",
+    "longName": "Monaghan - Cootehill - Cavan"
+  },
+  {
+    "id": "5549_127756",
+    "shortName": "182",
+    "longName": "Drogheda - Collon - Ardee - Monaghan"
+  },
+  {
+    "id": "5549_127757",
+    "shortName": "190",
+    "longName": "Drogheda - Navan - Trim"
+  },
+  {
+    "id": "5549_127758",
+    "shortName": "201",
+    "longName": "Lotabeg - Hollyhill - CIT - CUH"
+  },
+  {
+    "id": "5549_127759",
+    "shortName": "202",
+    "longName": "Ringmahon - City - Hollyhill (Apple)"
+  },
+  {
+    "id": "5549_127760",
+    "shortName": "203",
+    "longName": "Lehenaghmore - City Centre - Parklands"
+  },
+  {
+    "id": "5549_127761",
+    "shortName": "205",
+    "longName": "Train Station - St. Patrick St - CIT"
+  },
+  {
+    "id": "5549_127762",
+    "shortName": "206",
+    "longName": "Grange - Douglas - South Mall"
+  },
+  {
+    "id": "5549_127763",
+    "shortName": "207",
+    "longName": "Donnybrook - City Centre - City Centre - Glenheigh"
+  },
+  {
+    "id": "5549_127764",
+    "shortName": "208",
+    "longName": "Lotabeg - Bishopstown - Curraheen"
+  },
+  {
+    "id": "5549_127765",
+    "shortName": "209",
+    "longName": "Patrick St - Audley Place - Lotamore"
+  },
+  {
+    "id": "5549_127766",
+    "shortName": "212",
+    "longName": "Kent Station - Blackrock - Mahon Point"
+  },
+  {
+    "id": "5549_127767",
+    "shortName": "213",
+    "longName": "Lapps Quay (P&R) - Black Ash"
+  },
+  {
+    "id": "5549_127768",
+    "shortName": "214",
+    "longName": "Glanmire - City Centre - CUH"
+  },
+  {
+    "id": "5549_127769",
+    "shortName": "215",
+    "longName": "Mahon Point - Ballinlough - Cloghroe"
+  },
+  {
+    "id": "5549_127770",
+    "shortName": "216",
+    "longName": "Mount Oval - City - Glasheen - CUH"
+  },
+  {
+    "id": "5549_127771",
+    "shortName": "219",
+    "longName": "Mahon - Douglas - CUH/ CIT (South Orb)"
+  },
+  {
+    "id": "5549_127772",
+    "shortName": "220",
+    "longName": "Ballincollig - Douglas - Carrigaline"
+  },
+  {
+    "id": "5549_127773",
+    "shortName": "223",
+    "longName": "Cork - Ringaskiddy - Haulbowline"
+  },
+  {
+    "id": "5549_127774",
+    "shortName": "225",
+    "longName": "Cork Airport - Haulbowline"
+  },
+  {
+    "id": "5549_127775",
+    "shortName": "226",
+    "longName": "Train Stn - Airport - Kinsale"
+  },
+  {
+    "id": "5549_127776",
+    "shortName": "233",
+    "longName": "Cork - Macroom"
+  },
+  {
+    "id": "5549_127777",
+    "shortName": "235",
+    "longName": "Cork - Rylane - Stuake"
+  },
+  {
+    "id": "5549_127778",
+    "shortName": "236",
+    "longName": "Cork - Bantry - Castletownbere"
+  },
+  {
+    "id": "5549_127779",
+    "shortName": "237",
+    "longName": "Cork - Skibereen - Goleen"
+  },
+  {
+    "id": "5549_127780",
+    "shortName": "239",
+    "longName": "Cork - Bandon"
+  },
+  {
+    "id": "5549_127781",
+    "shortName": "240",
+    "longName": "Cork - Cloyne - Ballycotton"
+  },
+  {
+    "id": "5549_127782",
+    "shortName": "241",
+    "longName": "Cork - Midelton - Whitegate"
+  },
+  {
+    "id": "5549_127783",
+    "shortName": "243",
+    "longName": "Cork - Newmarket/Doneraile/Charleville"
+  },
+  {
+    "id": "5549_127784",
+    "shortName": "245",
+    "longName": "Cork - Fermoy - Mitchelstown - Clonmel"
+  },
+  {
+    "id": "5549_127785",
+    "shortName": "248",
+    "longName": "Cork - Carrignavar/ Glenville"
+  },
+  {
+    "id": "5549_127786",
+    "shortName": "257",
+    "longName": "Macroom - Killarney"
+  },
+  {
+    "id": "5549_127787",
+    "shortName": "260",
+    "longName": "Cork - Youghal - Ardmore"
+  },
+  {
+    "id": "5549_127788",
+    "shortName": "261",
+    "longName": "Cork - Midelton - Ballincurra"
+  },
+  {
+    "id": "5549_127789",
+    "shortName": "270",
+    "longName": "Killarney - Kenmare - Skibbereen"
+  },
+  {
+    "id": "5549_127790",
+    "shortName": "271",
+    "longName": "Tralee - Kerry Airport - Killarney"
+  },
+  {
+    "id": "5549_127791",
+    "shortName": "272",
+    "longName": "Tralee - Listowel - Tarbert"
+  },
+  {
+    "id": "5549_127792",
+    "shortName": "275",
+    "longName": "Tralee - Dingle"
+  },
+  {
+    "id": "5549_127793",
+    "shortName": "279",
+    "longName": "Killarney - Cahersiveen - Waterville"
+  },
+  {
+    "id": "5549_127794",
+    "shortName": "284",
+    "longName": "Killarney - Tralee"
+  },
+  {
+    "id": "5549_127795",
+    "shortName": "314",
+    "longName": "Limerick - Foynes - Glin - Ballybunion"
+  },
+  {
+    "id": "5549_127796",
+    "shortName": "316",
+    "longName": "Sixmilebridge - Shannon Airport"
+  },
+  {
+    "id": "5549_127797",
+    "shortName": "317",
+    "longName": "Limerick - Ennis"
+  },
+  {
+    "id": "5549_127798",
+    "shortName": "320",
+    "longName": "Limerick - Charleville"
+  },
+  {
+    "id": "5549_127799",
+    "shortName": "321",
+    "longName": "Limerick - Rathkeale - Newcastlewest"
+  },
+  {
+    "id": "5549_127800",
+    "shortName": "323",
+    "longName": "Limerick - Killaloe - Nenagh - Birr"
+  },
+  {
+    "id": "5549_127801",
+    "shortName": "324",
+    "longName": "Nenagh - Borrisokane - Kilbarron"
+  },
+  {
+    "id": "5549_127802",
+    "shortName": "328",
+    "longName": "Limerick - Mitchellstown"
+  },
+  {
+    "id": "5549_127803",
+    "shortName": "329",
+    "longName": "Limerick - Bruff - Kilfinane"
+  },
+  {
+    "id": "5549_127804",
+    "shortName": "330",
+    "longName": "Ennis - Shannon Airport"
+  },
+  {
+    "id": "5549_127805",
+    "shortName": "332",
+    "longName": "Limerick - Dundrum"
+  },
+  {
+    "id": "5549_127806",
+    "shortName": "333",
+    "longName": "Limerick - Ennis - Corofin - Doonbeg"
+  },
+  {
+    "id": "5549_127807",
+    "shortName": "336",
+    "longName": "Limerick - Ennis - Kilrush - Kilkee"
+  },
+  {
+    "id": "5549_127808",
+    "shortName": "343",
+    "longName": "Limerick - Shannon Airport"
+  },
+  {
+    "id": "5549_127809",
+    "shortName": "345",
+    "longName": "Limerick - Killaloe - Scariff"
+  },
+  {
+    "id": "5549_127810",
+    "shortName": "347",
+    "longName": "Limerick - Tipperary"
+  },
+  {
+    "id": "5549_127811",
+    "shortName": "350",
+    "longName": "Galway - Kinvara - Doolin - Ennis"
+  },
+  {
+    "id": "5549_127812",
+    "shortName": "354",
+    "longName": "Portlaw - Waterford - Dunmore East"
+  },
+  {
+    "id": "5549_127813",
+    "shortName": "355",
+    "longName": "Waterford - Cahir"
+  },
+  {
+    "id": "5549_127814",
+    "shortName": "360",
+    "longName": "Waterford - Tramore"
+  },
+  {
+    "id": "5549_127815",
+    "shortName": "362",
+    "longName": "Waterford - Dungarvan"
+  },
+  {
+    "id": "5549_127816",
+    "shortName": "365",
+    "longName": "Waterford - Thomastown"
+  },
+  {
+    "id": "5549_127817",
+    "shortName": "370",
+    "longName": "Waterford - New Ross - Wexford"
+  },
+  {
+    "id": "5549_127818",
+    "shortName": "371",
+    "longName": "New Ross - Adamstown - Wexford"
+  },
+  {
+    "id": "5549_127819",
+    "shortName": "372",
+    "longName": "New Ross - Foulksmills - Wexford"
+  },
+  {
+    "id": "5549_127820",
+    "shortName": "373",
+    "longName": "New Ross - Fethard - Wexford"
+  },
+  {
+    "id": "5549_127821",
+    "shortName": "374",
+    "longName": "New Ross - Kilkenny"
+  },
+  {
+    "id": "5549_127822",
+    "shortName": "379",
+    "longName": "Wexford - Curracloe - Gorey"
+  },
+  {
+    "id": "5549_127823",
+    "shortName": "382",
+    "longName": "Adamstown - Wexford"
+  },
+  {
+    "id": "5549_127824",
+    "shortName": "445",
+    "longName": "Ballina - Killala - Ballycastle"
+  },
+  {
+    "id": "5549_127825",
+    "shortName": "446",
+    "longName": "Ballina - Blacksod"
+  },
+  {
+    "id": "5549_127826",
+    "shortName": "450",
+    "longName": "Dooagh - Louisburgh"
+  },
+  {
+    "id": "5549_127827",
+    "shortName": "451",
+    "longName": "Ballina - Charlestown - Longford"
+  },
+  {
+    "id": "5549_127828",
+    "shortName": "456",
+    "longName": "Galway - Westport - Ballina"
+  },
+  {
+    "id": "5549_127829",
+    "shortName": "458",
+    "longName": "Sligo - Enniscrone - Ballina"
+  },
+  {
+    "id": "5549_127830",
+    "shortName": "461",
+    "longName": "Sligo - Roscommon - Athlone"
+  },
+  {
+    "id": "5549_127831",
+    "shortName": "462",
+    "longName": "Carrigallen - Ballinamore - Sligo"
+  },
+  {
+    "id": "5549_127832",
+    "shortName": "464",
+    "longName": "Carrigallen - Eniskillen"
+  },
+  {
+    "id": "5549_127833",
+    "shortName": "465",
+    "longName": "Carrigallen - Cavan"
+  },
+  {
+    "id": "5549_127834",
+    "shortName": "466",
+    "longName": "Athlone - Longford"
+  },
+  {
+    "id": "5549_127835",
+    "shortName": "468",
+    "longName": "Strokestown - Carrick on Shannon"
+  },
+  {
+    "id": "5549_127836",
+    "shortName": "469",
+    "longName": "Sligo - Drumkeeran - Longford"
+  },
+  {
+    "id": "5549_127837",
+    "shortName": "470",
+    "longName": "Sligo - Glenfarne - Rossinver"
+  },
+  {
+    "id": "5549_127838",
+    "shortName": "S2",
+    "longName": "Strandhill - Rosses Point"
+  },
+  {
+    "id": "5549_127839",
+    "shortName": "S3",
+    "longName": "Finisklin Sth - Markievicz Rd"
+  },
+  {
+    "id": "5549_127840",
+    "shortName": "476",
+    "longName": "Killavil - Ballymote - Tubbercurry"
+  },
+  {
+    "id": "5549_127841",
+    "shortName": "S1",
+    "longName": "Cartron - Sligo Town Centre - Cairns"
+  },
+  {
+    "id": "5549_127842",
+    "shortName": "479",
+    "longName": "Aclare - Coolaney - Sligo"
+  },
+  {
+    "id": "5549_127843",
+    "shortName": "480",
+    "longName": "Sligo - Donegal - Letterkenny - Derry"
+  },
+  {
+    "id": "5549_127844",
+    "shortName": "487",
+    "longName": "Strabane - Raphoe - Letterkenny"
+  },
+  {
+    "id": "5549_127845",
+    "shortName": "490",
+    "longName": "Donegal - Killybegs - Glencolumbcille"
+  },
+  {
+    "id": "5549_127846",
+    "shortName": "491",
+    "longName": "Letterkenny - Ballybofey"
+  },
+  {
+    "id": "5549_127847",
+    "shortName": "492",
+    "longName": "Donegal - Glenties - Dungloe"
+  },
+  {
+    "id": "5549_127848",
+    "shortName": "494",
+    "longName": "Strabane - Ballybofey"
+  },
+  {
+    "id": "5549_127849",
+    "shortName": "519",
+    "longName": "Cork - Charleville"
+  },
+  {
+    "id": "5549_127850",
+    "shortName": "100X",
+    "longName": "Wilton Tce - Airport - Dundalk"
+  },
+  {
+    "id": "5549_127851",
+    "shortName": "115C",
+    "longName": "Enfield - Killucan - Mullingar"
+  },
+  {
+    "id": "5549_127852",
+    "shortName": "174A",
+    "longName": "Long Walk - Fatima"
+  },
+  {
+    "id": "5549_127853",
+    "shortName": "174B",
+    "longName": "Long Walk - Bay Estate"
+  },
+  {
+    "id": "5549_127854",
+    "shortName": "175A",
+    "longName": "Cavan - Clones - Monaghan"
+  },
+  {
+    "id": "5549_127855",
+    "shortName": "D4",
+    "longName": "Southgate SC - Ballymakenny"
+  },
+  {
+    "id": "5549_127856",
+    "shortName": "D5",
+    "longName": "Colpe Road - Termonabbey"
+  },
+  {
+    "id": "5549_127857",
+    "shortName": "209A",
+    "longName": "City Centre - Pouladuff - Connolly Rd"
+  },
+  {
+    "id": "5549_127858",
+    "shortName": "215A",
+    "longName": "Mahon Point - Boreenmanna Rd - City"
+  },
+  {
+    "id": "5549_127859",
+    "shortName": "207A",
+    "longName": "Merchants Quay - Glen Ave - Glenthorn"
+  },
+  {
+    "id": "5549_127860",
+    "shortName": "CW1",
+    "longName": "MSD - Tyndall College"
+  },
+  {
+    "id": "5549_127861",
+    "shortName": "CW2",
+    "longName": "Barrow Valley RPK - Business Park"
+  },
+  {
+    "id": "5549_127862",
+    "shortName": "D1",
+    "longName": "Drogheda - Laytown"
+  },
+  {
+    "id": "5549_127863",
+    "shortName": "D2",
+    "longName": "Drogheda - Coast Road - Laytown"
+  },
+  {
+    "id": "5549_127864",
+    "shortName": "226X",
+    "longName": "Kinsale - UCC"
+  },
+  {
+    "id": "5549_127865",
+    "shortName": "323X",
+    "longName": "Limerick - Birr - Athlone"
+  },
+  {
+    "id": "5549_127866",
+    "shortName": "330X",
+    "longName": "Limerick - Ennis"
+  },
+  {
+    "id": "5549_127867",
+    "shortName": "317A",
+    "longName": "Limerick - Ennis"
+  },
+  {
+    "id": "5549_127868",
+    "shortName": "202A",
+    "longName": "Ringmahon - City - Hollyhill (Apple)"
+  },
+  {
+    "id": "5549_127869",
+    "shortName": "220A",
+    "longName": "South Mall - Fountainstown"
+  },
+  {
+    "id": "5549_127870",
+    "shortName": "225L",
+    "longName": "Carrigaline - NMCI"
+  },
+  {
+    "id": "5549_127871",
+    "shortName": "31",
+    "longName": "Parnell Place - Knockraha"
+  },
+  {
+    "id": "5549_127872",
+    "shortName": "360A",
+    "longName": "Waterford - WIT - Tramore"
+  },
+  {
+    "id": "5549_127873",
+    "shortName": "279A",
+    "longName": "Waterville - Caherciveen - Killarney"
+  },
+  {
+    "id": "5549_127874",
+    "shortName": "220X",
+    "longName": "Ovens - Carrigaline - Crosshaven"
+  },
+  {
+    "id": "5549_127875",
+    "shortName": "101X",
+    "longName": "Wilton Tce - Drogheda - Termon Abbey"
+  },
+  {
+    "id": "5549_127876",
+    "shortName": "245X",
+    "longName": "Busaras - Fermoy - Cork"
+  },
+  {
+    "id": "5549_127877",
+    "shortName": "223X",
+    "longName": "South Mall - Haulbowline"
+  },
+  {
+    "id": "5549_127878",
+    "shortName": "EK1",
+    "longName": "Kells - Virginia"
+  },
+  {
+    "id": "5549_127879",
+    "shortName": "A1",
+    "longName": "Bellanamulla - Station - Creggan"
+  },
+  {
+    "id": "5549_127880",
+    "shortName": "A2",
+    "longName": "Bellanamulla - Station - Creggan"
+  },
+  {
+    "id": "5549_127881",
+    "shortName": "107",
+    "longName": "Dublin - Navan - Nobber - Kingscourt"
+  },
+  {
+    "id": "5549_127882",
+    "shortName": "109",
+    "longName": "Dublin - Navan - Kells - Cavan"
+  },
+  {
+    "id": "5549_127883",
+    "shortName": "110D",
+    "longName": "DCU - Kennedy Road"
+  },
+  {
+    "id": "5549_127884",
+    "shortName": "111",
+    "longName": "Wilton Tce - Trim - Granard - Cavan"
+  },
+  {
+    "id": "5549_127885",
+    "shortName": "187",
+    "longName": "Kells - Virginia - Ballyjamesduff"
+  },
+  {
+    "id": "5549_127886",
+    "shortName": "304A",
+    "longName": "Raheen - Bus Station - UL"
+  },
+  {
+    "id": "5549_127887",
+    "shortName": "301",
+    "longName": "Westbury - Regional Hospital"
+  },
+  {
+    "id": "5549_127888",
+    "shortName": "302",
+    "longName": "City Centre - Caherdavin"
+  },
+  {
+    "id": "5549_127889",
+    "shortName": "303",
+    "longName": "O'Malley Park - City Centre - Pineview"
+  },
+  {
+    "id": "5549_127890",
+    "shortName": "304",
+    "longName": "UL - City Centre - Raheen"
+  },
+  {
+    "id": "5549_127891",
+    "shortName": "305",
+    "longName": "Lynwood Pk - City Centre - St Marys Pk"
+  },
+  {
+    "id": "5549_127892",
+    "shortName": "306",
+    "longName": "Brookfield - City Centre - Ballynanty"
+  },
+  {
+    "id": "5549_127893",
+    "shortName": "313",
+    "longName": "Limerick - Ardnacrusha"
+  },
+  {
+    "id": "5549_127894",
+    "shortName": "401",
+    "longName": "Parkmore Road - Doctor Mannix Road"
+  },
+  {
+    "id": "5549_127895",
+    "shortName": "402",
+    "longName": "Seacrest - Eyre Square - Merlin Park"
+  },
+  {
+    "id": "5549_127896",
+    "shortName": "404",
+    "longName": "Eyre Square - Newcastle"
+  },
+  {
+    "id": "5549_127897",
+    "shortName": "405",
+    "longName": "Rahoon - Eyre Square - Ballybane"
+  },
+  {
+    "id": "5549_127898",
+    "shortName": "407",
+    "longName": "Eyre Square - B\u00f3thar an Ch\u00f3iste"
+  },
+  {
+    "id": "5549_127899",
+    "shortName": "409",
+    "longName": "Eyre Square - An Ph\u00e1irc Mh\u00f3r"
+  },
+  {
+    "id": "5549_127900",
+    "shortName": "417",
+    "longName": "Galway - Corofin Cross - Tuam"
+  },
+  {
+    "id": "5549_127901",
+    "shortName": "419",
+    "longName": "Galway - Clifden"
+  },
+  {
+    "id": "5549_127902",
+    "shortName": "420",
+    "longName": "Ballina - Pontoon - Castlebar"
+  },
+  {
+    "id": "5549_127903",
+    "shortName": "421",
+    "longName": "Swinford - Claremorris"
+  },
+  {
+    "id": "5549_127904",
+    "shortName": "422",
+    "longName": "Headford - Castlebar"
+  },
+  {
+    "id": "5549_127905",
+    "shortName": "423",
+    "longName": "Westport - Clifden"
+  },
+  {
+    "id": "5549_127906",
+    "shortName": "424",
+    "longName": "Galway - Lettermullen"
+  },
+  {
+    "id": "5549_127907",
+    "shortName": "425",
+    "longName": "Galway - Roscommon - Longford"
+  },
+  {
+    "id": "5549_127908",
+    "shortName": "429",
+    "longName": "Galway - Tuam - Castlerea"
+  },
+  {
+    "id": "5549_127909",
+    "shortName": "434",
+    "longName": "Galway - Gort"
+  },
+  {
+    "id": "5549_127910",
+    "shortName": "440",
+    "longName": "Knock Airport - Westport - Dooagh"
+  },
+  {
+    "id": "5549_127911",
+    "shortName": "109A",
+    "longName": "DCU - Airport - Ratoath - Navan"
+  },
+  {
+    "id": "5549_127912",
+    "shortName": "425A",
+    "longName": "Galway - Monivea - Mountbellew"
+  },
+  {
+    "id": "5549_127913",
+    "shortName": "109D",
+    "longName": "DCU - Trim"
+  },
+  {
+    "id": "5549_127914",
+    "shortName": "109B",
+    "longName": "Dublin - Dunshaughlin - Trim"
+  },
+  {
+    "id": "5549_127915",
+    "shortName": "109X",
+    "longName": "Dublin - Kells - Cavan Hourly Express"
+  },
+  {
+    "id": "5549_127916",
+    "shortName": "111A",
+    "longName": "Delvin - Granard - Cavan"
+  },
+  {
+    "id": "5549_127917",
+    "shortName": "115X",
+    "longName": "Connolly Station - Mullingar Stn"
+  },
+  {
+    "id": "5549_127918",
+    "shortName": "220C",
+    "longName": "MTU - Crosshaven"
+  },
+  {
+    "id": "5549_127919",
+    "shortName": "NX",
+    "longName": "Dublin Wilton Terrace - Navan"
+  },
+  {
+    "id": "5549_127920",
+    "shortName": "305A",
+    "longName": "CC - St.Marys Park - CC"
+  },
+  {
+    "id": "5549_127921",
+    "shortName": "NV1",
+    "longName": "Gainstown - Dunville Road"
+  },
+  {
+    "id": "5549_127922",
+    "shortName": "NV2",
+    "longName": "Gainstown - Cluster Park"
+  },
+  {
+    "id": "5549_127923",
+    "shortName": "103X",
+    "longName": "Dublin - Ashbourne - Duleek - Navan"
+  },
+  {
+    "id": "5549_127924",
+    "shortName": "105X",
+    "longName": "UCD - M3 - Ratoath - Ashbourne"
+  },
+  {
+    "id": "5549_127925",
+    "shortName": "111X",
+    "longName": "Dublin express - Athboy - Clonmellon"
+  }
+]

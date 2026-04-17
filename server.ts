@@ -1,6 +1,6 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements, getAllStations } from "./src/api.ts";
-import { getGtfsrVehiclePositions } from "./src/gtfsr.ts";
+import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getBusRouteShape, getBusTripStops, getTrainRouteShape, type Operator } from "./src/gtfsr.ts";
 
 function todayFormatted(): string {
   const d = new Date();
@@ -10,6 +10,56 @@ function todayFormatted(): string {
   return `${day} ${month} ${year}`;
 }
 
+// ---------------------------------------------------------------------------
+// Rate limit: 10 requests per minute per IP on /api/* endpoints.
+// Localhost (dev + Fly-internal health checks) bypass.
+// ---------------------------------------------------------------------------
+
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitMap = new Map<string, number[]>();
+
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get("fly-client-ip")
+    ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    ?? "local"
+  );
+}
+
+function isLocalIp(ip: string): boolean {
+  return ip === "local" || ip === "127.0.0.1" || ip === "::1";
+}
+
+function rateLimit<T extends (req: any) => Response | Promise<Response>>(handler: T): T {
+  return (async (req: any) => {
+    const ip = getClientIp(req);
+    if (!isLocalIp(ip)) {
+      const now = Date.now();
+      const timestamps = (rateLimitMap.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+      if (timestamps.length >= RATE_LIMIT_MAX) {
+        return new Response("Rate limit exceeded", {
+          status: 429,
+          headers: { "Retry-After": "60", "Content-Type": "text/plain" },
+        });
+      }
+      timestamps.push(now);
+      rateLimitMap.set(ip, timestamps);
+    }
+    return handler(req);
+  }) as T;
+}
+
+// Periodic cleanup: drop entries with no recent activity (prevents Map growth under unique-IP traffic)
+setInterval(() => {
+  const cutoff = Date.now() - RATE_LIMIT_WINDOW_MS;
+  for (const [ip, timestamps] of rateLimitMap) {
+    const live = timestamps.filter((t) => t >= cutoff);
+    if (live.length === 0) rateLimitMap.delete(ip);
+    else rateLimitMap.set(ip, live);
+  }
+}, 5 * 60_000);
+
 Bun.serve({
   port: 3000,
   routes: {
@@ -17,15 +67,15 @@ Bun.serve({
     "/manifest.json": () => new Response(Bun.file("./public/manifest.json")),
     "/icon-192.png": () => new Response(Bun.file("./public/icon-192.png")),
     "/icon-512.png": () => new Response(Bun.file("./public/icon-512.png")),
-    "/api/trains": async (_req) => {
+    "/api/trains": rateLimit(async (_req) => {
       try {
         const trains = await getCurrentTrains();
         return Response.json(trains);
       } catch {
         return Response.json([], { status: 502 });
       }
-    },
-    "/api/station/:code": async (req) => {
+    }),
+    "/api/station/:code": rateLimit(async (req) => {
       try {
         const code = req.params.code;
         const url = new URL(req.url);
@@ -36,16 +86,16 @@ Bun.serve({
       } catch {
         return Response.json([], { status: 502 });
       }
-    },
-    "/api/stations": async (_req) => {
+    }),
+    "/api/stations": rateLimit(async (_req) => {
       try {
         const stations = await getAllStations();
         return Response.json(stations);
       } catch {
         return Response.json([], { status: 502 });
       }
-    },
-    "/api/trains/search": async (req) => {
+    }),
+    "/api/trains/search": rateLimit(async (req) => {
       try {
         const url = new URL(req.url);
         const from = url.searchParams.get("from");
@@ -53,27 +103,35 @@ Bun.serve({
         if (!from || !to) {
           return Response.json({ error: "from and to required" }, { status: 400 });
         }
-        // 1. Get station data for both stations + current trains
-        const [fromData, toData, currentTrains] = await Promise.all([
+        const [fromData, toData, currentTrains, allStations] = await Promise.all([
           getStationData(from, 120),
           getStationData(to, 120),
           getCurrentTrains(),
+          getAllStations(),
         ]);
 
-        // 2. Find trains passing through both stations (from before to)
-        const toMap = new Map(toData.map((t) => [t.trainCode, t]));
+        const fromStation = allStations.find((s) => s.code === from);
+        const fromName = fromStation?.name ?? "";
+
+        const fromMap = new Map(fromData.map((f) => [f.trainCode, f]));
         const currentMap = new Map(currentTrains.map((t) => [t.code, t]));
 
-        const candidates = fromData
-          .filter((f) => toMap.has(f.trainCode))
-          .map((f) => {
-            const t = toMap.get(f.trainCode)!;
-            const current = currentMap.get(f.trainCode);
-            const fromDep = f.expDepart || f.schDepart;
+        // Match trains that either:
+        // (a) appear at both stations (normal case), OR
+        // (b) appear at `to` with origin == fromName (case: already left `from`)
+        const candidates = toData
+          .map((t) => {
+            const f = fromMap.get(t.trainCode);
+            const startsAtFrom = t.origin.trim().toLowerCase() === fromName.trim().toLowerCase();
+
+            if (!f && !startsAtFrom) return null;
+
+            const current = currentMap.get(t.trainCode);
+            const fromDep = f ? (f.expDepart || f.schDepart) : t.originTime;
             const toArr = t.expArrival || t.schArrival;
 
-            // Verify direction: train must be due at 'from' before 'to'
-            if (f.dueIn >= t.dueIn) return null;
+            // Direction check only when both stations have the train
+            if (f && f.dueIn >= t.dueIn) return null;
 
             let status: "running" | "ready" | "scheduled";
             if (current?.status === "R") status = "running";
@@ -81,9 +139,9 @@ Bun.serve({
             else status = "scheduled";
 
             return {
-              code: f.trainCode,
-              origin: f.origin,
-              destination: f.destination,
+              code: t.trainCode,
+              origin: t.origin,
+              destination: t.destination,
               fromDep,
               toArr,
               status,
@@ -91,22 +149,21 @@ Bun.serve({
           })
           .filter((r) => r !== null);
 
-        // 3. Sort by departure time, take first 3
         candidates.sort((a, b) => a.fromDep.localeCompare(b.fromDep));
         return Response.json(candidates.slice(0, 3));
       } catch {
         return Response.json([], { status: 502 });
       }
-    },
-    "/api/gtfsr/vehicles": async (_req) => {
+    }),
+    "/api/gtfsr/vehicles": rateLimit(async (_req) => {
       try {
-        const vehicles = await getGtfsrVehiclePositions();
+        const vehicles = getGtfsrVehiclePositions();
         return Response.json(vehicles);
       } catch {
         return Response.json([], { status: 502 });
       }
-    },
-    "/api/train/:id": async (req) => {
+    }),
+    "/api/train/:id": rateLimit(async (req) => {
       try {
         const trainId = req.params.id;
         const url = new URL(req.url);
@@ -116,7 +173,51 @@ Bun.serve({
       } catch {
         return Response.json([], { status: 502 });
       }
-    },
+    }),
+    "/api/bus/routes": rateLimit(async (req) => {
+      const operator = (new URL(req.url).searchParams.get("operator") ?? "dublinbus") as Operator;
+      return Response.json(getBusRoutes(operator));
+    }),
+    "/api/bus/vehicles": rateLimit(async (req) => {
+      try {
+        const url = new URL(req.url);
+        const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
+        const route = url.searchParams.get("route");
+        if (!route) return Response.json({ error: "route required" }, { status: 400 });
+        const dirParam = url.searchParams.get("direction");
+        const direction = dirParam !== null ? Number(dirParam) : undefined;
+        const vehicles = await getBusVehiclesByRoute(operator, route, direction);
+        return Response.json(vehicles);
+      } catch {
+        return Response.json([], { status: 502 });
+      }
+    }),
+    "/api/bus/shape/:route": rateLimit(async (req) => {
+      const url = new URL(req.url);
+      const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
+      const shape = getBusRouteShape(operator, req.params.route);
+      return Response.json(shape ?? {});
+    }),
+    "/api/bus/trip/:tripId": rateLimit(async (req) => {
+      try {
+        const url = new URL(req.url);
+        const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
+        const trip = await getBusTripStops(operator, req.params.tripId);
+        return Response.json(trip ?? {});
+      } catch {
+        return Response.json({}, { status: 502 });
+      }
+    }),
+    "/api/train/shape": rateLimit((req) => {
+      const url = new URL(req.url);
+      const from = url.searchParams.get("from");
+      const to = url.searchParams.get("to");
+      if (!from || !to) {
+        return Response.json({ error: "from and to required" }, { status: 400 });
+      }
+      const shape = getTrainRouteShape(from, to);
+      return Response.json(shape ?? {});
+    }),
   },
   development: {
     hmr: true,

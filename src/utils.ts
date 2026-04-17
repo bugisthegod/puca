@@ -57,3 +57,17 @@ export function fmtTime(t: string): string {
   // already HH:MM or HH:MM:SS
   return t.length > 5 ? t.slice(0, 5) : t;
 }
+
+/** Whether the given transit mode is currently within its daily service window.
+ *  Train: 05:00 – 00:30 (off-hours 00:30–05:00)
+ *  Bus:   05:00 – 23:30 (off-hours 23:30–05:00)
+ *  Both resume at 05:00 local time.
+ */
+export function isInServiceHours(mode: "train" | "bus", now: Date = new Date()): boolean {
+  const mins = now.getHours() * 60 + now.getMinutes();
+  if (mode === "train") return mins < 30 || mins >= 300;
+  return mins >= 300 && mins < 23 * 60 + 30;
+}
+
+/** Label shown when off-hours — always next 05:00 service resume. */
+export const SERVICE_RESUME_LABEL = "05:00";

@@ -8,6 +8,15 @@
     "jsx": "react-jsx",
     "allowJs": true,
 
+    // Preact compat aliases — resolve react/* → preact/compat at build time
+    "paths": {
+      "react": ["./node_modules/preact/compat"],
+      "react/jsx-runtime": ["./node_modules/preact/jsx-runtime"],
+      "react/jsx-dev-runtime": ["./node_modules/preact/compat/jsx-dev-runtime"],
+      "react-dom": ["./node_modules/preact/compat"],
+      "react-dom/client": ["./node_modules/preact/compat/client"]
+    },
+
     // Bundler mode
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

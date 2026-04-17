@@ -443,6 +443,26 @@ body {
   font-weight: 600;
 }
 
+.popup-status--yellow {
+  background: #fff4d6;
+  color: #8a6a00;
+}
+
+.popup-status--red {
+  background: #fde5e5;
+  color: #b42318;
+}
+
+td.delay-yellow {
+  color: #8a6a00;
+  font-weight: 600;
+}
+
+td.delay-red {
+  color: #b42318;
+  font-weight: 600;
+}
+
 .popup-dir {
   font-size: 0.75rem;
   color: #666;
@@ -518,6 +538,130 @@ body {
 
 .movements-table tbody tr.movement-current:nth-child(even) {
   background: #fff3cd;
+}
+
+/* ============================================================
+   Direction picker
+   ============================================================ */
+
+.direction-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.direction-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(33, 150, 243, 0.5);
+  background: rgba(33, 150, 243, 0.15);
+  color: #90caf9;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: center;
+}
+
+.direction-btn:hover {
+  background: rgba(33, 150, 243, 0.3);
+  color: #fff;
+}
+
+.direction-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #90caf9;
+}
+
+/* ============================================================
+   Bus stop tooltip
+   ============================================================ */
+
+.stop-tooltip.leaflet-tooltip {
+  background: rgba(22, 22, 28, 0.92);
+  color: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.stop-tooltip.leaflet-tooltip::before {
+  border-top-color: rgba(22, 22, 28, 0.92);
+}
+
+/* ============================================================
+   Bus markers
+   ============================================================ */
+
+.bus-marker {
+  background: transparent !important;
+  border: none !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.bus-triangle {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 12px solid #f9a825;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.bus-label {
+  background: #f9a825;
+  color: #3d2800;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-top: 1px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.bus-marker--buseireann .bus-triangle {
+  border-bottom-color: #d52b1e;
+}
+
+.bus-marker--buseireann .bus-label {
+  background: #d52b1e;
+  color: #fff;
+}
+
+.bus-marker--goahead .bus-triangle {
+  border-bottom-color: #1e6bb8;
+}
+
+.bus-marker--goahead .bus-label {
+  background: #1e6bb8;
+  color: #fff;
+}
+
+/* ============================================================
+   Filter separator
+   ============================================================ */
+
+.filter-sep {
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 2px;
+  align-self: center;
 }
 
 /* ============================================================

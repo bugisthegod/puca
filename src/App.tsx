@@ -1,21 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import type { Train } from "./types";
-import type { Filter } from "./utils";
-import { useTrainMap } from "./hooks/useTrainMap";
+import type { Train, BusVehicle, BusOperator } from "./types";
+import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
+import { useTrainMap, type Mode } from "./hooks/useTrainMap";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
+import BusSearchPanel from "./components/BusSearchPanel";
 import "./style.css";
 
 function App() {
+  const [mode, setMode] = useState<Mode>("train");
   const [trains, setTrains] = useState<Train[]>([]);
+  const [buses, setBuses] = useState<BusVehicle[]>([]);
+  const [busOperator, setBusOperator] = useState<BusOperator>("dublinbus");
+  const [busRoute, setBusRoute] = useState<string | null>(null);
+  const [busDirection, setBusDirection] = useState<string | null>(null);
+  const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[] } } | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [lastUpdated, setLastUpdated] = useState<string>("Updated: —");
   const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain } = useTrainMap(mapRef, trains, filter, searchCodes);
+  const { focusTrain } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator);
 
   async function fetchTrains() {
     try {
@@ -31,33 +39,117 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    fetchTrains();
-    const interval = setInterval(fetchTrains, 30_000);
-    return () => clearInterval(interval);
-  }, []);
+  async function fetchBuses(operator: BusOperator, route: string, direction: string) {
+    try {
+      const res = await fetch(
+        `/api/bus/vehicles?operator=${encodeURIComponent(operator)}&route=${encodeURIComponent(route)}&direction=${encodeURIComponent(direction)}`
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: BusVehicle[] = await res.json();
+      setBuses(data);
+      setLastUpdated(`Updated: ${new Date().toLocaleTimeString()}`);
+    } catch (err) {
+      console.error("Failed to fetch buses:", err);
+    }
+  }
 
-  const runningCount = trains.filter((t) => t.status === "R").length;
+  useEffect(() => {
+    const update = () => setInService(isInServiceHours(mode));
+    update();
+    const id = setInterval(update, 60_000);
+    return () => clearInterval(id);
+  }, [mode]);
+
+  useEffect(() => {
+    if (!inService) {
+      setLoading(false);
+      setTrains([]);
+      setBuses([]);
+      return;
+    }
+    if (mode === "train") {
+      fetchTrains();
+      const interval = setInterval(fetchTrains, 30_000);
+      return () => clearInterval(interval);
+    } else {
+      setLoading(false);
+      if (busRoute && busDirection) {
+        fetchBuses(busOperator, busRoute, busDirection);
+        const interval = setInterval(() => fetchBuses(busOperator, busRoute, busDirection), 25_000);
+        return () => clearInterval(interval);
+      } else {
+        setBuses([]);
+      }
+    }
+  }, [mode, busOperator, busRoute, busDirection, inService]);
+
+  useEffect(() => {
+    if (!busRoute) {
+      setBusShape(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/bus/shape/${encodeURIComponent(busRoute)}?operator=${encodeURIComponent(busOperator)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled) setBusShape(data);
+      })
+      .catch(() => {
+        if (!cancelled) setBusShape(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [busRoute, busOperator]);
+
+  function handleBusOperatorChange(op: BusOperator) {
+    setBusOperator(op);
+    setBusRoute(null);
+    setBusDirection(null);
+    setBuses([]);
+  }
+
+  const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
 
   return (
     <>
       <div id="map" ref={mapRef} />
       {loading && (
         <div className="loading-overlay">
-          <div className="loading-text">Loading trains...</div>
+          <div className="loading-text">Loading...</div>
         </div>
       )}
-      <SearchPanel
-        onSearch={(codes) => setSearchCodes(codes.length > 0 ? codes : [])}
-        onClear={() => setSearchCodes(null)}
-        onTrainSelect={focusTrain}
-      />
+      {mode === "train" ? (
+        <SearchPanel
+          onSearch={(codes) => setSearchCodes(codes.length > 0 ? codes : [])}
+          onClear={() => setSearchCodes(null)}
+          onTrainSelect={focusTrain}
+        />
+      ) : (
+        <BusSearchPanel
+          operator={busOperator}
+          onSelectRoute={(r) => { setBusRoute(r); setBusDirection(null); }}
+          selectedRoute={busRoute}
+          onSelectDirection={setBusDirection}
+          selectedDirection={busDirection}
+        />
+      )}
       <InfoPanel
-        trainCount={runningCount}
+        vehicleCount={vehicleCount}
         lastUpdated={lastUpdated}
+        mode={mode}
         filter={filter}
+        inService={inService}
+        resumeLabel={SERVICE_RESUME_LABEL}
+        busOperator={busOperator}
+        onModeChange={(m) => {
+          setMode(m);
+          setSearchCodes(null);
+          setBusRoute(null);
+          setBusDirection(null);
+        }}
         onFilterChange={setFilter}
-        onRefresh={fetchTrains}
+        onBusOperatorChange={handleBusOperatorChange}
       />
     </>
   );
