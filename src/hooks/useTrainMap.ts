@@ -200,7 +200,9 @@ export function useTrainMap(
         ) {
           const dtSec = (now - entry.lastPingTime) / 1000;
           const advanced = entry.distanceAtPing + entry.pathSpeedMps * dtSec;
-          const capped = Math.min(advanced, entry.targetDistanceAlongRoute + 150);
+          // Extrap cap 500m — covers ~60s at typical 8 m/s city bus speed,
+          // enough headroom for a full NTA 30s poll + frontend 15s delay without freezing.
+          const capped = Math.min(advanced, entry.targetDistanceAlongRoute + 500);
           const clamped = Math.max(0, Math.min(capped, entry.routeLengthMeters));
           // Skip along() + setLatLng when the extrapolated distance hasn't advanced
           // (bus hit the 150m extrap cap and is waiting for next ping).

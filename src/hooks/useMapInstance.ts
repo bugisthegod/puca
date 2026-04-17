@@ -6,6 +6,22 @@ import { useRef, useEffect, type RefObject } from "react";
 import type { Station } from "../types";
 import type { Mode } from "./useTrainMap";
 
+const TILE_VOYAGER =
+  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+const TILE_DARK =
+  "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png";
+
+const BASE_TILE_OPTIONS = {
+  attribution:
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  maxZoom: 20,
+  subdomains: "abcd",
+  keepBuffer: 10,
+  updateWhenIdle: false,
+  updateWhenZooming: false,
+  updateInterval: 100,
+} as const;
+
 interface UseMapInstanceResult {
   leafletMap: React.RefObject<L.Map | null>;
   stationsRef: React.MutableRefObject<Map<string, Station>>;
@@ -21,6 +37,8 @@ export function useMapInstance(
   const stationsRef = useRef<Map<string, Station>>(new Map());
   const zoomingRef = useRef<boolean>(false);
   const railwayLayerRef = useRef<L.TileLayer | null>(null);
+  // Holds current base tile layer so we can remove it on scheme change
+  const baseTileRef = useRef<L.TileLayer | null>(null);
 
   // Mount / unmount — init Leaflet map and attach zoom event handlers.
   useEffect(() => {
@@ -31,16 +49,23 @@ export function useMapInstance(
       fadeAnimation: false,
     }).setView([53.35, -6.26], 8);
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      maxZoom: 20,
-      subdomains: "abcd",
-      keepBuffer: 10,
-      updateWhenIdle: false,
-      updateWhenZooming: false,
-      updateInterval: 100,
-    }).addTo(map);
+    const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function addBaseTile(dark: boolean): void {
+      if (baseTileRef.current) {
+        map.removeLayer(baseTileRef.current);
+      }
+      const layer = L.tileLayer(dark ? TILE_DARK : TILE_VOYAGER, BASE_TILE_OPTIONS);
+      layer.addTo(map);
+      // Ensure base tile stays behind railway overlay
+      layer.bringToBack();
+      baseTileRef.current = layer;
+    }
+
+    addBaseTile(darkMq.matches);
+
+    const onSchemeChange = (e: MediaQueryListEvent) => addBaseTile(e.matches);
+    darkMq.addEventListener("change", onSchemeChange);
 
     // Railway lines overlay (only in train mode)
     railwayLayerRef.current = L.tileLayer("https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png", {
@@ -70,8 +95,10 @@ export function useMapInstance(
     leafletMap.current = map;
 
     return () => {
+      darkMq.removeEventListener("change", onSchemeChange);
       map.remove();
       leafletMap.current = null;
+      baseTileRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

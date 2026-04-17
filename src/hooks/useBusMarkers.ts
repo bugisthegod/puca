@@ -284,6 +284,12 @@ export function useBusMarkers({
       const existing = busMarkers.current.get(bus.tripId);
       if (existing) {
         const now = performance.now();
+        // Backdate the ping to the GPS capture time so RAF's (tickNow - lastPingTime)
+        // reflects real elapsed time since the bus was actually at that location —
+        // otherwise the marker starts extrapolating only when the data reaches us,
+        // which is 30-60s late, causing visible freezes between updates.
+        const staleness = Math.max(0, Date.now() - bus.timestamp * 1000);
+        const pingPerfTime = now - staleness;
         // Any ping invalidates the render-skip cache — at minimum the extrap
         // window extends, so the next tick needs to recompute.
         existing.settled = false;
@@ -303,7 +309,7 @@ export function useBusMarkers({
             rl, rlm,
             existing.targetDistanceAlongRoute,
             existing.lastPingTime,
-            now,
+            pingPerfTime,
           );
           if (!projection.offRoute) {
             existing.offRoute = false;
@@ -350,6 +356,8 @@ export function useBusMarkers({
       } else {
         // New bus entry
         const now = performance.now();
+        const staleness = Math.max(0, Date.now() - bus.timestamp * 1000);
+        const pingPerfTime = now - staleness;
         const marker = makeBusMarker(bus);
         cluster.addLayer(marker);
 
@@ -363,7 +371,7 @@ export function useBusMarkers({
           const projection = projectOntoRoute(
             bus.lat, bus.lng,
             lineInfo.routeLine, lineInfo.routeLengthMeters,
-            null, null, now,
+            null, null, pingPerfTime,
           );
           if (!projection.offRoute) {
             offRoute = false;

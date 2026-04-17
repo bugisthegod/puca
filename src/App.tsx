@@ -93,11 +93,11 @@ function App() {
       setLoading(false);
       if (busRoute && busDirection) {
         fetchBuses(busOperator, busRoute, busDirection);
-        const interval = setInterval(() => fetchBuses(busOperator, busRoute, busDirection), 25_000);
+        const interval = setInterval(() => fetchBuses(busOperator, busRoute, busDirection), 15_000);
         return () => clearInterval(interval);
       } else if (!busRoute) {
         fetchAllBuses(busOperator);
-        const interval = setInterval(() => fetchAllBuses(busOperator), 25_000);
+        const interval = setInterval(() => fetchAllBuses(busOperator), 15_000);
         return () => clearInterval(interval);
       } else {
         setBuses([]);

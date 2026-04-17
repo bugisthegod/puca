@@ -164,7 +164,14 @@ function getTripScheduledStops(operator: Operator, tripId: string): { sequence: 
 // instead of hitting NTA. Frontend can poll at whatever cadence it wants — only
 // pollVehicles / pollTripUpdates are allowed to call NTA, and only past the gate.
 
-const NTA_MIN_INTERVAL_MS = 60_000;
+const NTA_MIN_INTERVAL_MS = 30_000;
+// Trip updates (schedule + delays per stop) change much slower than GPS positions.
+// Longer TTL reduces upstream pressure AND collision risk with the 20s shared gate.
+const NTA_TRIP_UPDATES_INTERVAL_MS = 90_000;
+// NTA rate-limits per API key globally (vehicles + trip-updates share the bucket).
+// Space ANY two NTA calls at least this far apart to avoid 429s when both endpoints
+// fire close together. Measured empirically: ~20s is the safe floor.
+const NTA_MIN_SPACING_MS = 20_000;
 
 type RawTripUpdateMap = Map<string, {
   tripId: string;
@@ -183,6 +190,7 @@ let vehicleCache: GtfsVehiclePosition[] | null = null;
 let tripUpdateCache: RawTripUpdateMap | null = null;
 let lastVehicleCall = 0;
 let lastTripUpdateCall = 0;
+let lastAnyNtaCall = 0;
 
 function ts(): string {
   return new Date().toISOString();
@@ -244,7 +252,11 @@ async function pollVehicles(): Promise<GtfsVehiclePosition[]> {
   if (Date.now() - lastVehicleCall < NTA_MIN_INTERVAL_MS) {
     return vehicleCache ?? [];
   }
+  if (Date.now() - lastAnyNtaCall < NTA_MIN_SPACING_MS) {
+    return vehicleCache ?? [];
+  }
   lastVehicleCall = Date.now();
+  lastAnyNtaCall = Date.now();
   await fetchVehicles();
   return vehicleCache ?? [];
 }
@@ -311,10 +323,14 @@ async function fetchTripUpdates(): Promise<void> {
 }
 
 async function pollTripUpdates(): Promise<RawTripUpdateMap> {
-  if (Date.now() - lastTripUpdateCall < NTA_MIN_INTERVAL_MS) {
+  if (Date.now() - lastTripUpdateCall < NTA_TRIP_UPDATES_INTERVAL_MS) {
+    return tripUpdateCache ?? new Map();
+  }
+  if (Date.now() - lastAnyNtaCall < NTA_MIN_SPACING_MS) {
     return tripUpdateCache ?? new Map();
   }
   lastTripUpdateCall = Date.now();
+  lastAnyNtaCall = Date.now();
   await fetchTripUpdates();
   return tripUpdateCache ?? new Map();
 }
