@@ -1,6 +1,6 @@
 {
-  "name": "Irish Rail Tracker",
-  "short_name": "Rail Tracker",
+  "name": "Púca",
+  "short_name": "Púca",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#16161c",

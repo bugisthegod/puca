@@ -237,4 +237,4 @@ Bun.serve({
   },
 });
 
-console.log("Irish Rail Tracker running on http://localhost:3000");
+console.log("Púca running on http://localhost:3000");
