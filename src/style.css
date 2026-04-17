@@ -98,6 +98,18 @@
   box-sizing: border-box;
 }
 
+/* Suppress the default mobile tap highlight on interactive elements;
+   :active transforms / hover styles already provide press feedback. */
+button,
+a,
+[role="button"],
+input,
+textarea,
+select,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
   margin: 0;
