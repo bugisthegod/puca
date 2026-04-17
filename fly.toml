@@ -1,15 +1,17 @@
-# fly.toml app configuration file generated for puca on 2026-04-17T18:02:27Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'puca'
-primary_region = 'ams'
+primary_region = 'lhr'
 
 [build]
 
+[env]
+  BUS_DB_DIR = '/data'
+
+[[mounts]]
+  source = 'schedule_dbs'
+  destination = '/data'
+
 [http_service]
-  internal_port = 8080
+  internal_port = 3000
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -21,3 +23,6 @@ primary_region = 'ams'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 256
+
+[deploy]
+  strategy = 'immediate'
