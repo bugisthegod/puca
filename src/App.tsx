@@ -23,13 +23,26 @@ function App() {
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
+  const { focusTrain, locateUser } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
       setBusDirection(direction);
     },
   });
+  const [locating, setLocating] = useState(false);
+
+  async function handleLocate() {
+    if (locating) return;
+    setLocating(true);
+    try {
+      await locateUser();
+    } catch (err) {
+      alert(`Could not get your location: ${(err as Error).message}`);
+    } finally {
+      setLocating(false);
+    }
+  }
 
   async function fetchTrains() {
     try {
@@ -136,6 +149,19 @@ function App() {
   return (
     <>
       <div id="map" ref={mapRef} />
+      <button
+        type="button"
+        className={`locate-btn${locating ? " loading" : ""}`}
+        onClick={handleLocate}
+        disabled={locating}
+        aria-label="Locate me"
+        title="Locate me"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+        </svg>
+      </button>
       {loading && (
         <div className="loading-overlay">
           <div className="loading-text">Loading...</div>

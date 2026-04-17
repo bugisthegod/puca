@@ -126,13 +126,6 @@ body {
   height: 100vh;
 }
 
-/* Hide Leaflet's default +/- zoom control on mobile (pinch-to-zoom handles it). */
-@media (max-width: 600px) {
-  .leaflet-control-zoom {
-    display: none !important;
-  }
-}
-
 /* Leaflet attribution — strip white background (ugly on dark tiles) but
    keep the text visible for OSM/Carto attribution compliance. */
 .leaflet-control-attribution.leaflet-control {
@@ -152,6 +145,67 @@ body {
   }
   .leaflet-control-attribution a {
     color: rgba(255, 255, 255, 0.65);
+  }
+}
+
+/* Soften CARTO dark_all — default is near-black, which reads too harsh at night.
+   Brighten + slight desaturate gives a muted dark-gray that still feels "dark mode". */
+.leaflet-layer.tile-dark {
+  filter: brightness(1.75) contrast(0.85) saturate(0.95);
+}
+
+/* Locate-me floating button (one-shot geolocation). Desktop: bottom-right
+   above attribution. Mobile: top-right (info-panel moves to bottom there). */
+.locate-btn {
+  position: fixed;
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  right: calc(12px + env(safe-area-inset-right));
+  z-index: 1000;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: rgba(22, 22, 28, 0.78);
+  color: #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.locate-btn:hover {
+  background: rgba(40, 40, 48, 0.9);
+}
+
+.locate-btn:active {
+  transform: scale(0.94);
+}
+
+.locate-btn:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.locate-btn.loading svg {
+  animation: locate-spin 0.9s linear infinite;
+}
+
+@keyframes locate-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .locate-btn {
+    top: calc(12px + env(safe-area-inset-top));
+    right: calc(12px + env(safe-area-inset-right));
+    bottom: auto;
   }
 }
 

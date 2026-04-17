@@ -27,6 +27,7 @@ interface UseMapInstanceResult {
   stationsRef: React.MutableRefObject<Map<string, Station>>;
   zoomingRef: React.MutableRefObject<boolean>;
   railwayLayerRef: React.RefObject<L.TileLayer | null>;
+  locateUser: () => Promise<void>;
 }
 
 export function useMapInstance(
@@ -39,6 +40,50 @@ export function useMapInstance(
   const railwayLayerRef = useRef<L.TileLayer | null>(null);
   // Holds current base tile layer so we can remove it on scheme change
   const baseTileRef = useRef<L.TileLayer | null>(null);
+  const userMarkerRef = useRef<L.CircleMarker | null>(null);
+  const accuracyCircleRef = useRef<L.Circle | null>(null);
+
+  const locateUser = (): Promise<void> =>
+    new Promise((resolve, reject) => {
+      const map = leafletMap.current;
+      if (!map) {
+        reject(new Error("Map not ready"));
+        return;
+      }
+      if (!navigator.geolocation) {
+        reject(new Error("Your browser does not support geolocation"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          const latlng: L.LatLngExpression = [latitude, longitude];
+          if (!userMarkerRef.current) {
+            userMarkerRef.current = L.circleMarker(latlng, {
+              radius: 8,
+              color: "#fff",
+              weight: 2,
+              fillColor: "#1e88e5",
+              fillOpacity: 1,
+            }).addTo(map);
+            accuracyCircleRef.current = L.circle(latlng, {
+              radius: accuracy,
+              color: "#1e88e5",
+              fillColor: "#1e88e5",
+              fillOpacity: 0.12,
+              weight: 1,
+            }).addTo(map);
+          } else {
+            userMarkerRef.current.setLatLng(latlng);
+            accuracyCircleRef.current?.setLatLng(latlng).setRadius(accuracy);
+          }
+          map.setView(latlng, 14);
+          resolve();
+        },
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+      );
+    });
 
   // Mount / unmount — init Leaflet map and attach zoom event handlers.
   useEffect(() => {
@@ -47,6 +92,7 @@ export function useMapInstance(
     const map = L.map(mapRef.current, {
       preferCanvas: true,
       fadeAnimation: false,
+      zoomControl: false,
     }).setView([53.35, -6.26], 8);
 
     const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -55,7 +101,10 @@ export function useMapInstance(
       if (baseTileRef.current) {
         map.removeLayer(baseTileRef.current);
       }
-      const layer = L.tileLayer(dark ? TILE_DARK : TILE_VOYAGER, BASE_TILE_OPTIONS);
+      const layer = L.tileLayer(dark ? TILE_DARK : TILE_VOYAGER, {
+        ...BASE_TILE_OPTIONS,
+        className: dark ? "tile-dark" : "tile-voyager",
+      });
       layer.addTo(map);
       // Ensure base tile stays behind railway overlay
       layer.bringToBack();
@@ -99,6 +148,8 @@ export function useMapInstance(
       map.remove();
       leafletMap.current = null;
       baseTileRef.current = null;
+      userMarkerRef.current = null;
+      accuracyCircleRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -116,5 +167,5 @@ export function useMapInstance(
     }
   }, [mode]);
 
-  return { leafletMap, stationsRef, zoomingRef, railwayLayerRef };
+  return { leafletMap, stationsRef, zoomingRef, railwayLayerRef, locateUser };
 }

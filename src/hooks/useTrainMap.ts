@@ -31,7 +31,7 @@ export function useTrainMap(
   busDirection: string | null = null,
   busOperator: BusOperator = "dublinbus",
   options: UseTrainMapOptions = {},
-): { focusTrain: (code: string) => void } {
+): { focusTrain: (code: string) => void; locateUser: () => Promise<void> } {
   const { currentBusRoute = null, onSelectBusRoute } = options;
 
   const onSelectBusRouteRef = useRef(onSelectBusRoute);
@@ -42,7 +42,7 @@ export function useTrainMap(
   const busClusterLayer = useRef<L.MarkerClusterGroup | null>(null);
 
   // Map first — everything else depends on it.
-  const { leafletMap, stationsRef, zoomingRef } = useMapInstance(mapRef, mode);
+  const { leafletMap, stationsRef, zoomingRef, locateUser } = useMapInstance(mapRef, mode);
 
   const { markers, clearRouteLine, focusTrain } = useTrainMarkers({
     trains,
@@ -242,5 +242,5 @@ export function useTrainMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { focusTrain };
+  return { focusTrain, locateUser };
 }
