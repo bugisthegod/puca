@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator } from "./types";
 import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
+import { useReminderPoller } from "./hooks/useReminderPoller";
+import { loadReminder, clearReminder, onReminderChange, type Reminder } from "./reminder";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel from "./components/BusSearchPanel";
@@ -31,6 +33,29 @@ function App() {
     },
   });
   const [locating, setLocating] = useState(false);
+  const [reminder, setReminder] = useState<Reminder | null>(() => loadReminder());
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    return onReminderChange(setReminder);
+  }, []);
+
+  // iOS Safari: closing the keyboard after typing in an input can leave the
+  // page scrolled up, which pushes bottom-fixed panels (InfoPanel, locate
+  // button) off-screen. Snap back on blur.
+  useEffect(() => {
+    function onFocusOut() {
+      setTimeout(() => {
+        if (window.scrollX !== 0 || window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      }, 50);
+    }
+    document.addEventListener("focusout", onFocusOut);
+    return () => document.removeEventListener("focusout", onFocusOut);
+  }, []);
+
+  useReminderPoller({ onTrigger: (msg) => setToast(msg) });
 
   async function handleLocate() {
     if (locating) return;
@@ -149,6 +174,38 @@ function App() {
   return (
     <>
       <div id="map" ref={mapRef} />
+      {reminder && (
+        <div className="reminder-chip" role="status">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path d="M12 2a2 2 0 0 0-2 2v.6A6 6 0 0 0 6 10v4l-2 2v1h16v-1l-2-2v-4a6 6 0 0 0-4-5.4V4a2 2 0 0 0-2-2zm-2 17a2 2 0 0 0 4 0h-4z" />
+          </svg>
+          <span className="reminder-chip__text">
+            {reminder.trainCode} → {reminder.destStationName}
+          </span>
+          <button
+            type="button"
+            className="reminder-chip__close"
+            onClick={clearReminder}
+            aria-label="Cancel reminder"
+            title="Cancel reminder"
+          >
+            ×
+          </button>
+        </div>
+      )}
+      {toast && (
+        <div className="reminder-toast" role="alert">
+          <span>{toast}</span>
+          <button
+            type="button"
+            className="reminder-toast__close"
+            onClick={() => setToast(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <button
         type="button"
         className={`locate-btn${locating ? " loading" : ""}`}
