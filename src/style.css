@@ -312,9 +312,6 @@ body {
 }
 
 .station-dropdown li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 6px 10px;
   font-size: 0.78rem;
   cursor: pointer;
@@ -324,32 +321,6 @@ body {
 .station-dropdown li:hover,
 .station-dropdown li.highlighted {
   background: rgba(37, 168, 100, 0.3);
-}
-
-.station-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.locate-btn {
-  background: none;
-  border: none;
-  color: #ccc;
-  font-size: 0.95rem;
-  cursor: pointer;
-  padding: 2px 4px;
-  line-height: 1;
-  border-radius: 4px;
-  flex-shrink: 0;
-  transition: background 0.1s, transform 0.1s;
-}
-
-.locate-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  transform: scale(1.1);
 }
 
 .search-actions {
