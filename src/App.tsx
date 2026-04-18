@@ -240,11 +240,18 @@ function App() {
         />
       ) : (
         <BusSearchPanel
-          operator={busOperator}
-          onSelectRoute={(r) => { setBusRoute(r); setBusDirection(null); }}
+          onSelectRoute={(r, op) => {
+            if (op && op !== busOperator) {
+              setBusOperator(op);
+              setBuses([]);
+            }
+            setBusRoute(r);
+            setBusDirection(null);
+          }}
           selectedRoute={busRoute}
           onSelectDirection={setBusDirection}
           selectedDirection={busDirection}
+          busShape={busShape}
         />
       )}
       {mode === "bus" && busRoute !== null && (

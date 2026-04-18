@@ -1,57 +1,68 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { BusRoute, BusOperator } from "../types";
 
+type RouteWithOperator = BusRoute & { operator: BusOperator };
+
+type BusShape = { [dir: string]: { headsign: string } } | null;
+
+const ALL_OPERATORS: BusOperator[] = ["dublinbus", "buseireann", "goahead"];
+const OPERATOR_LABEL: Record<BusOperator, string> = {
+  dublinbus: "Dublin Bus",
+  buseireann: "Bus Éireann",
+  goahead: "Go-Ahead",
+};
+
 type BusSearchPanelProps = {
-  operator: BusOperator;
-  onSelectRoute: (shortName: string | null) => void;
+  onSelectRoute: (shortName: string | null, operator?: BusOperator) => void;
   selectedRoute: string | null;
   onSelectDirection: (direction: string | null) => void;
   selectedDirection: string | null;
+  busShape: BusShape;
 };
 
 export default function BusSearchPanel({
-  operator,
   onSelectRoute,
   selectedRoute,
   onSelectDirection,
   selectedDirection,
+  busShape,
 }: BusSearchPanelProps) {
-  const [routes, setRoutes] = useState<BusRoute[]>([]);
+  const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [collapsed, setCollapsed] = useState(false);
-  const [directions, setDirections] = useState<{ [dir: string]: string }>({});
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Refetch routes when operator changes
+  // Fetch routes from all operators once so search spans every agency.
   useEffect(() => {
-    fetch(`/api/bus/routes?operator=${encodeURIComponent(operator)}`)
-      .then((r) => r.json())
-      .then((data: BusRoute[]) => setRoutes(data))
-      .catch(() => {});
-  }, [operator]);
-
-  useEffect(() => {
-    if (!selectedRoute) {
-      setQuery("");
-      setDirections({});
-      return;
-    }
     let cancelled = false;
-    fetch(`/api/bus/shape/${encodeURIComponent(selectedRoute)}?operator=${encodeURIComponent(operator)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { [dir: string]: { headsign: string; coords: [number, number][] } } | null) => {
-        if (cancelled || !data) return;
-        const heads: { [dir: string]: string } = {};
-        for (const dir of Object.keys(data)) {
-          heads[dir] = data[dir]?.headsign ?? dir;
-        }
-        setDirections(heads);
-      })
-      .catch(() => {});
+    Promise.all(
+      ALL_OPERATORS.map((op) =>
+        fetch(`/api/bus/routes?operator=${encodeURIComponent(op)}`)
+          .then((r) => (r.ok ? r.json() : []))
+          .then((data: BusRoute[]) => data.map((r) => ({ ...r, operator: op })))
+          .catch(() => [] as RouteWithOperator[]),
+      ),
+    ).then((lists) => {
+      if (!cancelled) setRoutes(lists.flat());
+    });
     return () => { cancelled = true; };
-  }, [selectedRoute, operator]);
+  }, []);
+
+  // Clear the query input when the selected route is cleared externally.
+  useEffect(() => {
+    if (!selectedRoute) setQuery("");
+  }, [selectedRoute]);
+
+  const directions = useMemo<{ [dir: string]: string }>(() => {
+    if (!busShape) return {};
+    const heads: { [dir: string]: string } = {};
+    for (const dir of Object.keys(busShape)) {
+      heads[dir] = busShape[dir]?.headsign ?? dir;
+    }
+    return heads;
+  }, [busShape]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -79,9 +90,9 @@ export default function BusSearchPanel({
       )
     : routes;
 
-  function selectRoute(r: BusRoute) {
+  function selectRoute(r: RouteWithOperator) {
     setQuery(r.shortName);
-    onSelectRoute(r.shortName);
+    onSelectRoute(r.shortName, r.operator);
     setFocused(false);
     // Don't collapse yet — user still needs to pick direction (handled below)
   }
@@ -139,12 +150,13 @@ export default function BusSearchPanel({
               <ul className="station-dropdown">
                 {filtered.slice(0, 30).map((r, i) => (
                   <li
-                    key={r.id}
+                    key={`${r.operator}:${r.id}`}
                     className={i === highlightIndex ? "highlighted" : ""}
                     onMouseDown={() => selectRoute(r)}
                     onMouseEnter={() => setHighlightIndex(i)}
                   >
                     <strong>{r.shortName}</strong> — {r.longName}
+                    <span className="route-operator-badge">{OPERATOR_LABEL[r.operator]}</span>
                   </li>
                 ))}
               </ul>

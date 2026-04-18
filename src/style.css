@@ -548,6 +548,13 @@ body {
   background: rgba(37, 168, 100, 0.3);
 }
 
+.route-operator-badge {
+  float: right;
+  font-size: 0.68rem;
+  opacity: 0.65;
+  padding-left: 8px;
+}
+
 .search-actions {
   display: flex;
   gap: 6px;
