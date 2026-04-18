@@ -41,8 +41,73 @@ export function useMapInstance(
   const railwayLayerRef = useRef<L.TileLayer | null>(null);
   // Holds current base tile layer so we can remove it on scheme change
   const baseTileRef = useRef<L.TileLayer | null>(null);
-  const userMarkerRef = useRef<L.CircleMarker | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
+  const orientationHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
+  const orientationEventNameRef = useRef<string | null>(null);
+
+  function getUserMarkerInner(): HTMLElement | null {
+    const el = userMarkerRef.current?.getElement();
+    return el ? (el.querySelector<HTMLElement>(".user-loc-icon") ?? null) : null;
+  }
+
+  function applyHeading(rawHeading: number): void {
+    // rawHeading is in device-space (relative to the hardware top of the
+    // device). Subtract screen.orientation.angle so the cone points the right
+    // way when the user rotates to landscape.
+    const screenAngle = window.screen?.orientation?.angle ?? 0;
+    const heading = (((rawHeading - screenAngle) % 360) + 360) % 360;
+    const inner = getUserMarkerInner();
+    if (!inner) return;
+    inner.style.transform = `rotate(${heading}deg)`;
+    inner.classList.add("has-heading");
+  }
+
+  function onDeviceOrientation(e: DeviceOrientationEvent): void {
+    // iOS: webkitCompassHeading is degrees clockwise from true north.
+    const iosHeading = (e as DeviceOrientationEvent & { webkitCompassHeading?: number })
+      .webkitCompassHeading;
+    if (typeof iosHeading === "number" && !Number.isNaN(iosHeading)) {
+      applyHeading(iosHeading);
+      return;
+    }
+    // Android absolute: alpha is counter-clockwise from north → invert.
+    if (e.absolute && typeof e.alpha === "number") {
+      applyHeading(360 - e.alpha);
+    }
+  }
+
+  async function startOrientationTracking(): Promise<void> {
+    if (orientationHandlerRef.current) return; // already tracking
+    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<"granted" | "denied">;
+    };
+    if (typeof DOE?.requestPermission === "function") {
+      try {
+        const perm = await DOE.requestPermission();
+        if (perm !== "granted") return;
+      } catch {
+        return; // user denied or not a user gesture
+      }
+    }
+    const eventName =
+      "ondeviceorientationabsolute" in window
+        ? "deviceorientationabsolute"
+        : "deviceorientation";
+    window.addEventListener(eventName, onDeviceOrientation as EventListener);
+    orientationHandlerRef.current = onDeviceOrientation;
+    orientationEventNameRef.current = eventName;
+  }
+
+  function stopOrientationTracking(): void {
+    const handler = orientationHandlerRef.current;
+    const eventName = orientationEventNameRef.current;
+    if (handler && eventName) {
+      window.removeEventListener(eventName, handler as EventListener);
+    }
+    orientationHandlerRef.current = null;
+    orientationEventNameRef.current = null;
+  }
 
   const locateUser = (): Promise<void> =>
     new Promise((resolve, reject) => {
@@ -55,17 +120,29 @@ export function useMapInstance(
         reject(new Error("Your browser does not support geolocation"));
         return;
       }
+      // Kick off orientation tracking synchronously so iOS treats this as a
+      // user-gesture-originated permission request.
+      void startOrientationTracking();
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
           const latlng: L.LatLngExpression = [latitude, longitude];
           if (!userMarkerRef.current) {
-            userMarkerRef.current = L.circleMarker(latlng, {
-              radius: 8,
-              color: "#fff",
-              weight: 2,
-              fillColor: "#1e88e5",
-              fillOpacity: 1,
+            const icon = L.divIcon({
+              className: "user-loc-marker",
+              html:
+                '<div class="user-loc-icon">' +
+                '<div class="user-loc-cone"></div>' +
+                '<div class="user-loc-dot"></div>' +
+                "</div>",
+              iconSize: [48, 48],
+              iconAnchor: [24, 24],
+            });
+            userMarkerRef.current = L.marker(latlng, {
+              icon,
+              interactive: false,
+              keyboard: false,
             }).addTo(map);
             accuracyCircleRef.current = L.circle(latlng, {
               radius: accuracy,
@@ -143,6 +220,7 @@ export function useMapInstance(
 
     return () => {
       darkMq.removeEventListener("change", onSchemeChange);
+      stopOrientationTracking();
       map.remove();
       leafletMap.current = null;
       baseTileRef.current = null;
