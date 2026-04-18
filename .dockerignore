@@ -4,3 +4,4 @@ node_modules
 scripts
 README.md
 fly.toml
+src/data/*.db
