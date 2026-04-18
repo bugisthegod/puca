@@ -70,8 +70,7 @@ function buildPopupHTML(train: Train): string {
         <span class="popup-status ${lateClass(train.status, late)}">${statusText}</span>
         ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
       </div>
-      <div class="popup-message">${formatMessage(train.message)}</div>
-      <div class="popup-loading">Loading movements…</div>
+      <div class="popup-loading">Loading stops…</div>
     </div>
   `;
 }
@@ -405,7 +404,7 @@ export function useTrainMarkers({
       const popup = e.marker.getPopup();
       if (popup && popup.isOpen()) {
         popup.setContent(
-          buildPopupHTML(e.train).replace("Loading movements…", "Could not load movement data.")
+          buildPopupHTML(e.train).replace("Loading stops…", "Could not load movement data.")
         );
       }
     }

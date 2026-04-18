@@ -191,12 +191,28 @@ export function useBusMarkers({
     });
   }
 
+  function scrollPopupToCurrent(marker: L.Marker) {
+    requestAnimationFrame(() => {
+      const root = (marker.getPopup()?.getElement?.() ?? document) as ParentNode;
+      const wrap = root.querySelector(".popup-table-wrap") as HTMLElement | null;
+      const current = root.querySelector("tr.movement-current") as HTMLElement | null;
+      if (wrap && current) {
+        wrap.scrollTop = current.offsetTop - wrap.offsetTop;
+      }
+    });
+  }
+
   async function loadBusTrip(bus: BusVehicle, marker: L.Marker) {
     if (busTripInFlight.has(bus.tripId)) return;
-    // If the popup already shows loaded trip data, don't refetch.
+    // If the popup already shows loaded trip data, skip the refetch — but
+    // still snap to the current stop, because Leaflet rebuilds the popup DOM
+    // on each reopen and scrollTop resets to 0.
     const existingPopup = marker.getPopup();
     const existingContent = existingPopup?.getContent?.();
-    if (typeof existingContent === "string" && existingContent.includes("popup-table-wrap")) return;
+    if (typeof existingContent === "string" && existingContent.includes("popup-table-wrap")) {
+      scrollPopupToCurrent(marker);
+      return;
+    }
     busTripInFlight.add(bus.tripId);
     try {
       const res = await fetch(`/api/bus/trip/${encodeURIComponent(bus.tripId)}?operator=${encodeURIComponent(busOperatorRef.current)}`);
@@ -206,14 +222,7 @@ export function useBusMarkers({
       if (popup && popup.isOpen()) {
         popup.setContent(buildBusPopupHTML(bus, trip.stops ? trip : null));
         wireRouteJumpButton(popup);
-        requestAnimationFrame(() => {
-          const wrap = document.querySelector(".popup-table-wrap");
-          const current = document.querySelector("tr.movement-current");
-          if (wrap && current) {
-            const rowTop = (current as HTMLElement).offsetTop - (wrap as HTMLElement).offsetTop;
-            wrap.scrollTop = rowTop;
-          }
-        });
+        scrollPopupToCurrent(marker);
       }
     } catch {
       const popup = marker.getPopup();
