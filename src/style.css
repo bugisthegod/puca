@@ -443,6 +443,10 @@ body {
   flex-wrap: wrap;
 }
 
+#filter-bar.filter-bar--root {
+  justify-content: center;
+}
+
 .filter-btn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1253,6 +1257,11 @@ td.delay-red {
 
   #filter-bar {
     margin-left: auto;
+  }
+
+  #filter-bar.filter-bar--root {
+    margin-left: 0;
+    flex: 1;
   }
 
   #train-count {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Filter } from "../utils";
 import type { Mode } from "../hooks/useTrainMap";
 import type { BusOperator } from "../types";
@@ -46,8 +46,14 @@ export default function InfoPanel({
   onFilterChange,
   onBusOperatorChange,
 }: InfoPanelProps) {
+  const [drilledIn, setDrilledIn] = useState(false);
   const unit = mode === "train" ? "trains" : "buses";
   const showCount = mode === "train" ? `${vehicleCount} ${unit} running` : `${vehicleCount} ${unit}`;
+
+  function handleModeClick(next: Mode) {
+    onModeChange(next);
+    setDrilledIn(true);
+  }
 
   return (
     <div id="info-panel">
@@ -59,20 +65,28 @@ export default function InfoPanel({
       <div id="last-updated">
         {inService ? lastUpdated : `Resumes at ${resumeLabel}`}
       </div>
-      <div id="filter-bar">
-        {MODES.map(({ value, label }) => (
+      <div id="filter-bar" className={drilledIn ? "" : "filter-bar--root"}>
+        {!drilledIn && MODES.map(({ value, label }) => (
           <button
             key={value}
-            className={`filter-btn${mode === value ? " active" : ""}`}
-            onClick={() => onModeChange(value)}
+            className="filter-btn"
+            onClick={() => handleModeClick(value)}
           >
             {label}
           </button>
         ))}
-        {mode === "train" && (
+        {drilledIn && (
           <>
+            <button
+              type="button"
+              className="filter-btn filter-back"
+              onClick={() => setDrilledIn(false)}
+              aria-label="Back"
+            >
+              ←
+            </button>
             <span className="filter-sep" />
-            {FILTERS.map(({ value, label }) => (
+            {mode === "train" && FILTERS.map(({ value, label }) => (
               <button
                 key={value}
                 className={`filter-btn${filter === value ? " active" : ""}`}
@@ -81,12 +95,7 @@ export default function InfoPanel({
                 {label}
               </button>
             ))}
-          </>
-        )}
-        {mode === "bus" && (
-          <>
-            <span className="filter-sep" />
-            {BUS_OPERATORS.map(({ value, label }) => (
+            {mode === "bus" && BUS_OPERATORS.map(({ value, label }) => (
               <button
                 key={value}
                 className={`filter-btn${busOperator === value ? " active" : ""}`}
