@@ -376,34 +376,28 @@ body {
   }
 }
 
-/* User location marker — blue dot + compass cone that rotates with heading. */
+/* User location marker — blue dot + compass cone (SVG) that rotates with heading. */
 .user-loc-marker {
   background: transparent;
   border: 0;
 }
 .user-loc-icon {
   position: relative;
-  width: 48px;
-  height: 48px;
-  transform-origin: 24px 24px;
+  width: 80px;
+  height: 80px;
+  transform-origin: 40px 40px;
   transition: transform 0.18s ease-out;
+  will-change: transform;
 }
 .user-loc-cone {
   position: absolute;
   inset: 0;
-  background: conic-gradient(
-    from -30deg,
-    rgba(30, 136, 229, 0) 0deg,
-    rgba(30, 136, 229, 0.55) 30deg,
-    rgba(30, 136, 229, 0) 60deg,
-    rgba(30, 136, 229, 0) 360deg
-  );
-  /* Hide inner area so cone appears to emanate from the dot, not cover it. */
-  -webkit-mask: radial-gradient(circle at center, transparent 7px, #000 14px);
-  mask: radial-gradient(circle at center, transparent 7px, #000 14px);
+  width: 80px;
+  height: 80px;
   opacity: 0;
   transition: opacity 0.25s;
   pointer-events: none;
+  overflow: visible;
 }
 .user-loc-icon.has-heading .user-loc-cone {
   opacity: 1;

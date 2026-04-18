@@ -42,25 +42,31 @@ export function useMapInstance(
   // Holds current base tile layer so we can remove it on scheme change
   const baseTileRef = useRef<L.TileLayer | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const userIconInnerRef = useRef<HTMLElement | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const orientationHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
   const orientationEventNameRef = useRef<string | null>(null);
-
-  function getUserMarkerInner(): HTMLElement | null {
-    const el = userMarkerRef.current?.getElement();
-    return el ? (el.querySelector<HTMLElement>(".user-loc-icon") ?? null) : null;
-  }
+  // Unwrapped rotation so CSS transition always takes the shortest path
+  // (instead of spinning 358° the wrong way when heading wraps 359°→0°).
+  const unwrappedRotationRef = useRef<number>(0);
 
   function applyHeading(rawHeading: number): void {
     // rawHeading is in device-space (relative to the hardware top of the
     // device). Subtract screen.orientation.angle so the cone points the right
     // way when the user rotates to landscape.
     const screenAngle = window.screen?.orientation?.angle ?? 0;
-    const heading = (((rawHeading - screenAngle) % 360) + 360) % 360;
-    const inner = getUserMarkerInner();
+    const target = (((rawHeading - screenAngle) % 360) + 360) % 360;
+    const currentMod = ((unwrappedRotationRef.current % 360) + 360) % 360;
+    let delta = target - currentMod;
+    if (delta > 180) delta -= 360;
+    else if (delta < -180) delta += 360;
+    unwrappedRotationRef.current += delta;
+    const inner = userIconInnerRef.current;
     if (!inner) return;
-    inner.style.transform = `rotate(${heading}deg)`;
-    inner.classList.add("has-heading");
+    inner.style.transform = `rotate(${unwrappedRotationRef.current}deg)`;
+    if (!inner.classList.contains("has-heading")) {
+      inner.classList.add("has-heading");
+    }
   }
 
   function onDeviceOrientation(e: DeviceOrientationEvent): void {
@@ -133,17 +139,29 @@ export function useMapInstance(
               className: "user-loc-marker",
               html:
                 '<div class="user-loc-icon">' +
-                '<div class="user-loc-cone"></div>' +
+                '<svg class="user-loc-cone" viewBox="0 0 80 80" aria-hidden="true">' +
+                '<defs>' +
+                '<radialGradient id="user-loc-grad" cx="40" cy="40" r="38" gradientUnits="userSpaceOnUse">' +
+                '<stop offset="0.15" stop-color="#1e88e5" stop-opacity="0.9"/>' +
+                '<stop offset="1" stop-color="#1e88e5" stop-opacity="0"/>' +
+                '</radialGradient>' +
+                '</defs>' +
+                // ~100° wedge pointing up (12 o'clock), centered on (40,40) with radius 38
+                '<path d="M40 40 L10.88 15.58 A38 38 0 0 1 69.12 15.58 Z" fill="url(#user-loc-grad)"/>' +
+                '</svg>' +
                 '<div class="user-loc-dot"></div>' +
                 "</div>",
-              iconSize: [48, 48],
-              iconAnchor: [24, 24],
+              iconSize: [80, 80],
+              iconAnchor: [40, 40],
             });
             userMarkerRef.current = L.marker(latlng, {
               icon,
               interactive: false,
               keyboard: false,
             }).addTo(map);
+            const el = userMarkerRef.current.getElement();
+            userIconInnerRef.current =
+              el?.querySelector<HTMLElement>(".user-loc-icon") ?? null;
             accuracyCircleRef.current = L.circle(latlng, {
               radius: accuracy,
               color: "#1e88e5",
@@ -225,6 +243,7 @@ export function useMapInstance(
       leafletMap.current = null;
       baseTileRef.current = null;
       userMarkerRef.current = null;
+      userIconInnerRef.current = null;
       accuracyCircleRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
