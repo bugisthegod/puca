@@ -40,19 +40,27 @@ function App() {
     return onReminderChange(setReminder);
   }, []);
 
-  // iOS Safari: closing the keyboard after typing in an input can leave the
-  // page scrolled up, which pushes bottom-fixed panels (InfoPanel, locate
-  // button) off-screen. Snap back on blur.
+  // iOS Safari overlays the keyboard on top of the viewport instead of
+  // shrinking it (unlike Android), so bottom-fixed elements get covered and
+  // can get stranded off-screen after dismissal. Toggle a body class while a
+  // text field is focused so CSS can hide them.
   useEffect(() => {
-    function onFocusOut() {
-      setTimeout(() => {
-        if (window.scrollX !== 0 || window.scrollY !== 0) {
-          window.scrollTo(0, 0);
-        }
-      }, 50);
+    function isTextInput(t: EventTarget | null) {
+      if (!(t instanceof HTMLElement)) return false;
+      return t.matches("input, textarea, [contenteditable='true']");
     }
+    function onFocusIn(e: FocusEvent) {
+      if (isTextInput(e.target)) document.body.classList.add("kb-open");
+    }
+    function onFocusOut(e: FocusEvent) {
+      if (isTextInput(e.target)) document.body.classList.remove("kb-open");
+    }
+    document.addEventListener("focusin", onFocusIn);
     document.addEventListener("focusout", onFocusOut);
-    return () => document.removeEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+    };
   }, []);
 
   useReminderPoller({ onTrigger: (msg) => setToast(msg) });

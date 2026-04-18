@@ -1199,7 +1199,9 @@ td.delay-red {
 
   .search-field input {
     padding: 5px 8px;
-    font-size: 0.78rem;
+    /* Must be ≥16px or iOS Safari auto-zooms on focus, which leaves the
+       layout viewport stuck and strands fixed elements off-screen. */
+    font-size: 16px;
   }
 
   .swap-btn {
@@ -1240,7 +1242,7 @@ td.delay-red {
     right: calc(8px + env(safe-area-inset-right));
     left: calc(8px + env(safe-area-inset-left));
     min-width: unset;
-    padding: 8px 12px;
+    padding: 8px 10px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1291,5 +1293,12 @@ td.delay-red {
 
   .leaflet-popup-content-wrapper {
     border-radius: 8px;
+  }
+
+  /* Keyboard open on iOS: hide bottom-fixed chrome so it doesn't sit under
+     the keyboard or get stranded off-screen after dismissal. */
+  body.kb-open #info-panel,
+  body.kb-open .locate-btn {
+    display: none;
   }
 }
