@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { Station, SearchResult } from "../types";
+import { getStationsOnce } from "../stationsClient";
 
 interface SearchPanelProps {
   onSearch: (codes: string[]) => void;
@@ -25,10 +26,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
   const dropdownRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
-    fetch("/api/stations")
-      .then((r) => r.json())
-      .then((data: Station[]) => setStations(data))
-      .catch(() => {});
+    getStationsOnce().then(setStations);
     // Re-run search if we had saved state
     if (init?.from && init?.to) {
       handleSearchWith(init.from, init.to);

@@ -72,7 +72,10 @@ Bun.serve({
     "/api/trains": rateLimit(async (_req) => {
       try {
         const trains = await getCurrentTrains();
-        return Response.json(trains);
+        return Response.json(trains, {
+          // Matches api.ts cache TTL; SWR lets browser use stale data while a refresh is in flight.
+          headers: { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" },
+        });
       } catch {
         return Response.json([], { status: 502 });
       }
@@ -188,18 +191,20 @@ Bun.serve({
       // Off-hours short-circuit: don't pay an NTA round-trip when no buses run.
       // Frontend stops polling too, but stale tabs / other clients can still hit us.
       if (!isInServiceHours("bus")) return Response.json([]);
+      // NTA cache gate is 30s; allow browsers to reuse for up to 15s and revalidate in the background.
+      const vehicleHeaders = { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" };
       try {
         const url = new URL(req.url);
         const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
         const route = url.searchParams.get("route");
         if (!route) {
           const vehicles = await getAllBusVehicles(operator);
-          return Response.json(vehicles);
+          return Response.json(vehicles, { headers: vehicleHeaders });
         }
         const dirParam = url.searchParams.get("direction");
         const direction = dirParam !== null ? Number(dirParam) : undefined;
         const vehicles = await getBusVehiclesByRoute(operator, route, direction);
-        return Response.json(vehicles);
+        return Response.json(vehicles, { headers: vehicleHeaders });
       } catch {
         return Response.json([], { status: 502 });
       }

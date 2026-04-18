@@ -10,6 +10,7 @@ import goAheadShapes from "./data/goahead-shapes.json" with { type: "json" };
 import goAheadStops from "./data/goahead-stops.json" with { type: "json" };
 import trainShapes from "./data/train-shapes.json" with { type: "json" };
 import trainEndpoints from "./data/train-routes-by-endpoints.json" with { type: "json" };
+import { log, errToMeta } from "./logger";
 
 const NTA_VEHICLES_URL = "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json";
 const NTA_TRIP_UPDATES_URL = "https://api.nationaltransport.ie/gtfsr/v2/TripUpdates?format=json";
@@ -192,10 +193,6 @@ let lastVehicleCall = 0;
 let lastTripUpdateCall = 0;
 let lastAnyNtaCall = 0;
 
-function ts(): string {
-  return new Date().toISOString();
-}
-
 // ---------------------------------------------------------------------------
 // Vehicles
 // ---------------------------------------------------------------------------
@@ -203,7 +200,7 @@ function ts(): string {
 async function fetchVehicles(): Promise<void> {
   const apiKey = process.env.NTA_API_KEY;
   if (!apiKey) {
-    console.warn(`[${ts()}] NTA_API_KEY not set — bus feed disabled`);
+    log.error("nta.vehicles.no_api_key");
     return;
   }
 
@@ -212,10 +209,14 @@ async function fetchVehicles(): Promise<void> {
     const res = await fetch(NTA_VEHICLES_URL, {
       headers: { "x-api-key": apiKey, "Cache-Control": "no-cache" },
     });
-    const ms = Date.now() - start;
+    const duration_ms = Date.now() - start;
 
     if (!res.ok) {
-      console.warn(`[${ts()}] NTA fetch: FAIL HTTP ${res.status} (${ms}ms) — keeping ${vehicleCache ? `stale cache (${vehicleCache.length} vehicles)` : "empty"}`);
+      log.warn("nta.vehicles.http_error", {
+        http_status: res.status,
+        duration_ms,
+        stale_cache_size: vehicleCache?.length ?? 0,
+      });
       return;
     }
 
@@ -241,10 +242,13 @@ async function fetchVehicles(): Promise<void> {
     }
 
     vehicleCache = vehicles;
-    console.log(`[${ts()}] NTA fetch: OK ${vehicles.length} vehicles (${ms}ms)`);
+    log.info("nta.vehicles.ok", { vehicle_count: vehicles.length, duration_ms });
   } catch (err) {
-    const ms = Date.now() - start;
-    console.error(`[${ts()}] NTA fetch: ERROR ${err} (${ms}ms) — keeping ${vehicleCache ? `stale cache (${vehicleCache.length} vehicles)` : "empty"}`);
+    log.error("nta.vehicles.exception", {
+      ...errToMeta(err),
+      duration_ms: Date.now() - start,
+      stale_cache_size: vehicleCache?.length ?? 0,
+    });
   }
 }
 
@@ -272,7 +276,7 @@ function getCachedVehicles(): GtfsVehiclePosition[] {
 async function fetchTripUpdates(): Promise<void> {
   const apiKey = process.env.NTA_API_KEY;
   if (!apiKey) {
-    console.warn(`[${ts()}] NTA_API_KEY not set — trip updates disabled`);
+    log.error("nta.trip_updates.no_api_key");
     return;
   }
 
@@ -281,10 +285,14 @@ async function fetchTripUpdates(): Promise<void> {
     const res = await fetch(NTA_TRIP_UPDATES_URL, {
       headers: { "x-api-key": apiKey, "Cache-Control": "no-cache" },
     });
-    const ms = Date.now() - start;
+    const duration_ms = Date.now() - start;
 
     if (!res.ok) {
-      console.warn(`[${ts()}] TripUpdates fetch: FAIL HTTP ${res.status} (${ms}ms) — keeping ${tripUpdateCache ? `stale cache (${tripUpdateCache.size} trips)` : "empty"}`);
+      log.warn("nta.trip_updates.http_error", {
+        http_status: res.status,
+        duration_ms,
+        stale_cache_size: tripUpdateCache?.size ?? 0,
+      });
       return;
     }
 
@@ -315,10 +323,13 @@ async function fetchTripUpdates(): Promise<void> {
     }
 
     tripUpdateCache = map;
-    console.log(`[${ts()}] TripUpdates fetch: OK ${map.size} trips (${ms}ms)`);
+    log.info("nta.trip_updates.ok", { trip_count: map.size, duration_ms });
   } catch (err) {
-    const ms = Date.now() - start;
-    console.error(`[${ts()}] TripUpdates fetch: ERROR ${err} (${ms}ms) — keeping ${tripUpdateCache ? `stale cache (${tripUpdateCache.size} trips)` : "empty"}`);
+    log.error("nta.trip_updates.exception", {
+      ...errToMeta(err),
+      duration_ms: Date.now() - start,
+      stale_cache_size: tripUpdateCache?.size ?? 0,
+    });
   }
 }
 

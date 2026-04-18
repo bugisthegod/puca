@@ -5,6 +5,7 @@ declare const L: typeof import("leaflet");
 import { useRef, useEffect, type RefObject } from "react";
 import type { Station } from "../types";
 import type { Mode } from "./useTrainMap";
+import { getStationsOnce } from "../stationsClient";
 
 const TILE_VOYAGER =
   "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
@@ -132,14 +133,11 @@ export function useMapInstance(
     map.on("zoomend", () => { zoomingRef.current = false; });
 
     // Load stations for route line drawing in popups
-    fetch("/api/stations")
-      .then((r) => r.json())
-      .then((data: Station[]) => {
-        const m = new Map<string, Station>();
-        for (const s of data) m.set(s.code, s);
-        stationsRef.current = m;
-      })
-      .catch(() => {});
+    getStationsOnce().then((data) => {
+      const m = new Map<string, Station>();
+      for (const s of data) m.set(s.code, s);
+      stationsRef.current = m;
+    });
 
     leafletMap.current = map;
 

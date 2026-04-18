@@ -32,8 +32,20 @@ type TrainShapeCacheEntry =
   | { routeLine: Feature<LineString>; routeLengthMeters: number }
   | "not-found";
 
+const TRAIN_SHAPE_CACHE_MAX = 200;
 const trainShapeCache = new Map<string, TrainShapeCacheEntry>();
 const trainShapeInFlight = new Map<string, Promise<{ routeLine: Feature<LineString>; routeLengthMeters: number } | null>>();
+
+// Insertion-order LRU cap: drop oldest entries once the cache exceeds the limit.
+function setShapeCache(key: string, value: TrainShapeCacheEntry): void {
+  trainShapeCache.delete(key); // ensure re-insertion moves key to the end of insertion order
+  trainShapeCache.set(key, value);
+  while (trainShapeCache.size > TRAIN_SHAPE_CACHE_MAX) {
+    const oldest = trainShapeCache.keys().next().value;
+    if (oldest === undefined) break;
+    trainShapeCache.delete(oldest);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Popup HTML builders
@@ -280,18 +292,18 @@ export function useTrainMarkers({
           return null;
         }
         if (!res.ok) {
-          trainShapeCache.set(key, "not-found");
+          setShapeCache(key, "not-found");
           return null;
         }
         const data = await res.json() as { coords?: [number, number][] };
         if (data.coords && data.coords.length >= 2) {
           const built = buildRouteLine(data.coords);
           if (built) {
-            trainShapeCache.set(key, built);
+            setShapeCache(key, built);
             return built;
           }
         }
-        trainShapeCache.set(key, "not-found");
+        setShapeCache(key, "not-found");
         return null;
       } catch {
         // Network error — don't poison cache; retry later
