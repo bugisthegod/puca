@@ -33,6 +33,18 @@
       stroke-linejoin="round"
     />
     <path
+      d="
+        M 402 260
+        C 442 256, 458 292, 448 324
+        C 438 348, 408 346, 396 330
+        Z
+      "
+      fill="#ffffff"
+      stroke="#16161c"
+      stroke-width="16"
+      stroke-linejoin="round"
+    />
+    <path
       d="M 184 218 L 214 244 L 184 270"
       stroke="#16161c"
       stroke-width="18"
