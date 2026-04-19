@@ -85,19 +85,20 @@ export function useBusMarkers({
   // Helpers
   // -------------------------------------------------------------------------
 
-  function fmtDelay(sec: number | null): string {
-    if (sec === null) return "—";
-    if (Math.abs(sec) < 60) return "on time";
+  function statusFromDelay(sec: number | null): { text: string; cls: string } {
+    if (sec === null) return { text: "", cls: "" };
     const min = Math.round(sec / 60);
-    return min > 0 ? `${min} min late` : `${Math.abs(min)} min early`;
-  }
-
-  function delayClass(sec: number | null): string {
-    if (sec === null || Math.abs(sec) < 60) return "";
-    const min = Math.round(sec / 60);
-    if (min <= 0) return "";
-    if (min >= 10) return "delay-red";
-    return "delay-yellow";
+    if (min <= 0) {
+      const early = Math.abs(min);
+      return {
+        text: early >= 1 ? `On time (${early} min${early !== 1 ? "s" : ""} early)` : "On time",
+        cls: "",
+      };
+    }
+    return {
+      text: `${min} min${min !== 1 ? "s" : ""} late`,
+      cls: min >= 10 ? "popup-status--red" : "popup-status--yellow",
+    };
   }
 
   function fmtSec(sec: number | null): string {
@@ -142,7 +143,6 @@ export function useBusMarkers({
               <td>${escapeHtml(s.name)}</td>
               <td>${fmtSec(s.scheduledArrivalSec)}</td>
               <td>${fmtSec(s.expectedArrivalSec)}</td>
-              <td class="${delayClass(s.arrivalDelaySec)}">${fmtDelay(s.arrivalDelaySec)}</td>
             </tr>
           `;
           })
@@ -154,7 +154,7 @@ export function useBusMarkers({
         ? `<div class="popup-table-wrap">
              <table class="movements-table">
                <thead>
-                 <tr><th>#</th><th>Stop</th><th>Sched</th><th>Exp</th><th>Delay</th></tr>
+                 <tr><th>#</th><th>Stop</th><th>Sched</th><th>Exp</th></tr>
                </thead>
                <tbody>${rows}</tbody>
              </table>
@@ -168,6 +168,15 @@ export function useBusMarkers({
     const originDest = stops.length >= 2
       ? `<div class="popup-route">${escapeHtml(stops[0]!.name)} → ${escapeHtml(stops[stops.length - 1]!.name)}</div>`
       : "";
+    const currentStop = trip && currentIdx >= 0 ? trip.stops[currentIdx] : null;
+    const status = statusFromDelay(currentStop?.arrivalDelaySec ?? null);
+    const vehicleLabel = escapeHtml(bus.label || bus.tripId);
+    const metaHtml = `
+      <div class="popup-meta">
+        ${status.text ? `<span class="popup-status ${status.cls}">${status.text}</span>` : ""}
+        <span class="popup-dir">Vehicle ${vehicleLabel}</span>
+      </div>
+    `;
     return `
       <div class="popup-content">
         <div class="popup-header-row">
@@ -175,7 +184,7 @@ export function useBusMarkers({
           ${jumpBtn}
         </div>
         ${originDest}
-        <div class="popup-vehicle">Vehicle ${escapeHtml(bus.label || bus.tripId)}</div>
+        ${metaHtml}
         ${body}
       </div>
     `;

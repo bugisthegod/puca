@@ -48,7 +48,7 @@ export default function InfoPanel({
 }: InfoPanelProps) {
   const [drilledIn, setDrilledIn] = useState(false);
   const unit = mode === "train" ? "trains" : "buses";
-  const showCount = mode === "train" ? `${vehicleCount} ${unit} running` : `${vehicleCount} ${unit}`;
+  const showCount = `${vehicleCount} ${unit} running`;
 
   function handleModeClick(next: Mode) {
     onModeChange(next);
@@ -56,15 +56,19 @@ export default function InfoPanel({
   }
 
   return (
-    <div id="info-panel">
-      <div id="panel-header">
-        <span id="train-count">
-          {inService ? showCount : "Service closed"}
-        </span>
-      </div>
-      <div id="last-updated">
-        {inService ? lastUpdated : `Resumes at ${resumeLabel}`}
-      </div>
+    <div id="info-panel" className={drilledIn ? "" : "info-panel--compact"}>
+      {drilledIn && (
+        <>
+          <div id="panel-header">
+            <span id="train-count">
+              {inService ? showCount : "Service closed"}
+            </span>
+          </div>
+          <div id="last-updated">
+            {inService ? lastUpdated : `Resumes at ${resumeLabel}`}
+          </div>
+        </>
+      )}
       <div id="filter-bar" className={drilledIn ? "" : "filter-bar--root"}>
         {!drilledIn && MODES.map(({ value, label }) => (
           <button
