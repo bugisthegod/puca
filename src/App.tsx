@@ -127,23 +127,44 @@ function App() {
       setBuses([]);
       return;
     }
+
+    let poll: (() => void) | null = null;
+    let intervalMs = 0;
     if (mode === "train") {
-      fetchTrains();
-      const interval = setInterval(fetchTrains, 30_000);
-      return () => clearInterval(interval);
+      poll = fetchTrains;
+      intervalMs = 30_000;
+    } else if (busRoute && busDirection) {
+      const route = busRoute;
+      const dir = busDirection;
+      poll = () => fetchBuses(busOperator, route, dir);
+      intervalMs = 15_000;
+    } else if (!busRoute) {
+      poll = () => fetchAllBuses(busOperator);
+      intervalMs = 15_000;
     } else {
-      if (busRoute && busDirection) {
-        fetchBuses(busOperator, busRoute, busDirection);
-        const interval = setInterval(() => fetchBuses(busOperator, busRoute, busDirection), 15_000);
-        return () => clearInterval(interval);
-      } else if (!busRoute) {
-        fetchAllBuses(busOperator);
-        const interval = setInterval(() => fetchAllBuses(busOperator), 15_000);
-        return () => clearInterval(interval);
-      } else {
-        setBuses([]);
-      }
+      setBuses([]);
+      return;
     }
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (interval || !poll) return;
+      poll();
+      interval = setInterval(poll, intervalMs);
+    };
+    const stop = () => {
+      if (!interval) return;
+      clearInterval(interval);
+      interval = null;
+    };
+
+    if (!document.hidden) start();
+    const onVisibility = () => (document.hidden ? stop() : start());
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      stop();
+    };
   }, [mode, busOperator, busRoute, busDirection, inService]);
 
   useEffect(() => {
