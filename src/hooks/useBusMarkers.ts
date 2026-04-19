@@ -263,6 +263,7 @@ export function useBusMarkers({
       autoPan: false,
     });
     marker.on("popupopen", () => {
+      leafletMap.current?.panTo(marker.getLatLng(), { animate: true, duration: 0.4 });
       const popup = marker.getPopup();
       if (popup) wireRouteJumpButton(popup);
       void loadBusTrip(bus, marker);

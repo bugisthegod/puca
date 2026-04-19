@@ -371,6 +371,7 @@ export function useTrainMarkers({
     clearRouteLine();
 
     marker.bindPopup(buildPopupHTML(train), { maxWidth: 520, minWidth: 380, autoPan: false }).openPopup();
+    leafletMap.current?.panTo(marker.getLatLng(), { animate: true, duration: 0.4 });
 
     try {
       const res = await fetch(`/api/train/${trainCode}`);
