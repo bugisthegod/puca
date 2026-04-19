@@ -5,20 +5,23 @@ import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
 import { useReminderPoller } from "./hooks/useReminderPoller";
 import { loadReminder, clearReminder, onReminderChange, type Reminder } from "./reminder";
+import { loadSession, saveSession } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel from "./components/BusSearchPanel";
 import "./style.css";
 
+const savedSession = loadSession();
+
 function App() {
-  const [mode, setMode] = useState<Mode>("train");
+  const [mode, setMode] = useState<Mode>(savedSession.mode ?? "train");
   const [trains, setTrains] = useState<Train[]>([]);
   const [buses, setBuses] = useState<BusVehicle[]>([]);
-  const [busOperator, setBusOperator] = useState<BusOperator>("dublinbus");
-  const [busRoute, setBusRoute] = useState<string | null>(null);
-  const [busDirection, setBusDirection] = useState<string | null>(null);
+  const [busOperator, setBusOperator] = useState<BusOperator>(savedSession.busOperator ?? "dublinbus");
+  const [busRoute, setBusRoute] = useState<string | null>(savedSession.busRoute ?? null);
+  const [busDirection, setBusDirection] = useState<string | null>(savedSession.busDirection ?? null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[] } } | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
   const [lastUpdated, setLastUpdated] = useState<string>("Updated: —");
   const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
@@ -38,6 +41,17 @@ function App() {
   useEffect(() => {
     return onReminderChange(setReminder);
   }, []);
+
+  useEffect(() => {
+    const save = () => saveSession({ mode, filter, busOperator, busRoute, busDirection });
+    const onVisibility = () => { if (document.hidden) save(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", save);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", save);
+    };
+  }, [mode, filter, busOperator, busRoute, busDirection]);
 
   // iOS Safari overlays the keyboard on top of the viewport instead of
   // shrinking it (unlike Android), so bottom-fixed elements get covered and

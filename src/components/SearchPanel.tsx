@@ -9,7 +9,7 @@ interface SearchPanelProps {
 }
 
 export default function SearchPanel({ onSearch, onClear, onTrainSelect }: SearchPanelProps) {
-  const saved = sessionStorage.getItem("search");
+  const saved = localStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
 
   const [stations, setStations] = useState<Station[]>([]);
@@ -115,7 +115,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
       setResults(data);
       const activeCodes = data.filter((r) => r.status !== "scheduled").map((r) => r.code);
       onSearch(activeCodes);
-      sessionStorage.setItem("search", JSON.stringify({ from: f, to: t, fromQuery, toQuery }));
+      localStorage.setItem("search", JSON.stringify({ from: f, to: t, fromQuery, toQuery }));
     } catch {
       setResults([]);
       onSearch([]);
@@ -130,7 +130,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
     setFromQuery("");
     setToQuery("");
     setResults(null);
-    sessionStorage.removeItem("search");
+    localStorage.removeItem("search");
     onClear();
   }
 
