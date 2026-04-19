@@ -21,7 +21,6 @@ function App() {
   const [filter, setFilter] = useState<Filter>("all");
   const [lastUpdated, setLastUpdated] = useState<string>("Updated: —");
   const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
-  const [loading, setLoading] = useState(true);
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -86,8 +85,6 @@ function App() {
       setLastUpdated(`Updated: ${new Date().toLocaleTimeString()}`);
     } catch (err) {
       console.error("Failed to fetch trains:", err);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -126,7 +123,6 @@ function App() {
 
   useEffect(() => {
     if (!inService) {
-      setLoading(false);
       setTrains([]);
       setBuses([]);
       return;
@@ -136,7 +132,6 @@ function App() {
       const interval = setInterval(fetchTrains, 30_000);
       return () => clearInterval(interval);
     } else {
-      setLoading(false);
       if (busRoute && busDirection) {
         fetchBuses(busOperator, busRoute, busDirection);
         const interval = setInterval(() => fetchBuses(busOperator, busRoute, busDirection), 15_000);
@@ -227,11 +222,6 @@ function App() {
           <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
         </svg>
       </button>
-      {loading && (
-        <div className="loading-overlay">
-          <div className="loading-text">Loading...</div>
-        </div>
-      )}
       {mode === "train" ? (
         <SearchPanel
           onSearch={(codes) => setSearchCodes(codes.length > 0 ? codes : [])}

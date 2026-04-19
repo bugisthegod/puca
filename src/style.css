@@ -752,29 +752,6 @@ body {
 }
 
 /* ============================================================
-   Loading overlay
-   ============================================================ */
-
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(22, 22, 28, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.loading-text {
-  color: #f0f0f0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-/* ============================================================
    Leaflet popup overrides
    ============================================================ */
 
