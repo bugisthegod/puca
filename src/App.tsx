@@ -9,9 +9,12 @@ import { loadSession, saveSession } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel from "./components/BusSearchPanel";
+import AboutModal from "./components/AboutModal";
+import PucaMark from "./components/PucaMark";
 import "./style.css";
 
 const savedSession = loadSession();
+const ABOUT_SEEN_KEY = "puca:about-seen";
 
 function App() {
   const [mode, setMode] = useState<Mode>(savedSession.mode ?? "train");
@@ -37,6 +40,18 @@ function App() {
   const [locating, setLocating] = useState(false);
   const [reminder, setReminder] = useState<Reminder | null>(() => loadReminder());
   const [toast, setToast] = useState<string | null>(null);
+  const [showAbout, setShowAbout] = useState(false);
+  const [seenAbout, setSeenAbout] = useState<boolean>(() => {
+    try { return localStorage.getItem(ABOUT_SEEN_KEY) === "1"; } catch { return true; }
+  });
+
+  function openAbout() {
+    setShowAbout(true);
+    if (!seenAbout) {
+      setSeenAbout(true);
+      try { localStorage.setItem(ABOUT_SEEN_KEY, "1"); } catch {}
+    }
+  }
 
   useEffect(() => {
     return onReminderChange(setReminder);
@@ -257,6 +272,17 @@ function App() {
           <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
         </svg>
       </button>
+      <button
+        type="button"
+        className="about-fab"
+        onClick={openAbout}
+        aria-label="About Púca"
+        title="About Púca"
+      >
+        <PucaMark size={28} />
+        {!seenAbout && <span className="about-fab__badge" aria-hidden="true" />}
+      </button>
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {mode === "train" ? (
         <SearchPanel
           onSearch={(codes) => setSearchCodes(codes.length > 0 ? codes : [])}

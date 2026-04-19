@@ -473,6 +473,410 @@ body {
 }
 
 /* ============================================================
+   About floating button (stacks above locate-btn)
+   ============================================================ */
+
+.about-fab {
+  position: fixed;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  right: calc(12px + env(safe-area-inset-right));
+  z-index: 1000;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: rgba(22, 22, 28, 0.78);
+  color: #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.about-fab:hover {
+  background: rgba(40, 40, 48, 0.9);
+}
+
+.about-fab:active {
+  transform: scale(0.94);
+}
+
+.about-fab__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f05454;
+  box-shadow: 0 0 0 2px rgba(22, 22, 28, 0.9);
+}
+
+@media (max-width: 600px) {
+  .about-fab {
+    top: auto;
+    bottom: calc(128px + env(safe-area-inset-bottom));
+    right: calc(12px + env(safe-area-inset-right));
+  }
+
+  body.kb-open .about-fab {
+    display: none;
+  }
+}
+
+/* ============================================================
+   About modal — dark glassmorphism, Púca identity
+   ============================================================ */
+
+.about-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(8, 8, 14, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  animation: about-fade-in 0.2s ease-out;
+}
+
+@keyframes about-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.about-modal {
+  position: relative;
+  background: linear-gradient(180deg, rgba(30, 30, 38, 0.96) 0%, rgba(18, 18, 24, 0.96) 100%);
+  color: #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  overflow: hidden;
+  animation: about-slide-in 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.about-modal__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@keyframes about-slide-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.about-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+  z-index: 2;
+}
+
+.about-modal__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.about-modal__close:active {
+  transform: scale(0.92);
+}
+
+/* --- Hero --- */
+
+.about-hero {
+  position: relative;
+  padding: 36px 28px 28px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.about-hero::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(77, 214, 160, 0.18) 0%, rgba(77, 214, 160, 0) 60%);
+  pointer-events: none;
+}
+
+.about-hero__mark {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
+  animation: about-float 3.2s ease-in-out infinite;
+}
+
+@keyframes about-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.about-hero__name {
+  margin: 0 0 6px;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1;
+}
+
+.about-hero__pron {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-light);
+  padding: 4px 10px;
+  background: rgba(77, 214, 160, 0.1);
+  border: 1px solid rgba(77, 214, 160, 0.22);
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.about-hero__pron em {
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.about-hero__tag {
+  margin: 0;
+  max-width: 340px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* --- Divider --- */
+
+.about-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1) 50%, transparent);
+  margin: 0 24px;
+}
+
+/* --- Block --- */
+
+.about-block {
+  padding: 22px 28px;
+}
+
+.about-block__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+  margin-bottom: 14px;
+}
+
+.about-block__note {
+  margin: 12px 0 0;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: center;
+}
+
+/* --- Features --- */
+
+.about-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.about-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.about-feature:hover {
+  background: rgba(77, 214, 160, 0.06);
+  border-color: rgba(77, 214, 160, 0.18);
+}
+
+.about-feature__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: rgba(77, 214, 160, 0.12);
+  color: var(--brand-light);
+}
+
+.about-feature__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.about-feature__desc {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.45;
+}
+
+/* --- Install --- */
+
+.about-install {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.about-install__card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.about-install__platform {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.78);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.about-install__steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.about-install__steps li {
+  margin-bottom: 2px;
+}
+
+.about-install__steps strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* --- Footer --- */
+
+.about-footer {
+  padding: 18px 28px 26px;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.38);
+  text-align: center;
+}
+
+/* --- Mobile: bottom sheet --- */
+
+@media (max-width: 600px) {
+  .about-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .about-modal {
+    border-radius: 22px 22px 0 0;
+    max-width: 100%;
+    max-height: 88dvh;
+    animation: about-sheet-in 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .about-modal::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+    margin: 8px auto 0;
+    flex-shrink: 0;
+  }
+
+  @keyframes about-sheet-in {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .about-hero {
+    padding: 24px 24px 22px;
+  }
+
+  .about-hero__name {
+    font-size: 2rem;
+  }
+
+  .about-block {
+    padding: 20px 22px;
+  }
+
+  .about-divider {
+    margin: 0 20px;
+  }
+
+  .about-install {
+    grid-template-columns: 1fr;
+  }
+
+  .about-footer {
+    padding: 16px 24px 24px;
+  }
+}
+
+/* ============================================================
    Filter buttons
    ============================================================ */
 
