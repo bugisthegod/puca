@@ -369,25 +369,31 @@ export function getBusRouteShape(
   return shapes[route.id] ?? null;
 }
 
-export async function getBusTripStops(operator: Operator, tripId: string): Promise<TripUpdate | null> {
-  const stops = operatorStops[operator];
-  const updates = await pollTripUpdates();
-  const trip = updates.get(tripId);
+export type ScheduledRow = { sequence: number; stopId: string; arrivalSec: number };
 
-  const scheduledRows = getTripScheduledStops(operator, tripId);
-
-  if (scheduledRows.length === 0 && !trip) return null;
-
-  type LiveStopUpdate = {
+export type LiveTripData = {
+  routeId: string;
+  directionId: number;
+  stopTimeUpdates: Array<{
     sequence: number;
     stopId: string;
     arrivalDelaySec: number | null;
     departureDelaySec: number | null;
     scheduleRelationship: string;
-  };
-  const liveBySeq = new Map<number, LiveStopUpdate>();
-  if (trip) {
-    for (const u of trip.stopTimeUpdates) {
+  }>;
+};
+
+export function mergeTripStops(
+  tripId: string,
+  scheduledRows: ScheduledRow[],
+  liveTrip: LiveTripData | undefined,
+  stops: StopsDict,
+): TripUpdate | null {
+  if (scheduledRows.length === 0 && !liveTrip) return null;
+
+  const liveBySeq = new Map<number, LiveTripData["stopTimeUpdates"][number]>();
+  if (liveTrip) {
+    for (const u of liveTrip.stopTimeUpdates) {
       liveBySeq.set(u.sequence, u);
     }
   }
@@ -424,14 +430,14 @@ export async function getBusTripStops(operator: Operator, tripId: string): Promi
 
     return {
       tripId,
-      routeId: trip?.routeId ?? "",
-      directionId: trip?.directionId ?? 0,
+      routeId: liveTrip?.routeId ?? "",
+      directionId: liveTrip?.directionId ?? 0,
       stops: mergedStops,
     };
   }
 
   // DB not available or trip not in DB — return live data with nulls for scheduled
-  const fallbackStops: StopTimeUpdate[] = (trip!.stopTimeUpdates).map((u, i) => ({
+  const fallbackStops: StopTimeUpdate[] = liveTrip!.stopTimeUpdates.map((u, i) => ({
     sequence: u.sequence,
     stopId: u.stopId,
     name: stops[u.stopId]?.name ?? u.stopId,
@@ -447,10 +453,18 @@ export async function getBusTripStops(operator: Operator, tripId: string): Promi
 
   return {
     tripId,
-    routeId: trip!.routeId,
-    directionId: trip!.directionId,
+    routeId: liveTrip!.routeId,
+    directionId: liveTrip!.directionId,
     stops: fallbackStops.sort((a, b) => a.sequence - b.sequence),
   };
+}
+
+export async function getBusTripStops(operator: Operator, tripId: string): Promise<TripUpdate | null> {
+  const stops = operatorStops[operator];
+  const updates = await pollTripUpdates();
+  const liveTrip = updates.get(tripId);
+  const scheduledRows = getTripScheduledStops(operator, tripId);
+  return mergeTripStops(tripId, scheduledRows, liveTrip, stops);
 }
 
 export async function getBusVehiclesByRoute(operator: Operator, shortName: string, direction?: number): Promise<BusVehicle[]> {
