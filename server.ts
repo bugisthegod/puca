@@ -69,6 +69,13 @@ Bun.serve({
     "/icon-192.png": () => new Response(Bun.file("./public/icon-192.png")),
     "/icon-512.png": () => new Response(Bun.file("./public/icon-512.png")),
     "/icon.svg": () => new Response(Bun.file("./public/icon.svg")),
+    "/splash/iphone-17-pro-max.png": () => new Response(Bun.file("./public/splash/iphone-17-pro-max.png")),
+    "/splash/iphone-17.png": () => new Response(Bun.file("./public/splash/iphone-17.png")),
+    "/splash/iphone-16-pro-max.png": () => new Response(Bun.file("./public/splash/iphone-16-pro-max.png")),
+    "/splash/iphone-plus.png": () => new Response(Bun.file("./public/splash/iphone-plus.png")),
+    "/splash/iphone-16-pro.png": () => new Response(Bun.file("./public/splash/iphone-16-pro.png")),
+    "/splash/iphone-base.png": () => new Response(Bun.file("./public/splash/iphone-base.png")),
+    "/splash/iphone-se.png": () => new Response(Bun.file("./public/splash/iphone-se.png")),
     "/api/trains": rateLimit(async (_req) => {
       try {
         const trains = await getCurrentTrains();
