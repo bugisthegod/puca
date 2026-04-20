@@ -15,6 +15,8 @@ import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel from "./components/BusSearchPanel";
 import AboutModal from "./components/AboutModal";
 import PucaMark from "./components/PucaMark";
+import OfflineBanner from "./components/OfflineBanner";
+import { registerServiceWorker } from "./sw-register";
 import "./style.css";
 
 const savedSession = loadSession();
@@ -237,6 +239,7 @@ function App() {
   return (
     <>
       <div id="map" ref={mapRef} />
+      <OfflineBanner />
       {reminder && (
         <div className="reminder-chip" role="status">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
@@ -370,3 +373,5 @@ document.head.appendChild(faviconPng);
 
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
+
+registerServiceWorker();

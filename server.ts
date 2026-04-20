@@ -65,6 +65,12 @@ Bun.serve({
   port: 3000,
   routes: {
     "/": index,
+    "/sw.js": () => new Response(Bun.file("./public/sw.js"), {
+      headers: {
+        "Content-Type": "application/javascript",
+        "Cache-Control": "no-cache",
+      },
+    }),
     "/manifest.json": () => new Response(Bun.file("./public/manifest.json")),
     "/icon-192.png": () => new Response(Bun.file("./public/icon-192.png")),
     "/icon-512.png": () => new Response(Bun.file("./public/icon-512.png")),

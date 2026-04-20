@@ -324,6 +324,42 @@ body {
   }
 }
 
+/* ============================================================
+   Offline banner
+   ============================================================ */
+
+.offline-banner {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2002;
+  padding: 6px 14px;
+  background: rgba(180, 35, 24, 0.95);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  max-width: calc(100vw - 24px);
+  white-space: nowrap;
+  animation: offline-banner-in 0.2s ease-out;
+  pointer-events: none;
+}
+
+@keyframes offline-banner-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* On mobile the search panel fills the top centre — same treatment as
+   .reminder-chip: slide the banner below it. */
+@media (max-width: 600px) {
+  .offline-banner {
+    top: calc(170px + env(safe-area-inset-top));
+  }
+}
+
 /* Locate-me floating button (one-shot geolocation). Desktop: bottom-right
    above attribution. Mobile: top-right (info-panel moves to bottom there). */
 .locate-btn {
@@ -575,6 +611,12 @@ body {
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.about-modal__scroll::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes about-slide-in {
