@@ -258,6 +258,7 @@ function App() {
   }, [busRoute, busOperator]);
 
   function handleBusOperatorChange(op: BusOperator) {
+    if (op === busOperator) return;
     setBusOperator(op);
     setBusRoute(null);
     setBusDirection(null);
