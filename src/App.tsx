@@ -15,6 +15,7 @@ import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel from "./components/BusSearchPanel";
 import AboutModal from "./components/AboutModal";
 import FavoritesModal from "./components/FavoritesModal";
+import OnboardingTour, { type TourStep } from "./components/OnboardingTour";
 import PucaMark from "./components/PucaMark";
 import OfflineBanner from "./components/OfflineBanner";
 import { registerServiceWorker } from "./sw-register";
@@ -24,6 +25,43 @@ import "./style.css";
 
 const savedSession = loadSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
+const TOUR_SEEN_KEY = "puca:tour-seen-v1";
+
+const TOUR_STEPS: TourStep[] = [
+  {
+    title: "Welcome to Púca",
+    body: "A live map of Ireland's trains and buses. Quick tour — takes 20 seconds.",
+  },
+  {
+    target: "#info-panel",
+    title: "Switch mode",
+    body: "Toggle between Train and Bus, or filter what's shown.",
+  },
+  {
+    target: "#search-panel",
+    title: "Search",
+    body: "Find trains between two stations, or a bus route by number.",
+  },
+  {
+    title: "Tap a vehicle",
+    body: "Tap any bus or train on the map for live arrivals, delays, and stops.",
+  },
+  {
+    target: ".fav-fab",
+    title: "Save favourites",
+    body: "Star a route or train search, then come back to it from here.",
+  },
+  {
+    target: ".locate-btn",
+    title: "Locate me",
+    body: "Centre the map on your position to see what's nearby.",
+  },
+  {
+    target: ".about-fab",
+    title: "All set",
+    body: "Revisit this tour anytime from the About menu.",
+  },
+];
 
 function App() {
   const [mode, setMode] = useState<Mode>(savedSession.mode ?? "train");
@@ -54,6 +92,16 @@ function App() {
   const [seenAbout, setSeenAbout] = useState<boolean>(() => {
     try { return localStorage.getItem(ABOUT_SEEN_KEY) === "1"; } catch { return true; }
   });
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    try { return localStorage.getItem(TOUR_SEEN_KEY) !== "1"; } catch { return false; }
+  });
+  function closeTour() {
+    setShowTour(false);
+    try { localStorage.setItem(TOUR_SEEN_KEY, "1"); } catch {}
+  }
+  function openTour() {
+    setShowTour(true);
+  }
   const { favs, toggleBus, toggleTrain, removeBus, removeTrain } = useFavorites();
   const [showFavs, setShowFavs] = useState(false);
   const [searchResetKey, setSearchResetKey] = useState(0);
@@ -337,7 +385,13 @@ function App() {
         <PucaMark size={28} />
         {!seenAbout && <span className="about-fab__badge" aria-hidden="true" />}
       </button>
-      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showAbout && (
+        <AboutModal
+          onClose={() => setShowAbout(false)}
+          onShowTour={() => { setShowAbout(false); openTour(); }}
+        />
+      )}
+      {showTour && <OnboardingTour steps={TOUR_STEPS} onClose={closeTour} />}
       {showFavs && (
         <FavoritesModal
           onClose={() => setShowFavs(false)}

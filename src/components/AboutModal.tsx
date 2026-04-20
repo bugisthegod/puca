@@ -3,6 +3,7 @@ import PucaMark from "./PucaMark";
 
 type AboutModalProps = {
   onClose: () => void;
+  onShowTour?: () => void;
 };
 
 type FeatureIconName = "map" | "search" | "locate";
@@ -50,7 +51,7 @@ const FEATURES: { icon: FeatureIconName; title: string; desc: string }[] = [
   { icon: "locate", title: "Locate me", desc: "Centre the map on your position, with heading." },
 ];
 
-export default function AboutModal({ onClose }: AboutModalProps) {
+export default function AboutModal({ onClose, onShowTour }: AboutModalProps) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -105,6 +106,11 @@ export default function AboutModal({ onClose }: AboutModalProps) {
               </li>
             ))}
           </ul>
+          {onShowTour && (
+            <button type="button" className="about-tour-btn" onClick={onShowTour}>
+              Take the tour
+            </button>
+          )}
         </section>
 
         <div className="about-divider" />
