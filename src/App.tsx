@@ -1,3 +1,7 @@
+import L from "leaflet";
+import "leaflet.markercluster";
+(window as unknown as { L: typeof L }).L = L;
+
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator } from "./types";
