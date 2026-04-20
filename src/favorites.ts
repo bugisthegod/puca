@@ -8,8 +8,8 @@ import type { BusOperator } from "./types";
 const KEY = "puca-favorites-v1";
 const OPERATORS: readonly BusOperator[] = ["dublinbus", "buseireann", "goahead"];
 
-export const MAX_BUS_FAVORITES = 3;
-export const MAX_TRAIN_FAVORITES = 2;
+export const MAX_BUS_FAVORITES = 4;
+export const MAX_TRAIN_FAVORITES = 4;
 
 export interface BusFavorite {
   shortName: string;   // "39A"
