@@ -1,5 +1,5 @@
 import index from "./index.html";
-import { getCurrentTrains, getStationData, getTrainMovements, getAllStations } from "./src/api.ts";
+import { getCurrentTrains, getStationData, getTrainMovements } from "./src/api.ts";
 import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, type Operator } from "./src/gtfsr.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
@@ -113,35 +113,30 @@ Bun.serve({
         if (!from || !to) {
           return Response.json({ error: "from and to required" }, { status: 400 });
         }
-        const [fromData, toData, currentTrains, allStations] = await Promise.all([
+        const [fromData, toData, currentTrains] = await Promise.all([
           getStationData(from, 120),
           getStationData(to, 120),
           getCurrentTrains(),
-          getAllStations(),
         ]);
-
-        const fromStation = allStations.find((s) => s.code === from);
-        const fromName = fromStation?.name ?? "";
 
         const fromMap = new Map(fromData.map((f) => [f.trainCode, f]));
         const currentMap = new Map(currentTrains.map((t) => [t.code, t]));
 
-        // Match trains that either:
-        // (a) appear at both stations (normal case), OR
-        // (b) appear at `to` with origin == fromName (case: already left `from`)
+        // Only show trains that still stop at `from` in the upcoming window.
+        // If a train no longer appears in fromData, it has already departed
+        // from `from` — the user can't board it, so hide it even if its
+        // origin matches `from`.
         const candidates = toData
           .map((t) => {
             const f = fromMap.get(t.trainCode);
-            const startsAtFrom = t.origin.trim().toLowerCase() === fromName.trim().toLowerCase();
-
-            if (!f && !startsAtFrom) return null;
+            if (!f) return null;
 
             const current = currentMap.get(t.trainCode);
-            const fromDep = f ? (f.expDepart || f.schDepart) : t.originTime;
+            const fromDep = f.expDepart || f.schDepart;
             const toArr = t.expArrival || t.schArrival;
 
-            // Direction check only when both stations have the train
-            if (f && f.dueIn >= t.dueIn) return null;
+            // Direction check: `from` must come before `to` on this train.
+            if (f.dueIn >= t.dueIn) return null;
 
             let status: "running" | "ready" | "scheduled";
             if (current?.status === "R") status = "running";

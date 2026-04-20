@@ -26,6 +26,9 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[] | null>(null);
+  // Snapshot of station names at search time — so the rendered result rows
+  // don't shift when the user edits the input after searching.
+  const [searchedNames, setSearchedNames] = useState<{ from: string; to: string } | null>(null);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const panelRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
@@ -114,6 +117,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
 
   async function handleSearchWith(f: string, t: string) {
     setLoading(true);
+    setSearchedNames({ from: fromQuery.trim(), to: toQuery.trim() });
     try {
       const res = await fetch(`/api/trains/search?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`);
       const data: SearchResult[] = await res.json();
@@ -135,6 +139,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
     setFromQuery("");
     setToQuery("");
     setResults(null);
+    setSearchedNames(null);
     localStorage.removeItem("search");
     onClear();
   }
@@ -265,9 +270,9 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
                     </div>
                     <div className="train-item-route">{r.origin} → {r.destination}</div>
                     <div className="train-item-times">
-                      <span>{fromQuery}: {fmtTime(r.fromDep)}</span>
+                      <span>{searchedNames?.from}: {fmtTime(r.fromDep)}</span>
                       <span className="train-item-arrow">→</span>
-                      <span>{toQuery}: {fmtTime(r.toArr)}</span>
+                      <span>{searchedNames?.to}: {fmtTime(r.toArr)}</span>
                     </div>
                   </li>
                 );
