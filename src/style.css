@@ -125,6 +125,10 @@ body {
   overflow: hidden;
   overscroll-behavior: none;
   font-family: system-ui, -apple-system, sans-serif;
+  /* Matches manifest theme_color — anything peeking through the safe area
+     (iOS Safari bottom bar, home-indicator region) blends with the app
+     instead of showing a white band. */
+  background: #16161c;
 }
 
 /* Pin body so iOS can't scroll the page up when an input is focused — without
@@ -152,6 +156,7 @@ body {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
+  background: #16161c;
 }
 
 /* Leaflet attribution — strip white background (ugly on dark tiles) but
