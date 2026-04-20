@@ -1044,8 +1044,9 @@ body {
   color: rgba(0, 0, 0, 0.48);
 }
 :root[data-theme="light"] .about-install__card {
-  background: rgba(0, 0, 0, 0.035);
-  border-color: rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 :root[data-theme="light"] .about-install__platform {
   color: rgba(0, 0, 0, 0.78);
@@ -1067,6 +1068,24 @@ body {
 }
 :root[data-theme="light"] .about-theme-btn:hover:not(.is-active) {
   color: #000;
+}
+:root[data-theme="light"] .fav-row {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+:root[data-theme="light"] .fav-row:hover {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+:root[data-theme="light"] .fav-row__remove {
+  border-color: rgba(0, 0, 0, 0.15);
+  color: rgba(0, 0, 0, 0.5);
+}
+:root[data-theme="light"] .fav-row__remove:hover {
+  color: #000;
+  border-color: rgba(0, 0, 0, 0.35);
 }
 
 /* --- Mobile: bottom sheet --- */
