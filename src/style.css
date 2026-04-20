@@ -1342,10 +1342,11 @@ body {
 @media (max-width: 600px) {
   .back-to-all-btn {
     top: auto;
-    bottom: calc(80px + env(safe-area-inset-bottom));
+    bottom: calc(110px + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     white-space: nowrap;
+    z-index: 1001;
   }
 }
 
