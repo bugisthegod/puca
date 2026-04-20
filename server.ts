@@ -105,16 +105,6 @@ Bun.serve({
         return Response.json([], { status: 502 });
       }
     }),
-    "/api/stations": rateLimit(async (_req) => {
-      try {
-        const stations = await getAllStations();
-        return Response.json(stations, {
-          headers: { "Cache-Control": "public, max-age=3600" }, // 1 hour; station list is static
-        });
-      } catch {
-        return Response.json([], { status: 502 });
-      }
-    }),
     "/api/trains/search": rateLimit(async (req) => {
       try {
         const url = new URL(req.url);

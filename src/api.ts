@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import type { Train, Station, StationTrain, TrainMovement } from "./types.ts";
+import stationsData from "./data/stations.json" with { type: "json" };
 
 const BASE_URL = "https://api.irishrail.ie/realtime/realtime.asmx";
 
@@ -131,23 +132,5 @@ export function getTrainMovements(
 }
 
 export function getAllStations(): Promise<Station[]> {
-  return cached("allStations", 86_400_000, async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/getAllStationsXML`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const xml = await res.text();
-      const parsed = parser.parse(xml);
-      const raw = parsed?.ArrayOfObjStation?.objStation;
-      const items = normalizeArray(raw);
-      return items.map((item: Record<string, unknown>) => ({
-        name: String(item.StationDesc ?? ""),
-        code: String(item.StationCode ?? ""),
-        lat: Number(item.StationLatitude ?? 0),
-        lng: Number(item.StationLongitude ?? 0),
-      }));
-    } catch (err) {
-      console.error("getAllStations error:", err);
-      return [];
-    }
-  });
+  return Promise.resolve(stationsData as Station[]);
 }
