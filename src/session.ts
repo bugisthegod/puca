@@ -9,17 +9,35 @@ import type { Mode } from "./hooks/useTrainMap";
 
 const KEY = "puca-session-v1";
 
+export interface MapView {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
 export interface Session {
   mode: Mode;
   filter: Filter;
   busOperator: BusOperator;
   busRoute: string | null;
   busDirection: string | null;
+  mapView: MapView | null;
 }
 
 const MODES: readonly Mode[] = ["train", "bus"];
 const FILTERS: readonly Filter[] = ["all", "dart", "commuter", "intercity"];
 const OPERATORS: readonly BusOperator[] = ["dublinbus", "buseireann", "goahead"];
+
+function validMapView(v: unknown): MapView | null {
+  if (!v || typeof v !== "object") return null;
+  const { lat, lng, zoom } = v as Partial<MapView>;
+  if (
+    typeof lat !== "number" || !Number.isFinite(lat) || lat < -90 || lat > 90 ||
+    typeof lng !== "number" || !Number.isFinite(lng) || lng < -180 || lng > 180 ||
+    typeof zoom !== "number" || !Number.isFinite(zoom) || zoom < 0 || zoom > 22
+  ) return null;
+  return { lat, lng, zoom };
+}
 
 export function loadSession(): Partial<Session> {
   try {
@@ -32,6 +50,8 @@ export function loadSession(): Partial<Session> {
     if (s.busOperator && OPERATORS.includes(s.busOperator)) out.busOperator = s.busOperator;
     if (typeof s.busRoute === "string") out.busRoute = s.busRoute;
     if (typeof s.busDirection === "string") out.busDirection = s.busDirection;
+    const mv = validMapView(s.mapView);
+    if (mv) out.mapView = mv;
     return out;
   } catch {
     return {};

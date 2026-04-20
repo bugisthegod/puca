@@ -2,15 +2,19 @@
 // `declare const` makes L usable as a value; `typeof import(...)` gives the full type.
 // The global namespace L (from leaflet-global.d.ts) handles L.Foo type references.
 declare const L: typeof import("leaflet");
-import { useRef, useEffect, type RefObject } from "react";
+import { useRef, useEffect, useCallback, type RefObject } from "react";
 import type { Station } from "../types";
 import type { Mode } from "./useTrainMap";
+import type { MapView } from "../session";
 import { getStationsOnce } from "../stationsClient";
 
 const TILE_VOYAGER =
   "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 const TILE_DARK =
   "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png";
+
+const DEFAULT_CENTER: L.LatLngExpression = [53.35, -6.26];
+const DEFAULT_ZOOM = 8;
 
 const BASE_TILE_OPTIONS = {
   attribution:
@@ -29,11 +33,13 @@ interface UseMapInstanceResult {
   zoomingRef: React.MutableRefObject<boolean>;
   railwayLayerRef: React.RefObject<L.TileLayer | null>;
   locateUser: () => Promise<void>;
+  getMapView: () => MapView | null;
 }
 
 export function useMapInstance(
   mapRef: RefObject<HTMLDivElement | null>,
   mode: Mode,
+  initialView: MapView | null = null,
 ): UseMapInstanceResult {
   const leafletMap = useRef<L.Map | null>(null);
   const stationsRef = useRef<Map<string, Station>>(new Map());
@@ -185,11 +191,15 @@ export function useMapInstance(
   useEffect(() => {
     if (!mapRef.current) return;
 
+    const center: L.LatLngExpression = initialView
+      ? [initialView.lat, initialView.lng]
+      : DEFAULT_CENTER;
+    const zoom = initialView?.zoom ?? DEFAULT_ZOOM;
     const map = L.map(mapRef.current, {
       preferCanvas: true,
       fadeAnimation: false,
       zoomControl: false,
-    }).setView([53.35, -6.26], 8);
+    }).setView(center, zoom);
 
     const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -262,5 +272,12 @@ export function useMapInstance(
     }
   }, [mode]);
 
-  return { leafletMap, stationsRef, zoomingRef, railwayLayerRef, locateUser };
+  const getMapView = useCallback((): MapView | null => {
+    const map = leafletMap.current;
+    if (!map) return null;
+    const c = map.getCenter();
+    return { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
+  }, []);
+
+  return { leafletMap, stationsRef, zoomingRef, railwayLayerRef, locateUser, getMapView };
 }

@@ -2,6 +2,7 @@ import { useRef, useEffect, type RefObject } from "react";
 import type { Train, BusVehicle, BusOperator } from "../types";
 import { along } from "./routeProjection";
 import type { Filter } from "../utils";
+import type { MapView } from "../session";
 import { useMapInstance } from "./useMapInstance";
 import { useTrainMarkers } from "./useTrainMarkers";
 import { useBusMarkers } from "./useBusMarkers";
@@ -18,6 +19,7 @@ const TICK_INTERVAL_MS = 50;
 interface UseTrainMapOptions {
   currentBusRoute?: string | null;
   onSelectBusRoute?: (route: string, direction: string) => void;
+  initialView?: MapView | null;
 }
 
 export function useTrainMap(
@@ -31,8 +33,8 @@ export function useTrainMap(
   busDirection: string | null = null,
   busOperator: BusOperator = "dublinbus",
   options: UseTrainMapOptions = {},
-): { focusTrain: (code: string) => void; locateUser: () => Promise<void> } {
-  const { currentBusRoute = null, onSelectBusRoute } = options;
+): { focusTrain: (code: string) => void; locateUser: () => Promise<void>; getMapView: () => MapView | null } {
+  const { currentBusRoute = null, onSelectBusRoute, initialView = null } = options;
 
   const onSelectBusRouteRef = useRef(onSelectBusRoute);
   onSelectBusRouteRef.current = onSelectBusRoute;
@@ -42,7 +44,7 @@ export function useTrainMap(
   const busClusterLayer = useRef<L.MarkerClusterGroup | null>(null);
 
   // Map first — everything else depends on it.
-  const { leafletMap, stationsRef, zoomingRef, locateUser } = useMapInstance(mapRef, mode);
+  const { leafletMap, stationsRef, zoomingRef, locateUser, getMapView } = useMapInstance(mapRef, mode, initialView);
 
   const { markers, clearRouteLine, focusTrain } = useTrainMarkers({
     trains,
@@ -242,5 +244,5 @@ export function useTrainMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { focusTrain, locateUser };
+  return { focusTrain, locateUser, getMapView };
 }

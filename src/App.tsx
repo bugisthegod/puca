@@ -34,12 +34,13 @@ function App() {
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain, locateUser } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
+  const { focusTrain, locateUser, getMapView } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
       setBusDirection(direction);
     },
+    initialView: savedSession.mapView ?? null,
   });
   const [locating, setLocating] = useState(false);
   const [reminder, setReminder] = useState<Reminder | null>(() => loadReminder());
@@ -61,8 +62,13 @@ function App() {
     return onReminderChange(setReminder);
   }, []);
 
+  const lastMapViewRef = useRef(savedSession.mapView ?? null);
   useEffect(() => {
-    const save = () => saveSession({ mode, filter, busOperator, busRoute, busDirection });
+    const save = () => {
+      const mv = getMapView();
+      if (mv) lastMapViewRef.current = mv;
+      saveSession({ mode, filter, busOperator, busRoute, busDirection, mapView: lastMapViewRef.current });
+    };
     const onVisibility = () => { if (document.hidden) save(); };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", save);
@@ -70,7 +76,7 @@ function App() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", save);
     };
-  }, [mode, filter, busOperator, busRoute, busDirection]);
+  }, [mode, filter, busOperator, busRoute, busDirection, getMapView]);
 
   // iOS Safari overlays the keyboard on top of the viewport instead of
   // shrinking it (unlike Android), so bottom-fixed elements get covered and
