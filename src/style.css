@@ -118,17 +118,14 @@ body {
   margin: 0;
   padding: 0;
   width: 100vw;
-  /* 100dvh tracks the dynamic viewport — shrinks/grows with iOS Safari's URL
-     bar + keyboard. Falls back to 100vh for older browsers (desktop-OK there). */
+  /* 100lvh = largest viewport: with viewport-fit=cover, this spans the full
+     screen including iOS safe-area zones (status bar / home indicator), so
+     the map fills everything instead of leaving a blank band at the bottom. */
   height: 100vh;
-  height: 100dvh;
+  height: 100lvh;
   overflow: hidden;
   overscroll-behavior: none;
   font-family: system-ui, -apple-system, sans-serif;
-  /* Matches manifest theme_color — anything peeking through the safe area
-     (iOS Safari bottom bar, home-indicator region) blends with the app
-     instead of showing a white band. */
-  background: #16161c;
 }
 
 /* Pin body so iOS can't scroll the page up when an input is focused — without
@@ -145,7 +142,7 @@ body {
 #root {
   width: 100vw;
   height: 100vh;
-  height: 100dvh;
+  height: 100lvh;
 }
 
 /* ============================================================
@@ -155,8 +152,7 @@ body {
 #map {
   width: 100vw;
   height: 100vh;
-  height: 100dvh;
-  background: #16161c;
+  height: 100lvh;
 }
 
 /* Leaflet attribution — strip white background (ugly on dark tiles) but
