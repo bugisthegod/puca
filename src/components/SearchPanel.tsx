@@ -231,12 +231,6 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
         <button className="search-btn" onClick={() => handleSearchWith(from, to)} disabled={!from || !to || loading}>
           {loading ? "Searching..." : "Search"}
         </button>
-        {from && to && (
-          <FavStar
-            active={hasTrain(favs, { from, to })}
-            onToggle={() => onToggleTrain({ from, to, fromName: fromQuery, toName: toQuery })}
-          />
-        )}
         {(from || to || results !== null) && (
           <button className="search-btn clear-btn" onClick={handleClear}>
             Clear
@@ -246,8 +240,21 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
       {results !== null && (
         results.length > 0 ? (
           <div className="search-results">
-            <div className="search-result-msg has-results">
-              Found {results.length} train{results.length !== 1 ? "s" : ""}
+            <div className="search-result-header">
+              <span className="search-result-msg has-results">
+                Found {results.length} train{results.length !== 1 ? "s" : ""}
+              </span>
+              {from && to && (
+                <FavStar
+                  active={hasTrain(favs, { from, to })}
+                  onToggle={() => onToggleTrain({
+                    from,
+                    to,
+                    fromName: searchedNames?.from ?? fromQuery.trim(),
+                    toName: searchedNames?.to ?? toQuery.trim(),
+                  })}
+                />
+              )}
             </div>
             <ul className="train-list">
               {results.map((r) => {
@@ -280,7 +287,20 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
             </ul>
           </div>
         ) : (
-          <div className="search-result-msg no-results">No active trains on this route</div>
+          <div className="search-result-header">
+            <span className="search-result-msg no-results">No active trains on this route</span>
+            {from && to && (
+              <FavStar
+                active={hasTrain(favs, { from, to })}
+                onToggle={() => onToggleTrain({
+                  from,
+                  to,
+                  fromName: searchedNames?.from ?? fromQuery.trim(),
+                  toName: searchedNames?.to ?? toQuery.trim(),
+                })}
+              />
+            )}
+          </div>
         )
       )}
       </>}

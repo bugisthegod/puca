@@ -1200,6 +1200,7 @@ body {
 
 .search-actions {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
@@ -1258,6 +1259,21 @@ body {
   text-align: center;
   padding-top: 2px;
   animation: search-results-in 0.18s ease-out;
+}
+
+.search-result-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+}
+
+.search-result-header .fav-star {
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .search-results {
@@ -1329,7 +1345,7 @@ body {
 }
 
 .train-item--scheduled {
-  opacity: 0.55;
+  opacity: 0.78;
   cursor: default;
 }
 
@@ -1352,8 +1368,8 @@ body {
 }
 
 .train-item-status--scheduled {
-  background: rgba(255, 255, 255, 0.06);
-  color: #777;
+  background: rgba(255, 255, 255, 0.12);
+  color: #bbb;
 }
 
 .train-item-route {
