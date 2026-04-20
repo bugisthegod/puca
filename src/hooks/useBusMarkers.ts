@@ -253,8 +253,8 @@ export function useBusMarkers({
     const icon = L.divIcon({
       className: `bus-marker ${operatorClass}`.trim(),
       html: `<div class="bus-triangle"></div><div class="bus-label">${escapeHtml(bus.routeShortName)}</div>`,
-      iconSize: [40, 20],
-      iconAnchor: [20, 10],
+      iconSize: [44, 22],
+      iconAnchor: [22, 11],
     });
     const marker = L.marker([bus.lat, bus.lng], { icon });
     marker.bindPopup(buildBusPopupHTML(bus, null), {

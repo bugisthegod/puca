@@ -174,6 +174,7 @@ export function useMapInstance(
               fillColor: "#1e88e5",
               fillOpacity: 0.12,
               weight: 1,
+              interactive: false,
             }).addTo(map);
           } else {
             userMarkerRef.current.setLatLng(latlng);
@@ -234,8 +235,10 @@ export function useMapInstance(
     });
     if (mode === "train") railwayLayerRef.current.addTo(map);
 
-    map.on("zoomstart", () => { zoomingRef.current = true; });
-    map.on("zoomend", () => { zoomingRef.current = false; });
+    // Pause marker tick during any map animation (zoom OR pan), so panTo-on-select
+    // doesn't compete with per-frame setLatLng + cluster reindex.
+    map.on("movestart", () => { zoomingRef.current = true; });
+    map.on("moveend", () => { zoomingRef.current = false; });
 
     // Load stations for route line drawing in popups
     getStationsOnce().then((data) => {

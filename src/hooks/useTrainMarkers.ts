@@ -268,6 +268,17 @@ export function useTrainMarkers({
     });
   }
 
+  // Invisible oversize hit target that catches taps around the visible marker.
+  // Rendered above (added after) so it receives the click; fully transparent so
+  // the visible marker shows through.
+  function makeHitMarker(train: Train): L.CircleMarker {
+    return L.circleMarker([train.lat, train.lng], {
+      radius: 18,
+      stroke: false,
+      fillOpacity: 0,
+    });
+  }
+
   // Async fetch of a train shape, populating the module-level cache.
   // Dedupes concurrent requests; does NOT cache on 429/network error.
   async function fetchTrainShape(
@@ -407,6 +418,7 @@ export function useTrainMarkers({
               weight: 3,
               opacity: 0.7,
               dashArray: "8, 8",
+              interactive: false,
             }).addTo(map);
           }
         }
@@ -549,8 +561,14 @@ export function useTrainMarkers({
         // New marker
         const now = performance.now();
         const marker = makeCircleMarker(train);
+        const hitMarker = makeHitMarker(train);
 
-        marker.on("click", () => onMarkerClick(train.code));
+        hitMarker.on("click", () => onMarkerClick(train.code));
+        // Keep hit target in sync: mirror position on every frame, follow
+        // visible marker on/off the map so there's no stray hit layer.
+        marker.on("move", (e) => hitMarker.setLatLng((e as L.LeafletEvent & { latlng: L.LatLng }).latlng));
+        marker.on("add", () => hitMarker.addTo(map));
+        marker.on("remove", () => map.removeLayer(hitMarker));
 
         if (isVisible(train)) marker.addTo(map);
 
