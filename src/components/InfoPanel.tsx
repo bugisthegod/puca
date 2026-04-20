@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { Filter } from "../utils";
 import type { Mode } from "../hooks/useTrainMap";
 import type { BusOperator } from "../types";
+import SleepingPuca from "./SleepingPuca";
 
 type InfoPanelProps = {
   vehicleCount: number;
@@ -58,16 +59,22 @@ export default function InfoPanel({
   return (
     <div id="info-panel" className={drilledIn ? "" : "info-panel--compact"}>
       {drilledIn && (
-        <>
-          <div id="panel-header">
-            <span id="train-count">
-              {inService ? showCount : "Service closed"}
-            </span>
+        inService ? (
+          <>
+            <div id="panel-header">
+              <span id="train-count">{showCount}</span>
+            </div>
+            <div id="last-updated">{lastUpdated}</div>
+          </>
+        ) : (
+          <div id="panel-header" className="panel-header--closed">
+            <SleepingPuca size={52} />
+            <div className="service-text">
+              <span id="train-count">Service closed</span>
+              <span className="service-next">Next {mode} at {resumeLabel}</span>
+            </div>
           </div>
-          <div id="last-updated">
-            {inService ? lastUpdated : `Resumes at ${resumeLabel}`}
-          </div>
-        </>
+        )
       )}
       <div id="filter-bar" className={drilledIn ? "" : "filter-bar--root"}>
         {!drilledIn && MODES.map(({ value, label }) => (
@@ -89,25 +96,29 @@ export default function InfoPanel({
             >
               ←
             </button>
-            <span className="filter-sep" />
-            {mode === "train" && FILTERS.map(({ value, label }) => (
-              <button
-                key={value}
-                className={`filter-btn${filter === value ? " active" : ""}`}
-                onClick={() => onFilterChange(value)}
-              >
-                {label}
-              </button>
-            ))}
-            {mode === "bus" && BUS_OPERATORS.map(({ value, label }) => (
-              <button
-                key={value}
-                className={`filter-btn${busOperator === value ? " active" : ""}`}
-                onClick={() => onBusOperatorChange(value)}
-              >
-                {label}
-              </button>
-            ))}
+            {inService && (
+              <>
+                <span className="filter-sep" />
+                {mode === "train" && FILTERS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    className={`filter-btn${filter === value ? " active" : ""}`}
+                    onClick={() => onFilterChange(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {mode === "bus" && BUS_OPERATORS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    className={`filter-btn${busOperator === value ? " active" : ""}`}
+                    onClick={() => onBusOperatorChange(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </>
+            )}
           </>
         )}
       </div>

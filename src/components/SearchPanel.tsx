@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { Station, SearchResult } from "../types";
 import { getStationsOnce } from "../stationsClient";
+import FavStar from "./FavStar";
+import { hasTrain, type Favorites, type TrainFavorite } from "../favorites";
 
 interface SearchPanelProps {
   onSearch: (codes: string[]) => void;
   onClear: () => void;
   onTrainSelect: (code: string) => void;
+  favs: Favorites;
+  onToggleTrain: (f: TrainFavorite) => void;
+  defaultCollapsed?: boolean;
 }
 
-export default function SearchPanel({ onSearch, onClear, onTrainSelect }: SearchPanelProps) {
+export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, defaultCollapsed = false }: SearchPanelProps) {
   const saved = localStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
 
@@ -21,7 +26,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[] | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const panelRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
@@ -217,7 +222,13 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect }: Search
         <button className="search-btn" onClick={() => handleSearchWith(from, to)} disabled={!from || !to || loading}>
           {loading ? "Searching..." : "Search"}
         </button>
-        {results !== null && (
+        {from && to && (
+          <FavStar
+            active={hasTrain(favs, { from, to })}
+            onToggle={() => onToggleTrain({ from, to, fromName: fromQuery, toName: toQuery })}
+          />
+        )}
+        {(from || to || results !== null) && (
           <button className="search-btn clear-btn" onClick={handleClear}>
             Clear
           </button>

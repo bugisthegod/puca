@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { BusRoute, BusOperator } from "../types";
+import FavStar from "./FavStar";
 
 type RouteWithOperator = BusRoute & { operator: BusOperator };
 
@@ -18,6 +19,9 @@ type BusSearchPanelProps = {
   onSelectDirection: (direction: string | null) => void;
   selectedDirection: string | null;
   busShape: BusShape;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  defaultCollapsed?: boolean;
 };
 
 export default function BusSearchPanel({
@@ -26,12 +30,15 @@ export default function BusSearchPanel({
   onSelectDirection,
   selectedDirection,
   busShape,
+  isFavorite,
+  onToggleFavorite,
+  defaultCollapsed = false,
 }: BusSearchPanelProps) {
   const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Fetch routes from all operators once so search spans every agency.
@@ -99,7 +106,6 @@ export default function BusSearchPanel({
 
   function handleDirectionPick(dir: string) {
     onSelectDirection(dir);
-    if (window.innerWidth <= 600) setCollapsed(true);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -181,6 +187,7 @@ export default function BusSearchPanel({
           {selectedRoute && selectedDirection && (
             <div className="direction-status">
               <span>Going to {directions[selectedDirection] ?? selectedDirection}</span>
+              <FavStar active={isFavorite} onToggle={onToggleFavorite} />
               <button className="search-btn clear-btn" onClick={() => onSelectDirection(null)}>
                 Change
               </button>

@@ -14,9 +14,12 @@ import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel from "./components/BusSearchPanel";
 import AboutModal from "./components/AboutModal";
+import FavoritesModal from "./components/FavoritesModal";
 import PucaMark from "./components/PucaMark";
 import OfflineBanner from "./components/OfflineBanner";
 import { registerServiceWorker } from "./sw-register";
+import { useFavorites } from "./hooks/useFavorites";
+import { hasBus, hasTrain, MAX_BUS_FAVORITES, MAX_TRAIN_FAVORITES, type TrainFavorite } from "./favorites";
 import "./style.css";
 
 const savedSession = loadSession();
@@ -51,6 +54,33 @@ function App() {
   const [seenAbout, setSeenAbout] = useState<boolean>(() => {
     try { return localStorage.getItem(ABOUT_SEEN_KEY) === "1"; } catch { return true; }
   });
+  const { favs, toggleBus, toggleTrain, removeBus, removeTrain } = useFavorites();
+  const [showFavs, setShowFavs] = useState(false);
+  const [searchResetKey, setSearchResetKey] = useState(0);
+
+  const busFavKey = busRoute && busDirection ? { shortName: busRoute, operator: busOperator, direction: busDirection } : null;
+  const busIsFav = busFavKey ? hasBus(favs, busFavKey) : false;
+  function showFavLimitToast(kind: "bus" | "train", max: number) {
+    const msg = `${kind === "bus" ? "Bus" : "Train"} favorites full (${max} max). Remove one first.`;
+    setToast(msg);
+    setTimeout(() => setToast((t) => (t === msg ? null : t)), 3000);
+  }
+  const onToggleBusFav = () => {
+    if (!busFavKey) return;
+    if (!busIsFav && favs.buses.length >= MAX_BUS_FAVORITES) {
+      showFavLimitToast("bus", MAX_BUS_FAVORITES);
+      return;
+    }
+    const headsign = busShape?.[busDirection!]?.headsign ?? busDirection!;
+    toggleBus({ ...busFavKey, headsign });
+  };
+  const tryToggleTrain = (f: TrainFavorite) => {
+    if (!hasTrain(favs, f) && favs.trains.length >= MAX_TRAIN_FAVORITES) {
+      showFavLimitToast("train", MAX_TRAIN_FAVORITES);
+      return;
+    }
+    toggleTrain(f);
+  };
 
   function openAbout() {
     setShowAbout(true);
@@ -287,6 +317,17 @@ function App() {
       </button>
       <button
         type="button"
+        className="fav-fab"
+        onClick={() => setShowFavs(true)}
+        aria-label="Favorites"
+        title="Favorites"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1L3.2 9.4l6.1-.9z" />
+        </svg>
+      </button>
+      <button
+        type="button"
         className="about-fab"
         onClick={openAbout}
         aria-label="About Púca"
@@ -296,11 +337,35 @@ function App() {
         {!seenAbout && <span className="about-fab__badge" aria-hidden="true" />}
       </button>
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showFavs && (
+        <FavoritesModal
+          onClose={() => setShowFavs(false)}
+          favs={favs}
+          onPickBus={(f) => {
+            setMode("bus");
+            setBusOperator(f.operator);
+            setBusRoute(f.shortName);
+            setBusDirection(f.direction);
+            setBuses([]);
+          }}
+          onPickTrain={(f) => {
+            localStorage.setItem("search", JSON.stringify({ from: f.from, to: f.to, fromQuery: f.fromName, toQuery: f.toName }));
+            if (mode !== "train") setMode("train");
+            setSearchResetKey((k) => k + 1);
+          }}
+          onRemoveBus={removeBus}
+          onRemoveTrain={removeTrain}
+        />
+      )}
       {mode === "train" ? (
         <SearchPanel
+          key={searchResetKey}
           onSearch={(codes) => setSearchCodes(codes.length > 0 ? codes : [])}
           onClear={() => setSearchCodes(null)}
           onTrainSelect={focusTrain}
+          favs={favs}
+          onToggleTrain={tryToggleTrain}
+          defaultCollapsed={!inService}
         />
       ) : (
         <BusSearchPanel
@@ -316,6 +381,9 @@ function App() {
           onSelectDirection={setBusDirection}
           selectedDirection={busDirection}
           busShape={busShape}
+          isFavorite={busIsFav}
+          onToggleFavorite={onToggleBusFav}
+          defaultCollapsed={!inService}
         />
       )}
       {mode === "bus" && busRoute !== null && (
