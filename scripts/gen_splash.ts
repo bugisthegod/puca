@@ -35,9 +35,9 @@ await $`mkdir -p public/splash`.quiet();
 for (const s of SPLASHES) {
   const w = s.dw * s.dpr;
   const h = s.dh * s.dpr;
-  const iconPx = Math.round(Math.min(w, h) * 0.34);
+  const iconPx = Math.round(Math.min(w, h) * 0.44);
   const x = Math.round((w - iconPx) / 2);
-  const y = Math.round((h - iconPx) / 2 - h * 0.06);
+  const y = Math.round((h - iconPx) / 2 - h * 0.10);
 
   const fontSize = Math.round(iconPx * 0.18);
   const textGap = Math.round(iconPx * 0.16);
