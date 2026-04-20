@@ -167,8 +167,10 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           placeholder="From station..."
           value={fromQuery}
           onChange={(e) => {
-            setFromQuery(e.currentTarget.value);
-            setFrom("");
+            const v = e.currentTarget.value;
+            setFromQuery(v);
+            const match = stations.find((s) => s.name.toLowerCase() === v.toLowerCase());
+            setFrom(match?.code ?? "");
           }}
           onFocus={() => setFocusedField("from")}
           onKeyDown={(e) => handleKeyDown(e, "from")}
@@ -197,8 +199,10 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           placeholder="To station..."
           value={toQuery}
           onChange={(e) => {
-            setToQuery(e.currentTarget.value);
-            setTo("");
+            const v = e.currentTarget.value;
+            setToQuery(v);
+            const match = stations.find((s) => s.name.toLowerCase() === v.toLowerCase());
+            setTo(match?.code ?? "");
           }}
           onFocus={() => setFocusedField("to")}
           onKeyDown={(e) => handleKeyDown(e, "to")}
