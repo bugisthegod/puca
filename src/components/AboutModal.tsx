@@ -1,57 +1,16 @@
 import React, { useEffect } from "react";
 import PucaMark from "./PucaMark";
 
+export type ThemePref = "light" | "dark" | "system";
+
 type AboutModalProps = {
   onClose: () => void;
   onShowTour?: () => void;
+  theme?: ThemePref;
+  onSetTheme?: (t: ThemePref) => void;
 };
 
-type FeatureIconName = "map" | "search" | "locate";
-
-function FeatureIcon({ name }: { name: FeatureIconName }) {
-  const common = {
-    width: 18,
-    height: 18,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.75,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-  switch (name) {
-    case "map":
-      return (
-        <svg {...common}>
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
-      );
-    case "search":
-      return (
-        <svg {...common}>
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-4.3-4.3" />
-        </svg>
-      );
-    case "locate":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-        </svg>
-      );
-  }
-}
-
-const FEATURES: { icon: FeatureIconName; title: string; desc: string }[] = [
-  { icon: "map", title: "Live map", desc: "Real-time trains and buses across Ireland." },
-  { icon: "search", title: "Search", desc: "Find a train by station, or plan an A → B journey." },
-  { icon: "locate", title: "Locate me", desc: "Centre the map on your position, with heading." },
-];
-
-export default function AboutModal({ onClose, onShowTour }: AboutModalProps) {
+export default function AboutModal({ onClose, onShowTour, theme, onSetTheme }: AboutModalProps) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -93,25 +52,36 @@ export default function AboutModal({ onClose, onShowTour }: AboutModalProps) {
 
         <div className="about-divider" />
 
-        <section className="about-block">
-          <div className="about-block__label">What it does</div>
-          <ul className="about-features">
-            {FEATURES.map((f) => (
-              <li key={f.icon} className="about-feature">
-                <span className="about-feature__icon"><FeatureIcon name={f.icon} /></span>
-                <div>
-                  <div className="about-feature__title">{f.title}</div>
-                  <div className="about-feature__desc">{f.desc}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {onShowTour && (
+        {onShowTour && (
+          <section className="about-block">
             <button type="button" className="about-tour-btn" onClick={onShowTour}>
               Take the tour
             </button>
-          )}
-        </section>
+          </section>
+        )}
+
+        {onSetTheme && theme && (
+          <>
+            <div className="about-divider" />
+            <section className="about-block">
+              <div className="about-block__label">Appearance</div>
+              <div className="about-theme-toggle" role="radiogroup" aria-label="Theme">
+                {(["light", "dark", "system"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    role="radio"
+                    aria-checked={theme === t}
+                    className={`about-theme-btn${theme === t ? " is-active" : ""}`}
+                    onClick={() => { if (theme !== t) onSetTheme(t); }}
+                  >
+                    {t === "light" ? "Light" : t === "dark" ? "Dark" : "System"}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
         <div className="about-divider" />
 

@@ -202,7 +202,9 @@ export function useMapInstance(
       zoomControl: false,
     }).setView(center, zoom);
 
-    const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
+    function isDark(): boolean {
+      return document.documentElement.dataset.theme === "dark";
+    }
 
     function addBaseTile(dark: boolean): void {
       if (baseTileRef.current) {
@@ -218,10 +220,11 @@ export function useMapInstance(
       baseTileRef.current = layer;
     }
 
-    addBaseTile(darkMq.matches);
+    addBaseTile(isDark());
 
-    const onSchemeChange = (e: MediaQueryListEvent) => addBaseTile(e.matches);
-    darkMq.addEventListener("change", onSchemeChange);
+    // Swap base tile when the user toggles theme in the About modal.
+    const onSchemeChange = () => addBaseTile(isDark());
+    window.addEventListener("puca:themechange", onSchemeChange);
 
     // Railway lines overlay (only in train mode)
     railwayLayerRef.current = L.tileLayer("https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png", {
@@ -250,7 +253,7 @@ export function useMapInstance(
     leafletMap.current = map;
 
     return () => {
-      darkMq.removeEventListener("change", onSchemeChange);
+      window.removeEventListener("puca:themechange", onSchemeChange);
       stopOrientationTracking();
       map.remove();
       leafletMap.current = null;

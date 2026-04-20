@@ -26,6 +26,26 @@ import "./style.css";
 const savedSession = loadSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
+const THEME_KEY = "puca:theme";
+type ThemePref = "light" | "dark" | "system";
+
+function resolveTheme(pref: ThemePref): "light" | "dark" {
+  if (pref === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return pref;
+}
+
+function readThemePref(): ThemePref {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    if (v === "light" || v === "dark" || v === "system") return v;
+  } catch {}
+  return "system";
+}
+
+// Apply saved theme before React renders to avoid a flash of the wrong theme.
+document.documentElement.dataset.theme = resolveTheme(readThemePref());
 
 const TOUR_STEPS: TourStep[] = [
   {
@@ -47,6 +67,11 @@ const TOUR_STEPS: TourStep[] = [
     body: "Tap any bus or train on the map for live arrivals, delays, and stops.",
   },
   {
+    target: ".about-fab",
+    title: "Settings & help",
+    body: "Toggle dark mode, revisit this tour, or find install tips here.",
+  },
+  {
     target: ".fav-fab",
     title: "Save favourites",
     body: "Star a route or train search, then come back to it from here.",
@@ -54,12 +79,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: ".locate-btn",
     title: "Locate me",
-    body: "Centre the map on your position to see what's nearby.",
-  },
-  {
-    target: ".about-fab",
-    title: "All set",
-    body: "Revisit this tour anytime from the About menu.",
+    body: "Centre the map on your position to see what's nearby. You're all set!",
   },
 ];
 
@@ -95,6 +115,23 @@ function App() {
   const [showTour, setShowTour] = useState<boolean>(() => {
     try { return localStorage.getItem(TOUR_SEEN_KEY) !== "1"; } catch { return false; }
   });
+  const [theme, setTheme] = useState<ThemePref>(readThemePref);
+  useEffect(() => {
+    const apply = () => {
+      document.documentElement.dataset.theme = resolveTheme(theme);
+      // Notify useMapInstance to swap the base tile layer.
+      window.dispatchEvent(new Event("puca:themechange"));
+    };
+    apply();
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    // Only track OS preference changes while the user is on "system" —
+    // explicit light/dark choices should win regardless of OS.
+    if (theme === "system") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      mq.addEventListener("change", apply);
+      return () => mq.removeEventListener("change", apply);
+    }
+  }, [theme]);
   function closeTour() {
     setShowTour(false);
     try { localStorage.setItem(TOUR_SEEN_KEY, "1"); } catch {}
@@ -389,6 +426,8 @@ function App() {
         <AboutModal
           onClose={() => setShowAbout(false)}
           onShowTour={() => { setShowAbout(false); openTour(); }}
+          theme={theme}
+          onSetTheme={setTheme}
         />
       )}
       {showTour && <OnboardingTour steps={TOUR_STEPS} onClose={closeTour} />}
