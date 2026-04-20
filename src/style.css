@@ -180,98 +180,10 @@ body {
 }
 
 /* ============================================================
-   Arrival-reminder bell + chip + toast
+   App toast (used for favorite-limit messages)
    ============================================================ */
 
-.movements-table th:last-child,
-.movement-bell-cell {
-  width: 44px;
-  padding-left: 4px !important;
-  padding-right: 4px !important;
-  text-align: center;
-}
-
-.reminder-bell {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
-  color: #666;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.reminder-bell:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #1a1a1a;
-  border-color: rgba(0, 0, 0, 0.35);
-}
-
-.reminder-bell--active,
-.reminder-bell--active:hover {
-  background: #f5b945;
-  border-color: #d99a1f;
-  color: #3d2800;
-}
-
-.reminder-chip {
-  position: fixed;
-  top: calc(12px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1001;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px 7px 12px;
-  background: rgba(22, 22, 28, 0.88);
-  color: #f5b945;
-  border: 1px solid rgba(245, 185, 69, 0.35);
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-  max-width: calc(100vw - 24px);
-}
-
-.reminder-chip__text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.reminder-chip__close {
-  background: transparent;
-  border: none;
-  color: rgba(245, 185, 69, 0.75);
-  font-size: 1.1rem;
-  line-height: 1;
-  padding: 2px 6px;
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.reminder-chip__close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #f5b945;
-}
-
-/* On mobile, the search panel occupies the top-left — the centred chip can
-   overlap it. Shift the chip below the search panel row. */
-@media (max-width: 600px) {
-  .reminder-chip {
-    top: calc(170px + env(safe-area-inset-top));
-  }
-}
-
-.reminder-toast {
+.app-toast {
   position: fixed;
   top: calc(60px + env(safe-area-inset-top));
   left: 50%;
@@ -288,10 +200,10 @@ body {
   font-weight: 600;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
   max-width: calc(100vw - 24px);
-  animation: reminder-toast-in 0.25s ease-out;
+  animation: app-toast-in 0.25s ease-out;
 }
 
-.reminder-toast__close {
+.app-toast__close {
   background: rgba(0, 0, 0, 0.15);
   border: none;
   color: #1a1a1a;
@@ -302,20 +214,20 @@ body {
   border-radius: 50%;
 }
 
-@keyframes reminder-toast-in {
+@keyframes app-toast-in {
   from { opacity: 0; transform: translate(-50%, -12px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 @media (max-width: 600px) {
-  .reminder-toast {
+  .app-toast {
     top: calc(220px + env(safe-area-inset-top));
     left: 8px;
     right: 8px;
     transform: none;
     max-width: none;
   }
-  @keyframes reminder-toast-in {
+  @keyframes app-toast-in {
     from { opacity: 0; transform: translateY(-12px); }
     to { opacity: 1; transform: translateY(0); }
   }
@@ -349,8 +261,7 @@ body {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* On mobile the search panel fills the top centre — same treatment as
-   .reminder-chip: slide the banner below it. */
+/* On mobile the search panel fills the top centre — slide the banner below it. */
 @media (max-width: 600px) {
   .offline-banner {
     top: calc(170px + env(safe-area-inset-top));

@@ -13,16 +13,6 @@ import {
   type Filter,
 } from "../utils";
 import type { Mode } from "./useTrainMap";
-import {
-  loadReminder,
-  saveReminder,
-  clearReminder,
-  requestNotificationPermission,
-  type Reminder,
-} from "../reminder";
-
-const BELL_SVG =
-  '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 2a2 2 0 0 0-2 2v.6A6 6 0 0 0 6 10v4l-2 2v1h16v-1l-2-2v-4a6 6 0 0 0-4-5.4V4a2 2 0 0 0-2-2zm-2 17a2 2 0 0 0 4 0h-4z"/></svg>';
 
 // ---------------------------------------------------------------------------
 // Module-level train shape cache (survives across renders / updates)
@@ -105,13 +95,9 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
     D: "Destination",
   };
 
-  const activeReminder =
-    loadReminder() && loadReminder()!.trainCode === train.code ? loadReminder() : null;
-
   const rows = movements
-    .map((m, idx) => {
+    .map((m) => {
       const isCurrent = m.stopType === "C";
-      const isOrigin = idx === 0;
       const rowClass = isCurrent ? "movement-current" : "";
       const schArr = fmtTime(m.scheduledArrival);
       const schDep = fmtTime(m.scheduledDepart);
@@ -124,19 +110,12 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
       const showArr = actArr !== "—" ? actArr : expArr !== "—" ? expArr : schArr;
       const showDep = actDep !== "—" ? actDep : expDep !== "—" ? expDep : schDep;
 
-      const isActiveReminder =
-        activeReminder !== null && activeReminder.destStationCode === m.stationCode;
-      const bellCell = isOrigin
-        ? `<td class="movement-bell-cell"></td>`
-        : `<td class="movement-bell-cell"><button type="button" class="reminder-bell${isActiveReminder ? " reminder-bell--active" : ""}" data-station-code="${encodeURIComponent(m.stationCode)}" data-station-name="${encodeURIComponent(m.stationName)}" aria-label="${isActiveReminder ? "Clear reminder" : "Remind me before this stop"}" title="${isActiveReminder ? "Clear reminder" : "Remind me before this stop"}">${BELL_SVG}</button></td>`;
-
       return `
         <tr class="${rowClass}">
           <td>${escapeHtml(m.stationName)}${isCurrent ? " ▶" : ""}</td>
           <td>${escapeHtml(stopTypeLabel[m.stopType] ?? m.stopType)}</td>
           <td>${showArr}</td>
           <td>${showDep}</td>
-          ${bellCell}
         </tr>
       `;
     })
@@ -160,7 +139,6 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
                      <th>Type</th>
                      <th>Arr</th>
                      <th>Dep</th>
-                     <th>Alert</th>
                    </tr>
                  </thead>
                  <tbody>${rows}</tbody>
@@ -328,51 +306,6 @@ export function useTrainMarkers({
     return promise;
   }
 
-  function bindReminderBells(trainCode: string, movements: TrainMovement[]): void {
-    const bells = document.querySelectorAll<HTMLButtonElement>(".reminder-bell");
-    bells.forEach((bell) => {
-      bell.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        const stationCode = decodeURIComponent(bell.dataset.stationCode ?? "");
-        const stationName = decodeURIComponent(bell.dataset.stationName ?? "");
-        if (!stationCode) return;
-
-        const existing = loadReminder();
-        const isThisActive =
-          existing !== null &&
-          existing.trainCode === trainCode &&
-          existing.destStationCode === stationCode;
-
-        if (isThisActive) {
-          clearReminder();
-        } else {
-          const r: Reminder = {
-            trainCode,
-            destStationCode: stationCode,
-            destStationName: stationName,
-            date: new Date().toISOString().slice(0, 10),
-            notified: false,
-          };
-          saveReminder(r);
-          void requestNotificationPermission();
-        }
-
-        // Refresh all bells in this popup so only one is marked active.
-        bells.forEach((b) => {
-          const bCode = decodeURIComponent(b.dataset.stationCode ?? "");
-          const nowActive =
-            !isThisActive && bCode === stationCode;
-          b.classList.toggle("reminder-bell--active", nowActive);
-          const label = nowActive ? "Clear reminder" : "Remind me before this stop";
-          b.setAttribute("aria-label", label);
-          b.setAttribute("title", label);
-        });
-
-        void movements; // silence unused param; kept for future per-popup logic
-      });
-    });
-  }
-
   async function onMarkerClick(trainCode: string) {
     const entry = markers.current.get(trainCode);
     if (!entry) return;
@@ -399,7 +332,6 @@ export function useTrainMarkers({
             const rowTop = (current as HTMLElement).offsetTop - (wrap as HTMLElement).offsetTop;
             wrap.scrollTop = rowTop;
           }
-          bindReminderBells(trainCode, movements);
         });
 
         // Draw route polyline using station coordinates

@@ -7,8 +7,6 @@ import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator } from "./types";
 import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
-import { useReminderPoller } from "./hooks/useReminderPoller";
-import { loadReminder, clearReminder, onReminderChange, type Reminder } from "./reminder";
 import { loadSession, saveSession } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
@@ -106,7 +104,6 @@ function App() {
     initialView: savedSession.mapView ?? null,
   });
   const [locating, setLocating] = useState(false);
-  const [reminder, setReminder] = useState<Reminder | null>(() => loadReminder());
   const [toast, setToast] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [seenAbout, setSeenAbout] = useState<boolean>(() => {
@@ -175,10 +172,6 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    return onReminderChange(setReminder);
-  }, []);
-
   const lastMapViewRef = useRef(savedSession.mapView ?? null);
   useEffect(() => {
     const save = () => {
@@ -217,8 +210,6 @@ function App() {
       document.removeEventListener("focusout", onFocusOut);
     };
   }, []);
-
-  useReminderPoller({ onTrigger: (msg) => setToast(msg) });
 
   async function handleLocate() {
     if (locating) return;
@@ -356,31 +347,12 @@ function App() {
     <>
       <div id="map" ref={mapRef} />
       <OfflineBanner />
-      {reminder && (
-        <div className="reminder-chip" role="status">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-            <path d="M12 2a2 2 0 0 0-2 2v.6A6 6 0 0 0 6 10v4l-2 2v1h16v-1l-2-2v-4a6 6 0 0 0-4-5.4V4a2 2 0 0 0-2-2zm-2 17a2 2 0 0 0 4 0h-4z" />
-          </svg>
-          <span className="reminder-chip__text">
-            {reminder.trainCode} → {reminder.destStationName}
-          </span>
-          <button
-            type="button"
-            className="reminder-chip__close"
-            onClick={clearReminder}
-            aria-label="Cancel reminder"
-            title="Cancel reminder"
-          >
-            ×
-          </button>
-        </div>
-      )}
       {toast && (
-        <div className="reminder-toast" role="alert">
+        <div className="app-toast" role="alert">
           <span>{toast}</span>
           <button
             type="button"
-            className="reminder-toast__close"
+            className="app-toast__close"
             onClick={() => setToast(null)}
             aria-label="Dismiss"
           >
