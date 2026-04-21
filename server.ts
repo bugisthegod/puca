@@ -69,7 +69,7 @@ Bun.serve({
     "/sw.js": () => new Response(Bun.file("./public/sw.js"), {
       headers: {
         "Content-Type": "application/javascript",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     }),
     "/manifest.json": () => new Response(Bun.file("./public/manifest.json")),

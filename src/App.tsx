@@ -67,7 +67,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: ".about-fab",
     title: "Settings & help",
-    body: "Toggle dark mode, revisit this tour, or find install tips here.",
+    body: "Toggle dark mode, enable the compass, revisit this tour, or find install tips here.",
   },
   {
     target: ".fav-fab",
@@ -95,7 +95,7 @@ function App() {
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain, locateUser, getMapView } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
+  const { focusTrain, locateUser, getMapView, compassActive, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
@@ -400,6 +400,11 @@ function App() {
           onShowTour={() => { setShowAbout(false); openTour(); }}
           theme={theme}
           onSetTheme={setTheme}
+          compassActive={compassActive}
+          onToggleCompass={(next) => {
+            if (next) void startCompass();
+            else stopCompass();
+          }}
         />
       )}
       {showTour && <OnboardingTour steps={TOUR_STEPS} onClose={closeTour} />}

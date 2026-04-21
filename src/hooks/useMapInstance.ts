@@ -2,7 +2,7 @@
 // `declare const` makes L usable as a value; `typeof import(...)` gives the full type.
 // The global namespace L (from leaflet-global.d.ts) handles L.Foo type references.
 declare const L: typeof import("leaflet");
-import { useRef, useEffect, useCallback, type RefObject } from "react";
+import { useRef, useEffect, useState, useCallback, type RefObject } from "react";
 import type { Station } from "../types";
 import type { Mode } from "./useTrainMap";
 import type { MapView } from "../session";
@@ -34,7 +34,12 @@ interface UseMapInstanceResult {
   railwayLayerRef: React.RefObject<L.TileLayer | null>;
   locateUser: () => Promise<void>;
   getMapView: () => MapView | null;
+  compassActive: boolean;
+  startCompass: () => Promise<boolean>;
+  stopCompass: () => void;
 }
+
+const COMPASS_PREF_KEY = "puca:compass";
 
 export function useMapInstance(
   mapRef: RefObject<HTMLDivElement | null>,
@@ -52,6 +57,7 @@ export function useMapInstance(
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const orientationHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
   const orientationEventNameRef = useRef<string | null>(null);
+  const [compassActive, setCompassActive] = useState<boolean>(false);
   // Unwrapped rotation so CSS transition always takes the shortest path
   // (instead of spinning 358° the wrong way when heading wraps 359°→0°).
   const unwrappedRotationRef = useRef<number>(0);
@@ -89,68 +95,36 @@ export function useMapInstance(
     }
   }
 
-  async function startOrientationTracking(): Promise<void> {
-    if (orientationHandlerRef.current) return; // already tracking
+  async function startCompass(): Promise<boolean> {
+    if (orientationHandlerRef.current) return true;
+    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<"granted" | "denied">;
+    };
+    if (typeof DOE?.requestPermission === "function") {
+      try {
+        const perm = await DOE.requestPermission();
+        if (perm !== "granted") return false;
+      } catch {
+        return false; // denied or not a user gesture
+      }
+    }
     const eventName =
       "ondeviceorientationabsolute" in window
         ? "deviceorientationabsolute"
         : "deviceorientation";
-    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-      requestPermission?: () => Promise<"granted" | "denied">;
-    };
-    const needsPermission = typeof DOE?.requestPermission === "function";
-    const GRANTED_KEY = "puca-orientation-granted";
-    const seenBefore = (() => {
-      try { return localStorage.getItem(GRANTED_KEY) === "true"; }
-      catch { return false; }
-    })();
-
-    // Optimistic path: if the user granted before, try subscribing without
-    // calling requestPermission() — some iOS versions/contexts remember the
-    // grant and fire events directly. If no events arrive in 500ms, fall
-    // back to the permission prompt.
-    if (needsPermission && seenBefore) {
-      const gotEvent = await new Promise<boolean>((resolve) => {
-        let settled = false;
-        const probe = () => {
-          if (settled) return;
-          settled = true;
-          resolve(true);
-        };
-        window.addEventListener(eventName, probe as EventListener, { once: true });
-        setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          window.removeEventListener(eventName, probe as EventListener);
-          resolve(false);
-        }, 500);
-      });
-      if (gotEvent) {
-        window.addEventListener(eventName, onDeviceOrientation as EventListener);
-        orientationHandlerRef.current = onDeviceOrientation;
-        orientationEventNameRef.current = eventName;
-        return;
-      }
-    }
-
-    if (needsPermission) {
-      try {
-        const perm = await DOE.requestPermission!();
-        if (perm !== "granted") {
-          try { localStorage.removeItem(GRANTED_KEY); } catch { /* private mode */ }
-          return;
-        }
-      } catch {
-        return; // denied or not a user gesture
-      }
-    }
     window.addEventListener(eventName, onDeviceOrientation as EventListener);
     orientationHandlerRef.current = onDeviceOrientation;
     orientationEventNameRef.current = eventName;
-    try { localStorage.setItem(GRANTED_KEY, "true"); } catch { /* quota */ }
+    setCompassActive(true);
+    try { localStorage.setItem(COMPASS_PREF_KEY, "on"); } catch { /* quota */ }
+    return true;
   }
 
-  function stopOrientationTracking(): void {
+  // Tear down the listener without touching the persisted pref. Used both
+  // by the user-facing stopCompass() (which also writes pref=off) and by the
+  // unmount cleanup (which must NOT clobber user intent on HMR/StrictMode
+  // remounts).
+  function teardownCompass(): void {
     const handler = orientationHandlerRef.current;
     const eventName = orientationEventNameRef.current;
     if (handler && eventName) {
@@ -158,6 +132,14 @@ export function useMapInstance(
     }
     orientationHandlerRef.current = null;
     orientationEventNameRef.current = null;
+    const inner = userIconInnerRef.current;
+    if (inner) inner.classList.remove("has-heading");
+    setCompassActive(false);
+  }
+
+  function stopCompass(): void {
+    teardownCompass();
+    try { localStorage.setItem(COMPASS_PREF_KEY, "off"); } catch { /* quota */ }
   }
 
   const locateUser = (): Promise<void> =>
@@ -171,9 +153,6 @@ export function useMapInstance(
         reject(new Error("Your browser does not support geolocation"));
         return;
       }
-      // Kick off orientation tracking synchronously so iOS treats this as a
-      // user-gesture-originated permission request.
-      void startOrientationTracking();
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -293,7 +272,7 @@ export function useMapInstance(
 
     return () => {
       window.removeEventListener("puca:themechange", onSchemeChange);
-      stopOrientationTracking();
+      teardownCompass();
       map.remove();
       leafletMap.current = null;
       baseTileRef.current = null;
@@ -317,6 +296,23 @@ export function useMapInstance(
     }
   }, [mode]);
 
+  // Auto-restore compass on mount when the pref says "on" AND the platform
+  // doesn't gate subscription behind requestPermission (iOS does — it requires
+  // a fresh user gesture per page load, so we skip the auto-start there and
+  // wait for the user to re-toggle from About).
+  useEffect(() => {
+    let pref: string | null = null;
+    try { pref = localStorage.getItem(COMPASS_PREF_KEY); } catch {}
+    if (pref !== "on") return;
+    const needsPermission =
+      typeof (DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+        requestPermission?: () => Promise<"granted" | "denied">;
+      })?.requestPermission === "function";
+    if (needsPermission) return;
+    void startCompass();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const getMapView = useCallback((): MapView | null => {
     const map = leafletMap.current;
     if (!map) return null;
@@ -324,5 +320,15 @@ export function useMapInstance(
     return { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
   }, []);
 
-  return { leafletMap, stationsRef, zoomingRef, railwayLayerRef, locateUser, getMapView };
+  return {
+    leafletMap,
+    stationsRef,
+    zoomingRef,
+    railwayLayerRef,
+    locateUser,
+    getMapView,
+    compassActive,
+    startCompass,
+    stopCompass,
+  };
 }

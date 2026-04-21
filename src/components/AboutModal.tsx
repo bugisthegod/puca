@@ -9,9 +9,11 @@ type AboutModalProps = {
   onShowTour?: () => void;
   theme?: ThemePref;
   onSetTheme?: (t: ThemePref) => void;
+  compassActive?: boolean;
+  onToggleCompass?: (next: boolean) => void;
 };
 
-export default function AboutModal({ onClose, onShowTour, theme, onSetTheme }: AboutModalProps) {
+export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, compassActive, onToggleCompass }: AboutModalProps) {
   useBackToClose(onClose);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -81,6 +83,39 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme }: A
                   </button>
                 ))}
               </div>
+            </section>
+          </>
+        )}
+
+        {onToggleCompass && (
+          <>
+            <div className="about-divider" />
+            <section className="about-block">
+              <div className="about-block__label">Compass</div>
+              <div className="about-theme-toggle" role="radiogroup" aria-label="Compass">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!compassActive}
+                  className={`about-theme-btn${!compassActive ? " is-active" : ""}`}
+                  onClick={() => { if (compassActive) onToggleCompass(false); }}
+                >
+                  Off
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!!compassActive}
+                  className={`about-theme-btn${compassActive ? " is-active" : ""}`}
+                  onClick={() => { if (!compassActive) onToggleCompass(true); }}
+                >
+                  On
+                </button>
+              </div>
+              <p className="about-block__note">
+                Shows which way you're facing on the map. iOS asks for motion
+                permission each time you reload.
+              </p>
             </section>
           </>
         )}
