@@ -49,6 +49,10 @@
   /* Popup direction / info chips (always on light popup bg) */
   --popup-dir-bg: var(--bg-muted);
   --popup-dir-text: #666666;
+
+  /* Map backdrop — matches CARTO Voyager's empty-tile tone so in-flight
+     tiles blend in instead of flashing gray. */
+  --map-bg: #ede7dd;
 }
 
 :root[data-theme="dark"] {
@@ -87,6 +91,9 @@
 
     --popup-dir-bg: var(--bg-muted);
     --popup-dir-text: #9090a0;
+
+    /* Map backdrop — matches CARTO dark_all's empty-tile tone. */
+    --map-bg: #1a1d21;
 }
 
 /* ============================================================
@@ -151,6 +158,11 @@ body {
   width: 100vw;
   height: 100vh;
   height: 100lvh;
+  background: var(--map-bg);
+}
+
+.leaflet-container {
+  background: var(--map-bg);
 }
 
 /* Leaflet attribution — strip white background (ugly on dark tiles) but

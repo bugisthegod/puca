@@ -466,6 +466,16 @@ export function useBusMarkers({
       opacity: 0.85,
     }).addTo(map);
 
+    // Frame the route so a search or popup "Show all" from off-route gives
+    // the user immediate context — otherwise the polyline draws somewhere
+    // they can't see and they don't know anything happened.
+    map.flyToBounds(busShapeLayerRef.current.getBounds(), {
+      paddingTopLeft: [40, 90],
+      paddingBottomRight: [40, 110],
+      duration: 1.1,
+      easeLinearity: 0.3,
+    });
+
     for (const stop of dirData.stops ?? []) {
       const m = L.circleMarker([stop.lat, stop.lng], {
         radius: 5,

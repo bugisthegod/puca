@@ -23,7 +23,7 @@ const BASE_TILE_OPTIONS = {
   subdomains: "abcd",
   keepBuffer: 10,
   updateWhenIdle: false,
-  updateWhenZooming: false,
+  updateWhenZooming: true,
   updateInterval: 100,
 } as const;
 
@@ -198,7 +198,7 @@ export function useMapInstance(
     const zoom = initialView?.zoom ?? DEFAULT_ZOOM;
     const map = L.map(mapRef.current, {
       preferCanvas: true,
-      fadeAnimation: false,
+      fadeAnimation: true,
       zoomControl: false,
     }).setView(center, zoom);
 
