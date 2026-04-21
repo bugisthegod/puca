@@ -170,7 +170,10 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
       ) : <>
       <div className="search-field">
         <input
-          type="text"
+          type="search"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellcheck={false}
           placeholder="From station..."
           value={fromQuery}
           onChange={(e) => {
@@ -202,7 +205,10 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
       </button>
       <div className="search-field">
         <input
-          type="text"
+          type="search"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellcheck={false}
           placeholder="To station..."
           value={toQuery}
           onChange={(e) => {

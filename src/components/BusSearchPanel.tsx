@@ -145,7 +145,10 @@ export default function BusSearchPanel({
         <>
           <div className="search-field">
             <input
-              type="text"
+              type="search"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellcheck={false}
               placeholder="Bus route (e.g. 39A, 7)..."
               value={query}
               onChange={(e) => {

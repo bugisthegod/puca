@@ -1172,6 +1172,13 @@ body {
   border-color: #25a864;
 }
 
+/* Hide the native "clear" X that browsers auto-add to type="search" inputs. */
+.search-field input[type="search"]::-webkit-search-cancel-button,
+.search-field input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .station-dropdown {
   position: absolute;
   top: 100%;
