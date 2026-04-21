@@ -1,5 +1,5 @@
 // Bump CACHE_VERSION to invalidate all caches after a deploy.
-const CACHE_VERSION = "v1.2.3";
+const CACHE_VERSION = "v1.2.4";
 const CACHE_NAME = `puca-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [

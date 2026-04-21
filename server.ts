@@ -22,7 +22,8 @@ const rateLimitMap = new Map<string, number[]>();
 
 function getClientIp(req: Request): string {
   return (
-    req.headers.get("fly-client-ip")
+    req.headers.get("cf-connecting-ip")
+    ?? req.headers.get("fly-client-ip")
     ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     ?? "local"
   );
@@ -100,7 +101,9 @@ Bun.serve({
         const minsParam = url.searchParams.get("mins");
         const numMins = minsParam ? parseInt(minsParam, 10) : 90;
         const data = await getStationData(code, numMins);
-        return Response.json(data);
+        return Response.json(data, {
+          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" },
+        });
       } catch {
         return Response.json([], { status: 502 });
       }
@@ -155,7 +158,9 @@ Bun.serve({
           .filter((r) => r !== null);
 
         candidates.sort((a, b) => a.fromDep.localeCompare(b.fromDep));
-        return Response.json(candidates.slice(0, 3));
+        return Response.json(candidates.slice(0, 3), {
+          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" },
+        });
       } catch {
         return Response.json([], { status: 502 });
       }
@@ -163,7 +168,9 @@ Bun.serve({
     "/api/gtfsr/vehicles": rateLimit(async (_req) => {
       try {
         const vehicles = getGtfsrVehiclePositions();
-        return Response.json(vehicles);
+        return Response.json(vehicles, {
+          headers: { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" },
+        });
       } catch {
         return Response.json([], { status: 502 });
       }
@@ -174,7 +181,9 @@ Bun.serve({
         const url = new URL(req.url);
         const trainDate = url.searchParams.get("date") ?? todayFormatted();
         const movements = await getTrainMovements(trainId, trainDate);
-        return Response.json(movements);
+        return Response.json(movements, {
+          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" },
+        });
       } catch {
         return Response.json([], { status: 502 });
       }
@@ -221,7 +230,9 @@ Bun.serve({
         const url = new URL(req.url);
         const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
         const trip = await getBusTripStops(operator, req.params.tripId);
-        return Response.json(trip ?? {});
+        return Response.json(trip ?? {}, {
+          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" },
+        });
       } catch {
         return Response.json({}, { status: 502 });
       }
