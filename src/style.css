@@ -131,6 +131,18 @@ body {
   overflow: hidden;
   overscroll-behavior: none;
   font-family: system-ui, -apple-system, sans-serif;
+  /* Kill system Smart Text Selection (Android Google search chip, iOS long-press
+     callout). This is a UI app, not a document — nothing should be selectable
+     by default. Inputs opt back in below. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
 /* Pin body so iOS can't scroll the page up when an input is focused — without

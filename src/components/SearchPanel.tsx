@@ -149,6 +149,8 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
     setTo(from);
     setFromQuery(toQuery);
     setToQuery(fromQuery);
+    setResults(null);
+    setSearchedNames(null);
   }
 
   function fmtTime(t: string): string {

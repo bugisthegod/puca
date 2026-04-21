@@ -470,8 +470,8 @@ export function useBusMarkers({
     // the user immediate context — otherwise the polyline draws somewhere
     // they can't see and they don't know anything happened.
     map.flyToBounds(busShapeLayerRef.current.getBounds(), {
-      paddingTopLeft: [40, 90],
-      paddingBottomRight: [40, 110],
+      paddingTopLeft: [20, 40],
+      paddingBottomRight: [20, 60],
       duration: 1.1,
       easeLinearity: 0.3,
     });
