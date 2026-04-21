@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import PucaMark from "./PucaMark";
+import { useBackToClose } from "../hooks/useBackToClose";
 
 export type ThemePref = "light" | "dark" | "system";
 
@@ -11,6 +12,7 @@ type AboutModalProps = {
 };
 
 export default function AboutModal({ onClose, onShowTour, theme, onSetTheme }: AboutModalProps) {
+  useBackToClose(onClose);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();

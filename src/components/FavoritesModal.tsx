@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import type { Favorites, BusFavorite, TrainFavorite } from "../favorites";
 import { busKey, trainKey } from "../favorites";
 import type { BusOperator } from "../types";
+import { useBackToClose } from "../hooks/useBackToClose";
 
 type Props = {
   onClose: () => void;
@@ -19,6 +20,7 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
 };
 
 export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, onRemoveBus, onRemoveTrain }: Props) {
+  useBackToClose(onClose);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
