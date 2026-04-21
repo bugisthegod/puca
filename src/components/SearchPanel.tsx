@@ -4,6 +4,16 @@ import { getStationsOnce } from "../stationsClient";
 import FavStar from "./FavStar";
 import { hasTrain, type Favorites, type TrainFavorite } from "../favorites";
 
+// Collapse any text selection in the input to its end. Stops Android's
+// Smart Text Selection from scanning highlighted text and surfacing the
+// "Tap to see search results" Google popup over the UI.
+function collapseSelection(e: { currentTarget: HTMLInputElement }): void {
+  const input = e.currentTarget;
+  if (input.selectionStart !== input.selectionEnd) {
+    input.setSelectionRange(input.selectionEnd, input.selectionEnd);
+  }
+}
+
 interface SearchPanelProps {
   onSearch: (codes: string[]) => void;
   onClear: () => void;
@@ -170,7 +180,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
       ) : <>
       <div className="search-field">
         <input
-          type="search"
+          type="text"
           autoCorrect="off"
           autoCapitalize="none"
           spellcheck={false}
@@ -184,6 +194,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           }}
           onFocus={() => setFocusedField("from")}
           onKeyDown={(e) => handleKeyDown(e, "from")}
+          onSelect={collapseSelection}
         />
         {focusedField === "from" && (
           <ul className="station-dropdown" ref={dropdownRef}>
@@ -205,7 +216,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
       </button>
       <div className="search-field">
         <input
-          type="search"
+          type="text"
           autoCorrect="off"
           autoCapitalize="none"
           spellcheck={false}
@@ -219,6 +230,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           }}
           onFocus={() => setFocusedField("to")}
           onKeyDown={(e) => handleKeyDown(e, "to")}
+          onSelect={collapseSelection}
         />
         {focusedField === "to" && (
           <ul className="station-dropdown" ref={dropdownRef}>

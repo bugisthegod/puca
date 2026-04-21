@@ -2,6 +2,16 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { BusRoute, BusOperator } from "../types";
 import FavStar from "./FavStar";
 
+// Collapse any text selection in the input to its end. Stops Android's
+// Smart Text Selection from scanning highlighted text and surfacing the
+// "Tap to see search results" Google popup over the UI.
+function collapseSelection(e: { currentTarget: HTMLInputElement }): void {
+  const input = e.currentTarget;
+  if (input.selectionStart !== input.selectionEnd) {
+    input.setSelectionRange(input.selectionEnd, input.selectionEnd);
+  }
+}
+
 type RouteWithOperator = BusRoute & { operator: BusOperator };
 
 type BusShape = { [dir: string]: { headsign: string } } | null;
@@ -145,7 +155,7 @@ export default function BusSearchPanel({
         <>
           <div className="search-field">
             <input
-              type="search"
+              type="text"
               autoCorrect="off"
               autoCapitalize="none"
               spellcheck={false}
@@ -157,6 +167,7 @@ export default function BusSearchPanel({
               }}
               onFocus={() => setFocused(true)}
               onKeyDown={handleKeyDown}
+              onSelect={collapseSelection}
             />
             {focused && filtered.length > 0 && (
               <ul className="station-dropdown">
