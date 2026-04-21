@@ -34,12 +34,23 @@ interface UseMapInstanceResult {
   railwayLayerRef: React.RefObject<L.TileLayer | null>;
   locateUser: () => Promise<void>;
   getMapView: () => MapView | null;
-  compassActive: boolean;
+  compassPref: boolean;
   startCompass: () => Promise<boolean>;
   stopCompass: () => void;
 }
 
 const COMPASS_PREF_KEY = "puca:compass";
+
+function readCompassPref(): boolean {
+  try {
+    const v = localStorage.getItem(COMPASS_PREF_KEY);
+    // Default to on — users opt out rather than in. "off" is the only value
+    // that disables; anything else (including null/unset) means on.
+    return v !== "off";
+  } catch {
+    return true;
+  }
+}
 
 export function useMapInstance(
   mapRef: RefObject<HTMLDivElement | null>,
@@ -57,7 +68,7 @@ export function useMapInstance(
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const orientationHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
   const orientationEventNameRef = useRef<string | null>(null);
-  const [compassActive, setCompassActive] = useState<boolean>(false);
+  const [compassPref, setCompassPref] = useState<boolean>(readCompassPref);
   // Unwrapped rotation so CSS transition always takes the shortest path
   // (instead of spinning 358° the wrong way when heading wraps 359°→0°).
   const unwrappedRotationRef = useRef<number>(0);
@@ -103,9 +114,18 @@ export function useMapInstance(
     if (typeof DOE?.requestPermission === "function") {
       try {
         const perm = await DOE.requestPermission();
-        if (perm !== "granted") return false;
+        if (perm !== "granted") {
+          // Explicit denial — flip pref off so the toggle shows Off instead
+          // of getting stuck on On (iOS caches the deny; repeat taps won't
+          // re-prompt until the user clears it in Safari settings).
+          setCompassPref(false);
+          try { localStorage.setItem(COMPASS_PREF_KEY, "off"); } catch { /* quota */ }
+          return false;
+        }
       } catch {
-        return false; // denied or not a user gesture
+        // Not a user gesture (or other exception) — leave pref alone so a
+        // later tap inside a gesture can retry.
+        return false;
       }
     }
     const eventName =
@@ -115,7 +135,7 @@ export function useMapInstance(
     window.addEventListener(eventName, onDeviceOrientation as EventListener);
     orientationHandlerRef.current = onDeviceOrientation;
     orientationEventNameRef.current = eventName;
-    setCompassActive(true);
+    setCompassPref(true);
     try { localStorage.setItem(COMPASS_PREF_KEY, "on"); } catch { /* quota */ }
     return true;
   }
@@ -134,11 +154,11 @@ export function useMapInstance(
     orientationEventNameRef.current = null;
     const inner = userIconInnerRef.current;
     if (inner) inner.classList.remove("has-heading");
-    setCompassActive(false);
   }
 
   function stopCompass(): void {
     teardownCompass();
+    setCompassPref(false);
     try { localStorage.setItem(COMPASS_PREF_KEY, "off"); } catch { /* quota */ }
   }
 
@@ -296,19 +316,12 @@ export function useMapInstance(
     }
   }, [mode]);
 
-  // Auto-restore compass on mount when the pref says "on" AND the platform
-  // doesn't gate subscription behind requestPermission (iOS does — it requires
-  // a fresh user gesture per page load, so we skip the auto-start there and
-  // wait for the user to re-toggle from About).
+  // Auto-restore compass on mount when the pref says on. On iOS this will
+  // silently fail (requestPermission() needs a fresh user gesture per page
+  // load) — the pref stays on, the toggle still shows On, and tapping On in
+  // About re-fires the request inside a gesture to reactivate it.
   useEffect(() => {
-    let pref: string | null = null;
-    try { pref = localStorage.getItem(COMPASS_PREF_KEY); } catch {}
-    if (pref !== "on") return;
-    const needsPermission =
-      typeof (DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-        requestPermission?: () => Promise<"granted" | "denied">;
-      })?.requestPermission === "function";
-    if (needsPermission) return;
+    if (!readCompassPref()) return;
     void startCompass();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -327,7 +340,7 @@ export function useMapInstance(
     railwayLayerRef,
     locateUser,
     getMapView,
-    compassActive,
+    compassPref,
     startCompass,
     stopCompass,
   };

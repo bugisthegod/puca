@@ -37,7 +37,7 @@ export function useTrainMap(
   focusTrain: (code: string) => void;
   locateUser: () => Promise<void>;
   getMapView: () => MapView | null;
-  compassActive: boolean;
+  compassPref: boolean;
   startCompass: () => Promise<boolean>;
   stopCompass: () => void;
 } {
@@ -57,7 +57,7 @@ export function useTrainMap(
     zoomingRef,
     locateUser,
     getMapView,
-    compassActive,
+    compassPref,
     startCompass,
     stopCompass,
   } = useMapInstance(mapRef, mode, initialView);
@@ -260,5 +260,5 @@ export function useTrainMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { focusTrain, locateUser, getMapView, compassActive, startCompass, stopCompass };
+  return { focusTrain, locateUser, getMapView, compassPref, startCompass, stopCompass };
 }

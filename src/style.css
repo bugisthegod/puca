@@ -1172,6 +1172,20 @@ body {
   border-color: #25a864;
 }
 
+/* Block Android Smart Text Selection. When unfocused, the input text
+   cannot be selected — so the OS TextClassifier has nothing to scan and
+   the "Tap to see search results" Google popup never triggers. On focus
+   (user wants to edit), normal selection is restored. */
+.search-field input {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.search-field input:focus {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .station-dropdown {
   position: absolute;
   top: 100%;

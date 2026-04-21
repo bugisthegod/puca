@@ -95,7 +95,7 @@ function App() {
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain, locateUser, getMapView, compassActive, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
+  const { focusTrain, locateUser, getMapView, compassPref, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
@@ -400,7 +400,7 @@ function App() {
           onShowTour={() => { setShowAbout(false); openTour(); }}
           theme={theme}
           onSetTheme={setTheme}
-          compassActive={compassActive}
+          compassPref={compassPref}
           onToggleCompass={(next) => {
             if (next) void startCompass();
             else stopCompass();

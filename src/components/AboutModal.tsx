@@ -9,11 +9,11 @@ type AboutModalProps = {
   onShowTour?: () => void;
   theme?: ThemePref;
   onSetTheme?: (t: ThemePref) => void;
-  compassActive?: boolean;
+  compassPref?: boolean;
   onToggleCompass?: (next: boolean) => void;
 };
 
-export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, compassActive, onToggleCompass }: AboutModalProps) {
+export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, compassPref, onToggleCompass }: AboutModalProps) {
   useBackToClose(onClose);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -96,25 +96,26 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={!compassActive}
-                  className={`about-theme-btn${!compassActive ? " is-active" : ""}`}
-                  onClick={() => { if (compassActive) onToggleCompass(false); }}
+                  aria-checked={!compassPref}
+                  className={`about-theme-btn${!compassPref ? " is-active" : ""}`}
+                  onClick={() => onToggleCompass(false)}
                 >
                   Off
                 </button>
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={!!compassActive}
-                  className={`about-theme-btn${compassActive ? " is-active" : ""}`}
-                  onClick={() => { if (!compassActive) onToggleCompass(true); }}
+                  aria-checked={!!compassPref}
+                  className={`about-theme-btn${compassPref ? " is-active" : ""}`}
+                  onClick={() => onToggleCompass(true)}
                 >
                   On
                 </button>
               </div>
               <p className="about-block__note">
                 Shows which way you're facing on the map. iOS asks for motion
-                permission each time you reload.
+                permission after each reload — tap On again if the compass isn't
+                showing.
               </p>
             </section>
           </>
