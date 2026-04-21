@@ -174,6 +174,14 @@ export function useMapInstance(
         return;
       }
 
+      // When compass pref is on, every locate click also kicks off compass
+      // (iOS piggybacks on this click's gesture to re-grant motion permission
+      // after a reload). startCompass is idempotent — early-returns when
+      // already tracking, so this doesn't re-prompt.
+      if (readCompassPref()) {
+        void startCompass();
+      }
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
