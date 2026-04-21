@@ -91,24 +91,63 @@ export function useMapInstance(
 
   async function startOrientationTracking(): Promise<void> {
     if (orientationHandlerRef.current) return; // already tracking
-    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-      requestPermission?: () => Promise<"granted" | "denied">;
-    };
-    if (typeof DOE?.requestPermission === "function") {
-      try {
-        const perm = await DOE.requestPermission();
-        if (perm !== "granted") return;
-      } catch {
-        return; // user denied or not a user gesture
-      }
-    }
     const eventName =
       "ondeviceorientationabsolute" in window
         ? "deviceorientationabsolute"
         : "deviceorientation";
+    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<"granted" | "denied">;
+    };
+    const needsPermission = typeof DOE?.requestPermission === "function";
+    const GRANTED_KEY = "puca-orientation-granted";
+    const seenBefore = (() => {
+      try { return localStorage.getItem(GRANTED_KEY) === "true"; }
+      catch { return false; }
+    })();
+
+    // Optimistic path: if the user granted before, try subscribing without
+    // calling requestPermission() — some iOS versions/contexts remember the
+    // grant and fire events directly. If no events arrive in 500ms, fall
+    // back to the permission prompt.
+    if (needsPermission && seenBefore) {
+      const gotEvent = await new Promise<boolean>((resolve) => {
+        let settled = false;
+        const probe = () => {
+          if (settled) return;
+          settled = true;
+          resolve(true);
+        };
+        window.addEventListener(eventName, probe as EventListener, { once: true });
+        setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener(eventName, probe as EventListener);
+          resolve(false);
+        }, 500);
+      });
+      if (gotEvent) {
+        window.addEventListener(eventName, onDeviceOrientation as EventListener);
+        orientationHandlerRef.current = onDeviceOrientation;
+        orientationEventNameRef.current = eventName;
+        return;
+      }
+    }
+
+    if (needsPermission) {
+      try {
+        const perm = await DOE.requestPermission!();
+        if (perm !== "granted") {
+          try { localStorage.removeItem(GRANTED_KEY); } catch { /* private mode */ }
+          return;
+        }
+      } catch {
+        return; // denied or not a user gesture
+      }
+    }
     window.addEventListener(eventName, onDeviceOrientation as EventListener);
     orientationHandlerRef.current = onDeviceOrientation;
     orientationEventNameRef.current = eventName;
+    try { localStorage.setItem(GRANTED_KEY, "true"); } catch { /* quota */ }
   }
 
   function stopOrientationTracking(): void {
