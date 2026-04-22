@@ -324,13 +324,19 @@ export function useMapInstance(
     }
   }, [mode]);
 
-  // Auto-restore compass on mount when the pref says on. On iOS this will
-  // silently fail (requestPermission() needs a fresh user gesture per page
-  // load) — the pref stays on, the toggle still shows On, and tapping On in
-  // About re-fires the request inside a gesture to reactivate it.
+  // Auto-restore compass on mount. On iOS this will silently fail
+  // (requestPermission() needs a fresh user gesture per page load) — the pref
+  // stays on, the toggle still shows On, and tapping On in About re-fires the
+  // request inside a gesture to reactivate it. On non-iOS platforms there's no
+  // permission gate and no toggle in the UI, so ignore pref and always start.
   useEffect(() => {
-    if (!readCompassPref()) return;
-    void startCompass();
+    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<"granted" | "denied">;
+    };
+    const needsPermission = typeof DOE?.requestPermission === "function";
+    if (!needsPermission || readCompassPref()) {
+      void startCompass();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

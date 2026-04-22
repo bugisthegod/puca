@@ -45,6 +45,14 @@ function readThemePref(): ThemePref {
 // Apply saved theme before React renders to avoid a flash of the wrong theme.
 document.documentElement.dataset.theme = resolveTheme(readThemePref());
 
+// iOS (Safari/WebKit) is the only platform that gates device orientation
+// behind a per-page-load permission prompt — Android just works. Use the
+// presence of requestPermission() as the signal so we surface the compass
+// toggle only where the user needs it to re-grant after each reload.
+const needsCompassToggle =
+  typeof DeviceOrientationEvent !== "undefined" &&
+  typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === "function";
+
 const TOUR_STEPS: TourStep[] = [
   {
     title: "Welcome to Púca",
@@ -401,10 +409,10 @@ function App() {
           theme={theme}
           onSetTheme={setTheme}
           compassPref={compassPref}
-          onToggleCompass={(next) => {
+          onToggleCompass={needsCompassToggle ? (next) => {
             if (next) void startCompass();
             else stopCompass();
-          }}
+          } : undefined}
         />
       )}
       {showTour && <OnboardingTour steps={TOUR_STEPS} onClose={closeTour} />}
