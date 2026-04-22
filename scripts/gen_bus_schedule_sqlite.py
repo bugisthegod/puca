@@ -20,11 +20,11 @@ def main():
     out_path = os.path.normpath(OUT_DB)
 
     print("Reading trips.txt …")
-    dublin_bus_trips: set[str] = set()
+    dublin_bus_trips: dict[str, str] = {}  # trip_id -> shape_id
     with open(TRIPS_FILE, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             if row["route_id"].startswith("5570_"):
-                dublin_bus_trips.add(row["trip_id"])
+                dublin_bus_trips[row["trip_id"]] = row["shape_id"]
     print(f"  Dublin Bus trip_ids: {len(dublin_bus_trips):,}")
 
     if os.path.exists(out_path):
@@ -48,6 +48,19 @@ def main():
             PRIMARY KEY (trip_id, stop_sequence)
         )
     """)
+
+    cur.execute("""
+        CREATE TABLE trips (
+            trip_id TEXT PRIMARY KEY,
+            shape_id TEXT NOT NULL
+        )
+    """)
+    cur.executemany(
+        "INSERT INTO trips (trip_id, shape_id) VALUES (?, ?)",
+        ((tid, sid) for tid, sid in dublin_bus_trips.items()),
+    )
+    con.commit()
+    print(f"  trips table: {len(dublin_bus_trips):,} rows")
 
     print("Streaming stop_times.txt …")
     batch: list[tuple] = []

@@ -88,7 +88,7 @@ function App() {
   const [busOperator, setBusOperator] = useState<BusOperator>(savedSession.busOperator ?? "dublinbus");
   const [busRoute, setBusRoute] = useState<string | null>(savedSession.busRoute ?? null);
   const [busDirection, setBusDirection] = useState<string | null>(savedSession.busDirection ?? null);
-  const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[] } } | null>(null);
+  const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
   const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
   const [lastUpdated, setLastUpdated] = useState<string>("Updated: —");
   const [searchCodes, setSearchCodes] = useState<string[] | null>(null);

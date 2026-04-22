@@ -16,6 +16,19 @@ const busTripInFlight = new Set<string>();
 // Interpolation entry type
 // ---------------------------------------------------------------------------
 
+export type BusVariant = {
+  shapeId: string;
+  tripCount: number;
+  branches: [number, number][][];
+};
+
+export type BusDirectionShape = {
+  headsign: string;
+  coords: [number, number][];
+  stops: { id: string; name: string; lat: number; lng: number }[];
+  variants?: BusVariant[];
+};
+
 export interface BusMarkerEntry {
   marker: L.Marker;
   bus: BusVehicle;
@@ -37,6 +50,9 @@ export interface BusMarkerEntry {
   // Render-skip flags: avoid redundant setLatLng + along() when position hasn't changed.
   settled: boolean;                        // LERP branch: true after blend completed and target rendered
   lastRenderedDistance: number | null;     // path-constrained branch: last clamped distance written to DOM
+  // Cached trip metadata resolved from /api/bus/trip. Lets popupopen re-apply
+  // variant highlight instantly on re-open without another round-trip.
+  shapeId: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,7 +61,7 @@ export interface BusMarkerEntry {
 
 interface UseBusMarkersOptions {
   buses: BusVehicle[];
-  busShape: { [direction: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[] } } | null;
+  busShape: { [direction: string]: BusDirectionShape } | null;
   busDirection: string | null;
   busOperator: BusOperator;
   mode: Mode;
@@ -73,6 +89,17 @@ export function useBusMarkers({
   const busMarkers = useRef<Map<string, BusMarkerEntry>>(new Map());
   const busShapeLayerRef = useRef<L.Polyline | null>(null);
   const busStopMarkersRef = useRef<L.CircleMarker[]>([]);
+  // Variant branch polylines for the currently displayed route+direction.
+  // shapeId → list of branch polylines. Populated in the shape useEffect,
+  // styled (not re-added/removed) by highlightVariant/clearVariantHighlight.
+  const variantLayersRef = useRef<Record<string, L.Polyline[]>>({});
+  const selectedShapeIdRef = useRef<string | null>(null);
+  // Set of shape_ids currently being traveled by at least one live bus on
+  // this route. Recomputed each buses update. Variants whose shape isn't
+  // here get opacity 0 — only patterns that are actually running right now
+  // are visible. E.g. route 38's industrial-loop variant only runs 6-8 am,
+  // so outside that window its branches correctly disappear.
+  const activeShapeIdsRef = useRef<Set<string>>(new Set());
 
   // Stable ref so closures always read the latest callback without stale captures
   const onSelectBusRouteRef = onSelectBusRoute;
@@ -80,6 +107,53 @@ export function useBusMarkers({
   currentBusRouteRef.current = currentBusRoute;
   const busOperatorRef = useRef(busOperator);
   busOperatorRef.current = busOperator;
+
+  // -------------------------------------------------------------------------
+  // Variant branch style helpers.
+  //
+  // Design: never add/removeLayer from popup events — markercluster fires
+  // popupopen/popupclose in rapid bursts when it re-anchors markers, and any
+  // layer churn there causes visible flicker. Variant branches are drawn ONCE
+  // per route+direction change; highlight is purely setStyle + bringToFront,
+  // which is idempotent under event storms.
+  // -------------------------------------------------------------------------
+  function currentRouteColor(): string {
+    const op = busOperatorRef.current;
+    return op === "buseireann" ? "#d52b1e" : op === "goahead" ? "#1e6bb8" : "#f9a825";
+  }
+
+  function applyVariantStyles() {
+    const color = currentRouteColor();
+    const selected = selectedShapeIdRef.current;
+    const active = activeShapeIdsRef.current;
+    for (const [shapeId, polylines] of Object.entries(variantLayersRef.current)) {
+      const isSelected = shapeId === selected;
+      const isActive = active.has(shapeId);
+      // Selected wins over inactive — if the user clicked a bus and its shape
+      // subsequently leaves the active set (trip ended, bus gone), the
+      // buses useEffect clears selectedShapeIdRef below, so we won't end up
+      // highlighting something that no longer exists.
+      const opacity = isSelected ? 0.95 : isActive ? 0.35 : 0;
+      const weight = isSelected ? 5 : 3;
+      for (const pl of polylines) {
+        pl.setStyle({ color, weight, opacity });
+        if (isSelected) pl.bringToFront();
+      }
+    }
+  }
+
+  function highlightVariant(shapeId: string) {
+    if (selectedShapeIdRef.current === shapeId) return;
+    if (!variantLayersRef.current[shapeId]) return;
+    selectedShapeIdRef.current = shapeId;
+    applyVariantStyles();
+  }
+
+  function clearVariantHighlight() {
+    if (selectedShapeIdRef.current === null) return;
+    selectedShapeIdRef.current = null;
+    applyVariantStyles();
+  }
 
   // -------------------------------------------------------------------------
   // Helpers
@@ -227,6 +301,11 @@ export function useBusMarkers({
       const res = await fetch(`/api/bus/trip/${encodeURIComponent(bus.tripId)}?operator=${encodeURIComponent(busOperatorRef.current)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const trip = await res.json();
+      const entry = busMarkers.current.get(bus.tripId);
+      if (entry && typeof trip.shapeId === "string") {
+        entry.shapeId = trip.shapeId;
+        highlightVariant(trip.shapeId);
+      }
       const popup = marker.getPopup();
       if (popup && popup.isOpen()) {
         popup.setContent(buildBusPopupHTML(bus, trip.stops ? trip : null));
@@ -266,6 +345,10 @@ export function useBusMarkers({
       leafletMap.current?.panTo(marker.getLatLng(), { animate: true, duration: 0.4 });
       const popup = marker.getPopup();
       if (popup) wireRouteJumpButton(popup);
+      // Instant re-highlight from cache on re-open (markercluster event storms
+      // or second click). Fetch below will overwrite if shapeId resolves later.
+      const cached = busMarkers.current.get(bus.tripId)?.shapeId;
+      if (cached) highlightVariant(cached);
       void loadBusTrip(bus, marker);
     });
     return marker;
@@ -422,6 +505,7 @@ export function useBusMarkers({
           offRoute,
           settled: false,
           lastRenderedDistance: null,
+          shapeId: null,
         });
       }
     }
@@ -431,6 +515,22 @@ export function useBusMarkers({
         busMarkers.current.delete(tripId);
       }
     }
+
+    // Recompute the set of shape_ids actually in service right now from the
+    // live vehicle list. Variants whose shape isn't in this set fade to 0
+    // in applyVariantStyles. If the currently-selected shape drops out of
+    // service (e.g. the only industrial 38 finishes its trip), clear the
+    // selection too so we don't keep highlighting a pattern that isn't
+    // running.
+    const nextActive = new Set<string>();
+    for (const b of buses) {
+      if (b.shapeId) nextActive.add(b.shapeId);
+    }
+    activeShapeIdsRef.current = nextActive;
+    if (selectedShapeIdRef.current && !nextActive.has(selectedShapeIdRef.current)) {
+      selectedShapeIdRef.current = null;
+    }
+    applyVariantStyles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buses, mode, busShape, busDirection, busOperator]);
 
@@ -450,6 +550,13 @@ export function useBusMarkers({
     for (const m of busStopMarkersRef.current) map.removeLayer(m);
     busStopMarkersRef.current = [];
 
+    // Tear down variant branch polylines from the previous route+direction.
+    for (const polylines of Object.values(variantLayersRef.current)) {
+      for (const pl of polylines) map.removeLayer(pl);
+    }
+    variantLayersRef.current = {};
+    selectedShapeIdRef.current = null;
+
     if (mode !== "bus" || !busShape || !busDirection) return;
 
     const dirData = busShape[busDirection];
@@ -465,6 +572,31 @@ export function useBusMarkers({
       weight: 4,
       opacity: 0.85,
     }).addTo(map);
+
+    // Variant branches: drawn once here as faint overlays above the main line
+    // but below the stop markers. interactive:false so clicks pass through to
+    // the map.click handler that clears the highlight.
+    const variants = dirData.variants ?? [];
+    const newVariantLayers: Record<string, L.Polyline[]> = {};
+    for (const v of variants) {
+      const polylines: L.Polyline[] = [];
+      for (const branch of v.branches) {
+        if (branch.length < 2) continue;
+        const pl = L.polyline(branch, {
+          color: routeColor,
+          weight: 3,
+          opacity: 0.35,
+          interactive: false,
+        }).addTo(map);
+        polylines.push(pl);
+      }
+      if (polylines.length > 0) newVariantLayers[v.shapeId] = polylines;
+    }
+    variantLayersRef.current = newVariantLayers;
+    // Immediately reconcile opacity with the currently-running shape set —
+    // otherwise new variants display at the default 0.35 until the next
+    // buses update fires applyVariantStyles.
+    applyVariantStyles();
 
     // Frame the route so a search or popup "Show all" from off-route gives
     // the user immediate context — otherwise the polyline draws somewhere
@@ -495,6 +627,27 @@ export function useBusMarkers({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busShape, busDirection, mode]);
+
+  // -------------------------------------------------------------------------
+  // Map click → clear variant highlight. Intentionally NOT listening to
+  // popupclose: markercluster re-anchoring fires spurious popupclose events
+  // and we'd drop the highlight mid-interaction. A real click on the map
+  // canvas is the explicit "deselect" signal.
+  //
+  // Depends on busShape too so the effect re-runs once a route is selected —
+  // guards the cold-start race where leafletMap.current hasn't been assigned
+  // yet on first render in bus mode.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    const map = leafletMap.current;
+    if (!map || mode !== "bus") return;
+    const onClick = () => clearVariantHighlight();
+    map.on("click", onClick);
+    return () => {
+      map.off("click", onClick);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, busShape]);
 
   return { busMarkers, busShapeLayerRef, busStopMarkersRef };
 }

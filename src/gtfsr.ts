@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import dublinBusRoutes from "./data/dublinbus-routes.json" with { type: "json" };
 import dublinBusShapes from "./data/dublinbus-shapes.json" with { type: "json" };
 import dublinBusStops from "./data/dublinbus-stops.json" with { type: "json" };
+import dublinBusVariants from "./data/dublinbus-variants.json" with { type: "json" };
 import busEireannRoutes from "./data/buseireann-routes.json" with { type: "json" };
 import busEireannShapes from "./data/buseireann-shapes.json" with { type: "json" };
 import busEireannStops from "./data/buseireann-stops.json" with { type: "json" };
@@ -31,6 +32,7 @@ export type GtfsVehiclePosition = {
 
 export type BusVehicle = GtfsVehiclePosition & {
   routeShortName: string;
+  shapeId: string | null;
 };
 
 export type BusRoute = {
@@ -57,6 +59,7 @@ export type TripUpdate = {
   tripId: string;
   routeId: string;
   directionId: number;
+  shapeId: string | null;
   stops: StopTimeUpdate[];
 };
 
@@ -94,6 +97,13 @@ type GtfsTripUpdateEntity = {
 type StopsDict = Record<string, { name: string; lat: number; lng: number }>;
 type ShapesDict = Record<string, { [direction: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[] } }>;
 
+export type BusVariant = {
+  shapeId: string;
+  tripCount: number;
+  branches: [number, number][][];
+};
+type VariantsDict = Record<string, { [direction: string]: BusVariant[] }>;
+
 const operatorRoutes: Record<Operator, BusRoute[]> = {
   dublinbus: dublinBusRoutes as BusRoute[],
   buseireann: busEireannRoutes as BusRoute[],
@@ -110,6 +120,13 @@ const operatorStops: Record<Operator, StopsDict> = {
   dublinbus: dublinBusStops as StopsDict,
   buseireann: busEireannStops as StopsDict,
   goahead: goAheadStops as StopsDict,
+};
+
+// Variants are only generated for Dublin Bus today; other operators return [].
+const operatorVariants: Record<Operator, VariantsDict> = {
+  dublinbus: dublinBusVariants as unknown as VariantsDict,
+  buseireann: {} as VariantsDict,
+  goahead: {} as VariantsDict,
 };
 
 // ---------------------------------------------------------------------------
@@ -154,6 +171,46 @@ function getTripScheduledStops(operator: Operator, tripId: string): { sequence: 
   } catch {
     return [];
   }
+}
+
+const tripShapeStmtMap = new Map<Operator, ReturnType<Database["prepare"]>>();
+
+function getTripShapeId(operator: Operator, tripId: string): string | null {
+  const db = getScheduleDb(operator);
+  if (!db) return null;
+  try {
+    if (!tripShapeStmtMap.has(operator)) {
+      tripShapeStmtMap.set(operator, db.prepare("SELECT shape_id FROM trips WHERE trip_id = ?"));
+    }
+    const row = tripShapeStmtMap.get(operator)!.get(tripId) as { shape_id?: string } | undefined;
+    return row?.shape_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Preloaded trip_id → shape_id map, built once per operator. /api/bus/vehicles
+// enriches every vehicle with shapeId on each poll, so we want this O(1) in
+// memory rather than N SQLite calls per request. ~56k entries (~1.7 MB) for
+// Dublin Bus. Empty map for operators without a trips table — degrades
+// gracefully (vehicles get shapeId: null, variant filter ignores them).
+const tripShapeMapCache = new Map<Operator, Map<string, string>>();
+
+function getTripShapeMap(operator: Operator): Map<string, string> {
+  const cached = tripShapeMapCache.get(operator);
+  if (cached) return cached;
+  const map = new Map<string, string>();
+  const db = getScheduleDb(operator);
+  if (db) {
+    try {
+      const rows = db.prepare("SELECT trip_id, shape_id FROM trips").all() as { trip_id: string; shape_id: string }[];
+      for (const r of rows) map.set(r.trip_id, r.shape_id);
+    } catch {
+      // trips table may not exist on operators where it hasn't been generated yet
+    }
+  }
+  tripShapeMapCache.set(operator, map);
+  return map;
 }
 
 // ---------------------------------------------------------------------------
@@ -358,15 +415,35 @@ export function getBusRoutes(operator: Operator): BusRoute[] {
   return operatorRoutes[operator];
 }
 
+export type BusRouteDirectionShape = {
+  headsign: string;
+  coords: [number, number][];
+  stops: { id: string; name: string; lat: number; lng: number }[];
+  variants: BusVariant[];
+};
+
 export function getBusRouteShape(
   operator: Operator,
   shortName: string,
-): { [direction: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[] } } | null {
+): { [direction: string]: BusRouteDirectionShape } | null {
   const routes = operatorRoutes[operator];
   const shapes = operatorShapes[operator];
+  const variants = operatorVariants[operator];
   const route = routes.find((r) => r.shortName.toLowerCase() === shortName.toLowerCase());
   if (!route) return null;
-  return shapes[route.id] ?? null;
+  const shape = shapes[route.id];
+  if (!shape) return null;
+  const routeVariants = variants[route.id] ?? {};
+  const out: { [direction: string]: BusRouteDirectionShape } = {};
+  for (const [dir, data] of Object.entries(shape)) {
+    out[dir] = {
+      headsign: data.headsign,
+      coords: data.coords,
+      stops: data.stops,
+      variants: routeVariants[dir] ?? [],
+    };
+  }
+  return out;
 }
 
 export type ScheduledRow = { sequence: number; stopId: string; arrivalSec: number };
@@ -388,6 +465,7 @@ export function mergeTripStops(
   scheduledRows: ScheduledRow[],
   liveTrip: LiveTripData | undefined,
   stops: StopsDict,
+  shapeId: string | null = null,
 ): TripUpdate | null {
   if (scheduledRows.length === 0 && !liveTrip) return null;
 
@@ -432,6 +510,7 @@ export function mergeTripStops(
       tripId,
       routeId: liveTrip?.routeId ?? "",
       directionId: liveTrip?.directionId ?? 0,
+      shapeId,
       stops: mergedStops,
     };
   }
@@ -455,6 +534,7 @@ export function mergeTripStops(
     tripId,
     routeId: liveTrip!.routeId,
     directionId: liveTrip!.directionId,
+    shapeId,
     stops: fallbackStops.sort((a, b) => a.sequence - b.sequence),
   };
 }
@@ -464,7 +544,8 @@ export async function getBusTripStops(operator: Operator, tripId: string): Promi
   const updates = await pollTripUpdates();
   const liveTrip = updates.get(tripId);
   const scheduledRows = getTripScheduledStops(operator, tripId);
-  return mergeTripStops(tripId, scheduledRows, liveTrip, stops);
+  const shapeId = getTripShapeId(operator, tripId);
+  return mergeTripStops(tripId, scheduledRows, liveTrip, stops, shapeId);
 }
 
 export async function getBusVehiclesByRoute(operator: Operator, shortName: string, direction?: number): Promise<BusVehicle[]> {
@@ -473,9 +554,10 @@ export async function getBusVehiclesByRoute(operator: Operator, shortName: strin
   if (!route) return [];
 
   const all = await pollVehicles();
+  const shapeMap = getTripShapeMap(operator);
   return all
     .filter((v) => v.routeId === route.id && (direction === undefined || v.directionId === direction))
-    .map((v) => ({ ...v, routeShortName: route.shortName }));
+    .map((v) => ({ ...v, routeShortName: route.shortName, shapeId: shapeMap.get(v.tripId) ?? null }));
 }
 
 export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[]> {
@@ -484,10 +566,11 @@ export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[
   for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
 
   const all = await pollVehicles();
+  const shapeMap = getTripShapeMap(operator);
   const result: BusVehicle[] = [];
   for (const v of all) {
     const shortName = routeIdToShortName.get(v.routeId);
-    if (shortName) result.push({ ...v, routeShortName: shortName });
+    if (shortName) result.push({ ...v, routeShortName: shortName, shapeId: shapeMap.get(v.tripId) ?? null });
   }
   return result;
 }

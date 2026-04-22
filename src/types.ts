@@ -70,6 +70,7 @@ export type BusVehicle = {
   timestamp: number;
   label: string;
   directionId: number;
+  shapeId: string | null;
 };
 
 export type TrainMovement = {
