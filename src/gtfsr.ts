@@ -33,6 +33,7 @@ export type GtfsVehiclePosition = {
 export type BusVehicle = GtfsVehiclePosition & {
   routeShortName: string;
   shapeId: string | null;
+  stale: boolean;
 };
 
 export type BusRoute = {
@@ -184,6 +185,27 @@ function getTripShapeId(operator: Operator, tripId: string): string | null {
     }
     const row = tripShapeStmtMap.get(operator)!.get(tripId) as { shape_id?: string } | undefined;
     return row?.shape_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const lastStopSecStmtMap = new Map<Operator, ReturnType<Database["prepare"]>>();
+
+// Lightweight lookup for the stale-trip flag — we only need the last stop's
+// arrival time, not the full stop list (which getTripScheduledStops returns).
+function getTripLastStopSec(operator: Operator, tripId: string): number | null {
+  const db = getScheduleDb(operator);
+  if (!db) return null;
+  try {
+    if (!lastStopSecStmtMap.has(operator)) {
+      lastStopSecStmtMap.set(
+        operator,
+        db.prepare("SELECT arrival_sec FROM stop_times WHERE trip_id = ? ORDER BY stop_sequence DESC LIMIT 1"),
+      );
+    }
+    const row = lastStopSecStmtMap.get(operator)!.get(tripId) as { arrival_sec?: number } | undefined;
+    return row?.arrival_sec ?? null;
   } catch {
     return null;
   }
@@ -548,6 +570,61 @@ export async function getBusTripStops(operator: Operator, tripId: string): Promi
   return mergeTripStops(tripId, scheduledRows, liveTrip, stops, shapeId);
 }
 
+// "Stale" flag attached to each returned vehicle: true when the trip NTA has
+// tagged this bus with is clearly over (scheduled last stop + latest reported
+// delay + 15 min buffer is in the past). We DON'T hide these — the app's core
+// purpose is showing what's on the road. The client uses the flag to swap in
+// a Puca marker ("Puca took this bus") so users can recognise at a glance
+// that the popup's schedule may be for a completed trip, not the one the bus
+// is actually running. Genuinely late buses keep reporting growing delays
+// that push the effective end forward, so they stay non-stale until truly done.
+const ENDED_TRIP_BUFFER_SEC = 15 * 60;
+
+// Dublin-local seconds-since-midnight. The bus service-hours gate (05:00–23:30)
+// already prevents this check from running in the cross-midnight window, so
+// arrival_sec and nowSec stay comparable without wrap-around handling.
+function secondsIntoDublinDay(now: Date = new Date()): number {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Dublin",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hourCycle: "h23",
+  });
+  const parts = fmt.formatToParts(now);
+  const h = Number(parts.find((p) => p.type === "hour")!.value);
+  const m = Number(parts.find((p) => p.type === "minute")!.value);
+  const s = Number(parts.find((p) => p.type === "second")!.value);
+  return h * 3600 + m * 60 + s;
+}
+
+function isTripEnded(
+  operator: Operator,
+  tripId: string,
+  nowSec: number,
+  tripUpdates: RawTripUpdateMap,
+): boolean {
+  const lastStopSec = getTripLastStopSec(operator, tripId);
+  if (lastStopSec === null) return false;   // unknown trip → keep (conservative)
+
+  // Shift the effective end time forward by the latest reported delay so
+  // genuinely late buses are protected — their TripUpdate keeps reporting
+  // larger delays as they run behind, pushing the end past `now`. Stale
+  // predictions (trip actually ended but NTA didn't clear TripUpdates) leave
+  // small/old delays that don't save them once `now` rolls past.
+  const live = tripUpdates.get(tripId);
+  let endDelay = 0;
+  if (live) {
+    let maxSeq = -1;
+    for (const stu of live.stopTimeUpdates) {
+      if (stu.arrivalDelaySec !== null && stu.sequence > maxSeq) {
+        maxSeq = stu.sequence;
+        endDelay = stu.arrivalDelaySec;
+      }
+    }
+  }
+
+  return nowSec > lastStopSec + endDelay + ENDED_TRIP_BUFFER_SEC;
+}
+
 export async function getBusVehiclesByRoute(operator: Operator, shortName: string, direction?: number): Promise<BusVehicle[]> {
   const routes = operatorRoutes[operator];
   const route = routes.find((r) => r.shortName.toLowerCase() === shortName.toLowerCase());
@@ -555,9 +632,17 @@ export async function getBusVehiclesByRoute(operator: Operator, shortName: strin
 
   const all = await pollVehicles();
   const shapeMap = getTripShapeMap(operator);
-  return all
-    .filter((v) => v.routeId === route.id && (direction === undefined || v.directionId === direction))
-    .map((v) => ({ ...v, routeShortName: route.shortName, shapeId: shapeMap.get(v.tripId) ?? null }));
+  const tripUpdates = await pollTripUpdates();
+  const nowSec = secondsIntoDublinDay();
+
+  const result: BusVehicle[] = [];
+  for (const v of all) {
+    if (v.routeId !== route.id) continue;
+    if (direction !== undefined && v.directionId !== direction) continue;
+    const stale = isTripEnded(operator, v.tripId, nowSec, tripUpdates);
+    result.push({ ...v, routeShortName: route.shortName, shapeId: shapeMap.get(v.tripId) ?? null, stale });
+  }
+  return result;
 }
 
 export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[]> {
@@ -567,10 +652,15 @@ export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[
 
   const all = await pollVehicles();
   const shapeMap = getTripShapeMap(operator);
+  const tripUpdates = await pollTripUpdates();
+  const nowSec = secondsIntoDublinDay();
+
   const result: BusVehicle[] = [];
   for (const v of all) {
     const shortName = routeIdToShortName.get(v.routeId);
-    if (shortName) result.push({ ...v, routeShortName: shortName, shapeId: shapeMap.get(v.tripId) ?? null });
+    if (!shortName) continue;
+    const stale = isTripEnded(operator, v.tripId, nowSec, tripUpdates);
+    result.push({ ...v, routeShortName: shortName, shapeId: shapeMap.get(v.tripId) ?? null, stale });
   }
   return result;
 }

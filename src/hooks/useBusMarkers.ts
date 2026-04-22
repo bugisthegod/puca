@@ -12,6 +12,12 @@ import type { Mode } from "./useTrainMap";
 // ---------------------------------------------------------------------------
 const busTripInFlight = new Set<string>();
 
+// Inline Púca jack-o'-lantern face used by the stale-trip marker and popup
+// banner. Mirrors public/puca-jack-o.svg — duplicated as a raw SVG string
+// because Leaflet divIcons and popup HTML can't render React components or
+// follow build-time CSS url() imports for files served at runtime.
+const PUCA_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(56 52) scale(0.78)"><path d="M 112 152 C 112 88, 168 72, 220 72 L 292 72 C 344 72, 400 88, 400 152 L 400 392 Q 376 444, 340 416 Q 304 390, 272 416 Q 240 442, 210 416 Q 180 390, 148 416 Q 118 442, 112 396 Z" fill="#fff" stroke="#16161c" stroke-width="16" stroke-linejoin="round"/><path d="M 110 260 C 70 256, 54 292, 64 324 C 74 348, 104 346, 116 330 Z" fill="#fff" stroke="#16161c" stroke-width="16" stroke-linejoin="round"/><path d="M 402 260 C 442 256, 458 292, 448 324 C 438 348, 408 346, 396 330 Z" fill="#fff" stroke="#16161c" stroke-width="16" stroke-linejoin="round"/><path d="M 168 208 L 228 232 L 214 272 L 168 276 Z" fill="#16161c"/><path d="M 344 208 L 284 232 L 298 272 L 344 276 Z" fill="#16161c"/><path d="M 214 310 L 228 296 L 242 312 L 256 298 L 270 312 L 284 298 L 298 310 L 298 338 L 284 352 L 270 336 L 256 350 L 242 336 L 228 352 L 214 338 Z" fill="#16161c"/></g></svg>`;
+
 // ---------------------------------------------------------------------------
 // Interpolation entry type
 // ---------------------------------------------------------------------------
@@ -251,6 +257,15 @@ export function useBusMarkers({
         <span class="popup-dir">Vehicle ${vehicleLabel}</span>
       </div>
     `;
+    const staleBanner = bus.stale
+      ? `<div class="popup-stale-banner">
+           <div class="popup-stale-icon">${PUCA_SVG}</div>
+           <div class="popup-stale-text">
+             <strong>Púca took this bus</strong>
+             <span>Heh heh, times below may be off.</span>
+           </div>
+         </div>`
+      : "";
     return `
       <div class="popup-content">
         <div class="popup-header-row">
@@ -259,6 +274,7 @@ export function useBusMarkers({
         </div>
         ${originDest}
         ${metaHtml}
+        ${staleBanner}
         ${body}
       </div>
     `;
@@ -279,9 +295,18 @@ export function useBusMarkers({
       const root = (marker.getPopup()?.getElement?.() ?? document) as ParentNode;
       const wrap = root.querySelector(".popup-table-wrap") as HTMLElement | null;
       const current = root.querySelector("tr.movement-current") as HTMLElement | null;
-      if (wrap && current) {
-        wrap.scrollTop = current.offsetTop - wrap.offsetTop;
-      }
+      if (!wrap || !current) return;
+      // getBoundingClientRect sidesteps the offsetParent chain — a <tr>'s
+      // offsetParent is usually the <table>, not the wrap, so the naive
+      // offsetTop subtraction silently produces the wrong scrollTop and the
+      // row lands somewhere random (often the bottom edge, half-clipped).
+      const currentRect = current.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      const currentOffsetInWrap = (currentRect.top - wrapRect.top) + wrap.scrollTop;
+      // Centre the current row vertically in the visible area — a few past
+      // stops are visible above, upcoming stops below, all at a glance.
+      const centerOffset = (wrapRect.height - currentRect.height) / 2;
+      wrap.scrollTop = Math.max(0, currentOffsetInWrap - centerOffset);
     });
   }
 
@@ -323,26 +348,47 @@ export function useBusMarkers({
     }
   }
 
-  function makeBusMarker(bus: BusVehicle): L.Marker {
+  function makeBusIcon(bus: BusVehicle): L.DivIcon {
     const op = busOperatorRef.current;
     const operatorClass =
       op === "buseireann" ? "bus-marker--buseireann" :
       op === "goahead" ? "bus-marker--goahead" :
       "";
-    const icon = L.divIcon({
-      className: `bus-marker ${operatorClass}`.trim(),
-      html: `<div class="bus-triangle"></div><div class="bus-label">${escapeHtml(bus.routeShortName)}</div>`,
-      iconSize: [44, 22],
-      iconAnchor: [22, 11],
+    const classes = ["bus-marker", operatorClass, bus.stale ? "bus-marker--stale" : ""]
+      .filter(Boolean).join(" ");
+    const label = `<div class="bus-label">${escapeHtml(bus.routeShortName)}</div>`;
+    const body = bus.stale
+      ? `<div class="bus-puca">${PUCA_SVG}</div>${label}`
+      : `<div class="bus-triangle"></div>${label}`;
+    return L.divIcon({
+      className: classes,
+      html: body,
+      iconSize: bus.stale ? [44, 52] : [44, 22],
+      iconAnchor: bus.stale ? [22, 26] : [22, 11],
     });
-    const marker = L.marker([bus.lat, bus.lng], { icon });
+  }
+
+  function makeBusMarker(bus: BusVehicle): L.Marker {
+    const marker = L.marker([bus.lat, bus.lng], { icon: makeBusIcon(bus) });
     marker.bindPopup(buildBusPopupHTML(bus, null), {
       maxWidth: 520,
       minWidth: 360,
-      autoPan: false,
+      // Leave room for the mobile search FAB (40px + 12px top offset + gap) at
+      // the top and a little breathing room everywhere else, so popups never
+      // sit flush against the search button or the map edge.
+      autoPan: true,
+      autoPanPaddingTopLeft: L.point(16, 80),
+      autoPanPaddingBottomRight: L.point(16, 16),
     });
     marker.on("popupopen", () => {
-      leafletMap.current?.panTo(marker.getLatLng(), { animate: true, duration: 0.4 });
+      // panInside (vs panTo) only shifts the map when the marker is near an
+      // edge, so it cooperates with Leaflet's popup autoPan — our padding
+      // keeps the popup clear of the search FAB without re-centering on every
+      // click and undoing that adjustment.
+      leafletMap.current?.panInside(marker.getLatLng(), {
+        paddingTopLeft: L.point(16, 80),
+        paddingBottomRight: L.point(16, 16),
+      });
       const popup = marker.getPopup();
       if (popup) wireRouteJumpButton(popup);
       // Instant re-highlight from cache on re-open (markercluster event storms
@@ -387,6 +433,12 @@ export function useBusMarkers({
       const existing = busMarkers.current.get(bus.tripId);
       if (existing) {
         const now = performance.now();
+        // If the trip just tipped past the stale threshold (or came back), swap
+        // the icon to match — otherwise the Puca/triangle doesn't update until
+        // NTA reassigns the tripId and a fresh marker gets created.
+        if (existing.bus.stale !== bus.stale) {
+          existing.marker.setIcon(makeBusIcon(bus));
+        }
         // Backdate the ping to the GPS capture time so RAF's (tickNow - lastPingTime)
         // reflects real elapsed time since the bus was actually at that location —
         // otherwise the marker starts extrapolating only when the data reaches us,

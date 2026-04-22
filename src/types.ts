@@ -71,6 +71,7 @@ export type BusVehicle = {
   label: string;
   directionId: number;
   shapeId: string | null;
+  stale: boolean;
 };
 
 export type TrainMovement = {
