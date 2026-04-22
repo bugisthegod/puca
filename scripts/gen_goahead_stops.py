@@ -10,8 +10,8 @@ import json
 import os
 import sys
 
-GTFS_DIR = "/Users/abel/Downloads/GTFS_Realtime"
-OUT = "/Users/abel/Documents/Code/IrishRailTracker/src/data/goahead-stops.json"
+GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
+OUT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data", "goahead-stops.json"))
 
 # Both agency_id values for Go-Ahead Ireland in this feed
 AGENCY_IDS = {"7778006", "7778021"}

@@ -4,8 +4,9 @@ import os
 import sqlite3
 import sys
 
-TRIPS_FILE = "/Users/abel/Downloads/GTFS_Realtime/trips.txt"
-STOP_TIMES_FILE = "/Users/abel/Downloads/GTFS_Realtime/stop_times.txt"
+GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
+TRIPS_FILE = f"{GTFS_DIR}/trips.txt"
+STOP_TIMES_FILE = f"{GTFS_DIR}/stop_times.txt"
 OUT_DB = os.path.join(os.path.dirname(__file__), "../src/data/bus-schedule.db")
 BATCH_SIZE = 50_000
 

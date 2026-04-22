@@ -21,8 +21,8 @@ import os
 import sys
 from collections import defaultdict
 
-GTFS_DIR = "/Users/abel/Downloads/GTFS_Realtime"
-DATA_DIR = "/Users/abel/Documents/Code/IrishRailTracker/src/data"
+GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
+DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data"))
 
 OUT_SHAPES = f"{DATA_DIR}/buseireann-shapes.json"
 OUT_ROUTES = f"{DATA_DIR}/buseireann-routes.json"

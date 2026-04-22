@@ -8,8 +8,8 @@ import json
 import os
 import sys
 
-GTFS_DIR = "/Users/abel/Downloads/GTFS_Realtime"
-OUT = "/Users/abel/Documents/Code/IrishRailTracker/src/data/dublinbus-stops.json"
+GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
+OUT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data", "dublinbus-stops.json"))
 
 
 def main():

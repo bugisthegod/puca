@@ -2,6 +2,7 @@ node_modules
 .env
 .git
 scripts
+gtfs
 README.md
 fly.toml
 src/data/*.db

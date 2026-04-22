@@ -35,3 +35,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Generated SQLite databases
 src/data/*.db
+
+# Raw GTFS static data (large; download fresh when regenerating data)
+gtfs/

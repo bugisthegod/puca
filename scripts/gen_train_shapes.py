@@ -6,7 +6,7 @@ Generate Irish Rail static data files:
   src/data/train-stops.json             — stops used by Irish Rail
   src/data/train-routes-by-endpoints.json — "origin|dest" -> {routeId, directionId}
 
-Uses GTFS static data already present at ~/Downloads/GTFS_Realtime.
+Uses GTFS static data present at the project's gtfs/ directory.
 Irish Rail agency_id: 7778017
 
 Strategy (mirrors gen_bus_shapes.py):
@@ -23,8 +23,8 @@ import os
 import sys
 from collections import defaultdict
 
-GTFS_DIR = "/Users/abel/Downloads/GTFS_Realtime"
-DATA_DIR = "/Users/abel/Documents/Code/IrishRailTracker/src/data"
+GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
+DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data"))
 
 OUT_SHAPES = f"{DATA_DIR}/train-shapes.json"
 OUT_ROUTES = f"{DATA_DIR}/train-routes.json"
