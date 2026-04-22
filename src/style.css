@@ -1583,6 +1583,7 @@ body {
 .popup-table-wrap {
   max-height: 260px;
   overflow-y: auto;
+  overflow-x: auto;
   margin-top: 6px;
   border-radius: 6px;
   border: 1px solid var(--border-strong);
@@ -1615,6 +1616,15 @@ body {
   border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
   color: var(--text-primary);
+}
+
+/* Stop-name column: cap width so outlier-long names wrap at spaces instead
+   of pushing Sched/Exp off the popup. Normal names (under the cap) stay on
+   one line. Other columns keep nowrap. */
+.movements-table td:nth-child(2) {
+  white-space: normal;
+  overflow-wrap: break-word;
+  max-width: 220px;
 }
 
 .movements-table tbody tr:nth-child(even) {
@@ -1958,8 +1968,8 @@ body {
 
   .popup-content {
     font-size: 0.78rem;
-    min-width: 180px;
-    max-width: calc(100vw - 60px);
+    min-width: min(300px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
   }
 
   .popup-table-wrap {
