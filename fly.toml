@@ -5,6 +5,7 @@ primary_region = 'lhr'
 
 [env]
   BUS_DB_DIR = '/data'
+  NODE_ENV = 'production'
 
 [[mounts]]
   source = 'schedule_dbs'

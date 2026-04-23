@@ -250,10 +250,10 @@ Bun.serve({
       });
     }),
   },
-  development: {
+  development: process.env.NODE_ENV !== "production" ? {
     hmr: true,
     console: true,
-  },
+  } : false,
 });
 
 console.log("Púca running on http://localhost:3000");
