@@ -107,7 +107,7 @@ export function useTrainMap(
       showCoverageOnHover: false,
       maxClusterRadius: 60,
       disableClusteringAtZoom: 18,
-      spiderfyOnMaxZoom: true,
+      spiderfyOnMaxZoom: false,
       chunkedLoading: true,
       animate: false,
       animateAddingMarkers: false,
