@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import PucaMark from "./PucaMark";
 import { useBackToClose } from "../hooks/useBackToClose";
+import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 export type ThemePref = "light" | "dark" | "system";
 
@@ -15,6 +16,7 @@ type AboutModalProps = {
 
 export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, compassPref, onToggleCompass }: AboutModalProps) {
   useBackToClose(onClose);
+  const { canInstall, isInstalled, triggerInstall } = useInstallPrompt();
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -121,39 +123,63 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
           </>
         )}
 
+        {!isInstalled && <>
         <div className="about-divider" />
 
         <section className="about-block">
-          <div className="about-block__label">Add to Home Screen</div>
-          <div className="about-install">
-            <div className="about-install__card">
-              <div className="about-install__platform">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-                  <path d="M17.6 13.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.8-3.6.8-.7 0-1.9-.8-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.7 2.4 3 2.4 1.2-.1 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.6-1-2.6-4.1zM15.2 6.4c.7-.8 1.1-1.9 1-3-.9.1-2.1.6-2.7 1.4-.6.7-1.2 1.8-1 2.9 1 0 2-.5 2.7-1.3z" />
-                </svg>
-                iPhone · Safari
-              </div>
-              <ol className="about-install__steps">
-                <li>Tap the Share button.</li>
-                <li>Scroll to <strong>Add to Home Screen</strong>.</li>
-                <li>Tap <strong>Add</strong>.</li>
-              </ol>
+          <div className="about-install-callout">
+            <div className="about-install__heading">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2.5" />
+                <path d="M11 18h2" />
+              </svg>
+              Install as an app
             </div>
-            <div className="about-install__card">
-              <div className="about-install__platform">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-                  <path d="M17.5 11.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-11 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10.9-5.6l1.4-2.4a.3.3 0 1 0-.5-.3l-1.4 2.4A8.3 8.3 0 0 0 12 4.2c-1.7 0-3.3.4-4.7 1.3L5.9 3.2a.3.3 0 1 0-.5.3l1.4 2.4A7.7 7.7 0 0 0 3.5 12h17a7.7 7.7 0 0 0-3.1-6.1zM3.5 13v6a1.5 1.5 0 0 0 1.5 1.5h1v2a1.5 1.5 0 0 0 3 0v-2h6v2a1.5 1.5 0 0 0 3 0v-2h1A1.5 1.5 0 0 0 20.5 19v-6h-17z" />
+            {canInstall && (
+              <button
+                type="button"
+                className="about-install-btn"
+                onClick={() => { void triggerInstall(); }}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="M7 10l5 5 5-5" />
+                  <path d="M5 21h14" />
                 </svg>
-                Android · Chrome
+                Install Púca
+              </button>
+            )}
+            <div className="about-install">
+              <div className="about-install__card">
+                <div className="about-install__platform">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                    <path d="M17.6 13.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.8-3.6.8-.7 0-1.9-.8-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.7 2.4 3 2.4 1.2-.1 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.6-1-2.6-4.1zM15.2 6.4c.7-.8 1.1-1.9 1-3-.9.1-2.1.6-2.7 1.4-.6.7-1.2 1.8-1 2.9 1 0 2-.5 2.7-1.3z" />
+                  </svg>
+                  iPhone · Safari
+                </div>
+                <ol className="about-install__steps">
+                  <li>Tap the Share button.</li>
+                  <li>Scroll to <strong>Add to Home Screen</strong>.</li>
+                  <li>Tap <strong>Add</strong>.</li>
+                </ol>
               </div>
-              <ol className="about-install__steps">
-                <li>Tap the menu (⋮).</li>
-                <li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
-              </ol>
+              <div className="about-install__card">
+                <div className="about-install__platform">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                    <path d="M17.5 11.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-11 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10.9-5.6l1.4-2.4a.3.3 0 1 0-.5-.3l-1.4 2.4A8.3 8.3 0 0 0 12 4.2c-1.7 0-3.3.4-4.7 1.3L5.9 3.2a.3.3 0 1 0-.5.3l1.4 2.4A7.7 7.7 0 0 0 3.5 12h17a7.7 7.7 0 0 0-3.1-6.1zM3.5 13v6a1.5 1.5 0 0 0 1.5 1.5h1v2a1.5 1.5 0 0 0 3 0v-2h6v2a1.5 1.5 0 0 0 3 0v-2h1A1.5 1.5 0 0 0 20.5 19v-6h-17z" />
+                  </svg>
+                  Android · Chrome
+                </div>
+                <ol className="about-install__steps">
+                  <li>Tap the menu (⋮).</li>
+                  <li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+                </ol>
+              </div>
             </div>
+            <p className="about-install__note">Launches full-screen, no browser chrome.</p>
           </div>
-          <p className="about-block__note">Launches full-screen, no browser chrome.</p>
         </section>
+        </>}
 
         <div className="about-divider" />
 

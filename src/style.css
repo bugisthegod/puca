@@ -213,21 +213,37 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 2001;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  padding: 12px 44px 12px 44px;
   background: rgba(245, 185, 69, 0.96);
   color: #1a1a1a;
   border-radius: 12px;
-  font-size: 0.88rem;
-  font-weight: 600;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
   max-width: calc(100vw - 24px);
   animation: app-toast-in 0.25s ease-out;
+  text-align: center;
+}
+
+.app-toast__text {
+  line-height: 1.3;
+}
+
+.app-toast__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.app-toast__body {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: 0.72;
 }
 
 .app-toast__close {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.15);
   border: none;
   color: #1a1a1a;
@@ -891,6 +907,62 @@ body {
 
 /* --- Install --- */
 
+.about-install-callout {
+  background: rgba(77, 214, 160, 0.07);
+  border: 1px solid rgba(77, 214, 160, 0.22);
+  border-radius: 14px;
+  padding: 16px 16px 14px;
+}
+
+.about-install__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 14px;
+}
+
+.about-install__heading svg {
+  color: var(--brand-light);
+  flex-shrink: 0;
+}
+
+.about-install__note {
+  margin: 12px 0 0;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.about-install-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 11px 14px;
+  background: var(--brand-mid);
+  border: 1px solid var(--brand-mid);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s;
+}
+
+.about-install-btn:hover {
+  background: var(--brand-light);
+  border-color: var(--brand-light);
+}
+
+.about-install-btn:active {
+  transform: scale(0.98);
+}
+
 .about-install {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -977,6 +1049,19 @@ body {
 }
 :root[data-theme="light"] .about-block__note {
   color: rgba(0, 0, 0, 0.48);
+}
+:root[data-theme="light"] .about-install-callout {
+  background: rgba(48, 160, 99, 0.06);
+  border-color: rgba(48, 160, 99, 0.22);
+}
+:root[data-theme="light"] .about-install__heading {
+  color: #16161c;
+}
+:root[data-theme="light"] .about-install__heading svg {
+  color: var(--brand-dark);
+}
+:root[data-theme="light"] .about-install__note {
+  color: rgba(0, 0, 0, 0.5);
 }
 :root[data-theme="light"] .about-install__card {
   background: #fff;

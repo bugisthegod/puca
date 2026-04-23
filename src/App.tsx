@@ -112,7 +112,7 @@ function App() {
     initialView: savedSession.mapView ?? null,
   });
   const [locating, setLocating] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ title: string; body?: string } | null>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [seenAbout, setSeenAbout] = useState<boolean>(() => {
     try { return localStorage.getItem(ABOUT_SEEN_KEY) === "1"; } catch { return true; }
@@ -151,9 +151,10 @@ function App() {
   const busFavKey = busRoute && busDirection ? { shortName: busRoute, operator: busOperator, direction: busDirection } : null;
   const busIsFav = busFavKey ? hasBus(favs, busFavKey) : false;
   function showFavLimitToast(kind: "bus" | "train", max: number) {
-    const msg = `${kind === "bus" ? "Bus" : "Train"} favorites full (${max} max). Remove one first.`;
-    setToast(msg);
-    setTimeout(() => setToast((t) => (t === msg ? null : t)), 3000);
+    const title = `${kind === "bus" ? "Bus" : "Train"} favorites full (${max} max). Remove one first.`;
+    const next = { title };
+    setToast(next);
+    setTimeout(() => setToast((t) => (t?.title === title ? null : t)), 3000);
   }
   const onToggleBusFav = () => {
     if (!busFavKey) return;
@@ -225,7 +226,18 @@ function App() {
     try {
       await locateUser();
     } catch (err) {
-      alert(`Could not get your location: ${(err as Error).message}`);
+      // GeolocationPositionError codes: 1=denied, 2=unavailable, 3=timeout.
+      // Surface each as a scannable toast with a hint the user can act on —
+      // "User denied Geolocation" is the browser's spec text, not something
+      // a non-technical user can translate into a fix.
+      const code = (err as GeolocationPositionError)?.code;
+      const next =
+        code === 1 ? { title: "Location is off", body: "Enable it in your device settings" }
+        : code === 2 ? { title: "Location unavailable", body: "Try again in a moment" }
+        : code === 3 ? { title: "Timed out", body: "Try again" }
+        : { title: "Couldn't get your location" };
+      setToast(next);
+      setTimeout(() => setToast((t) => (t?.title === next.title ? null : t)), 5000);
     } finally {
       setLocating(false);
     }
@@ -357,7 +369,10 @@ function App() {
       <OfflineBanner />
       {toast && (
         <div className="app-toast" role="alert">
-          <span>{toast}</span>
+          <div className="app-toast__text">
+            <div className="app-toast__title">{toast.title}</div>
+            {toast.body && <div className="app-toast__body">{toast.body}</div>}
+          </div>
           <button
             type="button"
             className="app-toast__close"
