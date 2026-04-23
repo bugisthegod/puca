@@ -261,7 +261,7 @@ export function useBusMarkers({
       ? `<div class="popup-stale-banner">
            <div class="popup-stale-icon">${PUCA_SVG}</div>
            <div class="popup-stale-text">
-             <strong>Púca took this bus</strong>
+             <strong>Púca ran off with this bus</strong>
              <span>Heh heh, times below may be off.</span>
            </div>
          </div>`

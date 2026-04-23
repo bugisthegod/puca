@@ -70,7 +70,7 @@ export default function InfoPanel({
           <div id="panel-header" className="panel-header--closed">
             <SleepingPuca size={52} />
             <div className="service-text">
-              <span id="train-count">Service closed</span>
+              <span id="train-count">Púca's having a kip</span>
               <span className="service-next">Next {mode} at {resumeLabel}</span>
             </div>
           </div>
