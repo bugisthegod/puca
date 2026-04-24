@@ -1,5 +1,5 @@
 // Bump CACHE_VERSION to invalidate all caches after a deploy.
-const CACHE_VERSION = "v1.3.6";
+const CACHE_VERSION = "v1.3.7";
 const CACHE_NAME = `puca-${CACHE_VERSION}`;
 // How long navigation waits on the network before falling back to cache.
 // Hot fly machine responds in <500ms; cold start takes multiple seconds,

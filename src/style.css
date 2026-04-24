@@ -583,6 +583,16 @@ body {
   body.kb-open .fav-fab { display: none; }
 }
 
+/* Mirror the three FABs to the left edge when the user picks that side.
+   Higher specificity than the base .locate-btn/.fav-fab/.about-fab rules,
+   so this also overrides the mobile media-query `right` restatements. */
+[data-fab-side="left"] .locate-btn,
+[data-fab-side="left"] .fav-fab,
+[data-fab-side="left"] .about-fab {
+  right: auto;
+  left: calc(12px + env(safe-area-inset-left));
+}
+
 .fav-star {
   display: inline-flex;
   align-items: center;

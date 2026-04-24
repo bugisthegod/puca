@@ -4,6 +4,7 @@ import { useBackToClose } from "../hooks/useBackToClose";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 export type ThemePref = "light" | "dark" | "system";
+export type FabSide = "left" | "right";
 
 type AboutModalProps = {
   onClose: () => void;
@@ -12,9 +13,11 @@ type AboutModalProps = {
   onSetTheme?: (t: ThemePref) => void;
   compassPref?: boolean;
   onToggleCompass?: (next: boolean) => void;
+  fabSide?: FabSide;
+  onSetFabSide?: (s: FabSide) => void;
 };
 
-export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, compassPref, onToggleCompass }: AboutModalProps) {
+export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, compassPref, onToggleCompass, fabSide, onSetFabSide }: AboutModalProps) {
   useBackToClose(onClose);
   const { canInstall, isInstalled, triggerInstall } = useInstallPrompt();
   useEffect(() => {
@@ -118,6 +121,38 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
                 Shows which way you're facing on the map. iOS asks for motion
                 permission after each reload — tap On again if the compass isn't
                 showing.
+              </p>
+            </section>
+          </>
+        )}
+
+        {onSetFabSide && fabSide && (
+          <>
+            <div className="about-divider" />
+            <section className="about-block">
+              <div className="about-block__label">Button side</div>
+              <div className="about-theme-toggle" role="radiogroup" aria-label="Button side">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={fabSide === "left"}
+                  className={`about-theme-btn${fabSide === "left" ? " is-active" : ""}`}
+                  onClick={() => { if (fabSide !== "left") onSetFabSide("left"); }}
+                >
+                  Left
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={fabSide === "right"}
+                  className={`about-theme-btn${fabSide === "right" ? " is-active" : ""}`}
+                  onClick={() => { if (fabSide !== "right") onSetFabSide("right"); }}
+                >
+                  Right
+                </button>
+              </div>
+              <p className="about-block__note">
+                Moves the locate, favourites, and About buttons to your preferred side.
               </p>
             </section>
           </>

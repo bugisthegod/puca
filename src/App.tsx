@@ -26,6 +26,8 @@ const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
 const THEME_KEY = "puca:theme";
 type ThemePref = "light" | "dark" | "system";
+const FAB_SIDE_KEY = "puca:fab-side";
+type FabSide = "left" | "right";
 
 function resolveTheme(pref: ThemePref): "light" | "dark" {
   if (pref === "system") {
@@ -42,8 +44,17 @@ function readThemePref(): ThemePref {
   return "system";
 }
 
-// Apply saved theme before React renders to avoid a flash of the wrong theme.
+function readFabSide(): FabSide {
+  try {
+    const v = localStorage.getItem(FAB_SIDE_KEY);
+    if (v === "left" || v === "right") return v;
+  } catch {}
+  return "right";
+}
+
+// Apply saved theme + FAB side before React renders to avoid a flash/jump.
 document.documentElement.dataset.theme = resolveTheme(readThemePref());
+document.documentElement.dataset.fabSide = readFabSide();
 
 // iOS (Safari/WebKit) is the only platform that gates device orientation
 // behind a per-page-load permission prompt — Android just works. Use the
@@ -149,6 +160,11 @@ function App() {
       return () => mq.removeEventListener("change", apply);
     }
   }, [theme]);
+  const [fabSide, setFabSide] = useState<FabSide>(readFabSide);
+  useEffect(() => {
+    document.documentElement.dataset.fabSide = fabSide;
+    try { localStorage.setItem(FAB_SIDE_KEY, fabSide); } catch {}
+  }, [fabSide]);
   function closeTour() {
     setShowTour(false);
     try { localStorage.setItem(TOUR_SEEN_KEY, "1"); } catch {}
@@ -458,6 +474,8 @@ function App() {
             if (next) void startCompass();
             else stopCompass();
           } : undefined}
+          fabSide={fabSide}
+          onSetFabSide={setFabSide}
         />
       )}
       {showTour && <OnboardingTour steps={TOUR_STEPS} onClose={closeTour} />}
