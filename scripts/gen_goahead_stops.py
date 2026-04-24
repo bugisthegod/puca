@@ -59,6 +59,7 @@ def main():
                 "name": row["stop_name"].strip(),
                 "lat": round(float(row["stop_lat"]), 6),
                 "lng": round(float(row["stop_lon"]), 6),
+                "code": (row.get("stop_code") or "").strip(),
             }
     print(f"Stops written: {len(result):,}", file=sys.stderr)
 

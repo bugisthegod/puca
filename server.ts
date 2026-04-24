@@ -1,13 +1,29 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements } from "./src/api.ts";
-import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, type Operator } from "./src/gtfsr.ts";
+import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getBusStopArrivals, searchBusStops, getOperatorStop, type Operator } from "./src/gtfsr.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
+const VALID_OPERATORS = new Set<Operator>(["dublinbus", "buseireann", "goahead"]);
+
+function parseOperator(raw: string | null): Operator | null {
+  if (!raw) return null;
+  return VALID_OPERATORS.has(raw as Operator) ? (raw as Operator) : null;
+}
+
+// Irish Rail's "today" is Dublin's today — not fly's UTC today, which can be
+// yesterday during summer-evening / early-morning windows.
+const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE", {
+  timeZone: "Europe/Dublin",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
 function todayFormatted(): string {
-  const d = new Date();
-  const day = d.getDate();
-  const month = d.toLocaleString("en-IE", { month: "short" }).toLowerCase();
-  const year = d.getFullYear();
+  const parts = DUBLIN_DATE_FMT.formatToParts(new Date());
+  const day = parts.find((p) => p.type === "day")!.value;
+  const month = parts.find((p) => p.type === "month")!.value.toLowerCase();
+  const year = parts.find((p) => p.type === "year")!.value;
   return `${day} ${month} ${year}`;
 }
 
@@ -195,11 +211,12 @@ Bun.serve({
       });
     }),
     "/api/bus/vehicles": rateLimit(async (req) => {
-      // Off-hours short-circuit: don't pay an NTA round-trip when no buses run.
-      // Frontend stops polling too, but stale tabs / other clients can still hit us.
-      if (!isInServiceHours("bus")) return Response.json([]);
       // NTA cache gate is 30s; allow browsers to reuse for up to 15s and revalidate in the background.
       const vehicleHeaders = { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" };
+      // Off-hours short-circuit: don't pay an NTA round-trip when no buses run.
+      // Frontend stops polling too, but stale tabs / other clients can still hit us.
+      // Short TTL so CF flushes the empty payload quickly once service resumes.
+      if (!isInServiceHours("bus")) return Response.json([], { headers: vehicleHeaders });
       try {
         const url = new URL(req.url);
         const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
@@ -225,16 +242,41 @@ Bun.serve({
       });
     }),
     "/api/bus/trip/:tripId": rateLimit(async (req) => {
-      if (!isInServiceHours("bus")) return Response.json({});
+      const tripHeaders = { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" };
+      if (!isInServiceHours("bus")) return Response.json({}, { headers: tripHeaders });
       try {
         const url = new URL(req.url);
         const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
         const trip = await getBusTripStops(operator, req.params.tripId);
-        return Response.json(trip ?? {}, {
-          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" },
-        });
+        return Response.json(trip ?? {}, { headers: tripHeaders });
       } catch {
         return Response.json({}, { status: 502 });
+      }
+    }),
+    "/api/bus/stops/search": rateLimit((req) => {
+      const url = new URL(req.url);
+      const operator = parseOperator(url.searchParams.get("operator") ?? "dublinbus");
+      if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
+      const q = url.searchParams.get("q") ?? "";
+      return Response.json(searchBusStops(operator, q), {
+        headers: { "Cache-Control": "public, max-age=3600" }, // stops list is static
+      });
+    }),
+    "/api/bus/stop/:stopId/arrivals": rateLimit(async (req) => {
+      const url = new URL(req.url);
+      const operator = parseOperator(url.searchParams.get("operator") ?? "dublinbus");
+      if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
+      const stopId = req.params.stopId;
+      if (!getOperatorStop(operator, stopId)) {
+        return Response.json({ error: "unknown stopId" }, { status: 404 });
+      }
+      const arrivalsHeaders = { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" };
+      if (!isInServiceHours("bus")) return Response.json([], { headers: arrivalsHeaders });
+      try {
+        const arrivals = await getBusStopArrivals(operator, stopId);
+        return Response.json(arrivals, { headers: arrivalsHeaders });
+      } catch {
+        return Response.json([], { status: 502 });
       }
     }),
     "/api/train/shape": rateLimit((req) => {

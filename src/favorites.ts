@@ -8,8 +8,13 @@ import type { BusOperator } from "./types";
 const KEY = "puca-favorites-v1";
 const OPERATORS: readonly BusOperator[] = ["dublinbus", "buseireann", "goahead"];
 
-export const MAX_BUS_FAVORITES = 4;
-export const MAX_TRAIN_FAVORITES = 4;
+// Single shared cap across buses + trains + stops. 10 total slots — the user
+// curates a small set, not a bookmark dump.
+export const MAX_FAVORITES = 10;
+
+export function totalFavorites(favs: Favorites): number {
+  return favs.buses.length + favs.trains.length + favs.stops.length;
+}
 
 export interface BusFavorite {
   shortName: string;   // "39A"
@@ -25,13 +30,21 @@ export interface TrainFavorite {
   toName: string;
 }
 
+export interface BusStopFavorite {
+  stopId: string;      // "8220DB000270"
+  operator: BusOperator;
+  stopCode: string;    // "270" — printed on the shelter, used as the display badge
+  stopName: string;    // "O'Connell Street Upper"
+}
+
 export interface Favorites {
   buses: BusFavorite[];
   trains: TrainFavorite[];
+  stops: BusStopFavorite[];
 }
 
 export function emptyFavorites(): Favorites {
-  return { buses: [], trains: [] };
+  return { buses: [], trains: [], stops: [] };
 }
 
 export function busKey(f: Pick<BusFavorite, "shortName" | "operator" | "direction">): string {
@@ -42,6 +55,10 @@ export function trainKey(f: Pick<TrainFavorite, "from" | "to">): string {
   return `${f.from}→${f.to}`;
 }
 
+export function stopKey(f: Pick<BusStopFavorite, "stopId" | "operator">): string {
+  return `${f.operator}:${f.stopId}`;
+}
+
 export function hasBus(favs: Favorites, f: Pick<BusFavorite, "shortName" | "operator" | "direction">): boolean {
   const k = busKey(f);
   return favs.buses.some((b) => busKey(b) === k);
@@ -50,6 +67,11 @@ export function hasBus(favs: Favorites, f: Pick<BusFavorite, "shortName" | "oper
 export function hasTrain(favs: Favorites, f: Pick<TrainFavorite, "from" | "to">): boolean {
   const k = trainKey(f);
   return favs.trains.some((t) => trainKey(t) === k);
+}
+
+export function hasStop(favs: Favorites, f: Pick<BusStopFavorite, "stopId" | "operator">): boolean {
+  const k = stopKey(f);
+  return favs.stops.some((s) => stopKey(s) === k);
 }
 
 export function toggleBus(favs: Favorites, f: BusFavorite): Favorites {
@@ -64,12 +86,22 @@ export function toggleTrain(favs: Favorites, f: TrainFavorite): Favorites {
     : { ...favs, trains: [...favs.trains, f] };
 }
 
+export function toggleStop(favs: Favorites, f: BusStopFavorite): Favorites {
+  return hasStop(favs, f)
+    ? { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== stopKey(f)) }
+    : { ...favs, stops: [...favs.stops, f] };
+}
+
 export function removeBus(favs: Favorites, key: string): Favorites {
   return { ...favs, buses: favs.buses.filter((b) => busKey(b) !== key) };
 }
 
 export function removeTrain(favs: Favorites, key: string): Favorites {
   return { ...favs, trains: favs.trains.filter((t) => trainKey(t) !== key) };
+}
+
+export function removeStop(favs: Favorites, key: string): Favorites {
+  return { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== key) };
 }
 
 function isBusFav(v: unknown): v is BusFavorite {
@@ -90,6 +122,15 @@ function isTrainFav(v: unknown): v is TrainFavorite {
     && typeof t.toName === "string";
 }
 
+function isStopFav(v: unknown): v is BusStopFavorite {
+  if (!v || typeof v !== "object") return false;
+  const s = v as Partial<BusStopFavorite>;
+  return typeof s.stopId === "string" && s.stopId.length > 0
+    && typeof s.operator === "string" && OPERATORS.includes(s.operator as BusOperator)
+    && typeof s.stopCode === "string"
+    && typeof s.stopName === "string" && s.stopName.length > 0;
+}
+
 export function loadFavorites(): Favorites {
   try {
     const raw = localStorage.getItem(KEY);
@@ -97,7 +138,10 @@ export function loadFavorites(): Favorites {
     const s = JSON.parse(raw) as Partial<Favorites>;
     const buses = Array.isArray(s.buses) ? s.buses.filter(isBusFav) : [];
     const trains = Array.isArray(s.trains) ? s.trains.filter(isTrainFav) : [];
-    return { buses, trains };
+    // Pre-existing v1 records won't have `stops` — default to empty and keep
+    // sharing the same localStorage key, so no migration dance.
+    const stops = Array.isArray(s.stops) ? s.stops.filter(isStopFav) : [];
+    return { buses, trains, stops };
   } catch {
     return emptyFavorites();
   }

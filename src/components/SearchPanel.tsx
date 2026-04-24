@@ -21,9 +21,10 @@ interface SearchPanelProps {
   favs: Favorites;
   onToggleTrain: (f: TrainFavorite) => void;
   defaultCollapsed?: boolean;
+  onShowToast: (title: string, body?: string) => void;
 }
 
-export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, defaultCollapsed = false }: SearchPanelProps) {
+export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, defaultCollapsed = false, onShowToast }: SearchPanelProps) {
   const saved = localStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
 
@@ -284,7 +285,10 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
                     key={r.code}
                     className={`train-item train-item--${r.status}`}
                     onClick={() => {
-                      if (!canFocus) return;
+                      if (!canFocus) {
+                        onShowToast("Not on the map yet");
+                        return;
+                      }
                       onTrainSelect(r.code);
                       if (window.innerWidth <= 600) setCollapsed(true);
                     }}

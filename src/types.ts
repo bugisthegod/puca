@@ -59,6 +59,17 @@ export type BusStop = {
   lng: number;
 };
 
+export type FocusContext = {
+  tripId: string;
+  operator: BusOperator;
+  routeShortName: string;
+  direction: string;
+  targetStopId: string;
+  targetStopName: string;
+  targetStopLat: number;
+  targetStopLng: number;
+};
+
 export type BusVehicle = {
   tripId: string;
   routeId: string;

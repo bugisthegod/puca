@@ -95,7 +95,7 @@ type GtfsTripUpdateEntity = {
 // Operator data sets
 // ---------------------------------------------------------------------------
 
-type StopsDict = Record<string, { name: string; lat: number; lng: number }>;
+type StopsDict = Record<string, { name: string; lat: number; lng: number; code?: string }>;
 type ShapesDict = Record<string, { [direction: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[] } }>;
 
 export type BusVariant = {
@@ -146,13 +146,28 @@ const scheduledStopsStmtMap = new Map<Operator, ReturnType<Database["prepare"]>>
 
 function getScheduleDb(operator: Operator): Database | null {
   if (scheduleDbMap.has(operator)) return scheduleDbMap.get(operator)!;
+  // Open read-write first so we can create the stop_id index on cold start
+  // (needed for the stop-arrivals endpoint). Falls back to read-only if the
+  // filesystem is read-only (e.g. Fly volume), in which case arrivals-by-stop
+  // queries degrade to slow table scans — we accept that rather than fail boot.
   try {
-    const db = new Database(DB_PATHS[operator], { readonly: true });
+    const db = new Database(DB_PATHS[operator], { readwrite: true, create: false });
+    try {
+      db.exec("CREATE INDEX IF NOT EXISTS idx_stop_times_stop ON stop_times(stop_id)");
+    } catch (err) {
+      log.warn("schedule_db.index_create_failed", { operator, ...errToMeta(err) });
+    }
     scheduleDbMap.set(operator, db);
     return db;
   } catch {
-    scheduleDbMap.set(operator, null);
-    return null;
+    try {
+      const db = new Database(DB_PATHS[operator], { readonly: true });
+      scheduleDbMap.set(operator, db);
+      return db;
+    } catch {
+      scheduleDbMap.set(operator, null);
+      return null;
+    }
   }
 }
 
@@ -416,8 +431,11 @@ async function pollTripUpdates(): Promise<RawTripUpdateMap> {
   if (Date.now() - lastTripUpdateCall < NTA_TRIP_UPDATES_INTERVAL_MS) {
     return tripUpdateCache ?? new Map();
   }
-  if (Date.now() - lastAnyNtaCall < NTA_MIN_SPACING_MS) {
-    return tripUpdateCache ?? new Map();
+  // Spacing gate only applies once we already have data — otherwise the first
+  // arrivals request after pollVehicles warmed up gets an empty Map for up to
+  // 20s, making stop-arrivals return [] even when buses are live.
+  if (tripUpdateCache !== null && Date.now() - lastAnyNtaCall < NTA_MIN_SPACING_MS) {
+    return tripUpdateCache;
   }
   lastTripUpdateCall = Date.now();
   lastAnyNtaCall = Date.now();
@@ -663,6 +681,164 @@ export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[
     result.push({ ...v, routeShortName: shortName, shapeId: shapeMap.get(v.tripId) ?? null, stale });
   }
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Stop lookups — used by the "search by bus stop" UI
+// ---------------------------------------------------------------------------
+
+export type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number };
+
+export function getOperatorStop(operator: Operator, stopId: string): { name: string; lat: number; lng: number; code?: string } | null {
+  return operatorStops[operator][stopId] ?? null;
+}
+
+export function searchBusStops(operator: Operator, query: string, limit = 10): StopSearchResult[] {
+  const stops = operatorStops[operator];
+  const q = query.trim();
+  if (!q) return [];
+  const out: StopSearchResult[] = [];
+  // Exact ID match first — lets session/favorite rehydration round-trip a
+  // stopId back to a full StopSearchResult without a separate endpoint.
+  const direct = stops[q];
+  if (direct) {
+    out.push({ id: q, name: direct.name, code: direct.code ?? "", lat: direct.lat, lng: direct.lng });
+  }
+  const isDigits = /^\d+$/.test(q);
+  if (isDigits) {
+    for (const [id, s] of Object.entries(stops)) {
+      if (s.code && s.code === q) out.push({ id, name: s.name, code: s.code, lat: s.lat, lng: s.lng });
+      if (out.length >= limit) break;
+    }
+    if (out.length < limit) {
+      for (const [id, s] of Object.entries(stops)) {
+        if (out.find((r) => r.id === id)) continue;
+        if (s.code && s.code.startsWith(q)) out.push({ id, name: s.name, code: s.code, lat: s.lat, lng: s.lng });
+        if (out.length >= limit) break;
+      }
+    }
+    return out;
+  }
+  const qLower = q.toLowerCase();
+  for (const [id, s] of Object.entries(stops)) {
+    if (s.name.toLowerCase().startsWith(qLower)) {
+      out.push({ id, name: s.name, code: s.code ?? "", lat: s.lat, lng: s.lng });
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
+}
+
+const stopArrivalsStmtMap = new Map<Operator, ReturnType<Database["prepare"]>>();
+
+export type BusStopArrival = {
+  tripId: string;
+  routeShortName: string;
+  headsign: string;
+  etaSeconds: number;
+  delaySec: number;
+  stopSequence: number;
+  direction: string;
+  // "running" — trip has a live vehicle_position, can be focused on the map.
+  // "scheduled" — NTA has a trip_update prediction but the bus hasn't reported
+  // its GPS yet (usually pre-departure). Frontend greys these out.
+  status: "running" | "scheduled";
+};
+
+export async function getBusStopArrivals(operator: Operator, stopId: string, limit = 15): Promise<BusStopArrival[]> {
+  if (!operatorStops[operator][stopId]) return [];
+  const db = getScheduleDb(operator);
+  if (!db) return [];
+
+  if (!stopArrivalsStmtMap.has(operator)) {
+    try {
+      stopArrivalsStmtMap.set(
+        operator,
+        db.prepare(
+          "SELECT trip_id, stop_sequence, arrival_sec FROM stop_times WHERE stop_id = ?",
+        ),
+      );
+    } catch {
+      return [];
+    }
+  }
+  const stmt = stopArrivalsStmtMap.get(operator)!;
+  let rows: { trip_id: string; stop_sequence: number; arrival_sec: number }[];
+  try {
+    rows = stmt.all(stopId) as typeof rows;
+  } catch {
+    return [];
+  }
+
+  const tripUpdates = await pollTripUpdates();
+  const nowSec = secondsIntoDublinDay();
+
+  // Set of tripIds that currently have a live GPS ping. Use the cached vehicles
+  // snapshot rather than pollVehicles() to avoid a second NTA call per stop —
+  // the frontend's bus-mode polling keeps this cache warm for us.
+  const runningTripIds = new Set<string>();
+  for (const v of getCachedVehicles()) {
+    if (v.tripId) runningTripIds.add(v.tripId);
+  }
+
+  const routes = operatorRoutes[operator];
+  const shapes = operatorShapes[operator];
+  const routeIdToShortName = new Map<string, string>();
+  for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
+
+  const candidates: BusStopArrival[] = [];
+  for (const r of rows) {
+    // Hot-path: hottest stops hit ~6k rows from the static schedule but only
+    // ~hundreds have a live TripUpdate at any moment. Cheap Map lookup first
+    // so the bulk of non-live rows don't pay the SQLite cost of isTripEnded.
+    const live = tripUpdates.get(r.trip_id);
+    if (!live) continue;
+
+    // Only surface trips that haven't already passed this stop — first
+    // stopTimeUpdate in the live list is the bus's current/next stop, so
+    // anything earlier in sequence has already been served.
+    if (live.stopTimeUpdates.length > 0 && live.stopTimeUpdates[0]!.sequence > r.stop_sequence) continue;
+
+    if (isTripEnded(operator, r.trip_id, nowSec, tripUpdates)) continue;
+
+    let delaySec = 0;
+    let propagated: number | null = null;
+    for (const stu of live.stopTimeUpdates) {
+      if (stu.arrivalDelaySec === null) continue;
+      if (stu.sequence <= r.stop_sequence) propagated = stu.arrivalDelaySec;
+      else if (propagated === null) { propagated = stu.arrivalDelaySec; break; }
+      else break;
+    }
+    if (propagated !== null) delaySec = propagated;
+
+    const etaSec = r.arrival_sec + delaySec - nowSec;
+    if (etaSec < 0) continue;
+
+    const routeId = live.routeId;
+    const directionId = live.directionId;
+    if (!routeId) continue;
+
+    const shortName = routeIdToShortName.get(routeId);
+    if (!shortName) continue;
+
+    const dirKey = String(directionId);
+    const routeShape = shapes[routeId];
+    const headsign = routeShape?.[dirKey]?.headsign ?? routeShape?.["0"]?.headsign ?? shortName;
+
+    candidates.push({
+      tripId: r.trip_id,
+      routeShortName: shortName,
+      headsign,
+      etaSeconds: etaSec,
+      delaySec,
+      stopSequence: r.stop_sequence,
+      direction: dirKey,
+      status: runningTripIds.has(r.trip_id) ? "running" : "scheduled",
+    });
+  }
+
+  candidates.sort((a, b) => a.etaSeconds - b.etaSeconds);
+  return candidates.slice(0, limit);
 }
 
 export function getTrainRouteShape(origin: string, destination: string): {

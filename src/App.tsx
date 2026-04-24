@@ -4,10 +4,10 @@ import "leaflet.markercluster";
 
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import type { Train, BusVehicle, BusOperator } from "./types";
+import type { Train, BusVehicle, BusOperator, FocusContext } from "./types";
 import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
-import { loadSession, saveSession } from "./session";
+import { loadSession, saveSession, type BusSearchTab } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel from "./components/BusSearchPanel";
@@ -18,7 +18,7 @@ import PucaMark from "./components/PucaMark";
 import OfflineBanner from "./components/OfflineBanner";
 import { registerServiceWorker } from "./sw-register";
 import { useFavorites } from "./hooks/useFavorites";
-import { hasBus, hasTrain, MAX_BUS_FAVORITES, MAX_TRAIN_FAVORITES, type TrainFavorite } from "./favorites";
+import { hasBus, hasTrain, hasStop, totalFavorites, MAX_FAVORITES, type TrainFavorite, type BusStopFavorite } from "./favorites";
 import "./style.css";
 
 const savedSession = loadSession();
@@ -96,6 +96,10 @@ function App() {
   const [busOperator, setBusOperator] = useState<BusOperator>(savedSession.busOperator ?? "dublinbus");
   const [busRoute, setBusRoute] = useState<string | null>(savedSession.busRoute ?? null);
   const [busDirection, setBusDirection] = useState<string | null>(savedSession.busDirection ?? null);
+  const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedSession.busSearchTab ?? "route");
+  const [busStopId, setBusStopId] = useState<string | null>(savedSession.busStopId ?? null);
+  const [panelExpandKey, setPanelExpandKey] = useState(0);
+  const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
   const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
   const [lastUpdated, setLastUpdated] = useState<string>("Updated: —");
@@ -103,13 +107,21 @@ function App() {
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const { focusTrain, locateUser, getMapView, compassPref, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, buses, busShape, busDirection, busOperator, {
+  // When a stop-arrival is focused, hide every other bus from the map so the
+  // user sees only their bus + the partial route to their stop. Flipping back
+  // to full fleet is one click on the "All buses" button.
+  const visibleBuses = focusContext
+    ? buses.filter((b) => b.tripId === focusContext.tripId)
+    : buses;
+
+  const { focusTrain, locateUser, getMapView, compassPref, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, visibleBuses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
       setBusDirection(direction);
     },
     initialView: savedSession.mapView ?? null,
+    focusContext,
   });
   const [locating, setLocating] = useState(false);
   const [toast, setToast] = useState<{ title: string; body?: string } | null>(null);
@@ -144,33 +156,49 @@ function App() {
   function openTour() {
     setShowTour(true);
   }
-  const { favs, toggleBus, toggleTrain, removeBus, removeTrain } = useFavorites();
+  const { favs, toggleBus, toggleTrain, toggleStop, removeBus, removeTrain, removeStop } = useFavorites();
   const [showFavs, setShowFavs] = useState(false);
   const [searchResetKey, setSearchResetKey] = useState(0);
 
   const busFavKey = busRoute && busDirection ? { shortName: busRoute, operator: busOperator, direction: busDirection } : null;
   const busIsFav = busFavKey ? hasBus(favs, busFavKey) : false;
-  function showFavLimitToast(kind: "bus" | "train", max: number) {
-    const title = `${kind === "bus" ? "Bus" : "Train"} favorites full (${max} max). Remove one first.`;
-    const next = { title };
+  const stopIsFav = busStopId ? hasStop(favs, { stopId: busStopId, operator: busOperator }) : false;
+  function showToast(title: string, body?: string, ms = 3000) {
+    const next = { title, body };
     setToast(next);
-    setTimeout(() => setToast((t) => (t?.title === title ? null : t)), 3000);
+    setTimeout(() => setToast((t) => (t?.title === title ? null : t)), ms);
+  }
+  function showFavLimitToast() {
+    showToast(`Favorites full (${MAX_FAVORITES} max). Remove one first.`);
   }
   const onToggleBusFav = () => {
     if (!busFavKey) return;
-    if (!busIsFav && favs.buses.length >= MAX_BUS_FAVORITES) {
-      showFavLimitToast("bus", MAX_BUS_FAVORITES);
+    if (!busIsFav && totalFavorites(favs) >= MAX_FAVORITES) {
+      showFavLimitToast();
       return;
     }
     const headsign = busShape?.[busDirection!]?.headsign ?? busDirection!;
     toggleBus({ ...busFavKey, headsign });
   };
   const tryToggleTrain = (f: TrainFavorite) => {
-    if (!hasTrain(favs, f) && favs.trains.length >= MAX_TRAIN_FAVORITES) {
-      showFavLimitToast("train", MAX_TRAIN_FAVORITES);
+    if (!hasTrain(favs, f) && totalFavorites(favs) >= MAX_FAVORITES) {
+      showFavLimitToast();
       return;
     }
     toggleTrain(f);
+  };
+  const onToggleStopFav = (stop: { id: string; name: string; code: string }) => {
+    const fav: BusStopFavorite = {
+      stopId: stop.id,
+      operator: busOperator,
+      stopCode: stop.code,
+      stopName: stop.name,
+    };
+    if (!hasStop(favs, fav) && totalFavorites(favs) >= MAX_FAVORITES) {
+      showFavLimitToast();
+      return;
+    }
+    toggleStop(fav);
   };
 
   function openAbout() {
@@ -186,7 +214,7 @@ function App() {
     const save = () => {
       const mv = getMapView();
       if (mv) lastMapViewRef.current = mv;
-      saveSession({ mode, filter, busOperator, busRoute, busDirection, mapView: lastMapViewRef.current });
+      saveSession({ mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, mapView: lastMapViewRef.current });
     };
     const onVisibility = () => { if (document.hidden) save(); };
     document.addEventListener("visibilitychange", onVisibility);
@@ -195,7 +223,7 @@ function App() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", save);
     };
-  }, [mode, filter, busOperator, busRoute, busDirection, getMapView]);
+  }, [mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, getMapView]);
 
   // iOS Safari overlays the keyboard on top of the viewport instead of
   // shrinking it (unlike Android), so bottom-fixed elements get covered and
@@ -358,7 +386,9 @@ function App() {
     setBusOperator(op);
     setBusRoute(null);
     setBusDirection(null);
+    setBusStopId(null);
     setBuses([]);
+    setFocusContext(null);
   }
 
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
@@ -441,14 +471,35 @@ function App() {
             setBusRoute(f.shortName);
             setBusDirection(f.direction);
             setBuses([]);
+            // Symmetric to onPickStop: clear any stop selection + focus so the
+            // panel doesn't stay stuck on the stop tab while the map shows the
+            // route. Also bump the expand key to un-collapse a collapsed panel.
+            setBusSearchTab("route");
+            setBusStopId(null);
+            setFocusContext(null);
+            setPanelExpandKey((k) => k + 1);
           }}
           onPickTrain={(f) => {
             localStorage.setItem("search", JSON.stringify({ from: f.from, to: f.to, fromQuery: f.fromName, toQuery: f.toName }));
             if (mode !== "train") setMode("train");
             setSearchResetKey((k) => k + 1);
           }}
+          onPickStop={(s) => {
+            if (mode !== "bus") setMode("bus");
+            if (s.operator !== busOperator) {
+              setBusOperator(s.operator);
+              setBuses([]);
+            }
+            setBusRoute(null);
+            setBusDirection(null);
+            setFocusContext(null);
+            setBusSearchTab("stop");
+            setBusStopId(s.stopId);
+            setPanelExpandKey((k) => k + 1);
+          }}
           onRemoveBus={removeBus}
           onRemoveTrain={removeTrain}
+          onRemoveStop={removeStop}
         />
       )}
       {mode === "train" ? (
@@ -460,6 +511,7 @@ function App() {
           favs={favs}
           onToggleTrain={tryToggleTrain}
           defaultCollapsed={!inService}
+          onShowToast={showToast}
         />
       ) : (
         <BusSearchPanel
@@ -477,13 +529,46 @@ function App() {
           busShape={busShape}
           isFavorite={busIsFav}
           onToggleFavorite={onToggleBusFav}
+          busOperator={busOperator}
+          busSearchTab={busSearchTab}
+          onTabChange={(tab) => {
+            setBusSearchTab(tab);
+            if (tab === "route") setFocusContext(null);
+          }}
+          busStopId={busStopId}
+          onStopIdChange={setBusStopId}
+          panelExpandKey={panelExpandKey}
+          onShowToast={showToast}
+          stopIsFavorite={stopIsFav}
+          onToggleStopFavorite={onToggleStopFav}
+          onPickArrival={(arrival, op, stop) => {
+            // Clear any selected route so the user lands in all-buses mode —
+            // the target tripId is included in fetchAllBuses, so the focus
+            // effect can find the marker without drawing the whole polyline.
+            setBusRoute(null);
+            setBusDirection(null);
+            setFocusContext({
+              tripId: arrival.tripId,
+              operator: op,
+              routeShortName: arrival.routeShortName,
+              direction: arrival.direction,
+              targetStopId: stop.id,
+              targetStopName: stop.name,
+              targetStopLat: stop.lat,
+              targetStopLng: stop.lng,
+            });
+          }}
           defaultCollapsed={!inService}
         />
       )}
-      {mode === "bus" && busRoute !== null && (
+      {mode === "bus" && (busRoute !== null || focusContext !== null) && (
         <button
           className="back-to-all-btn"
-          onClick={() => { setBusRoute(null); setBusDirection(null); }}
+          onClick={() => {
+            setBusRoute(null);
+            setBusDirection(null);
+            setFocusContext(null);
+          }}
         >
           &larr; All buses
         </button>
@@ -501,6 +586,7 @@ function App() {
           setSearchCodes(null);
           setBusRoute(null);
           setBusDirection(null);
+          setFocusContext(null);
         }}
         onFilterChange={setFilter}
         onBusOperatorChange={handleBusOperatorChange}

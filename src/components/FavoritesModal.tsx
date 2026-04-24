@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import type { Favorites, BusFavorite, TrainFavorite } from "../favorites";
-import { busKey, trainKey } from "../favorites";
+import type { Favorites, BusFavorite, TrainFavorite, BusStopFavorite } from "../favorites";
+import { busKey, trainKey, stopKey } from "../favorites";
 import type { BusOperator } from "../types";
 import { useBackToClose } from "../hooks/useBackToClose";
 
@@ -9,8 +9,10 @@ type Props = {
   favs: Favorites;
   onPickBus: (f: BusFavorite) => void;
   onPickTrain: (f: TrainFavorite) => void;
+  onPickStop: (f: BusStopFavorite) => void;
   onRemoveBus: (key: string) => void;
   onRemoveTrain: (key: string) => void;
+  onRemoveStop: (key: string) => void;
 };
 
 const OPERATOR_LABEL: Record<BusOperator, string> = {
@@ -19,7 +21,7 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
   goahead: "Go-Ahead",
 };
 
-export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, onRemoveBus, onRemoveTrain }: Props) {
+export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, onPickStop, onRemoveBus, onRemoveTrain, onRemoveStop }: Props) {
   useBackToClose(onClose);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -29,7 +31,7 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const empty = favs.buses.length === 0 && favs.trains.length === 0;
+  const empty = favs.buses.length === 0 && favs.trains.length === 0 && favs.stops.length === 0;
 
   return (
     <div className="about-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Favorites">
@@ -49,7 +51,7 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
             <div className="about-block__label">Favorites</div>
             {empty && (
               <div className="fav-empty">
-                No favorites yet. Tap the star next to a bus direction or train search to save it.
+                No favorites yet. Tap the star next to a bus direction, train search, or bus stop to save it.
               </div>
             )}
             {favs.buses.length > 0 && (
@@ -90,9 +92,47 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
                 </ul>
               </>
             )}
+            {favs.stops.length > 0 && (
+              <>
+                <div className="about-block__label" style={{ marginTop: favs.buses.length > 0 ? 16 : 8 }}>Bus stops</div>
+                <ul className="fav-list">
+                  {favs.stops.map((s) => {
+                    const k = stopKey(s);
+                    return (
+                      <li key={k} className="fav-row">
+                        <button
+                          type="button"
+                          className="fav-row__main"
+                          onClick={() => {
+                            onPickStop(s);
+                            onClose();
+                          }}
+                        >
+                          <strong>{s.stopCode || s.stopId}</strong>
+                          <span>{s.stopName}</span>
+                          <span className="route-operator-badge">{OPERATOR_LABEL[s.operator]}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="fav-row__remove"
+                          aria-label={`Remove ${s.stopName} from favorites`}
+                          title="Remove"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveStop(k);
+                          }}
+                        >
+                          &times;
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
             {favs.trains.length > 0 && (
               <>
-                <div className="about-block__label" style={{ marginTop: favs.buses.length > 0 ? 16 : 8 }}>Trains</div>
+                <div className="about-block__label" style={{ marginTop: (favs.buses.length > 0 || favs.stops.length > 0) ? 16 : 8 }}>Trains</div>
                 <ul className="fav-list">
                   {favs.trains.map((t) => {
                     const k = trainKey(t);

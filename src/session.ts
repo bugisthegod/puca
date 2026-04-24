@@ -21,8 +21,13 @@ export interface Session {
   busOperator: BusOperator;
   busRoute: string | null;
   busDirection: string | null;
+  busSearchTab: BusSearchTab;
+  busStopId: string | null;
   mapView: MapView | null;
 }
+
+export type BusSearchTab = "route" | "stop";
+const BUS_SEARCH_TABS: readonly BusSearchTab[] = ["route", "stop"];
 
 const MODES: readonly Mode[] = ["train", "bus"];
 const FILTERS: readonly Filter[] = ["all", "dart", "commuter", "intercity"];
@@ -50,6 +55,8 @@ export function loadSession(): Partial<Session> {
     if (s.busOperator && OPERATORS.includes(s.busOperator)) out.busOperator = s.busOperator;
     if (typeof s.busRoute === "string") out.busRoute = s.busRoute;
     if (typeof s.busDirection === "string") out.busDirection = s.busDirection;
+    if (s.busSearchTab && BUS_SEARCH_TABS.includes(s.busSearchTab)) out.busSearchTab = s.busSearchTab;
+    if (typeof s.busStopId === "string") out.busStopId = s.busStopId;
     const mv = validMapView(s.mapView);
     if (mv) out.mapView = mv;
     return out;

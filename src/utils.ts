@@ -58,13 +58,31 @@ export function fmtTime(t: string): string {
   return t.length > 5 ? t.slice(0, 5) : t;
 }
 
+// Always anchored to Dublin — fly VMs run in UTC, client devices may be in
+// any timezone, and Ireland observes DST (UTC in winter, UTC+1 in summer).
+// Reading getHours() on a naive Date would drift by 1 hour for half the year
+// and arbitrarily for a client who has changed their system clock.
+const DUBLIN_TIME_FMT = new Intl.DateTimeFormat("en-IE", {
+  timeZone: "Europe/Dublin",
+  hourCycle: "h23",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+function dublinMinutes(now: Date): number {
+  const parts = DUBLIN_TIME_FMT.formatToParts(now);
+  const hour = Number(parts.find((p) => p.type === "hour")!.value);
+  const minute = Number(parts.find((p) => p.type === "minute")!.value);
+  return hour * 60 + minute;
+}
+
 /** Whether the given transit mode is currently within its daily service window.
  *  Train: 05:00 – 00:30 (off-hours 00:30–05:00)
  *  Bus:   05:00 – 23:30 (off-hours 23:30–05:00)
- *  Both resume at 05:00 local time.
+ *  Both resume at 05:00 Europe/Dublin time.
  */
 export function isInServiceHours(mode: "train" | "bus", now: Date = new Date()): boolean {
-  const mins = now.getHours() * 60 + now.getMinutes();
+  const mins = dublinMinutes(now);
   if (mode === "train") return mins < 30 || mins >= 300;
   return mins >= 300 && mins < 23 * 60 + 30;
 }

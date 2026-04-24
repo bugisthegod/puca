@@ -1,11 +1,12 @@
 import { useRef, useEffect, type RefObject } from "react";
-import type { Train, BusVehicle, BusOperator } from "../types";
+import type { Train, BusVehicle, BusOperator, FocusContext } from "../types";
 import { along } from "./routeProjection";
 import type { Filter } from "../utils";
 import type { MapView } from "../session";
 import { useMapInstance } from "./useMapInstance";
 import { useTrainMarkers } from "./useTrainMarkers";
 import { useBusMarkers } from "./useBusMarkers";
+import { useFocusSegment } from "./useFocusSegment";
 
 export type Mode = "train" | "bus";
 
@@ -20,6 +21,7 @@ interface UseTrainMapOptions {
   currentBusRoute?: string | null;
   onSelectBusRoute?: (route: string, direction: string) => void;
   initialView?: MapView | null;
+  focusContext?: FocusContext | null;
 }
 
 export function useTrainMap(
@@ -41,7 +43,7 @@ export function useTrainMap(
   startCompass: () => Promise<boolean>;
   stopCompass: () => void;
 } {
-  const { currentBusRoute = null, onSelectBusRoute, initialView = null } = options;
+  const { currentBusRoute = null, onSelectBusRoute, initialView = null, focusContext = null } = options;
 
   const onSelectBusRouteRef = useRef(onSelectBusRoute);
   onSelectBusRouteRef.current = onSelectBusRoute;
@@ -81,6 +83,14 @@ export function useTrainMap(
     onSelectBusRoute: onSelectBusRouteRef,
     leafletMap,
     busClusterLayer,
+  });
+
+  useFocusSegment({
+    focusContext,
+    leafletMap,
+    busMarkers,
+    buses,
+    mode,
   });
 
   // Bus cluster lifecycle — recreated on mode/operator change so the
