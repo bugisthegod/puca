@@ -1,4 +1,6 @@
-// Declare L as a runtime global (loaded via CDN) with proper Leaflet types.
+// Declare L as a runtime global. The global is set up by Leaflet's UMD wrapper
+// (`window.L = exports;`) when App.tsx imports the bundled package — this file
+// can then use `L.tileLayer(...)` without its own import statement.
 // `declare const` makes L usable as a value; `typeof import(...)` gives the full type.
 // The global namespace L (from leaflet-global.d.ts) handles L.Foo type references.
 declare const L: typeof import("leaflet");

@@ -301,13 +301,10 @@ body {
   }
 }
 
-/* Locate-me floating button (one-shot geolocation). Desktop: bottom-right
-   above attribution. Mobile: top-right (info-panel moves to bottom there). */
-.locate-btn {
-  position: fixed;
-  bottom: calc(48px + env(safe-area-inset-bottom));
-  right: calc(12px + env(safe-area-inset-right));
-  z-index: 1000;
+/* Floating action button base — shared chrome for all fixed map overlays
+   (locate / favorites / about) and the mobile search handle. Compose with an
+   anchor class (.locate-btn, .fav-fab, .about-fab) that sets position only. */
+.fab {
   width: 40px;
   height: 40px;
   padding: 0;
@@ -325,17 +322,26 @@ body {
   transition: background 0.15s, transform 0.1s;
 }
 
-.locate-btn:hover {
+.fab:hover {
   background: rgba(40, 40, 48, 0.9);
 }
 
-.locate-btn:active {
+.fab:active {
   transform: scale(0.94);
 }
 
-.locate-btn:disabled {
+.fab:disabled {
   cursor: wait;
   opacity: 0.55;
+}
+
+/* Locate-me floating button (one-shot geolocation). Desktop: bottom-right
+   above attribution. Mobile: top-right (info-panel moves to bottom there). */
+.locate-btn {
+  position: fixed;
+  bottom: calc(48px + env(safe-area-inset-bottom));
+  right: calc(12px + env(safe-area-inset-right));
+  z-index: 1000;
 }
 
 .locate-btn.loading svg {
@@ -502,29 +508,6 @@ body {
   bottom: calc(144px + env(safe-area-inset-bottom));
   right: calc(12px + env(safe-area-inset-right));
   z-index: 1000;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: rgba(22, 22, 28, 0.78);
-  color: #f0f0f0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-  transition: background 0.15s, transform 0.1s;
-}
-
-.about-fab:hover {
-  background: rgba(40, 40, 48, 0.9);
-}
-
-.about-fab:active {
-  transform: scale(0.94);
 }
 
 .about-fab__badge {
@@ -550,30 +533,13 @@ body {
   }
 }
 
-/* Favorites FAB — same chrome as about-fab, slotted between locate & about */
+/* Favorites FAB — slotted between locate & about */
 .fav-fab {
   position: fixed;
   bottom: calc(96px + env(safe-area-inset-bottom));
   right: calc(12px + env(safe-area-inset-right));
   z-index: 1000;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: rgba(22, 22, 28, 0.78);
-  color: #f0f0f0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-  transition: background 0.15s, transform 0.1s;
 }
-.fav-fab:hover { background: rgba(40, 40, 48, 0.9); }
-.fav-fab:active { transform: scale(0.94); }
 @media (max-width: 600px) {
   .fav-fab {
     top: auto;
@@ -1650,8 +1616,9 @@ body {
 
 .back-to-all-btn {
   position: fixed;
-  top: calc(170px + env(safe-area-inset-top));
-  left: calc(12px + env(safe-area-inset-left));
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
   background: var(--brand-dark);
   color: #fff;
@@ -1934,6 +1901,12 @@ body {
   margin-top: 8px;
   max-height: 260px;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.stop-arrivals::-webkit-scrollbar {
+  display: none;
 }
 
 .stop-arrivals__empty {
@@ -2142,11 +2115,32 @@ body {
 }
 
 /* ============================================================
-   Search FAB (hidden on desktop)
+   Search FAB — the collapsed state of #search-panel
    ============================================================ */
 
+/* Composes .fab chrome. The search-panel component only mounts this button
+   in its collapsed branch (on both viewports), so there's no need to hide
+   it by default — if it's in the DOM we want it shown. No border because
+   the panel wrapper owns the surround. */
 .search-fab {
-  display: none;
+  display: flex;
+  border: none;
+}
+
+/* Collapsed wrapper — strip the base #search-panel chrome so only the
+   search-fab magnifier shows. Position inherits from the base rule
+   (top-left on desktop) and is overridden by the mobile media query
+   below to re-center. */
+#search-panel.collapsed {
+  display: block;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  width: auto;
 }
 
 /* ============================================================
@@ -2165,46 +2159,13 @@ body {
     border-radius: 8px;
   }
 
+  /* Collapsed on mobile — center the magnifier at the top. Chrome-stripping
+     lives in the global #search-panel.collapsed rule above. */
   #search-panel.collapsed {
     top: calc(12px + env(safe-area-inset-top));
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    display: block;
-    padding: 0;
-    background: none;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border: none;
-    border-radius: 0;
-    width: auto;
-  }
-
-  .search-fab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    background: rgba(22, 22, 28, 0.78);
-    color: #f0f0f0;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
-    transition: background 0.15s, transform 0.1s;
-  }
-
-  .search-fab:hover {
-    background: rgba(40, 40, 48, 0.9);
-  }
-
-  .search-fab:active {
-    transform: scale(0.94);
   }
 
   .search-field input {

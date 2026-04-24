@@ -318,7 +318,7 @@ export default function BusSearchPanel({
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
       {collapsed ? (
-        <button className="search-fab" onClick={() => setCollapsed(false)} aria-label="Search" title="Search">
+        <button className="fab search-fab" onClick={() => setCollapsed(false)} aria-label="Search" title="Search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" />
@@ -490,7 +490,7 @@ export default function BusSearchPanel({
                                   return;
                                 }
                                 if (!selectedStop) return;
-                                setCollapsed(true);
+                                if (window.innerWidth <= 600) setCollapsed(true);
                                 onPickArrival(a, busOperator, selectedStop);
                               }}
                             >

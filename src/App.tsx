@@ -431,7 +431,7 @@ function App() {
       )}
       <button
         type="button"
-        className={`locate-btn${locating ? " loading" : ""}`}
+        className={`fab locate-btn${locating ? " loading" : ""}`}
         onClick={handleLocate}
         disabled={locating}
         aria-label="Locate me"
@@ -444,7 +444,7 @@ function App() {
       </button>
       <button
         type="button"
-        className="fav-fab"
+        className="fab fav-fab"
         onClick={() => setShowFavs(true)}
         aria-label="Favorites"
         title="Favorites"
@@ -455,7 +455,7 @@ function App() {
       </button>
       <button
         type="button"
-        className="about-fab"
+        className="fab about-fab"
         onClick={openAbout}
         aria-label="About Púca"
         title="About Púca"
