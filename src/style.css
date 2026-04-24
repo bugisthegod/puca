@@ -1479,7 +1479,9 @@ body {
 }
 
 .leaflet-popup-close-button {
-  color: var(--text-muted) !important;
+  color: var(--text-secondary) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
 }
 
 .leaflet-popup-close-button:hover {
@@ -1507,8 +1509,8 @@ body {
   background: #fff6d6;
   border: 1px solid #e6d280;
   border-radius: 6px;
-  padding: 6px 6px;
-  margin-bottom: 5px;
+  padding: 3px;
+  margin-bottom: 3px;
 }
 
 .popup-stale-icon {
@@ -1659,6 +1661,9 @@ body {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 2px;
+  /* Leave space on the right for Leaflet's absolutely-positioned close button
+     so "Show all <route>" doesn't sit under the X. */
+  padding-right: 22px;
 }
 
 .popup-route-jump {
