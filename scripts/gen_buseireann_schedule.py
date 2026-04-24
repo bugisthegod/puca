@@ -6,7 +6,10 @@ Schema (identical to bus-schedule.db):
   stop_times(trip_id TEXT, stop_sequence INTEGER, stop_id TEXT, arrival_sec INTEGER,
              PRIMARY KEY (trip_id, stop_sequence))
 
-Bus Éireann agency_id in this GTFS feed: 7778020
+Bus Éireann agency_ids in this GTFS feed:
+  7778020 — "Bus Éireann" (main network)
+  7778008 — "Bus Éireann Waterford" (Waterford city W1–W5)
+If NTA adds a new Bus Éireann sub-agency, add its id to AGENCY_IDS.
 """
 import csv
 import os
@@ -20,7 +23,7 @@ OUT_DB = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "../src/data/buseireann-schedule.db")
 )
 
-AGENCY_ID = "7778020"
+AGENCY_IDS = {"7778020", "7778008"}  # main + Waterford
 BATCH_SIZE = 50_000
 
 
@@ -34,7 +37,7 @@ def main():
     be_route_ids: set[str] = set()
     with open(f"{GTFS_DIR}/routes.txt", newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            if row["agency_id"] == AGENCY_ID:
+            if row["agency_id"] in AGENCY_IDS:
                 be_route_ids.add(row["route_id"])
     print(f"  Bus Éireann route_ids: {len(be_route_ids):,}")
 

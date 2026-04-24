@@ -3,7 +3,10 @@
 Generate src/data/buseireann-stops.json: { stop_id: { name, lat, lng } }
 for all stops used by Bus Éireann trips.
 
-Bus Éireann agency_id in this GTFS feed: 7778020
+Bus Éireann agency_ids in this GTFS feed:
+  7778020 — "Bus Éireann" (main network)
+  7778008 — "Bus Éireann Waterford" (Waterford city W1–W5)
+If NTA adds a new Bus Éireann sub-agency, add its id to AGENCY_IDS.
 """
 import csv
 import json
@@ -13,7 +16,7 @@ import sys
 GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
 OUT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data", "buseireann-stops.json"))
 
-AGENCY_ID = "7778020"
+AGENCY_IDS = {"7778020", "7778008"}  # main + Waterford
 
 
 def main():
@@ -21,7 +24,7 @@ def main():
     be_route_ids: set[str] = set()
     with open(f"{GTFS_DIR}/routes.txt", newline="") as f:
         for row in csv.DictReader(f):
-            if row["agency_id"] == AGENCY_ID:
+            if row["agency_id"] in AGENCY_IDS:
                 be_route_ids.add(row["route_id"])
     print(f"Bus Éireann route_ids: {len(be_route_ids):,}", file=sys.stderr)
 

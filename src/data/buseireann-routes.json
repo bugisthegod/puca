@@ -1,5 +1,30 @@
 [
   {
+    "id": "5501_126940",
+    "shortName": "W1",
+    "longName": "Clock Tower - Ballybeg"
+  },
+  {
+    "id": "5501_126941",
+    "shortName": "W3",
+    "longName": "Clock Tower - Meagher's Quay"
+  },
+  {
+    "id": "5501_126942",
+    "shortName": "W2",
+    "longName": "Clock Tower - WIT - Meagher's Quay"
+  },
+  {
+    "id": "5501_126943",
+    "shortName": "W4",
+    "longName": "Peter Street - Brownes Road"
+  },
+  {
+    "id": "5501_126944",
+    "shortName": "W5",
+    "longName": "Hospital - Oakwood"
+  },
+  {
     "id": "5502_126904",
     "shortName": "310",
     "longName": "Sarsfield Street - National Technology Park"

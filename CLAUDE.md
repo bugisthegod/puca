@@ -104,3 +104,35 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+## Fly.io deployment
+
+### Replacing a SQLite DB on the Fly volume
+
+`src/data/*.db` is excluded by both `.gitignore` and `.dockerignore`, so `fly deploy` never touches schedule DBs on the `/data` volume. To update one in place: upload to a temp name → atomic rename → restart. Never `rm` then upload — reads mid-delete will fail.
+
+```bash
+APP=puca
+DB=buseireann-schedule.db   # or bus-schedule.db / goahead-schedule.db
+
+# 1. Wake machine if auto-stopped
+fly machine list -a $APP
+fly machine start <machine-id> -a $APP
+
+# 2. Preflight: free space must cover new db (old still occupies its slot)
+fly ssh console -a $APP -C "sh -c 'df -h /data && ls -la /data/'"
+
+# 3. Upload to temp name — old db untouched, still served to users
+fly sftp put src/data/$DB /data/$DB.new -a $APP
+
+# 4. Verify new file is intact on the volume
+fly ssh console -a $APP -C "sh -c 'ls -la /data/$DB.new && sqlite3 /data/$DB.new \"SELECT COUNT(*) FROM stop_times\"'"
+
+# 5. Atomic rename — same-fs mv is one rename() syscall
+fly ssh console -a $APP -C "mv /data/$DB.new /data/$DB"
+
+# 6. Restart so app opens the new inode (running app's fd still pins the old one until close)
+fly apps restart $APP
+```
+
+Auto-stop (`auto_stop_machines = 'stop'`) watches HTTP idleness, not SSH. Multi-minute uploads generally complete fine; if interrupted mid-upload, just retry — only the `.new` file is affected, the live DB keeps serving.

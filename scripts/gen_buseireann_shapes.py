@@ -4,8 +4,10 @@ Generate Bus Éireann static data files:
   src/data/buseireann-shapes.json   — polylines per route+direction (with stops)
   src/data/buseireann-routes.json   — route metadata list
 
-Bus Éireann agency_id in this GTFS feed: 7778020
-(Route IDs use the 5549_ prefix for 205/206 routes; filter by agency_id to catch all.)
+Bus Éireann agency_ids in this GTFS feed:
+  7778020 — "Bus Éireann" (main network)
+  7778008 — "Bus Éireann Waterford" (Waterford city W1–W5)
+If NTA adds a new Bus Éireann sub-agency, add its id to AGENCY_IDS.
 
 Strategy (mirrors gen_train_shapes.py):
   - For each (route_id, direction_id), pick the trip with the most stops (longest trip).
@@ -27,7 +29,7 @@ DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src",
 OUT_SHAPES = f"{DATA_DIR}/buseireann-shapes.json"
 OUT_ROUTES = f"{DATA_DIR}/buseireann-routes.json"
 
-AGENCY_ID = "7778020"
+AGENCY_IDS = {"7778020", "7778008"}  # main + Waterford
 
 # RDP tolerance: start at 20m (same as Dublin Bus convention).
 # Bus Éireann has intercity routes up to ~250 km; if shapes.json > 5 MB,
@@ -85,7 +87,7 @@ def main():
     be_routes: dict[str, dict] = {}  # route_id -> {shortName, longName}
     with open(f"{GTFS_DIR}/routes.txt", newline="") as f:
         for row in csv.DictReader(f):
-            if row["agency_id"] == AGENCY_ID:
+            if row["agency_id"] in AGENCY_IDS:
                 be_routes[row["route_id"]] = {
                     "shortName": row["route_short_name"].strip(),
                     "longName": row["route_long_name"].strip(),
