@@ -6,3 +6,4 @@ gtfs
 README.md
 fly.toml
 src/data/*.db
+docs/
