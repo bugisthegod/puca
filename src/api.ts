@@ -6,14 +6,25 @@ const BASE_URL = "https://api.irishrail.ie/realtime/realtime.asmx";
 
 // --- Cache layer ---
 const cache = new Map<string, { data: unknown; expires: number }>();
+// Concurrent misses on the same key share one in-flight fetch, so a thundering
+// herd on cold cache hits IrishRail once instead of N times.
+const inFlight = new Map<string, Promise<unknown>>();
 
 function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T> {
   const entry = cache.get(key);
   if (entry && Date.now() < entry.expires) return Promise.resolve(entry.data as T);
-  return fn().then((data) => {
+
+  const pending = inFlight.get(key);
+  if (pending) return pending as Promise<T>;
+
+  const p = fn().then((data) => {
     cache.set(key, { data, expires: Date.now() + ttlMs });
     return data;
+  }).finally(() => {
+    inFlight.delete(key);
   });
+  inFlight.set(key, p);
+  return p;
 }
 
 const parser = new XMLParser({
