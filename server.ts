@@ -78,6 +78,12 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
+function staticFile(path: string, ttlSec: number) {
+  return () => new Response(Bun.file(path), {
+    headers: { "Cache-Control": `public, max-age=${ttlSec}` },
+  });
+}
+
 Bun.serve({
   port: 3000,
   routes: {
@@ -88,17 +94,17 @@ Bun.serve({
         "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     }),
-    "/manifest.json": () => new Response(Bun.file("./public/manifest.json")),
-    "/icon-192.png": () => new Response(Bun.file("./public/icon-192.png")),
-    "/icon-512.png": () => new Response(Bun.file("./public/icon-512.png")),
-    "/icon.svg": () => new Response(Bun.file("./public/icon.svg")),
-    "/splash/iphone-17-pro-max.png": () => new Response(Bun.file("./public/splash/iphone-17-pro-max.png")),
-    "/splash/iphone-17.png": () => new Response(Bun.file("./public/splash/iphone-17.png")),
-    "/splash/iphone-16-pro-max.png": () => new Response(Bun.file("./public/splash/iphone-16-pro-max.png")),
-    "/splash/iphone-plus.png": () => new Response(Bun.file("./public/splash/iphone-plus.png")),
-    "/splash/iphone-16-pro.png": () => new Response(Bun.file("./public/splash/iphone-16-pro.png")),
-    "/splash/iphone-base.png": () => new Response(Bun.file("./public/splash/iphone-base.png")),
-    "/splash/iphone-se.png": () => new Response(Bun.file("./public/splash/iphone-se.png")),
+    "/manifest.json": staticFile("./public/manifest.json", 86400),
+    "/icon-192.png": staticFile("./public/icon-192.png", 604800),
+    "/icon-512.png": staticFile("./public/icon-512.png", 604800),
+    "/icon.svg": staticFile("./public/icon.svg", 604800),
+    "/splash/iphone-17-pro-max.png": staticFile("./public/splash/iphone-17-pro-max.png", 604800),
+    "/splash/iphone-17.png": staticFile("./public/splash/iphone-17.png", 604800),
+    "/splash/iphone-16-pro-max.png": staticFile("./public/splash/iphone-16-pro-max.png", 604800),
+    "/splash/iphone-plus.png": staticFile("./public/splash/iphone-plus.png", 604800),
+    "/splash/iphone-16-pro.png": staticFile("./public/splash/iphone-16-pro.png", 604800),
+    "/splash/iphone-base.png": staticFile("./public/splash/iphone-base.png", 604800),
+    "/splash/iphone-se.png": staticFile("./public/splash/iphone-se.png", 604800),
     "/api/trains": rateLimit(async (_req) => {
       try {
         const trains = await getCurrentTrains();
