@@ -261,12 +261,12 @@ function getTripShapeMap(operator: Operator): Map<string, string> {
 
 const NTA_MIN_INTERVAL_MS = 30_000;
 // Trip updates (schedule + delays per stop) change much slower than GPS positions.
-// Longer TTL reduces upstream pressure AND collision risk with the 20s shared gate.
-const NTA_TRIP_UPDATES_INTERVAL_MS = 90_000;
+// Longer TTL reduces upstream pressure AND collision risk with the shared gate.
+const NTA_TRIP_UPDATES_INTERVAL_MS = 95_000;
 // NTA rate-limits per API key globally (vehicles + trip-updates share the bucket).
 // Space ANY two NTA calls at least this far apart to avoid 429s when both endpoints
-// fire close together. Measured empirically: ~20s is the safe floor.
-const NTA_MIN_SPACING_MS = 20_000;
+// fire close together.
+const NTA_MIN_SPACING_MS = 25_000;
 
 type RawTripUpdateMap = Map<string, {
   tripId: string;
