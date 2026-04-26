@@ -27,6 +27,15 @@ function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T>
   return p;
 }
 
+// Drop expired entries so unread keys (e.g. movements:TRAIN:OLD-DATE) don't
+// accumulate forever — read-time TTL only filters them, never deletes them.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of cache) {
+    if (now >= entry.expires) cache.delete(key);
+  }
+}, 5 * 60_000);
+
 const parser = new XMLParser({
   ignoreAttributes: false,
   parseAttributeValue: true,
