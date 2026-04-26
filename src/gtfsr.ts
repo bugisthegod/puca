@@ -12,6 +12,7 @@ import goAheadStops from "./data/goahead-stops.json" with { type: "json" };
 import trainShapes from "./data/train-shapes.json" with { type: "json" };
 import trainEndpoints from "./data/train-routes-by-endpoints.json" with { type: "json" };
 import { log, errToMeta } from "./logger";
+import { isInServiceHours } from "./utils";
 
 const NTA_VEHICLES_URL = "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json";
 const NTA_TRIP_UPDATES_URL = "https://api.nationaltransport.ie/gtfsr/v2/TripUpdates?format=json";
@@ -259,14 +260,14 @@ function getTripShapeMap(operator: Operator): Map<string, string> {
 // instead of hitting NTA. Frontend can poll at whatever cadence it wants — only
 // pollVehicles / pollTripUpdates are allowed to call NTA, and only past the gate.
 
-const NTA_MIN_INTERVAL_MS = 30_000;
+// Vehicles at strict 30s started getting NTA 429s ~25% of the time (quota
+// appears to be ~3 calls/60s sliding window across V + TU). 35s drops the
+// V rate to 1.7/min while staying close to the "every 30s" target.
+const NTA_MIN_INTERVAL_MS = 35_000;
 // Trip updates (schedule + delays per stop) change much slower than GPS positions.
-// Longer TTL reduces upstream pressure AND collision risk with the shared gate.
-const NTA_TRIP_UPDATES_INTERVAL_MS = 95_000;
-// NTA rate-limits per API key globally (vehicles + trip-updates share the bucket).
-// Space ANY two NTA calls at least this far apart to avoid 429s when both endpoints
-// fire close together.
-const NTA_MIN_SPACING_MS = 25_000;
+// 75s lands in the 60-90s ideal range while staying out of phase with the 35s
+// vehicles cycle.
+const NTA_TRIP_UPDATES_INTERVAL_MS = 75_000;
 
 type RawTripUpdateMap = Map<string, {
   tripId: string;
@@ -285,7 +286,6 @@ let vehicleCache: GtfsVehiclePosition[] | null = null;
 let tripUpdateCache: RawTripUpdateMap | null = null;
 let lastVehicleCall = 0;
 let lastTripUpdateCall = 0;
-let lastAnyNtaCall = 0;
 
 // ---------------------------------------------------------------------------
 // Vehicles
@@ -350,11 +350,7 @@ async function pollVehicles(): Promise<GtfsVehiclePosition[]> {
   if (Date.now() - lastVehicleCall < NTA_MIN_INTERVAL_MS) {
     return vehicleCache ?? [];
   }
-  if (Date.now() - lastAnyNtaCall < NTA_MIN_SPACING_MS) {
-    return vehicleCache ?? [];
-  }
   lastVehicleCall = Date.now();
-  lastAnyNtaCall = Date.now();
   await fetchVehicles();
   return vehicleCache ?? [];
 }
@@ -431,16 +427,53 @@ async function pollTripUpdates(): Promise<RawTripUpdateMap> {
   if (Date.now() - lastTripUpdateCall < NTA_TRIP_UPDATES_INTERVAL_MS) {
     return tripUpdateCache ?? new Map();
   }
-  // Spacing gate only applies once we already have data — otherwise the first
-  // arrivals request after pollVehicles warmed up gets an empty Map for up to
-  // 20s, making stop-arrivals return [] even when buses are live.
-  if (tripUpdateCache !== null && Date.now() - lastAnyNtaCall < NTA_MIN_SPACING_MS) {
-    return tripUpdateCache;
-  }
   lastTripUpdateCall = Date.now();
-  lastAnyNtaCall = Date.now();
   await fetchTripUpdates();
   return tripUpdateCache ?? new Map();
+}
+
+// ---------------------------------------------------------------------------
+// Background polling
+// ---------------------------------------------------------------------------
+// Without this, every NTA call is request-driven: a cold-cache visitor pays
+// the latency AND can fire Vehicles + TripUpdates back-to-back, bursting
+// against the shared NTA quota. With background polling, requests always read
+// fresh cache and NTA calls happen on a steady cadence.
+// Skips outside service hours so we don't burn quota when no buses run.
+
+let backgroundPollingStarted = false;
+
+export function startBackgroundPolling(): void {
+  if (backgroundPollingStarted) return;
+  backgroundPollingStarted = true;
+
+  const tickVehicles = () => {
+    if (!isInServiceHours("bus")) return;
+    void pollVehicles().catch((err) => log.error("nta.background_vehicles_failed", errToMeta(err)));
+  };
+  const tickTripUpdates = () => {
+    if (!isInServiceHours("bus")) return;
+    void pollTripUpdates().catch((err) => log.error("nta.background_trip_updates_failed", errToMeta(err)));
+  };
+
+  // Pre-warm both caches immediately on boot so the first user request after a
+  // restart doesn't wait 35s for vehicles. Stagger TripUpdates by 5s so the
+  // initial pair doesn't hit NTA in the same tick.
+  tickVehicles();
+  setTimeout(tickTripUpdates, 5_000);
+
+  // Vehicles is the higher-priority stream (live GPS positions) → 35s cadence.
+  setInterval(tickVehicles, NTA_MIN_INTERVAL_MS);
+  // TripUpdates offset by 7s. With V=35s and TU=75s, gcd=5 so TU drifts through
+  // 7 positions relative to V over ~4min. Phase doesn't really matter for NTA
+  // rate limits (it's per-minute count, not spacing) — this offset just keeps
+  // the very first interval-driven TU call ~12s away from the first V tick.
+  setTimeout(() => setInterval(tickTripUpdates, NTA_TRIP_UPDATES_INTERVAL_MS), 7_000);
+
+  log.info("nta.background_polling.started", {
+    vehicles_interval_ms: NTA_MIN_INTERVAL_MS,
+    trip_updates_interval_ms: NTA_TRIP_UPDATES_INTERVAL_MS,
+  });
 }
 
 // ---------------------------------------------------------------------------

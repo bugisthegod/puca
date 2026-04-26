@@ -1,6 +1,6 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements } from "./src/api.ts";
-import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getBusStopArrivals, searchBusStops, getOperatorStop, type Operator } from "./src/gtfsr.ts";
+import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getBusStopArrivals, searchBusStops, getOperatorStop, startBackgroundPolling, type Operator } from "./src/gtfsr.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
 const VALID_OPERATORS = new Set<Operator>(["dublinbus", "buseireann", "goahead"]);
@@ -83,6 +83,8 @@ function staticFile(path: string, ttlSec: number) {
     headers: { "Cache-Control": `public, max-age=${ttlSec}` },
   });
 }
+
+startBackgroundPolling();
 
 Bun.serve({
   port: 3000,
@@ -217,8 +219,11 @@ Bun.serve({
       });
     }),
     "/api/bus/vehicles": rateLimit(async (req) => {
-      // NTA cache gate is 30s; allow browsers to reuse for up to 15s and revalidate in the background.
-      const vehicleHeaders = { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" };
+      // Server background poll runs every 35s — shortening CDN max-age below
+      // that improves perceived freshness without burning more NTA quota.
+      // 5s + 15s SWR keeps Fly origin hits low (~12/min/edge) while letting
+      // the CDN return data within ~5s of the latest server snapshot.
+      const vehicleHeaders = { "Cache-Control": "public, max-age=5, stale-while-revalidate=15" };
       // Off-hours short-circuit: don't pay an NTA round-trip when no buses run.
       // Frontend stops polling too, but stale tabs / other clients can still hit us.
       // Short TTL so CF flushes the empty payload quickly once service resumes.
