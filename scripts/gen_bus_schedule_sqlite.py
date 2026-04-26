@@ -5,10 +5,13 @@ import sqlite3
 import sys
 
 GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
+ROUTES_FILE = f"{GTFS_DIR}/routes.txt"
 TRIPS_FILE = f"{GTFS_DIR}/trips.txt"
 STOP_TIMES_FILE = f"{GTFS_DIR}/stop_times.txt"
 OUT_DB = os.path.join(os.path.dirname(__file__), "../src/data/bus-schedule.db")
 BATCH_SIZE = 50_000
+
+AGENCY_ID = "7778019"
 
 
 def parse_arrival_sec(t: str) -> int:
@@ -19,11 +22,19 @@ def parse_arrival_sec(t: str) -> int:
 def main():
     out_path = os.path.normpath(OUT_DB)
 
+    print("Reading routes.txt …")
+    dublin_bus_route_ids: set[str] = set()
+    with open(ROUTES_FILE, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row["agency_id"] == AGENCY_ID:
+                dublin_bus_route_ids.add(row["route_id"])
+    print(f"  Dublin Bus routes: {len(dublin_bus_route_ids):,}")
+
     print("Reading trips.txt …")
     dublin_bus_trips: dict[str, str] = {}  # trip_id -> shape_id
     with open(TRIPS_FILE, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            if row["route_id"].startswith("5570_"):
+            if row["route_id"] in dublin_bus_route_ids:
                 dublin_bus_trips[row["trip_id"]] = row["shape_id"]
     print(f"  Dublin Bus trip_ids: {len(dublin_bus_trips):,}")
 

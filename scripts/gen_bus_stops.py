@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generate src/data/dublinbus-stops.json: { stop_id: { name, lat, lng } }
-for all stops used by Dublin Bus trips (route_id starting with 5570_).
+for all stops used by Dublin Bus trips (agency_id 7778019).
 """
 import csv
 import json
@@ -11,13 +11,21 @@ import sys
 GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
 OUT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data", "dublinbus-stops.json"))
 
+AGENCY_ID = "7778019"
+
 
 def main():
-    # Step 1: collect trip_ids for 5570_ routes
+    # Step 1: collect Dublin Bus route_ids, then trip_ids for those routes
+    route_ids: set[str] = set()
+    with open(f"{GTFS_DIR}/routes.txt", newline="") as f:
+        for row in csv.DictReader(f):
+            if row["agency_id"] == AGENCY_ID:
+                route_ids.add(row["route_id"])
+
     trip_ids: set[str] = set()
     with open(f"{GTFS_DIR}/trips.txt", newline="") as f:
         for row in csv.DictReader(f):
-            if row["route_id"].startswith("5570_"):
+            if row["route_id"] in route_ids:
                 trip_ids.add(row["trip_id"])
     print(f"Dublin Bus trip_ids: {len(trip_ids):,}", file=sys.stderr)
 
