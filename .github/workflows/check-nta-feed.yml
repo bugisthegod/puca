@@ -1,17 +1,23 @@
 name: Check NTA feed
 
-# Daily check: did NTA publish a new GTFS static zip? If yes, open an issue
-# so I get an email — manual regen still happens locally per docs/nta-feed-history.md.
-# No deploy, no SFTP, no Discord — just notification.
+# Daily check: did NTA publish a new GTFS static zip? If yes:
+#   1. Open a tracking issue (action checklist for the regen)
+#   2. Open a PR updating the witness file, linking back to the issue
+# Bot never touches main directly — review/merge the PR is acknowledgment.
+# Manual regen still happens locally per docs/nta-feed-history.md.
 
 on:
   schedule:
-    - cron: "30 3 * * *"  # daily ~03:30 UTC
+    # 07:00 UTC = 08:00 Dublin in BST (summer) / 07:00 in GMT (winter).
+    # GH Actions cron doesn't follow local DST, so the wall-clock time shifts
+    # by an hour at DST transitions. Either is fine for this check.
+    - cron: "0 7 * * *"
   workflow_dispatch:       # manual trigger from Actions tab
 
 permissions:
-  contents: write   # commit witness file
-  issues: write     # open issue when feed changes
+  contents: write        # create branch + commit witness update
+  pull-requests: write   # open PR
+  issues: write          # open tracking issue
 
 env:
   NTA_ZIP_URL: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
@@ -53,15 +59,29 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Open issue
+      - name: Skip if PR branch already exists for this UUID
         if: steps.feed.outputs.changed == 'true'
+        id: dedup
+        run: |
+          BRANCH="bot/nta-uuid-${{ steps.feed.outputs.uuid }}"
+          if git ls-remote --heads origin "$BRANCH" | grep -q .; then
+            echo "Branch $BRANCH exists — issue+PR already created. Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Create tracking issue
+        if: steps.feed.outputs.changed == 'true' && steps.dedup.outputs.skip == 'false'
+        id: issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Idempotent label create
           gh label create "nta-feed-update" --color "ededed" --description "NTA published a new GTFS feed" 2>/dev/null || true
 
-          gh issue create \
+          ISSUE_URL=$(gh issue create \
             --title "NTA published new GTFS feed (${{ steps.feed.outputs.feed_start }})" \
             --label "nta-feed-update" \
             --body "$(cat <<'BODY'
@@ -76,24 +96,50 @@ jobs:
 
           Source: <${{ env.NTA_ZIP_URL }}>
 
-          ## What to do
+          ## Action checklist
 
           - [ ] Download zip locally → `~/Downloads/GTFS_Realtime.zip`
           - [ ] Compare `route_id` prefixes vs `src/data/*-routes.json` (script in [docs/nta-feed-history.md](../blob/main/docs/nta-feed-history.md#怎么快速检查有没有漂移))
-          - [ ] If prefixes rolled for any operator: regen via `python3 scripts/gen_*.py` → commit JSON + push → `fly deploy` + SFTP db (CLAUDE.md procedure)
-          - [ ] If only metadata changed: just append a row to [docs/nta-feed-history.md](../blob/main/docs/nta-feed-history.md)
+          - [ ] If prefixes rolled for any operator: regen via `python3 scripts/gen_*.py` → push to the linked PR branch
+          - [ ] If only metadata changed: append a row to [docs/nta-feed-history.md](../blob/main/docs/nta-feed-history.md) on the linked PR branch
+          - [ ] Merge the linked witness-update PR
+          - [ ] If you regen'd: `fly deploy` + SFTP db (CLAUDE.md procedure)
           - [ ] Close this issue
 
           Detected by [`.github/workflows/check-nta-feed.yml`](../blob/main/.github/workflows/check-nta-feed.yml).
+          A linked PR will be opened in the next step of this workflow run.
           BODY
-          )"
+          )")
+          ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
+          echo "Issue created: $ISSUE_URL (#$ISSUE_NUM)"
+          echo "num=$ISSUE_NUM" >> "$GITHUB_OUTPUT"
 
-      - name: Update witness + commit
-        if: steps.feed.outputs.changed == 'true'
+      - name: Open PR with witness update (links to issue)
+        if: steps.feed.outputs.changed == 'true' && steps.dedup.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "${{ steps.feed.outputs.uuid }}" > "$WITNESS_FILE"
+          BRANCH="${{ steps.dedup.outputs.branch }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          echo "${{ steps.feed.outputs.uuid }}" > "$WITNESS_FILE"
           git add "$WITNESS_FILE"
           git commit -m "chore(witness): NTA feed UUID ${{ steps.feed.outputs.uuid }}"
-          git push
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: ack NTA feed update (${{ steps.feed.outputs.feed_start }})" \
+            --body "$(cat <<'BODY'
+          Tracks #${{ steps.issue.outputs.num }} — see issue for the full action checklist.
+
+          This PR only bumps the witness file:
+          - `.github/data/last-feed-uuid`: `${{ steps.feed.outputs.old_uuid }}` → `${{ steps.feed.outputs.uuid }}`
+
+          Merging signals to the daily workflow that this NTA release has been processed (next runs go silent until NTA publishes again).
+
+          If you also regen'd JSON / docs locally for this release, push those commits to this branch (`bot/nta-uuid-${{ steps.feed.outputs.uuid }}`) before merging.
+          BODY
+          )"
