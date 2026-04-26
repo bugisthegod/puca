@@ -498,7 +498,7 @@ function App() {
             setPanelExpandKey((k) => k + 1);
           }}
           onPickTrain={(f) => {
-            localStorage.setItem("search", JSON.stringify({ from: f.from, to: f.to, fromQuery: f.fromName, toQuery: f.toName }));
+            sessionStorage.setItem("search", JSON.stringify({ from: f.from, to: f.to, fromQuery: f.fromName, toQuery: f.toName }));
             if (mode !== "train") setMode("train");
             setSearchResetKey((k) => k + 1);
           }}
@@ -607,10 +607,10 @@ function App() {
           setBusStopId(null);
           setBusSearchTab(m === "bus" ? "stop" : "route");
           setFocusContext(null);
-          // SearchPanel rehydrates from/to queries from this localStorage key
+          // SearchPanel rehydrates from/to queries from this sessionStorage key
           // on mount, so App-state clearing alone isn't enough — clear the
           // persisted copy too or remounting restores the train search.
-          localStorage.removeItem("search");
+          sessionStorage.removeItem("search");
         }}
         onFilterChange={setFilter}
         onBusOperatorChange={handleBusOperatorChange}
