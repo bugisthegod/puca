@@ -527,10 +527,6 @@ body {
     bottom: calc(206px + env(safe-area-inset-bottom));
     right: calc(12px + env(safe-area-inset-right));
   }
-
-  body.kb-open .about-fab {
-    display: none;
-  }
 }
 
 /* Favorites FAB — slotted between locate & about */
@@ -546,7 +542,6 @@ body {
     bottom: calc(158px + env(safe-area-inset-bottom));
     right: calc(12px + env(safe-area-inset-right));
   }
-  body.kb-open .fav-fab { display: none; }
 }
 
 /* Mirror the three FABs to the left edge when the user picks that side.
@@ -2282,13 +2277,6 @@ body {
 
   .leaflet-popup-content-wrapper {
     border-radius: 8px;
-  }
-
-  /* Keyboard open on iOS: hide bottom-fixed chrome so it doesn't sit under
-     the keyboard or get stranded off-screen after dismissal. */
-  body.kb-open #info-panel,
-  body.kb-open .locate-btn {
-    display: none;
   }
 }
 

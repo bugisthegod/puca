@@ -241,29 +241,6 @@ function App() {
     };
   }, [mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, getMapView]);
 
-  // iOS Safari overlays the keyboard on top of the viewport instead of
-  // shrinking it (unlike Android), so bottom-fixed elements get covered and
-  // can get stranded off-screen after dismissal. Toggle a body class while a
-  // text field is focused so CSS can hide them.
-  useEffect(() => {
-    function isTextInput(t: EventTarget | null) {
-      if (!(t instanceof HTMLElement)) return false;
-      return t.matches("input, textarea, [contenteditable='true']");
-    }
-    function onFocusIn(e: FocusEvent) {
-      if (isTextInput(e.target)) document.body.classList.add("kb-open");
-    }
-    function onFocusOut(e: FocusEvent) {
-      if (isTextInput(e.target)) document.body.classList.remove("kb-open");
-    }
-    document.addEventListener("focusin", onFocusIn);
-    document.addEventListener("focusout", onFocusOut);
-    return () => {
-      document.removeEventListener("focusin", onFocusIn);
-      document.removeEventListener("focusout", onFocusOut);
-    };
-  }, []);
-
   async function handleLocate() {
     if (locating) return;
     setLocating(true);
