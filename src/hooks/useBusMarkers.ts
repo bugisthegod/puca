@@ -12,6 +12,15 @@ import type { Mode } from "./useTrainMap";
 // ---------------------------------------------------------------------------
 const busTripInFlight = new Set<string>();
 
+// Stops scale with zoom: tiny dots when the polyline reads as a single line,
+// larger ringed circles once individual stops are visually distinct.
+const STOP_ZOOM_THRESHOLD = 13;
+const STOP_STYLE_LOW = { radius: 1.5, weight: 1 };
+const STOP_STYLE_HIGH = { radius: 3, weight: 1.5 };
+function stopStyleForZoom(zoom: number): { radius: number; weight: number } {
+  return zoom >= STOP_ZOOM_THRESHOLD ? STOP_STYLE_HIGH : STOP_STYLE_LOW;
+}
+
 // Inline Púca jack-o'-lantern face used by the stale-trip marker and popup
 // banner. Mirrors public/puca-jack-o.svg — duplicated as a raw SVG string
 // because Leaflet divIcons and popup HTML can't render React components or
@@ -286,7 +295,10 @@ export function useBusMarkers({
     btn.addEventListener("click", () => {
       const route = decodeURIComponent(btn.getAttribute("data-route") ?? "");
       const dir = btn.getAttribute("data-dir") ?? "";
-      if (route && dir) onSelectBusRouteRef.current?.(route, dir);
+      if (route && dir) {
+        leafletMap.current?.closePopup();
+        onSelectBusRouteRef.current?.(route, dir);
+      }
     });
   }
 
@@ -660,11 +672,12 @@ export function useBusMarkers({
       easeLinearity: 0.3,
     });
 
+    const initialStyle = stopStyleForZoom(map.getZoom());
     for (const stop of dirData.stops ?? []) {
       const m = L.circleMarker([stop.lat, stop.lng], {
-        radius: 5,
+        radius: initialStyle.radius,
         color: routeColor,
-        weight: 2,
+        weight: initialStyle.weight,
         fillColor: "#fff",
         fillOpacity: 1,
       });
@@ -697,6 +710,24 @@ export function useBusMarkers({
     map.on("click", onClick);
     return () => {
       map.off("click", onClick);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, busShape]);
+
+  // -------------------------------------------------------------------------
+  // Stop marker zoom scaling: resize on zoom-end so dots shrink at city scale
+  // and grow back at street scale without relayering.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    const map = leafletMap.current;
+    if (!map || mode !== "bus") return;
+    const onZoomEnd = () => {
+      const style = stopStyleForZoom(map.getZoom());
+      for (const m of busStopMarkersRef.current) m.setStyle(style);
+    };
+    map.on("zoomend", onZoomEnd);
+    return () => {
+      map.off("zoomend", onZoomEnd);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, busShape]);
