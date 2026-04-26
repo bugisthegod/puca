@@ -12,14 +12,10 @@ import type { Mode } from "./useTrainMap";
 // ---------------------------------------------------------------------------
 const busTripInFlight = new Set<string>();
 
-// Stops scale with zoom: tiny dots when the polyline reads as a single line,
-// larger ringed circles once individual stops are visually distinct.
-const STOP_ZOOM_THRESHOLD = 13;
-const STOP_STYLE_LOW = { radius: 1.5, weight: 1 };
-const STOP_STYLE_HIGH = { radius: 3, weight: 1.5 };
-function stopStyleForZoom(zoom: number): { radius: number; weight: number } {
-  return zoom >= STOP_ZOOM_THRESHOLD ? STOP_STYLE_HIGH : STOP_STYLE_LOW;
-}
+// Below this zoom, stops collapse into an overlapping mess that looks worse
+// than the polyline alone. Hide them entirely; they only become individually
+// meaningful at street scale.
+const STOP_MIN_ZOOM = 13;
 
 // Inline Púca jack-o'-lantern face used by the stale-trip marker and popup
 // banner. Mirrors public/puca-jack-o.svg — duplicated as a raw SVG string
@@ -633,7 +629,7 @@ export function useBusMarkers({
 
     busShapeLayerRef.current = L.polyline(dirData.coords, {
       color: routeColor,
-      weight: 4,
+      weight: 6,
       opacity: 0.85,
     }).addTo(map);
 
@@ -672,22 +668,22 @@ export function useBusMarkers({
       easeLinearity: 0.3,
     });
 
-    const initialStyle = stopStyleForZoom(map.getZoom());
+    const stopsVisible = map.getZoom() >= STOP_MIN_ZOOM;
     for (const stop of dirData.stops ?? []) {
       const m = L.circleMarker([stop.lat, stop.lng], {
-        radius: initialStyle.radius,
+        radius: 6,
         color: routeColor,
-        weight: initialStyle.weight,
+        weight: 2.5,
         fillColor: "#fff",
         fillOpacity: 1,
       });
       m.bindTooltip(stop.name, {
         direction: "top",
-        offset: [0, -4],
+        offset: [0, -8],
         className: "stop-tooltip",
         opacity: 1,
       });
-      m.addTo(map);
+      if (stopsVisible) m.addTo(map);
       busStopMarkersRef.current.push(m);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -715,15 +711,18 @@ export function useBusMarkers({
   }, [mode, busShape]);
 
   // -------------------------------------------------------------------------
-  // Stop marker zoom scaling: resize on zoom-end so dots shrink at city scale
-  // and grow back at street scale without relayering.
+  // Stop marker zoom gating: add/remove from map based on current zoom.
   // -------------------------------------------------------------------------
   useEffect(() => {
     const map = leafletMap.current;
     if (!map || mode !== "bus") return;
     const onZoomEnd = () => {
-      const style = stopStyleForZoom(map.getZoom());
-      for (const m of busStopMarkersRef.current) m.setStyle(style);
+      const visible = map.getZoom() >= STOP_MIN_ZOOM;
+      for (const m of busStopMarkersRef.current) {
+        const onMap = map.hasLayer(m);
+        if (visible && !onMap) m.addTo(map);
+        else if (!visible && onMap) map.removeLayer(m);
+      }
     };
     map.on("zoomend", onZoomEnd);
     return () => {

@@ -1820,7 +1820,7 @@ body {
   border-style: solid;
   box-sizing: border-box;
 }
-.focus-stop--intermediate { border-width: 2px; }
+.focus-stop--intermediate { border-width: 2.5px; }
 .focus-stop--target { border-width: 3px; }
 .focus-stop--dublinbus { border-color: #f9a825; }
 .focus-stop--buseireann { border-color: #d52b1e; }

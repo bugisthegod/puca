@@ -154,12 +154,12 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
           icon: L.divIcon({
             className: `focus-stop focus-stop--intermediate focus-stop--${focusContext.operator}`,
             html: "",
-            iconSize: [10, 10],
-            iconAnchor: [5, 5],
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
           }),
           pane: "focusPane",
         });
-        m.bindTooltip(stop.name, { direction: "top", offset: [0, -6], className: "stop-tooltip", opacity: 1 });
+        m.bindTooltip(stop.name, { direction: "top", offset: [0, -8], className: "stop-tooltip", opacity: 1 });
         m.addTo(map);
         intermediates.push(m);
       }
