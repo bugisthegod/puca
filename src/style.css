@@ -2109,6 +2109,28 @@ body {
 }
 
 /* ============================================================
+   Train markers
+   ============================================================ */
+
+.train-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.train-icon {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  display: block;
+}
+
+.train-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ============================================================
    Filter separator
    ============================================================ */
 

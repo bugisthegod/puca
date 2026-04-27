@@ -26,6 +26,11 @@ const TRAIN_SHAPE_CACHE_MAX = 200;
 const trainShapeCache = new Map<string, TrainShapeCacheEntry>();
 const trainShapeInFlight = new Map<string, Promise<{ routeLine: Feature<LineString>; routeLengthMeters: number } | null>>();
 
+// Front-view train cab face used by vehicle markers. Body fill uses currentColor
+// so the dynamic markerColor (gray/green/orange/red by lateness) can be injected
+// via inline style on the wrapping divIcon.
+const TRAIN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4 Q2 1 5 1 H15 Q18 1 18 4 V18 H2 Z" fill="currentColor"/><path d="M4 4 H16 V10 H4 Z" fill="rgba(255,255,255,0.95)"/><path d="M4 4 L4.5 3 H15.5 L16 4 Z" fill="rgba(255,255,255,0.95)"/><line x1="10" y1="3" x2="10" y2="10" stroke="currentColor" stroke-width="0.6"/><rect x="2" y="11" width="16" height="1" fill="rgba(0,0,0,0.22)"/><rect x="8" y="13" width="4" height="5" fill="rgba(0,0,0,0.18)" rx="0.5"/><circle cx="4.5" cy="15.5" r="1.3" fill="#fff5b8"/><circle cx="15.5" cy="15.5" r="1.3" fill="#fff5b8"/></svg>`;
+
 // Insertion-order LRU cap: drop oldest entries once the cache exceeds the limit.
 function setShapeCache(key: string, value: TrainShapeCacheEntry): void {
   trainShapeCache.delete(key); // ensure re-insertion moves key to the end of insertion order
@@ -155,7 +160,8 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
 // ---------------------------------------------------------------------------
 
 export interface TrainMarkerEntry {
-  marker: L.CircleMarker;
+  marker: L.Marker;
+  lastColor: string;                       // tracks current marker color so we only setIcon on threshold changes
   train: Train;
   targetLat: number;
   targetLng: number;
@@ -234,15 +240,22 @@ export function useTrainMarkers({
     }
   }
 
-  function makeCircleMarker(train: Train): L.CircleMarker {
-    const color = markerColor(train);
-    return L.circleMarker([train.lat, train.lng], {
-      radius: 7,
-      fillColor: color,
-      color: "#fff",
-      weight: 1.5,
-      opacity: 1,
-      fillOpacity: 0.9,
+  function makeTrainIcon(color: string): L.DivIcon {
+    return L.divIcon({
+      className: "train-marker",
+      html: `<div class="train-icon" style="color:${color}">${TRAIN_SVG}</div>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+  }
+
+  function makeTrainMarker(train: Train): L.Marker {
+    // interactive:false so clicks pass through to the oversized invisible
+    // hitMarker — without this, the divIcon (markerPane z=600) sits above the
+    // SVG hitMarker (overlayPane z=400) and swallows the tap.
+    return L.marker([train.lat, train.lng], {
+      icon: makeTrainIcon(markerColor(train)),
+      interactive: false,
     });
   }
 
@@ -404,7 +417,10 @@ export function useTrainMarkers({
       if (existing) {
         const now = performance.now();
         const color = markerColor(train);
-        existing.marker.setStyle({ fillColor: color });
+        if (color !== existing.lastColor) {
+          existing.marker.setIcon(makeTrainIcon(color));
+          existing.lastColor = color;
+        }
         existing.train = train;
 
         // If origin/dest changed, clear path state to avoid extrapolating on wrong route
@@ -492,7 +508,7 @@ export function useTrainMarkers({
       } else {
         // New marker
         const now = performance.now();
-        const marker = makeCircleMarker(train);
+        const marker = makeTrainMarker(train);
         const hitMarker = makeHitMarker(train);
 
         hitMarker.on("click", () => onMarkerClick(train.code));
@@ -538,6 +554,7 @@ export function useTrainMarkers({
 
         markers.current.set(train.code, {
           marker,
+          lastColor: markerColor(train),
           train,
           targetLat: train.lat,
           targetLng: train.lng,
