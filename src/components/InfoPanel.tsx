@@ -68,6 +68,14 @@ export default function InfoPanel({
           </>
         ) : (
           <div id="panel-header" className="panel-header--closed">
+            <button
+              type="button"
+              className="filter-btn filter-back"
+              onClick={() => setDrilledIn(false)}
+              aria-label="Back"
+            >
+              ←
+            </button>
             <SleepingPuca size={52} />
             <div className="service-text">
               <span id="train-count">Púca's having a kip</span>
@@ -86,7 +94,7 @@ export default function InfoPanel({
             {label}
           </button>
         ))}
-        {drilledIn && (
+        {drilledIn && inService && (
           <>
             <button
               type="button"
@@ -96,29 +104,25 @@ export default function InfoPanel({
             >
               ←
             </button>
-            {inService && (
-              <>
-                <span className="filter-sep" />
-                {mode === "train" && FILTERS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    className={`filter-btn${filter === value ? " active" : ""}`}
-                    onClick={() => onFilterChange(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-                {mode === "bus" && BUS_OPERATORS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    className={`filter-btn${busOperator === value ? " active" : ""}`}
-                    onClick={() => onBusOperatorChange(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </>
-            )}
+            <span className="filter-sep" />
+            {mode === "train" && FILTERS.map(({ value, label }) => (
+              <button
+                key={value}
+                className={`filter-btn${filter === value ? " active" : ""}`}
+                onClick={() => onFilterChange(value)}
+              >
+                {label}
+              </button>
+            ))}
+            {mode === "bus" && BUS_OPERATORS.map(({ value, label }) => (
+              <button
+                key={value}
+                className={`filter-btn${busOperator === value ? " active" : ""}`}
+                onClick={() => onBusOperatorChange(value)}
+              >
+                {label}
+              </button>
+            ))}
           </>
         )}
       </div>
