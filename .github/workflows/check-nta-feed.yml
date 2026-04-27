@@ -8,10 +8,12 @@ name: Check NTA feed
 
 on:
   schedule:
-    # 07:00 UTC = 08:00 Dublin in BST (summer) / 07:00 in GMT (winter).
+    # 07:17 UTC = 08:17 Dublin in BST (summer) / 07:17 in GMT (winter).
     # GH Actions cron doesn't follow local DST, so the wall-clock time shifts
     # by an hour at DST transitions. Either is fine for this check.
-    - cron: "0 7 * * *"
+    # Off-the-hour minute on purpose: GitHub warns that schedules on the hour
+    # get delayed/skipped due to global cron pile-up.
+    - cron: "17 7 * * *"
   workflow_dispatch:       # manual trigger from Actions tab
 
 permissions:

@@ -188,6 +188,9 @@ body {
 
 .leaflet-control-attribution a {
   color: rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  text-decoration: none;
+  cursor: default;
 }
 
 :root[data-theme="dark"] .leaflet-control-attribution.leaflet-control {

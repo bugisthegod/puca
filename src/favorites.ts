@@ -8,9 +8,9 @@ import type { BusOperator } from "./types";
 const KEY = "puca-favorites-v1";
 const OPERATORS: readonly BusOperator[] = ["dublinbus", "buseireann", "goahead"];
 
-// Single shared cap across buses + trains + stops. 10 total slots — the user
+// Single shared cap across buses + trains + stops. 15 total slots — the user
 // curates a small set, not a bookmark dump.
-export const MAX_FAVORITES = 10;
+export const MAX_FAVORITES = 15;
 
 export function totalFavorites(favs: Favorites): number {
   return favs.buses.length + favs.trains.length + favs.stops.length;
