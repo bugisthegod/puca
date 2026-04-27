@@ -2003,13 +2003,18 @@ body {
   pointer-events: auto;
 }
 
-.bus-triangle {
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 12px solid var(--op-dublinbus);
+.bus-icon {
+  width: 24px;
+  height: 16px;
+  color: var(--op-dublinbus);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  display: block;
+}
+
+.bus-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .bus-label {
@@ -2024,8 +2029,8 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.bus-marker--buseireann .bus-triangle {
-  border-bottom-color: var(--op-buseireann);
+.bus-marker--buseireann .bus-icon {
+  color: var(--op-buseireann);
 }
 
 .bus-marker--buseireann .bus-label {
@@ -2033,8 +2038,8 @@ body {
   color: #fff;
 }
 
-.bus-marker--goahead .bus-triangle {
-  border-bottom-color: var(--op-goahead);
+.bus-marker--goahead .bus-icon {
+  color: var(--op-goahead);
 }
 
 .bus-marker--goahead .bus-label {
@@ -2044,7 +2049,7 @@ body {
 
 /* Stale trip variant — NTA's tagged tripId is clearly over (layover / deadhead /
    between trips). We still show the vehicle (the app's job is "what's on the
-   road") but swap the triangle for Púca as a visual "caveat this data". */
+   road") but swap the bus icon for Púca as a visual "caveat this data". */
 .bus-marker--stale .bus-puca {
   width: 36px;
   height: 36px;
