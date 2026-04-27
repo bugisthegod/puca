@@ -20,11 +20,12 @@ interface SearchPanelProps {
   onTrainSelect: (code: string) => void;
   favs: Favorites;
   onToggleTrain: (f: TrainFavorite) => void;
-  defaultCollapsed?: boolean;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
   onShowToast: (title: string, body?: string) => void;
 }
 
-export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, defaultCollapsed = false, onShowToast }: SearchPanelProps) {
+export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, collapsed, onCollapsedChange, onShowToast }: SearchPanelProps) {
   const saved = sessionStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
 
@@ -40,7 +41,6 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
   // Snapshot of station names at search time — so the rendered result rows
   // don't shift when the user edits the input after searching.
   const [searchedNames, setSearchedNames] = useState<{ from: string; to: string } | null>(null);
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const panelRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
@@ -59,7 +59,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
         // Auto-collapse on mobile only when tapping the map
         const target = e.target as HTMLElement;
         if (window.innerWidth <= 600 && target.closest("#map")) {
-          setCollapsed(true);
+          onCollapsedChange(true);
         }
       }
     }
@@ -172,7 +172,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
       {collapsed ? (
-        <button className="fab search-fab" onClick={() => setCollapsed(false)} aria-label="Search" title="Search">
+        <button className="fab search-fab" onClick={() => onCollapsedChange(false)} aria-label="Search" title="Search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" />
@@ -290,7 +290,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
                         return;
                       }
                       onTrainSelect(r.code);
-                      if (window.innerWidth <= 600) setCollapsed(true);
+                      if (window.innerWidth <= 600) onCollapsedChange(true);
                     }}
                   >
                     <div className="train-item-header">

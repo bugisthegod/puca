@@ -53,8 +53,8 @@ type BusSearchPanelProps = {
   onPickArrival: (arrival: StopArrival, operator: BusOperator, stop: StopSearchResult) => void;
   stopIsFavorite: boolean;
   onToggleStopFavorite: (stop: StopSearchResult) => void;
-  defaultCollapsed?: boolean;
-  panelExpandKey: number;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
   onShowToast: (title: string, body?: string) => void;
 };
 
@@ -74,15 +74,14 @@ export default function BusSearchPanel({
   onPickArrival,
   stopIsFavorite,
   onToggleStopFavorite,
-  defaultCollapsed = false,
-  panelExpandKey,
+  collapsed,
+  onCollapsedChange,
   onShowToast,
 }: BusSearchPanelProps) {
   const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // --- Stop-mode state ---
@@ -114,14 +113,6 @@ export default function BusSearchPanel({
     if (!selectedRoute) setQuery("");
   }, [selectedRoute]);
 
-  // Un-collapse on every favorite pick (stop or route) — even when the pick
-  // matches what's already loaded. Watching busStopId/selectedRoute misses
-  // that case (React short-circuits same-value setState); a monotonic bump
-  // key fires on every click regardless.
-  useEffect(() => {
-    if (panelExpandKey > 0) setCollapsed(false);
-  }, [panelExpandKey]);
-
   const directions = useMemo<{ [dir: string]: string }>(() => {
     if (!busShape) return {};
     const heads: { [dir: string]: string } = {};
@@ -138,7 +129,7 @@ export default function BusSearchPanel({
         setStopFocused(false);
         const target = e.target as HTMLElement;
         if (window.innerWidth <= 600 && target.closest("#map")) {
-          setCollapsed(true);
+          onCollapsedChange(true);
         }
       }
     }
@@ -318,7 +309,7 @@ export default function BusSearchPanel({
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
       {collapsed ? (
-        <button className="fab search-fab" onClick={() => setCollapsed(false)} aria-label="Search" title="Search">
+        <button className="fab search-fab" onClick={() => onCollapsedChange(false)} aria-label="Search" title="Search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" />
@@ -490,7 +481,7 @@ export default function BusSearchPanel({
                                   return;
                                 }
                                 if (!selectedStop) return;
-                                if (window.innerWidth <= 600) setCollapsed(true);
+                                if (window.innerWidth <= 600) onCollapsedChange(true);
                                 onPickArrival(a, busOperator, selectedStop);
                               }}
                             >

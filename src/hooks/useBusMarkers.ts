@@ -83,7 +83,7 @@ interface UseBusMarkersOptions {
   currentBusRoute: string | null;
   onSelectBusRoute: React.RefObject<((route: string, direction: string) => void) | undefined>;
   leafletMap: React.RefObject<L.Map | null>;
-  busClusterLayer: React.RefObject<L.MarkerClusterGroup | null>;
+  busClusterLayer: React.RefObject<L.MarkerClusterGroup | L.LayerGroup | null>;
 }
 
 export function useBusMarkers({
@@ -434,8 +434,18 @@ export function useBusMarkers({
 
     const shape = busShape;
 
+    // Single-route mode: gate adds by route+direction. The `buses` prop can
+    // briefly hold a stale all-buses superset between (a) clicking a popup's
+    // "Show all 38A" button and (b) fetchBuses(38A, dir) returning. If
+    // busShape arrives in that window, useBusMarkers re-runs on the empty
+    // (just-cleared) busMarkers Map and would otherwise dump every bus into
+    // the un-clustered LayerGroup for one frame.
+    const filteredBuses = currentBusRoute && busDirection
+      ? buses.filter((b) => b.routeShortName === currentBusRoute && String(b.directionId) === busDirection)
+      : buses;
+
     const seen = new Set<string>();
-    for (const bus of buses) {
+    for (const bus of filteredBuses) {
       seen.add(bus.tripId);
 
       const dirKey = String(bus.directionId);
@@ -587,7 +597,7 @@ export function useBusMarkers({
     // selection too so we don't keep highlighting a pattern that isn't
     // running.
     const nextActive = new Set<string>();
-    for (const b of buses) {
+    for (const b of filteredBuses) {
       if (b.shapeId) nextActive.add(b.shapeId);
     }
     activeShapeIdsRef.current = nextActive;

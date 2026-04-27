@@ -50,7 +50,12 @@ export function useTrainMap(
 
   const rafId = useRef<number>(0);
   const lastTickTime = useRef<number>(0);
-  const busClusterLayer = useRef<L.MarkerClusterGroup | null>(null);
+  const busClusterLayer = useRef<L.MarkerClusterGroup | L.LayerGroup | null>(null);
+
+  // Single-route view (e.g. user searched 38A and picked a direction) holds
+  // <20 buses — clustering adds visual noise and is unnecessary. Swap to a
+  // plain LayerGroup so each bus renders individually.
+  const singleRouteMode = !!(currentBusRoute && busDirection);
 
   // Map first — everything else depends on it.
   const {
@@ -93,8 +98,9 @@ export function useTrainMap(
     mode,
   });
 
-  // Bus cluster lifecycle — recreated on mode/operator change so the
-  // iconCreateFunction closure captures the current operator color.
+  // Bus container lifecycle — recreated on mode/operator/single-route change.
+  // - Default: MarkerClusterGroup (cluster icon closure captures operator color)
+  // - Single-route mode: plain LayerGroup, no clustering for the handful of buses
   useEffect(() => {
     const map = leafletMap.current;
     if (!map) return;
@@ -108,32 +114,36 @@ export function useTrainMap(
 
     if (mode !== "bus") return;
 
-    const operatorClass =
-      busOperator === "buseireann" ? "bus-cluster--buseireann" :
-      busOperator === "goahead" ? "bus-cluster--goahead" :
-      "";
+    if (singleRouteMode) {
+      busClusterLayer.current = L.layerGroup();
+    } else {
+      const operatorClass =
+        busOperator === "buseireann" ? "bus-cluster--buseireann" :
+        busOperator === "goahead" ? "bus-cluster--goahead" :
+        "";
 
-    busClusterLayer.current = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      maxClusterRadius: 60,
-      disableClusteringAtZoom: 18,
-      spiderfyOnMaxZoom: false,
-      chunkedLoading: true,
-      animate: false,
-      animateAddingMarkers: false,
-      iconCreateFunction: (cluster: L.MarkerCluster) => {
-        const count = cluster.getChildCount();
-        const size = count >= 100 ? "large" : count >= 20 ? "medium" : "small";
-        const dim = size === "large" ? 46 : size === "medium" ? 38 : 30;
-        return L.divIcon({
-          html: `<span>${count}</span>`,
-          className: `bus-cluster bus-cluster--${size} ${operatorClass}`.trim(),
-          iconSize: L.point(dim, dim),
-        });
-      },
-    });
+      busClusterLayer.current = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 60,
+        disableClusteringAtZoom: 18,
+        spiderfyOnMaxZoom: false,
+        chunkedLoading: true,
+        animate: false,
+        animateAddingMarkers: false,
+        iconCreateFunction: (cluster: L.MarkerCluster) => {
+          const count = cluster.getChildCount();
+          const size = count >= 100 ? "large" : count >= 20 ? "medium" : "small";
+          const dim = size === "large" ? 46 : size === "medium" ? 38 : 30;
+          return L.divIcon({
+            html: `<span>${count}</span>`,
+            className: `bus-cluster bus-cluster--${size} ${operatorClass}`.trim(),
+            iconSize: L.point(dim, dim),
+          });
+        },
+      });
+    }
     busClusterLayer.current.addTo(map);
-  }, [mode, busOperator]);
+  }, [mode, busOperator, singleRouteMode]);
 
   // Clear the train route polyline whenever a popup closes.
   useEffect(() => {
@@ -210,8 +220,12 @@ export function useTrainMap(
         const cluster = busClusterLayer.current;
         if (cluster) {
           if (!cluster.hasLayer(entry.marker)) continue;
-          const visible = cluster.getVisibleParent(entry.marker);
-          if (visible !== entry.marker) continue;
+          // Plain LayerGroup (single-route mode) lacks getVisibleParent —
+          // every marker is its own visible parent, so the check is moot.
+          if ("getVisibleParent" in cluster) {
+            const visible = (cluster as L.MarkerClusterGroup).getVisibleParent(entry.marker);
+            if (visible !== entry.marker) continue;
+          }
         } else if (!map.hasLayer(entry.marker)) {
           continue;
         }

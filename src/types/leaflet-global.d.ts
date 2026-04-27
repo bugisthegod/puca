@@ -25,6 +25,7 @@ declare global {
     export import Popup = LeafletNS.Popup;
     export import Layer = LeafletNS.Layer;
     export import LatLngBounds = LeafletNS.LatLngBounds;
+    export import LayerGroup = LeafletNS.LayerGroup;
     export import MarkerClusterGroup = LeafletNS.MarkerClusterGroup;
     export import MarkerCluster = LeafletNS.MarkerCluster;
     export import DivIcon = LeafletNS.DivIcon;

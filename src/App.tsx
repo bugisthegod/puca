@@ -109,7 +109,7 @@ function App() {
   const [busDirection, setBusDirection] = useState<string | null>(savedSession.busDirection ?? null);
   const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedSession.busSearchTab ?? "route");
   const [busStopId, setBusStopId] = useState<string | null>(savedSession.busStopId ?? null);
-  const [panelExpandKey, setPanelExpandKey] = useState(0);
+  const [panelCollapsed, setPanelCollapsed] = useState(true);
   const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
   const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
@@ -382,6 +382,7 @@ function App() {
     setBusStopId(null);
     setBuses([]);
     setFocusContext(null);
+    setPanelCollapsed(true);
   }
 
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
@@ -468,16 +469,17 @@ function App() {
             setBuses([]);
             // Symmetric to onPickStop: clear any stop selection + focus so the
             // panel doesn't stay stuck on the stop tab while the map shows the
-            // route. Also bump the expand key to un-collapse a collapsed panel.
+            // route.
             setBusSearchTab("route");
             setBusStopId(null);
             setFocusContext(null);
-            setPanelExpandKey((k) => k + 1);
+            setPanelCollapsed(false);
           }}
           onPickTrain={(f) => {
             sessionStorage.setItem("search", JSON.stringify({ from: f.from, to: f.to, fromQuery: f.fromName, toQuery: f.toName }));
             if (mode !== "train") setMode("train");
             setSearchResetKey((k) => k + 1);
+            setPanelCollapsed(false);
           }}
           onPickStop={(s) => {
             if (mode !== "bus") setMode("bus");
@@ -490,7 +492,7 @@ function App() {
             setFocusContext(null);
             setBusSearchTab("stop");
             setBusStopId(s.stopId);
-            setPanelExpandKey((k) => k + 1);
+            setPanelCollapsed(false);
           }}
           onRemoveBus={removeBus}
           onRemoveTrain={removeTrain}
@@ -505,7 +507,8 @@ function App() {
           onTrainSelect={focusTrain}
           favs={favs}
           onToggleTrain={tryToggleTrain}
-          defaultCollapsed={!inService}
+          collapsed={panelCollapsed}
+          onCollapsedChange={setPanelCollapsed}
           onShowToast={showToast}
         />
       ) : (
@@ -532,7 +535,8 @@ function App() {
           }}
           busStopId={busStopId}
           onStopIdChange={setBusStopId}
-          panelExpandKey={panelExpandKey}
+          collapsed={panelCollapsed}
+          onCollapsedChange={setPanelCollapsed}
           onShowToast={showToast}
           stopIsFavorite={stopIsFav}
           onToggleStopFavorite={onToggleStopFav}
@@ -553,7 +557,6 @@ function App() {
               targetStopLng: stop.lng,
             });
           }}
-          defaultCollapsed={!inService}
         />
       )}
       {mode === "bus" && (busRoute !== null || focusContext !== null) && (
@@ -584,6 +587,7 @@ function App() {
           setBusStopId(null);
           setBusSearchTab(m === "bus" ? "stop" : "route");
           setFocusContext(null);
+          setPanelCollapsed(true);
           // SearchPanel rehydrates from/to queries from this sessionStorage key
           // on mount, so App-state clearing alone isn't enough — clear the
           // persisted copy too or remounting restores the train search.
