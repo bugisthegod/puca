@@ -108,31 +108,33 @@ Bun.serve({
     "/splash/iphone-base.png": staticFile("./public/splash/iphone-base.png", 604800),
     "/splash/iphone-se.png": staticFile("./public/splash/iphone-se.png", 604800),
     "/api/trains": rateLimit(async (_req) => {
+      // Matches api.ts cache TTL; SWR lets browser use stale data while a refresh is in flight.
+      const headers = { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" };
+      // Off-hours short-circuit: skip the Irish Rail round-trip when no trains run.
+      if (!isInServiceHours("train")) return Response.json([], { headers });
       try {
         const trains = await getCurrentTrains();
-        return Response.json(trains, {
-          // Matches api.ts cache TTL; SWR lets browser use stale data while a refresh is in flight.
-          headers: { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" },
-        });
+        return Response.json(trains, { headers });
       } catch {
         return Response.json([], { status: 502 });
       }
     }),
     "/api/station/:code": rateLimit(async (req) => {
+      const headers = { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" };
+      if (!isInServiceHours("train")) return Response.json([], { headers });
       try {
         const code = req.params.code;
         const url = new URL(req.url);
         const minsParam = url.searchParams.get("mins");
         const numMins = minsParam ? parseInt(minsParam, 10) : 90;
         const data = await getStationData(code, numMins);
-        return Response.json(data, {
-          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" },
-        });
+        return Response.json(data, { headers });
       } catch {
         return Response.json([], { status: 502 });
       }
     }),
     "/api/trains/search": rateLimit(async (req) => {
+      const headers = { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" };
       try {
         const url = new URL(req.url);
         const from = url.searchParams.get("from");
@@ -140,6 +142,7 @@ Bun.serve({
         if (!from || !to) {
           return Response.json({ error: "from and to required" }, { status: 400 });
         }
+        if (!isInServiceHours("train")) return Response.json([], { headers });
         const [fromData, toData, currentTrains] = await Promise.all([
           getStationData(from, 120),
           getStationData(to, 120),
@@ -182,9 +185,7 @@ Bun.serve({
           .filter((r) => r !== null);
 
         candidates.sort((a, b) => a.fromDep.localeCompare(b.fromDep));
-        return Response.json(candidates.slice(0, 3), {
-          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" },
-        });
+        return Response.json(candidates.slice(0, 3), { headers });
       } catch {
         return Response.json([], { status: 502 });
       }
@@ -200,14 +201,14 @@ Bun.serve({
       }
     }),
     "/api/train/:id": rateLimit(async (req) => {
+      const headers = { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" };
+      if (!isInServiceHours("train")) return Response.json([], { headers });
       try {
         const trainId = req.params.id;
         const url = new URL(req.url);
         const trainDate = url.searchParams.get("date") ?? todayFormatted();
         const movements = await getTrainMovements(trainId, trainDate);
-        return Response.json(movements, {
-          headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=30" },
-        });
+        return Response.json(movements, { headers });
       } catch {
         return Response.json([], { status: 502 });
       }
