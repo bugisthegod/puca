@@ -1,5 +1,5 @@
 // Bump CACHE_VERSION to invalidate all caches after a deploy.
-const CACHE_VERSION = "v1.3.9";
+const CACHE_VERSION = "v1.4.0";
 const CACHE_NAME = `puca-${CACHE_VERSION}`;
 // Tile cache version is independent of app version — tiles don't change
 // between deploys, so app upgrades shouldn't pay a re-download tax.
@@ -132,28 +132,21 @@ async function navigationHandler(event, req) {
 async function tileHandler(req) {
   const cache = await caches.open(TILE_CACHE);
   const cached = await cache.match(req);
+  // Cache-first: tiles are immutable, so revalidating on every hit just
+  // saturates the connection pool and starves genuinely new tile fetches
+  // during pan/zoom.
+  if (cached) return cached;
 
   // Re-issue as CORS so the response isn't opaque — opaque responses get
   // padded to ~7MB each in CacheStorage and would blow quota in dozens of tiles.
   // Both CartoCDN and OpenRailwayMap serve Access-Control-Allow-Origin: *.
   const corsReq = new Request(req.url, { mode: "cors", credentials: "omit" });
-  const networkPromise = fetch(corsReq).then((res) => {
+  try {
+    const res = await fetch(corsReq);
     if (res.ok) {
-      // cache.put deletes-then-inserts per spec, bumping hits to the end of
-      // insertion order. Combined with FIFO trim from keys[0], this gives
-      // quasi-LRU eviction without tracking access timestamps.
       cache.put(req, res.clone()).then(() => trimTileCache(cache));
     }
     return res;
-  });
-
-  if (cached) {
-    networkPromise.catch(() => {});
-    return cached;
-  }
-
-  try {
-    return await networkPromise;
   } catch {
     return new Response("", { status: 504, statusText: "Tile fetch failed" });
   }
