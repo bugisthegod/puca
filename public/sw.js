@@ -1,5 +1,5 @@
 // Bump CACHE_VERSION to invalidate all caches after a deploy.
-const CACHE_VERSION = "v1.4.0";
+const CACHE_VERSION = "v1.4.1";
 const CACHE_NAME = `puca-${CACHE_VERSION}`;
 // Tile cache version is independent of app version — tiles don't change
 // between deploys, so app upgrades shouldn't pay a re-download tax.
