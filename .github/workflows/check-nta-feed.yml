@@ -8,12 +8,16 @@ name: Check NTA feed
 
 on:
   schedule:
-    # 07:17 UTC = 08:17 Dublin in BST (summer) / 07:17 in GMT (winter).
-    # GH Actions cron doesn't follow local DST, so the wall-clock time shifts
-    # by an hour at DST transitions. Either is fine for this check.
-    # Off-the-hour minute on purpose: GitHub warns that schedules on the hour
-    # get delayed/skipped due to global cron pile-up.
-    - cron: "17 7 * * *"
+    # 23:32 UTC = 00:32 Dublin in BST (summer) / 23:32 in GMT (winter).
+    # NTA's GTFS export pipeline updates the origin file around 22:47–22:59 UTC
+    # (per their helpdesk reply, INC0036622: "available from midnight" Dublin
+    # local time). Running at 23:32 UTC gives ~30 min for CDN edges to refresh
+    # before we hit them, while still detecting new releases the same night.
+    # GH Actions cron doesn't follow DST, so the wall-clock shifts by an hour
+    # at the DST boundary — both windows still land after the NTA pipeline.
+    # Off-the-hour minute on purpose: GitHub warns schedules on the hour get
+    # delayed/skipped due to global cron pile-up.
+    - cron: "32 23 * * *"
   workflow_dispatch:       # manual trigger from Actions tab
 
 permissions:
@@ -22,6 +26,11 @@ permissions:
   issues: write          # open tracking issue
 
 env:
+  # Lightweight endpoint NTA published in response to our feature request
+  # (INC0036622, 2026-04-28). Returns just feed_info.txt (~270 B) instead of
+  # the full ~90 MB GTFS zip. Note: same CDN cache as the zip (max-age=172800,
+  # 48h), so query-string cache-bust still applied as a hedge.
+  NTA_FEED_INFO_URL: https://www.transportforireland.ie/transitData/Data/feed_info.txt
   NTA_ZIP_URL: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
   WITNESS_FILE: .github/data/last-feed-uuid
 
@@ -31,19 +40,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download NTA zip + extract feed_info
+      - name: Fetch NTA feed_info.txt
         id: feed
         run: |
-          curl -sL "$NTA_ZIP_URL" -o /tmp/gtfs.zip
-          unzip -p /tmp/gtfs.zip feed_info.txt > /tmp/feed_info.txt
+          curl -sL "${NTA_FEED_INFO_URL}?_=$(date +%s)" -o /tmp/feed_info.txt
           cat /tmp/feed_info.txt
 
           # feed_info.txt format (line 2):
           # publisher,url,lang,start_date,end_date,version,email
+          # Lightweight endpoint emits ISO dates (2026-04-27); legacy zip used
+          # GTFS-spec compact format (20260427). Strip dashes to keep the
+          # downstream witness/issue/PR formatting stable.
           DATA=$(sed -n '2p' /tmp/feed_info.txt | tr -d '\r')
           UUID=$(echo "$DATA" | awk -F',' '{print $6}')
-          START=$(echo "$DATA" | awk -F',' '{print $4}')
-          END=$(echo "$DATA" | awk -F',' '{print $5}')
+          START=$(echo "$DATA" | awk -F',' '{print $4}' | tr -d '-')
+          END=$(echo "$DATA" | awk -F',' '{print $5}' | tr -d '-')
 
           OLD_UUID=$(cat "$WITNESS_FILE" 2>/dev/null | tr -d '\r\n')
 
