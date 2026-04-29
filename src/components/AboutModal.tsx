@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import PucaMark from "./PucaMark";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
@@ -16,6 +16,63 @@ type AboutModalProps = {
   fabSide?: FabSide;
   onSetFabSide?: (s: FabSide) => void;
 };
+
+function SettingRow({
+  label,
+  info,
+  children,
+}: {
+  label: string;
+  info?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  return (
+    <div className="about-setting-row">
+      <span className="about-setting-row__head">
+        <span className="about-setting-row__label">{label}</span>
+        <span className="about-setting-row__info-wrap" ref={wrapRef}>
+          {info && (
+            <>
+              <button
+                type="button"
+                className={`about-setting-row__info${open ? " is-open" : ""}`}
+                aria-label={`About ${label}`}
+                aria-expanded={open}
+                onClick={() => setOpen((v) => !v)}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <line x1="12" y1="8" x2="12" y2="13" />
+                  <circle cx="12" cy="16.5" r="0.6" fill="currentColor" stroke="none" />
+                </svg>
+              </button>
+              {open && (
+                <span className="about-setting-row__tip" role="tooltip">
+                  {info}
+                </span>
+              )}
+            </>
+          )}
+        </span>
+      </span>
+      <div className="about-setting-row__control">{children}</div>
+    </div>
+  );
+}
 
 export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, compassPref, onToggleCompass, fabSide, onSetFabSide }: AboutModalProps) {
   useBackToClose(onClose);
@@ -69,91 +126,87 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
           </section>
         )}
 
-        {onSetTheme && theme && (
+        {(onSetTheme || onToggleCompass || onSetFabSide) && (
           <>
             <div className="about-divider" />
-            <section className="about-block">
-              <div className="about-block__label">Appearance</div>
-              <div className="about-theme-toggle" role="radiogroup" aria-label="Theme">
-                {(["light", "dark", "system"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    role="radio"
-                    aria-checked={theme === t}
-                    className={`about-theme-btn${theme === t ? " is-active" : ""}`}
-                    onClick={() => { if (theme !== t) onSetTheme(t); }}
-                  >
-                    {t === "light" ? "Light" : t === "dark" ? "Dark" : "System"}
-                  </button>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
+            <section className="about-block about-settings">
+              {onSetTheme && theme && (
+                <SettingRow
+                  label="Appearance"
+                  info="Switch between light and dark theme. System follows your device setting."
+                >
+                  <div className="about-theme-toggle" role="radiogroup" aria-label="Theme">
+                    {(["light", "dark", "system"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="radio"
+                        aria-checked={theme === t}
+                        className={`about-theme-btn${theme === t ? " is-active" : ""}`}
+                        onClick={() => { if (theme !== t) onSetTheme(t); }}
+                      >
+                        {t === "light" ? "Light" : t === "dark" ? "Dark" : "System"}
+                      </button>
+                    ))}
+                  </div>
+                </SettingRow>
+              )}
 
-        {onToggleCompass && (
-          <>
-            <div className="about-divider" />
-            <section className="about-block">
-              <div className="about-block__label">Compass</div>
-              <div className="about-theme-toggle" role="radiogroup" aria-label="Compass">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={!compassPref}
-                  className={`about-theme-btn${!compassPref ? " is-active" : ""}`}
-                  onClick={() => onToggleCompass(false)}
+              {onToggleCompass && (
+                <SettingRow
+                  label="Compass"
+                  info="Shows which way you're facing on the map. iOS asks for motion permission after each reload — tap On again if the compass isn't showing."
                 >
-                  Off
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={!!compassPref}
-                  className={`about-theme-btn${compassPref ? " is-active" : ""}`}
-                  onClick={() => onToggleCompass(true)}
-                >
-                  On
-                </button>
-              </div>
-              <p className="about-block__note">
-                Shows which way you're facing on the map. iOS asks for motion
-                permission after each reload — tap On again if the compass isn't
-                showing.
-              </p>
-            </section>
-          </>
-        )}
+                  <div className="about-theme-toggle" role="radiogroup" aria-label="Compass">
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={!compassPref}
+                      className={`about-theme-btn${!compassPref ? " is-active" : ""}`}
+                      onClick={() => onToggleCompass(false)}
+                    >
+                      Off
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={!!compassPref}
+                      className={`about-theme-btn${compassPref ? " is-active" : ""}`}
+                      onClick={() => onToggleCompass(true)}
+                    >
+                      On
+                    </button>
+                  </div>
+                </SettingRow>
+              )}
 
-        {onSetFabSide && fabSide && (
-          <>
-            <div className="about-divider" />
-            <section className="about-block">
-              <div className="about-block__label">Button side</div>
-              <div className="about-theme-toggle" role="radiogroup" aria-label="Button side">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={fabSide === "left"}
-                  className={`about-theme-btn${fabSide === "left" ? " is-active" : ""}`}
-                  onClick={() => { if (fabSide !== "left") onSetFabSide("left"); }}
+              {onSetFabSide && fabSide && (
+                <SettingRow
+                  label="Button side"
+                  info="Moves the locate, favourites, and About buttons to your preferred side."
                 >
-                  Left
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={fabSide === "right"}
-                  className={`about-theme-btn${fabSide === "right" ? " is-active" : ""}`}
-                  onClick={() => { if (fabSide !== "right") onSetFabSide("right"); }}
-                >
-                  Right
-                </button>
-              </div>
-              <p className="about-block__note">
-                Moves the locate, favourites, and About buttons to your preferred side.
-              </p>
+                  <div className="about-theme-toggle" role="radiogroup" aria-label="Button side">
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={fabSide === "left"}
+                      className={`about-theme-btn${fabSide === "left" ? " is-active" : ""}`}
+                      onClick={() => { if (fabSide !== "left") onSetFabSide("left"); }}
+                    >
+                      Left
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={fabSide === "right"}
+                      className={`about-theme-btn${fabSide === "right" ? " is-active" : ""}`}
+                      onClick={() => { if (fabSide !== "right") onSetFabSide("right"); }}
+                    >
+                      Right
+                    </button>
+                  </div>
+                </SettingRow>
+              )}
             </section>
           </>
         )}
