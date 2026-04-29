@@ -1,0 +1,78 @@
+/* ============================================================
+   Filter buttons
+   ============================================================ */
+
+#filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+#filter-bar.filter-bar--root {
+  justify-content: center;
+  gap: 20px;
+}
+
+/* Root/compact state: panel shrinks to just the Train/Bus toggle. */
+#info-panel.info-panel--compact {
+  min-width: unset;
+  padding: 10px 14px;
+}
+
+.filter-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ccc;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.filter-btn.active {
+  background: var(--brand-mid);
+  border-color: var(--brand-light);
+  color: #fff;
+  font-weight: 600;
+}
+
+
+/* ============================================================
+   Filter separator
+   ============================================================ */
+
+.filter-sep {
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 2px;
+  align-self: center;
+  margin-right: auto;
+}
+
+
+@media (max-width: 600px) {
+  #filter-bar {
+    margin-left: auto;
+    gap: 4px;
+  }
+
+  #filter-bar.filter-bar--root {
+    margin-left: 0;
+    flex: 1;
+  }
+
+
+  .filter-btn {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+  }
+}

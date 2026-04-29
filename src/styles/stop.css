@@ -1,0 +1,222 @@
+/* ============================================================
+   Bus stop tooltip
+   ============================================================ */
+
+.stop-tooltip.leaflet-tooltip {
+  background: rgba(22, 22, 28, 0.92);
+  color: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.stop-tooltip.leaflet-tooltip::before {
+  border-top-color: rgba(22, 22, 28, 0.92);
+}
+
+/* Focus-segment stop markers (bus → user's stop). HTML divIcons rather than
+   SVG CircleMarker so the rings don't inflate during flyToBounds zoom anim. */
+.focus-stop {
+  border-radius: 50%;
+  background: #fff;
+  border-style: solid;
+  box-sizing: border-box;
+}
+.focus-stop--intermediate { border-width: 2.5px; }
+.focus-stop--target { border-width: 3px; }
+.focus-stop--dublinbus { border-color: #f9a825; }
+.focus-stop--buseireann { border-color: #d52b1e; }
+.focus-stop--goahead { border-color: #1e6bb8; }
+
+/* ============================================================
+   Bus search: route / stop tabs + stop arrivals list
+   ============================================================ */
+
+.bus-search-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.bus-search-tab {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #bbb;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bus-search-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f0f0f0;
+}
+
+.bus-search-tab.active {
+  background: var(--brand-mid);
+  color: #fff;
+}
+
+.stop-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(37, 168, 100, 0.18);
+  border: 1px solid rgba(37, 168, 100, 0.35);
+}
+
+.stop-selected--loading {
+  opacity: 0.55;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.stop-selected__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.stop-selected__text strong {
+  font-size: 0.8rem;
+  color: #fff;
+}
+
+.stop-selected__text span {
+  font-size: 0.72rem;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.stop-arrivals {
+  margin-top: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.stop-arrivals::-webkit-scrollbar {
+  display: none;
+}
+
+.stop-arrivals__empty {
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.stop-arrivals__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stop-arrivals__list li {
+  padding: 0;
+  margin: 0;
+}
+
+.stop-arrival {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #f0f0f0;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-align: left;
+  font-family: inherit;
+}
+
+.stop-arrival:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.stop-arrival--scheduled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.stop-arrival__route {
+  flex: 0 0 auto;
+  min-width: 36px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--brand-mid);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.stop-arrival__headsign {
+  flex: 1 1 auto;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ccc;
+}
+
+.stop-arrival__eta {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brand-light);
+}
+
+.stop-arrival__eta.late {
+  color: #ff9a6b;
+}
+
+
+@media (max-width: 600px) {
+  .train-item {
+    padding: 6px 8px;
+  }
+
+  .train-item-code {
+    font-size: 0.75rem;
+  }
+
+  .train-item-route,
+  .train-item-times {
+    font-size: 0.68rem;
+  }
+
+  .train-item-status {
+    font-size: 0.6rem;
+  }
+
+}

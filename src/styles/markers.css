@@ -1,0 +1,140 @@
+/* ============================================================
+   Bus markers
+   ============================================================ */
+
+.bus-marker {
+  background: transparent !important;
+  border: none !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.bus-icon {
+  width: 24px;
+  height: 16px;
+  color: var(--op-dublinbus);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  display: block;
+}
+
+.bus-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bus-label {
+  background: var(--op-dublinbus);
+  color: var(--op-dublinbus-text);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-top: 1px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.bus-marker--buseireann .bus-icon {
+  color: var(--op-buseireann);
+}
+
+.bus-marker--buseireann .bus-label {
+  background: var(--op-buseireann);
+  color: #fff;
+}
+
+.bus-marker--goahead .bus-icon {
+  color: var(--op-goahead);
+}
+
+.bus-marker--goahead .bus-label {
+  background: var(--op-goahead);
+  color: #fff;
+}
+
+/* Stale trip variant — NTA's tagged tripId is clearly over (layover / deadhead /
+   between trips). We still show the vehicle (the app's job is "what's on the
+   road") but swap the bus icon for Púca as a visual "caveat this data". */
+.bus-marker--stale .bus-puca {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.bus-marker--stale .bus-puca svg {
+  width: 100%;
+  height: 100%;
+}
+
+.bus-marker--stale .bus-label {
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
+/* ============================================================
+   Bus cluster icons
+   ============================================================ */
+
+.bus-cluster {
+  background: var(--op-dublinbus);
+  color: var(--op-dublinbus-text);
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font-family: inherit;
+}
+
+.bus-cluster--small {
+  font-size: 0.75rem;
+}
+
+.bus-cluster--medium {
+  font-size: 0.85rem;
+}
+
+.bus-cluster--large {
+  font-size: 0.95rem;
+}
+
+.bus-cluster--buseireann {
+  background: var(--op-buseireann);
+  color: #fff;
+}
+
+.bus-cluster--goahead {
+  background: var(--op-goahead);
+  color: #fff;
+}
+
+/* ============================================================
+   Train markers
+   ============================================================ */
+
+.train-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.train-icon {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  display: block;
+}
+
+.train-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+

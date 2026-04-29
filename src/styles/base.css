@@ -1,0 +1,205 @@
+/* ============================================================
+   CSS custom properties
+   ============================================================ */
+
+:root {
+  /* Surfaces — popup content and movements table only */
+  --bg-surface: #ffffff;
+  --bg-elevated: #f8f8f8;       /* alt table rows */
+  --bg-muted: #f4f4f4;          /* direction chip, muted backgrounds */
+  --bg-highlight: #fff3cd;      /* current-movement row */
+  --bg-row-hover: #eef6f2;      /* table row hover — subtle greenish tint */
+
+  /* Text */
+  --text-primary: #1a1a1a;
+  --text-secondary: #444444;
+  --text-muted: #888888;
+  --text-faint: #555555;
+
+  /* Borders */
+  --border-subtle: #f0f0f0;     /* table row dividers */
+  --border-strong: #e0e0e0;     /* table outer border */
+
+  /* Brand greens */
+  --brand-dark: #1a4a2e;
+  --brand-mid: #1a7a4a;
+  --brand-light: #25a864;
+
+  /* Status — on-time (default green chip) */
+  --status-ontime-bg: #eaf7ee;
+  --status-ontime-text: #1a7a4a;
+
+  /* Status — late / warning (yellow chip) */
+  --status-late-bg: #fff4d6;
+  --status-late-text: #8a6a00;
+
+  /* Status — early / error (red chip) */
+  --status-early-bg: #fde5e5;
+  --status-early-text: #b42318;
+
+  /* Operator brand colors — identical in both modes (marker identity) */
+  --op-dublinbus: #f9a825;
+  --op-buseireann: #d52b1e;
+  --op-goahead: #1e6bb8;
+  --op-dublinbus-text: #3d2800;
+
+  /* Popup direction / info chips (always on light popup bg) */
+  --popup-dir-bg: var(--bg-muted);
+  --popup-dir-text: #666666;
+
+  /* Map backdrop — matches CARTO Voyager's empty-tile tone so in-flight
+     tiles blend in instead of flashing gray. */
+  --map-bg: #ede7dd;
+}
+
+:root[data-theme="dark"] {
+    --bg-surface: #1f1f26;
+    --bg-elevated: #252530;
+    --bg-muted: #2a2a35;
+    --bg-highlight: #3a3210;    /* dim amber for current-movement row */
+    --bg-row-hover: #1e2f28;    /* dark greenish tint */
+
+    --text-primary: #e8e8ea;
+    --text-secondary: #b0b0b8;
+    --text-muted: #7a7a86;
+    --text-faint: #9a9aa6;
+
+    --border-subtle: #2f2f3a;
+    --border-strong: #45455a;
+
+    --brand-dark: #2d8859;
+    --brand-mid: #30a063;
+    --brand-light: #4dd6a0;
+
+    --status-ontime-bg: #1a3d2a;
+    --status-ontime-text: #7fd6a0;
+
+    --status-late-bg: #3a3010;
+    --status-late-text: #f0c060;
+
+    --status-early-bg: #3a1515;
+    --status-early-text: #f07070;
+
+    /* Operator colors — intentionally unchanged */
+    --op-dublinbus: #f9a825;
+    --op-buseireann: #d52b1e;
+    --op-goahead: #1e6bb8;
+    --op-dublinbus-text: #3d2800;
+
+    --popup-dir-bg: var(--bg-muted);
+    --popup-dir-text: #9090a0;
+
+    /* Map backdrop — matches CARTO dark_all's empty-tile tone. */
+    --map-bg: #1a1d21;
+}
+
+/* ============================================================
+   Reset & base
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Suppress the default mobile tap highlight on interactive elements;
+   :active transforms / hover styles already provide press feedback. */
+button,
+a,
+[role="button"],
+input,
+textarea,
+select,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  /* 100lvh = largest viewport: with viewport-fit=cover, this spans the full
+     screen including iOS safe-area zones (status bar / home indicator), so
+     the map fills everything instead of leaving a blank band at the bottom. */
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: system-ui, -apple-system, sans-serif;
+  /* Kill system Smart Text Selection (Android Google search chip, iOS long-press
+     callout). This is a UI app, not a document — nothing should be selectable
+     by default. Inputs opt back in below. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Pin body so iOS can't scroll the page up when an input is focused — without
+   this, dismissing the keyboard can leave position:fixed elements off-screen. */
+body {
+  position: fixed;
+  inset: 0;
+}
+
+/* ============================================================
+   React root
+   ============================================================ */
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+}
+
+/* ============================================================
+   Map
+   ============================================================ */
+
+#map {
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+  background: var(--map-bg);
+}
+
+.leaflet-container {
+  background: var(--map-bg);
+}
+
+/* Leaflet attribution — strip white background (ugly on dark tiles) but
+   keep the text visible for OSM/Carto attribution compliance. */
+.leaflet-control-attribution.leaflet-control {
+  background: transparent !important;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 0.62rem;
+  padding: 0 4px;
+}
+
+.leaflet-control-attribution a {
+  color: rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  text-decoration: none;
+  cursor: default;
+}
+
+:root[data-theme="dark"] .leaflet-control-attribution.leaflet-control {
+  color: rgba(255, 255, 255, 0.45);
+}
+:root[data-theme="dark"] .leaflet-control-attribution a {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Soften CARTO dark_all — default is near-black, which reads too harsh at night.
+   Brighten + slight desaturate gives a muted dark-gray that still feels "dark mode". */
+.leaflet-layer.tile-dark {
+  filter: brightness(1.75) contrast(0.85) saturate(0.95);
+}
+
