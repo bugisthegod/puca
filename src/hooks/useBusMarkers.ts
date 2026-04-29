@@ -28,6 +28,37 @@ const PUCA_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" 
 const BUS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 3 Q2 1 4 1 H20 Q22 1 22 3 V12 H2 Z" fill="currentColor"/><rect x="3.5" y="3" width="17" height="3.6" fill="rgba(255,255,255,0.92)" rx="0.5"/><line x1="8" y1="3" x2="8" y2="6.6" stroke="currentColor" stroke-width="0.6"/><line x1="13" y1="3" x2="13" y2="6.6" stroke="currentColor" stroke-width="0.6"/><line x1="18" y1="3" x2="18" y2="6.6" stroke="currentColor" stroke-width="0.6"/><circle cx="6.5" cy="13" r="2" fill="#1a1a1a"/><circle cx="17.5" cy="13" r="2" fill="#1a1a1a"/></svg>`;
 
 // ---------------------------------------------------------------------------
+// Bus animation timing.
+//
+// Each ping with a *new* bus.timestamp starts a fresh animation from the
+// marker's currently rendered distance to the new GPS-projected distance,
+// lerped over `entry.animDurationMs` (set to the measured interval between
+// the previous and current GPS captures, clamped). Frontend polls every 15s
+// but the backend only refreshes NTA every 35s, so 2/3 of polls return the
+// same bus.timestamp — duplicates must skip the animation reset, otherwise
+// the lerp restarts every poll and decelerates Zeno-style.
+// ---------------------------------------------------------------------------
+const DEFAULT_ANIM_DURATION_MS = 30_000;
+const MIN_ANIM_DURATION_MS = 5_000;
+const MAX_ANIM_DURATION_MS = 60_000;
+
+// Returns the marker's currently rendered distance along its route, lerped
+// between prevDistance and currentDistance per the active animation window.
+// Used both at ping arrival (to seed the next animation's prev) and in RAF.
+export function computeBusCurrentDistance(entry: BusMarkerEntry, now: number): number | null {
+  if (entry.currentDistance === null) return null;
+  if (
+    entry.prevDistance === null ||
+    entry.animStartPerfMs === null ||
+    entry.animDurationMs <= 0
+  ) {
+    return entry.currentDistance;
+  }
+  const t = Math.max(0, Math.min(1, (now - entry.animStartPerfMs) / entry.animDurationMs));
+  return entry.prevDistance + (entry.currentDistance - entry.prevDistance) * t;
+}
+
+// ---------------------------------------------------------------------------
 // Interpolation entry type
 // ---------------------------------------------------------------------------
 
@@ -47,25 +78,37 @@ export type BusDirectionShape = {
 export interface BusMarkerEntry {
   marker: L.Marker;
   bus: BusVehicle;
+  // Latest GPS lat/lng — used for viewport culling and as the off-route LERP target.
   targetLat: number;
   targetLng: number;
-  velocityLat: number;
-  velocityLng: number;
-  lastUpdateTime: number;
+  // Off-route LERP source: when GPS leaves the route polyline, the marker
+  // blends from (correctionFromLat, correctionFromLng) → (targetLat, targetLng)
+  // over BLEND_DURATION starting at correctionStartTime.
   correctionFromLat: number;
   correctionFromLng: number;
   correctionStartTime: number;
   routeLine: Feature<LineString> | null;
   routeLookup: Float64Array | null;
   routeLengthMeters: number | null;
-  distanceAtPing: number | null;           // distance along route at the moment of last GPS ping
-  targetDistanceAlongRoute: number | null; // projected distance from latest GPS, meters
-  pathSpeedMps: number;                    // speed along path, m/s
-  lastPingTime: number | null;             // when the last GPS ping was processed (performance.now ms)
+  // Two-point interpolation buffer for the on-route branch. On each ping with
+  // a new bus.timestamp:
+  //   prevDistance = where the marker is currently rendered (so animation
+  //                  always starts from the visible position — no jumps),
+  //   currentDistance = newly projected distance from the GPS ping,
+  //   animStartPerfMs = perf.now() at ping arrival,
+  //   animDurationMs  = measured interval between the two GPS captures
+  //                     (clamped 5-60s) — matches lerp speed to real bus speed.
+  // RAF lerps prev → current over animDurationMs. After t=1 the marker sits
+  // at currentDistance. Duplicate pings (same bus.timestamp from cache) leave
+  // these fields untouched so the animation keeps running uninterrupted.
+  prevDistance: number | null;
+  currentDistance: number | null;
+  animStartPerfMs: number | null;
+  animDurationMs: number;
   offRoute: boolean;                       // true when GPS >150m from polyline
   // Render-skip flags: avoid redundant setLatLng + along() when position hasn't changed.
   settled: boolean;                        // LERP branch: true after blend completed and target rendered
-  lastRenderedDistance: number | null;     // path-constrained branch: last clamped distance written to DOM
+  lastRenderedDistance: number | null;     // path-constrained branch: last distance written to DOM
   // Cached trip metadata resolved from /api/bus/trip. Lets popupopen re-apply
   // variant highlight instantly on re-open without another round-trip.
   shapeId: string | null;
@@ -456,29 +499,35 @@ export function useBusMarkers({
       const existing = busMarkers.current.get(bus.tripId);
       if (existing) {
         const now = performance.now();
-        // If the trip just tipped past the stale threshold (or came back), swap
-        // the icon to match — otherwise the Puca/bus icon doesn't update until
-        // NTA reassigns the tripId and a fresh marker gets created.
+        // Capture the previous timestamp BEFORE any field updates so we can
+        // detect cache-duplicate pings (frontend polls 15s, NTA refresh 35s,
+        // so 2/3 of polls return the same bus.timestamp).
+        const prevTimestamp = existing.bus.timestamp;
+        const isDuplicate = prevTimestamp === bus.timestamp;
+
+        // Always: icon swap if stale flipped, routeLine backfill, bus ref
+        // refresh — these matter regardless of GPS freshness.
         if (existing.bus.stale !== bus.stale) {
           existing.marker.setIcon(makeBusIcon(bus));
         }
-        // Backdate the ping to the GPS capture time so RAF's (tickNow - lastPingTime)
-        // reflects real elapsed time since the bus was actually at that location —
-        // otherwise the marker starts extrapolating only when the data reaches us,
-        // which is 30-60s late, causing visible freezes between updates.
-        const staleness = Math.max(0, Date.now() - bus.timestamp * 1000);
-        const pingPerfTime = now - staleness;
-        // Any ping invalidates the render-skip cache — at minimum the extrap
-        // window extends, so the next tick needs to recompute.
-        existing.settled = false;
-        existing.lastRenderedDistance = null;
-
-        // Backfill routeLine if we now have shape data but didn't before
         if (!existing.routeLine && lineInfo) {
           existing.routeLine = lineInfo.routeLine;
           existing.routeLookup = buildRouteLookup(lineInfo.routeLine);
           existing.routeLengthMeters = lineInfo.routeLengthMeters;
         }
+
+        if (isDuplicate) {
+          // Same GPS data as before. Don't restart the animation — leaving
+          // prevDistance / currentDistance / animStartPerfMs / animDurationMs
+          // alone keeps the lerp running smoothly. Don't reset render-skip
+          // either; RAF would just recompute the same dist for no reason.
+          existing.bus = bus;
+          continue;
+        }
+
+        // New GPS data — reset render-skip and run the animation update.
+        existing.settled = false;
+        existing.lastRenderedDistance = null;
 
         const rl = existing.routeLine;
         const rlm = existing.routeLengthMeters;
@@ -486,78 +535,81 @@ export function useBusMarkers({
           const projection = projectOntoRoute(
             bus.lat, bus.lng,
             rl, rlm,
-            existing.targetDistanceAlongRoute,
-            existing.lastPingTime,
-            pingPerfTime,
+            null, null, now,
           );
           if (!projection.offRoute) {
-            existing.offRoute = false;
-            // Set distanceAtPing to the current rendered position along the route
-            // (clamped to the new target). On first ping just teleport to the projected point.
-            if (existing.distanceAtPing === null) {
-              existing.distanceAtPing = projection.targetDistanceAlongRoute;
-            } else if (existing.lastPingTime !== null) {
-              const dtSec = (now - existing.lastPingTime) / 1000;
-              const advanced = existing.distanceAtPing + existing.pathSpeedMps * dtSec;
-              const capped = Math.min(advanced, projection.targetDistanceAlongRoute);
-              existing.distanceAtPing = Math.max(0, Math.min(capped, existing.routeLengthMeters!));
+            // Seed prev with where the marker is currently rendered, so the
+            // next animation always starts from the visible position — even if
+            // the previous animation hadn't finished, or the bus was just
+            // off-route. computeBusCurrentDistance must be called BEFORE we
+            // overwrite animDurationMs so it reads the in-flight animation.
+            let seedPrev: number | null = null;
+            if (existing.offRoute) {
+              const cur = existing.marker.getLatLng();
+              const reproj = projectOntoRoute(cur.lat, cur.lng, rl, rlm, null, null, now);
+              if (!reproj.offRoute) seedPrev = reproj.targetDistanceAlongRoute;
+            } else {
+              seedPrev = computeBusCurrentDistance(existing, now);
             }
-            existing.targetDistanceAlongRoute = projection.targetDistanceAlongRoute;
-            existing.pathSpeedMps = projection.pathSpeedMps;
-            existing.lastPingTime = projection.lastPingTime;
+            const measuredMs = (bus.timestamp - prevTimestamp) * 1000;
+            const animDurationMs = Math.max(
+              MIN_ANIM_DURATION_MS,
+              Math.min(measuredMs, MAX_ANIM_DURATION_MS),
+            );
+            existing.offRoute = false;
+            existing.prevDistance = seedPrev;
+            existing.currentDistance = projection.targetDistanceAlongRoute;
+            existing.animStartPerfMs = seedPrev !== null ? now : null;
+            existing.animDurationMs = animDurationMs;
           } else {
-            // Off-route: fall back to LERP
+            // Off-route: fall back to lat/lng LERP, reset interp buffer
             existing.offRoute = true;
-            existing.velocityLat = 0;
-            existing.velocityLng = 0;
             const cur = existing.marker.getLatLng();
             existing.correctionFromLat = cur.lat;
             existing.correctionFromLng = cur.lng;
             existing.correctionStartTime = now;
             existing.targetLat = bus.lat;
             existing.targetLng = bus.lng;
+            existing.prevDistance = null;
+            existing.currentDistance = null;
+            existing.animStartPerfMs = null;
           }
         } else {
-          // No shape data: LERP fallback
+          // No shape data: lat/lng LERP fallback
           existing.offRoute = true;
-          existing.velocityLat = 0;
-          existing.velocityLng = 0;
           const cur = existing.marker.getLatLng();
           existing.correctionFromLat = cur.lat;
           existing.correctionFromLng = cur.lng;
           existing.correctionStartTime = now;
           existing.targetLat = bus.lat;
           existing.targetLng = bus.lng;
+          existing.prevDistance = null;
+          existing.currentDistance = null;
+          existing.animStartPerfMs = null;
         }
 
-        existing.lastUpdateTime = now;
         existing.bus = bus;
       } else {
         // New bus entry
         const now = performance.now();
-        const staleness = Math.max(0, Date.now() - bus.timestamp * 1000);
-        const pingPerfTime = now - staleness;
         const marker = makeBusMarker(bus);
         cluster.addLayer(marker);
 
-        let distanceAtPing: number | null = null;
+        let prevDistance: number | null = null;
+        let currentDistance: number | null = null;
+        let animStartPerfMs: number | null = null;
         let offRoute = true;
-        let targetDistanceAlongRoute: number | null = null;
-        let pathSpeedMps = 0;
-        let lastPingTime: number | null = null;
 
         if (lineInfo) {
           const projection = projectOntoRoute(
             bus.lat, bus.lng,
             lineInfo.routeLine, lineInfo.routeLengthMeters,
-            null, null, pingPerfTime,
+            null, null, now,
           );
           if (!projection.offRoute) {
             offRoute = false;
-            distanceAtPing = projection.targetDistanceAlongRoute;
-            targetDistanceAlongRoute = projection.targetDistanceAlongRoute;
-            pathSpeedMps = 0; // first ping — no speed yet
-            lastPingTime = projection.lastPingTime;
+            currentDistance = projection.targetDistanceAlongRoute;
+            // First ping: prev null, marker sits at currentDistance until ping 2.
           }
         }
 
@@ -566,19 +618,16 @@ export function useBusMarkers({
           bus,
           targetLat: bus.lat,
           targetLng: bus.lng,
-          velocityLat: 0,
-          velocityLng: 0,
-          lastUpdateTime: now,
           correctionFromLat: bus.lat,
           correctionFromLng: bus.lng,
           correctionStartTime: now,
           routeLine: lineInfo?.routeLine ?? null,
           routeLookup: lineInfo ? buildRouteLookup(lineInfo.routeLine) : null,
           routeLengthMeters: lineInfo?.routeLengthMeters ?? null,
-          distanceAtPing,
-          targetDistanceAlongRoute,
-          pathSpeedMps,
-          lastPingTime,
+          prevDistance,
+          currentDistance,
+          animStartPerfMs,
+          animDurationMs: DEFAULT_ANIM_DURATION_MS,
           offRoute,
           settled: false,
           lastRenderedDistance: null,

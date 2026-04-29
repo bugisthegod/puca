@@ -5,7 +5,7 @@ import type { Filter } from "../utils";
 import type { MapView } from "../session";
 import { useMapInstance } from "./useMapInstance";
 import { useTrainMarkers } from "./useTrainMarkers";
-import { useBusMarkers } from "./useBusMarkers";
+import { useBusMarkers, computeBusCurrentDistance } from "./useBusMarkers";
 import { useFocusSegment } from "./useFocusSegment";
 
 export type Mode = "train" | "bus";
@@ -230,33 +230,25 @@ export function useTrainMap(
         if (!bounds.contains([entry.targetLat, entry.targetLng])) continue;
         if (entry.marker.isPopupOpen?.()) continue;
 
+        // On-route: lerp between prevDistance (where the marker was at last
+        // ping) and currentDistance (latest GPS projection) over the fixed
+        // animation window. After t hits 1 the marker sits at currentDistance
+        // — no extrapolation, no snap-back when the next ping arrives.
         if (
           !entry.offRoute &&
-          entry.routeLine &&
-          entry.routeLengthMeters !== null &&
-          entry.distanceAtPing !== null &&
-          entry.targetDistanceAlongRoute !== null &&
-          entry.lastPingTime !== null
+          entry.routeLookup &&
+          entry.currentDistance !== null
         ) {
-          const dtSec = (now - entry.lastPingTime) / 1000;
-          const advanced = entry.distanceAtPing + entry.pathSpeedMps * dtSec;
-          // Extrap cap 500m — covers ~60s at typical 8 m/s city bus speed,
-          // enough headroom for a full NTA 30s poll + frontend 15s delay without freezing.
-          const capped = Math.min(advanced, entry.targetDistanceAlongRoute + 500);
-          const clamped = Math.max(0, Math.min(capped, entry.routeLengthMeters));
-          // Skip along() + setLatLng when the extrapolated distance hasn't advanced
-          // (bus hit the 150m extrap cap and is waiting for next ping).
-          if (entry.lastRenderedDistance === clamped) continue;
-          if (entry.routeLookup) {
-            const [lat, lng] = alongLookup(entry.routeLookup, clamped);
-            entry.marker.setLatLng([lat, lng]);
-            entry.lastRenderedDistance = clamped;
-          }
+          const dist = computeBusCurrentDistance(entry, now);
+          if (dist === null) continue;
+          if (entry.lastRenderedDistance === dist) continue;
+          const [lat, lng] = alongLookup(entry.routeLookup, dist);
+          entry.marker.setLatLng([lat, lng]);
+          entry.lastRenderedDistance = dist;
           continue;
         }
 
-        // LERP fallback — after blend, marker sits at target until next ping.
-        // Short-circuit to avoid 94% wasted setLatLng across the 25s cycle.
+        // Off-route fallback: blend lat/lng over BLEND_DURATION, then settle.
         if (entry.settled) continue;
         const blendElapsed = now - entry.correctionStartTime;
         if (blendElapsed < BLEND_DURATION) {
