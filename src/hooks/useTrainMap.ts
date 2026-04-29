@@ -1,6 +1,6 @@
 import { useRef, useEffect, type RefObject } from "react";
 import type { Train, BusVehicle, BusOperator, FocusContext } from "../types";
-import { along } from "./routeProjection";
+import { alongLookup } from "./routeProjection";
 import type { Filter } from "../utils";
 import type { MapView } from "../session";
 import { useMapInstance } from "./useMapInstance";
@@ -13,9 +13,10 @@ export type Mode = "train" | "bus";
 const BLEND_DURATION = 1500;
 const EXTRAP_CAP = 35_000;
 
-// Throttle to ~20 FPS — transit markers move slowly and full 60 FPS was
-// pinning the CPU (turf's along() call per marker adds up fast with 600+ buses).
-const TICK_INTERVAL_MS = 50;
+// Lookup-table positions replace turf's O(n) along() — binary search is cheap
+// enough to run at 30 FPS without CPU pressure. Faster than the old 20 FPS
+// but avoids the per-frame setLatLng DOM cost of running at full 60 FPS.
+const TICK_INTERVAL_MS = 33;
 
 interface UseTrainMapOptions {
   currentBusRoute?: string | null;
@@ -190,12 +191,9 @@ export function useTrainMap(
           const advanced = entry.distanceAtPing + entry.pathSpeedMps * dtSec;
           const capped = Math.min(advanced, entry.targetDistanceAlongRoute + TRAIN_EXTRAP_BUFFER_METERS);
           const clamped = Math.max(0, Math.min(capped, entry.routeLengthMeters));
-          try {
-            const pt = along(entry.routeLine, clamped / 1000, { units: "kilometers" });
-            const [lng, lat] = pt.geometry.coordinates as [number, number];
+          if (entry.routeLookup) {
+            const [lat, lng] = alongLookup(entry.routeLookup, clamped);
             entry.marker.setLatLng([lat, lng]);
-          } catch {
-            // along() can throw at end of line — stay put
           }
           continue;
         }
@@ -249,13 +247,10 @@ export function useTrainMap(
           // Skip along() + setLatLng when the extrapolated distance hasn't advanced
           // (bus hit the 150m extrap cap and is waiting for next ping).
           if (entry.lastRenderedDistance === clamped) continue;
-          try {
-            const pt = along(entry.routeLine, clamped / 1000, { units: "kilometers" });
-            const [lng, lat] = pt.geometry.coordinates as [number, number];
+          if (entry.routeLookup) {
+            const [lat, lng] = alongLookup(entry.routeLookup, clamped);
             entry.marker.setLatLng([lat, lng]);
             entry.lastRenderedDistance = clamped;
-          } catch {
-            // along() can throw at end of line — stay put
           }
           continue;
         }

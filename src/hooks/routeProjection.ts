@@ -2,13 +2,12 @@
 // No React imports — no closures over any hook state.
 
 import nearestPointOnLine from "@turf/nearest-point-on-line";
-import along from "@turf/along";
 import length from "@turf/length";
 import { lineString } from "@turf/helpers";
 import type { Feature, LineString } from "geojson";
 
 export type { Feature, LineString };
-export { along, length, lineString };
+export { length, lineString };
 
 // ---------------------------------------------------------------------------
 // buildRouteLine
@@ -28,6 +27,96 @@ export function buildRouteLine(
   } catch {
     return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// buildRouteLookup / alongLookup
+// ---------------------------------------------------------------------------
+
+// Equirectangular approximation — accurate to <0.1% for short segments,
+// orders of magnitude faster than Haversine for the precompute step.
+function segmentLengthM(lat0: number, lng0: number, lat1: number, lng1: number): number {
+  const R = 6_371_000;
+  const dLat = (lat1 - lat0) * (Math.PI / 180);
+  const dLng = (lng1 - lng0) * (Math.PI / 180);
+  const midLat = ((lat0 + lat1) / 2) * (Math.PI / 180);
+  const x = dLng * Math.cos(midLat) * R;
+  const y = dLat * R;
+  return Math.sqrt(x * x + y * y);
+}
+
+const LOOKUP_SAMPLE_M = 10;
+
+// Precompute a flat Float64Array of [dist, lat, lng] triples sampled every
+// LOOKUP_SAMPLE_M metres along the route.  Called once per route shape.
+export function buildRouteLookup(routeLine: Feature<LineString>): Float64Array | null {
+  const coords = routeLine.geometry.coordinates; // [lng, lat][]
+  if (coords.length < 2) return null;
+
+  const cum: number[] = [0];
+  for (let i = 1; i < coords.length; i++) {
+    const c0 = coords[i - 1]!;
+    const c1 = coords[i]!;
+    cum.push(cum[i - 1]! + segmentLengthM(c0[1]!, c0[0]!, c1[1]!, c1[0]!));
+  }
+  const totalM = cum[coords.length - 1]!;
+  if (totalM < 1) return null;
+
+  const maxSamples = Math.ceil(totalM / LOOKUP_SAMPLE_M) + 2;
+  const buf = new Float64Array(maxSamples * 3);
+  let idx = 0;
+  let ci = 0;
+
+  for (let d = 0; d <= totalM; d += LOOKUP_SAMPLE_M) {
+    while (ci < coords.length - 2 && cum[ci + 1]! <= d) ci++;
+    const c0 = coords[ci]!;
+    const c1 = coords[ci + 1]!;
+    const segLen = cum[ci + 1]! - cum[ci]!;
+    const t = segLen > 0 ? (d - cum[ci]!) / segLen : 0;
+    buf[idx * 3]     = d;
+    buf[idx * 3 + 1] = c0[1]! + t * (c1[1]! - c0[1]!);
+    buf[idx * 3 + 2] = c0[0]! + t * (c1[0]! - c0[0]!);
+    idx++;
+  }
+
+  // Always include the exact route endpoint.
+  if (idx === 0 || buf[(idx - 1) * 3]! < totalM - 1e-6) {
+    const cEnd = coords[coords.length - 1]!;
+    buf[idx * 3]     = totalM;
+    buf[idx * 3 + 1] = cEnd[1]!;
+    buf[idx * 3 + 2] = cEnd[0]!;
+    idx++;
+  }
+
+  return buf.subarray(0, idx * 3);
+}
+
+// Binary-search the lookup table and lerp between the two nearest samples.
+// Returns [lat, lng].  O(log n) — replaces turf's O(n) along() in the RAF loop.
+export function alongLookup(lookup: Float64Array, distanceMeters: number): [number, number] {
+  const n = lookup.length / 3;
+  if (n === 0) return [0, 0];
+
+  const totalM = lookup[(n - 1) * 3]!;
+  const d = Math.max(0, Math.min(distanceMeters, totalM));
+
+  let lo = 0;
+  let hi = n - 1;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >>> 1;
+    if (lookup[mid * 3]! <= d) lo = mid; else hi = mid;
+  }
+
+  const d0   = lookup[lo * 3]!;
+  const lat0 = lookup[lo * 3 + 1]!;
+  const lng0 = lookup[lo * 3 + 2]!;
+  if (lo >= n - 1) return [lat0, lng0];
+
+  const d1 = lookup[hi * 3]!;
+  if (d1 <= d0) return [lat0, lng0];
+
+  const t = (d - d0) / (d1 - d0);
+  return [lat0 + t * (lookup[hi * 3 + 1]! - lat0), lng0 + t * (lookup[hi * 3 + 2]! - lng0)];
 }
 
 // ---------------------------------------------------------------------------

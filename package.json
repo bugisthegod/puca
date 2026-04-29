@@ -12,7 +12,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@turf/along": "^7.3.4",
     "@turf/helpers": "^7.3.4",
     "@turf/length": "^7.3.4",
     "@turf/line-slice-along": "^7.3.5",

@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 import type { BusVehicle, BusOperator } from "../types";
 import type { Feature, LineString } from "geojson";
-import { buildRouteLine, projectOntoRoute } from "./routeProjection";
+import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProjection";
 import { escapeHtml } from "../utils";
 import type { Mode } from "./useTrainMap";
 
@@ -56,6 +56,7 @@ export interface BusMarkerEntry {
   correctionFromLng: number;
   correctionStartTime: number;
   routeLine: Feature<LineString> | null;
+  routeLookup: Float64Array | null;
   routeLengthMeters: number | null;
   distanceAtPing: number | null;           // distance along route at the moment of last GPS ping
   targetDistanceAlongRoute: number | null; // projected distance from latest GPS, meters
@@ -475,6 +476,7 @@ export function useBusMarkers({
         // Backfill routeLine if we now have shape data but didn't before
         if (!existing.routeLine && lineInfo) {
           existing.routeLine = lineInfo.routeLine;
+          existing.routeLookup = buildRouteLookup(lineInfo.routeLine);
           existing.routeLengthMeters = lineInfo.routeLengthMeters;
         }
 
@@ -571,6 +573,7 @@ export function useBusMarkers({
           correctionFromLng: bus.lng,
           correctionStartTime: now,
           routeLine: lineInfo?.routeLine ?? null,
+          routeLookup: lineInfo ? buildRouteLookup(lineInfo.routeLine) : null,
           routeLengthMeters: lineInfo?.routeLengthMeters ?? null,
           distanceAtPing,
           targetDistanceAlongRoute,

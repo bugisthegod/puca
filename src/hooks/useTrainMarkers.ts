@@ -1,8 +1,7 @@
 import { useRef, useEffect } from "react";
 import type { Train, TrainMovement, Station } from "../types";
 import type { Feature, LineString } from "geojson";
-import { along } from "./routeProjection";
-import { buildRouteLine, projectOntoRoute } from "./routeProjection";
+import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProjection";
 import {
   markerColor,
   trainCategory,
@@ -19,12 +18,12 @@ import type { Mode } from "./useTrainMap";
 // ---------------------------------------------------------------------------
 
 type TrainShapeCacheEntry =
-  | { routeLine: Feature<LineString>; routeLengthMeters: number }
+  | { routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number }
   | "not-found";
 
 const TRAIN_SHAPE_CACHE_MAX = 200;
 const trainShapeCache = new Map<string, TrainShapeCacheEntry>();
-const trainShapeInFlight = new Map<string, Promise<{ routeLine: Feature<LineString>; routeLengthMeters: number } | null>>();
+const trainShapeInFlight = new Map<string, Promise<{ routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number } | null>>();
 
 // Front-view train cab face used by vehicle markers. Body fill uses currentColor
 // so the dynamic markerColor (gray/green/orange/red by lateness) can be injected
@@ -172,6 +171,7 @@ export interface TrainMarkerEntry {
   correctionFromLng: number;
   correctionStartTime: number;
   routeLine: Feature<LineString> | null;
+  routeLookup: Float64Array | null;
   routeLengthMeters: number | null;
   distanceAtPing: number | null;           // distance along route at the moment of last GPS ping
   targetDistanceAlongRoute: number | null; // projected distance from latest GPS, meters
@@ -275,7 +275,7 @@ export function useTrainMarkers({
   async function fetchTrainShape(
     origin: string,
     destination: string,
-  ): Promise<{ routeLine: Feature<LineString>; routeLengthMeters: number } | null> {
+  ): Promise<{ routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number } | null> {
     const key = `${origin.toLowerCase()}|${destination.toLowerCase()}`;
     const cached = trainShapeCache.get(key);
     if (cached !== undefined) {
@@ -284,7 +284,7 @@ export function useTrainMarkers({
     const inFlight = trainShapeInFlight.get(key);
     if (inFlight) return inFlight;
 
-    const promise = (async (): Promise<{ routeLine: Feature<LineString>; routeLengthMeters: number } | null> => {
+    const promise = (async (): Promise<{ routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number } | null> => {
       try {
         const res = await fetch(
           `/api/train/shape?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}`,
@@ -301,8 +301,9 @@ export function useTrainMarkers({
         if (data.coords && data.coords.length >= 2) {
           const built = buildRouteLine(data.coords);
           if (built) {
-            setShapeCache(key, built);
-            return built;
+            const entry = { ...built, routeLookup: buildRouteLookup(built.routeLine) };
+            setShapeCache(key, entry);
+            return entry;
           }
         }
         setShapeCache(key, "not-found");
@@ -401,7 +402,7 @@ export function useTrainMarkers({
         : null;
 
       // Look up shape from cache (synchronously)
-      let lineInfo: { routeLine: Feature<LineString>; routeLengthMeters: number } | null = null;
+      let lineInfo: { routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number } | null = null;
       if (newKey !== null) {
         const cached = trainShapeCache.get(newKey);
         if (cached === undefined) {
@@ -427,6 +428,7 @@ export function useTrainMarkers({
         if (newKey !== existing.originDestKey) {
           existing.originDestKey = newKey;
           existing.routeLine = null;
+          existing.routeLookup = null;
           existing.routeLengthMeters = null;
           existing.distanceAtPing = null;
           existing.targetDistanceAlongRoute = null;
@@ -438,6 +440,7 @@ export function useTrainMarkers({
         // Backfill routeLine if shape just arrived
         if (!existing.routeLine && lineInfo) {
           existing.routeLine = lineInfo.routeLine;
+          existing.routeLookup = lineInfo.routeLookup;
           existing.routeLengthMeters = lineInfo.routeLengthMeters;
         }
 
@@ -526,6 +529,7 @@ export function useTrainMarkers({
         let pathSpeedMps = 0;
         let lastPingTime: number | null = null;
         let routeLine: Feature<LineString> | null = null;
+        let routeLookup: Float64Array | null = null;
         let routeLengthMeters: number | null = null;
 
         if (lineInfo && train.status === "R") {
@@ -544,11 +548,13 @@ export function useTrainMarkers({
             pathSpeedMps = projection.pathSpeedMps; // defaults to 15 m/s on first ping
             lastPingTime = projection.lastPingTime;
             routeLine = lineInfo.routeLine;
+            routeLookup = lineInfo.routeLookup;
             routeLengthMeters = lineInfo.routeLengthMeters;
           }
         } else if (lineInfo) {
           // Shape available but train not running yet — store route for later
           routeLine = lineInfo.routeLine;
+          routeLookup = lineInfo.routeLookup;
           routeLengthMeters = lineInfo.routeLengthMeters;
         }
 
@@ -565,6 +571,7 @@ export function useTrainMarkers({
           correctionFromLng: train.lng,
           correctionStartTime: now,
           routeLine,
+          routeLookup,
           routeLengthMeters,
           distanceAtPing,
           targetDistanceAlongRoute,
