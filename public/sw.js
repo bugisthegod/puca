@@ -129,6 +129,13 @@ async function navigationHandler(event, req) {
   return cached;
 }
 
+// Coalesces concurrent requests for the same tile URL. Without this, a
+// theme/layer swap fires duplicate <img> requests for the same tile (Leaflet
+// itself, plus retries from cancelled+re-added layers), each becoming a
+// separate fetch to CartoCDN. Under burst, the CDN returns 502.
+const tileInflight = new Map();
+const TILE_FETCH_TIMEOUT_MS = 15_000;
+
 async function tileHandler(req) {
   const cache = await caches.open(TILE_CACHE);
   const cached = await cache.match(req);
@@ -137,16 +144,32 @@ async function tileHandler(req) {
   // during pan/zoom.
   if (cached) return cached;
 
-  // Re-issue as CORS so the response isn't opaque — opaque responses get
-  // padded to ~7MB each in CacheStorage and would blow quota in dozens of tiles.
-  // Both CartoCDN and OpenRailwayMap serve Access-Control-Allow-Origin: *.
-  const corsReq = new Request(req.url, { mode: "cors", credentials: "omit" });
+  let p = tileInflight.get(req.url);
+  if (!p) {
+    // Re-issue as CORS so the response isn't opaque — opaque responses get
+    // padded to ~7MB each in CacheStorage and would blow quota in dozens of tiles.
+    // Both CartoCDN and OpenRailwayMap serve Access-Control-Allow-Origin: *.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TILE_FETCH_TIMEOUT_MS);
+    const corsReq = new Request(req.url, {
+      mode: "cors",
+      credentials: "omit",
+      signal: ctrl.signal,
+    });
+    p = fetch(corsReq)
+      .then((res) => {
+        clearTimeout(timer);
+        if (res.ok) cache.put(req, res.clone()).then(() => trimTileCache(cache));
+        return res;
+      })
+      .finally(() => tileInflight.delete(req.url));
+    tileInflight.set(req.url, p);
+  }
+
   try {
-    const res = await fetch(corsReq);
-    if (res.ok) {
-      cache.put(req, res.clone()).then(() => trimTileCache(cache));
-    }
-    return res;
+    // Clone so each caller (e.g. multiple <img> requesting the same tile)
+    // gets its own readable body stream.
+    return (await p).clone();
   } catch {
     return new Response("", { status: 504, statusText: "Tile fetch failed" });
   }
