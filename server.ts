@@ -101,6 +101,7 @@ Bun.serve({
       },
     }),
     "/manifest.json": staticFile("./public/manifest.json", 86400),
+    "/og-image.png": staticFile("./public/og-image.png", 604800),
     "/icon-192.png": staticFile("./public/icon-192.png", 604800),
     "/icon-512.png": staticFile("./public/icon-512.png", 604800),
     "/icon.svg": staticFile("./public/icon.svg", 604800),
