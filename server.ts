@@ -35,6 +35,7 @@ function todayFormatted(): string {
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 60;
 const rateLimitMap = new Map<string, number[]>();
+const ORIGIN_SECRET = process.env.ORIGIN_SECRET;
 
 function getClientIp(req: Request): string {
   return (
@@ -52,6 +53,9 @@ function isLocalIp(ip: string): boolean {
 function rateLimit<T extends (req: any) => Response | Promise<Response>>(handler: T): T {
   return (async (req: any) => {
     const ip = getClientIp(req);
+    if (ORIGIN_SECRET && !isLocalIp(ip) && req.headers.get("x-origin-secret") !== ORIGIN_SECRET) {
+      return new Response("Forbidden", { status: 403 });
+    }
     if (!isLocalIp(ip)) {
       const now = Date.now();
       const timestamps = (rateLimitMap.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
