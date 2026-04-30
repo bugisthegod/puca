@@ -30,6 +30,26 @@ NTA 每次重新发布 GTFS 静态 zip 时，会给每条线路分配新的 `rou
 | 2026-04-22     | Dublin Bus      | `5570`  | `5570`  | 无变化，commit `98a981a` 重生成后仍是     |
 | **2026-04-23** | **Bus Éireann** | `5549`  | `5578`  | NTA 新发布的 GTFS zip（用户 4-24 下载）   |
 | 2026-04-25     | 全部 agency     | —       | 不变    | NTA 重发 zip，前缀未滚（用户 4-26 下载）  |
+| 2026-04-27     | Dublin Bus      | `5570`  | `5579`  | NTA zip（user 4-26 已 regen 一次）        |
+| **2026-04-29** | **全部 agency** | 见下    | **schema 整体重写** | NTA zip 直接换了 route_id 格式 |
+
+### 2026-04-29 的变更不是滚前缀，是改 schema
+
+`route_id` 从 `<4 位前缀>_<5–6 位数字>` 改成了带空格的多段编码，三个 operator 同时换：
+
+| operator         | 旧                 | 新（举例）           |
+|------------------|--------------------|----------------------|
+| Dublin Bus       | `5579_131840`      | `1 1 e a`            |
+| Bus Éireann      | `5578_xxxxxx`      | `2 100 c e`          |
+| Bus Éireann WFRD | `5501_xxxxxx`      | `WFRD W1 c c`        |
+| Go-Ahead (3)     | `5398_xxxxxx`      | `3 102 d a`          |
+| Go-Ahead (03C)   | `5576_xxxxxx`      | `03C 120 e a`        |
+| Iarnród Éireann  | `5609_xxxxxx`      | `BRAY-HOWTH-I`       |
+| LUAS             | `5242_1` / `5242_2`| `10000 GREEN g a`    |
+
+第一段大致对应 agency（`1` Dublin Bus / `2` Bus Éireann / `3` & `03C` Go-Ahead 的两半 / `WFRD` Bus Éireann Waterford），第二段是 `route_short_name`。
+`trip_id` 仍然是 `<prefix>_<num>` 格式但 prefix 也都换了（如 Go-Ahead `5576_713`），所以 schedule .db 也得重生成 + 重传 Fly volume。
+realtime `Vehicles` / `TripUpdates` feed 同步切到了新编码——三个 operator 同时静态+动态都换，不像 4-23 那次只滚 Bus Éireann 前缀。
 
 ## NTA 自己声明的发布日（`feed_info.txt`）
 
@@ -38,6 +58,8 @@ NTA 每次重新发布 GTFS 静态 zip 时，会给每条线路分配新的 `rou
 | 2026-04-14 | 20260414          | `362FED45-B5F1-4D6C-B51B-906922AC6AF0` | —      |
 | 2026-04-23 | 20260423          | `49433242-3F07-4245-8C25-460F0EE6851E` | 9 天   |
 | 2026-04-25 | 20260425          | `3F733077-EF7E-4C1B-84F4-1BF3AA9FF788` | 2 天   |
+| 2026-04-27 | 20260427          | `1B949A1D-9DDF-48B6-9217-D91D48FD8D04` | 2 天   |
+| 2026-04-29 | 20260429          | `E3B0A11B-0BF2-43A9-A25A-5D64C5A79BAC` | 2 天   |
 
 每次发布 UUID 都是新的，`feed_end_date` 恒为 start + 1 年。
 **3 个数据点（9 天、2 天间隔）已经足够否定"周发"假设——NTA 是不定期重发**，

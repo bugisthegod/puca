@@ -1,582 +1,582 @@
 [
   {
-    "id": "5579_131840",
-    "shortName": "6",
-    "longName": "Howth Dart Stn - Lower Abbey Street"
-  },
-  {
-    "id": "5579_131841",
-    "shortName": "13",
-    "longName": "Grange Castle - Harristown"
-  },
-  {
-    "id": "5579_131842",
-    "shortName": "14",
-    "longName": "Dundrum Luas Stn - Ardlea Rd (Beaumont)"
-  },
-  {
-    "id": "5579_131843",
-    "shortName": "15",
-    "longName": "Ballycullen Road - Clongriffin"
-  },
-  {
-    "id": "5579_131844",
-    "shortName": "16",
-    "longName": "Ballinteer - Dublin Airport"
-  },
-  {
-    "id": "5579_131845",
-    "shortName": "19",
-    "longName": "Parnell Square West - Dublin Airport"
-  },
-  {
-    "id": "5579_131846",
-    "shortName": "23",
-    "longName": "Merrion Square - Charlestown SC"
-  },
-  {
-    "id": "5579_131847",
-    "shortName": "24",
-    "longName": "Merrion Square - Dublin Airport"
-  },
-  {
-    "id": "5579_131848",
-    "shortName": "27",
-    "longName": "Jobstown - Clare Hall"
-  },
-  {
-    "id": "5579_131849",
-    "shortName": "33",
-    "longName": "Balbriggan - Lower Abbey St"
-  },
-  {
-    "id": "5579_131850",
-    "shortName": "37",
-    "longName": "Blanchardstown Shopping Centre - Wilton Terrace"
-  },
-  {
-    "id": "5579_131851",
-    "shortName": "38",
-    "longName": "Damastown - Burlington Road"
-  },
-  {
-    "id": "5579_131852",
-    "shortName": "39",
-    "longName": "Ongar - Burlington Rd"
-  },
-  {
-    "id": "5579_131853",
-    "shortName": "41",
-    "longName": "Swords Manor - Lower Abbey Street"
-  },
-  {
-    "id": "5579_131854",
-    "shortName": "42",
-    "longName": "Sand's Hotel Portmarnock - Eden Quay"
-  },
-  {
-    "id": "5579_131855",
-    "shortName": "43",
-    "longName": "Talbot Street - Swords Business Park"
-  },
-  {
-    "id": "5579_131856",
-    "shortName": "44",
-    "longName": "Enniskerry - DCU"
-  },
-  {
-    "id": "5579_131857",
-    "shortName": "47",
-    "longName": "Poolbeg Street - Belarmine"
-  },
-  {
-    "id": "5579_131858",
-    "shortName": "52",
-    "longName": "Intel - Ringsend"
-  },
-  {
-    "id": "5579_131859",
-    "shortName": "53",
-    "longName": "Dublin Ferryport - Talbot St"
-  },
-  {
-    "id": "5579_131860",
-    "shortName": "56A",
-    "longName": "Tallaght - Ringsend Rd"
-  },
-  {
-    "id": "5579_131861",
-    "shortName": "60",
-    "longName": "Forbes Street - Tallaght"
-  },
-  {
-    "id": "5579_131862",
-    "shortName": "65",
-    "longName": "Poolbeg Street - Blessington/Ballymore"
-  },
-  {
-    "id": "5579_131863",
-    "shortName": "68",
-    "longName": "Newcastle / Greenogue Business Pk - Hawkins St"
-  },
-  {
-    "id": "5579_131864",
-    "shortName": "69",
-    "longName": "Rathcoole - Hawkins St"
-  },
-  {
-    "id": "5579_131865",
-    "shortName": "70",
-    "longName": "Dunboyne - Burlington Rd"
-  },
-  {
-    "id": "5579_131866",
-    "shortName": "74",
-    "longName": "Dundrum Luas - Eden Quay"
-  },
-  {
-    "id": "5579_131867",
-    "shortName": "77A",
-    "longName": "Citywest - Ringsend"
-  },
-  {
-    "id": "5579_131868",
-    "shortName": "80",
-    "longName": "Liffey Valley SC - Palmerston Park"
-  },
-  {
-    "id": "5579_131869",
-    "shortName": "82",
-    "longName": "Irishtown - Kiltipper"
-  },
-  {
-    "id": "5579_131870",
-    "shortName": "99",
-    "longName": "Phoenix Park - Phoenix Park"
-  },
-  {
-    "id": "5579_131871",
-    "shortName": "116",
-    "longName": "Whitechurch - Parnell Square"
-  },
-  {
-    "id": "5579_131872",
-    "shortName": "118",
-    "longName": "Kilternan - Eden Quay"
-  },
-  {
-    "id": "5579_131873",
-    "shortName": "120",
-    "longName": "Ashtown Station - Parnell St"
-  },
-  {
-    "id": "5579_131874",
-    "shortName": "122",
-    "longName": "Drimnagh - Ashington"
-  },
-  {
-    "id": "5579_131875",
-    "shortName": "130",
-    "longName": "Talbot Street - Castle Avenue"
-  },
-  {
-    "id": "5579_131876",
-    "shortName": "38D",
-    "longName": "IBM Damastown via N3 - Burlington Rd"
-  },
-  {
-    "id": "5579_131877",
-    "shortName": "142",
-    "longName": "Portmarnock - UCD (Belfield)"
-  },
-  {
-    "id": "5579_131878",
-    "shortName": "44D",
-    "longName": "Dundrum - OCS"
-  },
-  {
-    "id": "5579_131879",
-    "shortName": "150",
-    "longName": "Rossmore - Hawkins Street"
-  },
-  {
-    "id": "5579_131880",
-    "shortName": "151",
-    "longName": "Foxborough (Balgaddy Rd) - Docklands (East Rd)"
-  },
-  {
-    "id": "5579_131881",
-    "shortName": "P29",
-    "longName": "Adamstown Stn - Ringsend"
-  },
-  {
-    "id": "5579_131882",
-    "shortName": "X1",
-    "longName": "Kilcoole - Hawkins Street"
-  },
-  {
-    "id": "5579_131883",
-    "shortName": "X2",
-    "longName": "Newcastle - Hawkins Street"
-  },
-  {
-    "id": "5579_131884",
-    "shortName": "X25",
-    "longName": "Maynooth - Easton Rd - UCD"
-  },
-  {
-    "id": "5579_131885",
-    "shortName": "X26",
-    "longName": "Maynooth - Louisa Bridge - Leeson Street Lower"
-  },
-  {
-    "id": "5579_131886",
-    "shortName": "X27",
-    "longName": "Salesian College - Aghards Rd - UCD"
-  },
-  {
-    "id": "5579_131887",
-    "shortName": "X28",
-    "longName": "Salesian College - Celbridge Main St - UCD"
-  },
-  {
-    "id": "5579_131888",
-    "shortName": "X30",
-    "longName": "Dodsboro - UCD"
-  },
-  {
-    "id": "5579_131889",
-    "shortName": "X31",
-    "longName": "River Forest - UCD Belfield"
-  },
-  {
-    "id": "5579_131890",
-    "shortName": "X32",
-    "longName": "Kildare Innovation Campus - UCD Belfield"
-  },
-  {
-    "id": "5579_131891",
-    "shortName": "C1",
-    "longName": "Adamstown Stn - Sandymount"
-  },
-  {
-    "id": "5579_131892",
-    "shortName": "C2",
-    "longName": "Adamstown Stn - Sandymount"
-  },
-  {
-    "id": "5579_131893",
-    "shortName": "C3",
-    "longName": "Maynooth - Ringsend"
-  },
-  {
-    "id": "5579_131894",
-    "shortName": "C4",
-    "longName": "Maynooth - Ringsend"
-  },
-  {
-    "id": "5579_131895",
-    "shortName": "C5",
-    "longName": "Maynooth - Ringsend Night Service"
-  },
-  {
-    "id": "5579_131896",
-    "shortName": "C6",
-    "longName": "Maynooth - Celbridge - Ringsend Night Service"
-  },
-  {
-    "id": "5579_131897",
-    "shortName": "E1",
-    "longName": "Ballywaltrim - Northwood"
-  },
-  {
-    "id": "5579_131898",
-    "shortName": "E2",
-    "longName": "Dun Laoghaire - Harristown"
-  },
-  {
-    "id": "5579_131899",
-    "shortName": "F1",
-    "longName": "The Square Tallaght - IKEA"
-  },
-  {
-    "id": "5579_131900",
-    "shortName": "F2",
-    "longName": "Charlestown SC - Rossmore"
-  },
-  {
-    "id": "5579_131901",
-    "shortName": "F3",
-    "longName": "Charlestown SC - Limekiln Avenue"
-  },
-  {
-    "id": "5579_131902",
-    "shortName": "G1",
-    "longName": "Red Cow LUAS - Spencer Dock"
-  },
-  {
-    "id": "5579_131903",
-    "shortName": "G2",
-    "longName": "Liffey Valley SC - Spencer Dock"
-  },
-  {
-    "id": "5579_131904",
-    "shortName": "H1",
-    "longName": "Baldoyle - Lower Abbey Street"
-  },
-  {
-    "id": "5579_131905",
-    "shortName": "H2",
-    "longName": "Malahide - Lower Abbey Street"
-  },
-  {
-    "id": "5579_131906",
-    "shortName": "H3",
-    "longName": "Howth Summit - Lower Abbey Street"
-  },
-  {
-    "id": "5579_131907",
-    "shortName": "N4",
-    "longName": "Blanchardstown - Point Village"
-  },
-  {
-    "id": "5579_131908",
-    "shortName": "S2",
-    "longName": "Sean Moore Road - Heuston Station"
-  },
-  {
-    "id": "5579_131909",
-    "shortName": "65A",
-    "longName": "Route 65A Tallaght Sq - Blessington"
-  },
-  {
-    "id": "5579_131910",
-    "shortName": "15A",
-    "longName": "Merrion Square - Limekiln Avenue"
-  },
-  {
-    "id": "5579_131911",
-    "shortName": "27B",
-    "longName": "Eden Quay - Harristown"
-  },
-  {
-    "id": "5579_131912",
-    "shortName": "32X",
-    "longName": "UCD Belfield - Malahide"
-  },
-  {
-    "id": "5579_131913",
-    "shortName": "33E",
-    "longName": "Lwr Abbey St - Portrane - Skerries"
-  },
-  {
-    "id": "5579_131914",
-    "shortName": "38A",
-    "longName": "Damastown via Navan Rd - Burlington Rd"
-  },
-  {
-    "id": "5579_131915",
-    "shortName": "39X",
-    "longName": "Ongar - Burlington Road"
-  },
-  {
-    "id": "5579_131916",
-    "shortName": "44B",
-    "longName": "Glencullen - Dundrum Luas"
-  },
-  {
-    "id": "5579_131917",
-    "shortName": "65B",
-    "longName": "Poolbeg Street - Citywest"
-  },
-  {
-    "id": "5579_131918",
-    "shortName": "70D",
-    "longName": "Dunboyne - DCU"
-  },
-  {
-    "id": "5579_131919",
-    "shortName": "77X",
-    "longName": "Citywest - UCD Belfield"
-  },
-  {
-    "id": "5579_131920",
+    "id": "1 1 e a",
     "shortName": "1",
     "longName": "Sandymount - O'Connell Street - Santry"
   },
   {
-    "id": "5579_131921",
-    "shortName": "4",
-    "longName": "Monkstown Avenue - Heuston Station"
-  },
-  {
-    "id": "5579_131922",
-    "shortName": "33D",
-    "longName": "Portrane - St Stephens Green"
-  },
-  {
-    "id": "5579_131923",
-    "shortName": "7",
-    "longName": "Brides Glen Luas - Mountjoy Square"
-  },
-  {
-    "id": "5579_131924",
+    "id": "1 11 c a",
     "shortName": "11",
     "longName": "Phoenix Park - Sandyford Business District"
   },
   {
-    "id": "5579_131925",
+    "id": "1 116 c a",
+    "shortName": "116",
+    "longName": "Whitechurch - Parnell Square"
+  },
+  {
+    "id": "1 118 c a",
+    "shortName": "118",
+    "longName": "Kilternan - Eden Quay"
+  },
+  {
+    "id": "1 11B a",
     "shortName": "11B",
     "longName": "Phoenix Park - Donnybrook"
   },
   {
-    "id": "5579_131926",
+    "id": "1 120 c a",
+    "shortName": "120",
+    "longName": "Ashtown Station - Parnell St"
+  },
+  {
+    "id": "1 122 c a",
+    "shortName": "122",
+    "longName": "Drimnagh - Ashington"
+  },
+  {
+    "id": "1 13 c a",
+    "shortName": "13",
+    "longName": "Grange Castle - Harristown"
+  },
+  {
+    "id": "1 130 c a",
+    "shortName": "130",
+    "longName": "Talbot Street - Castle Avenue"
+  },
+  {
+    "id": "1 14 c a",
+    "shortName": "14",
+    "longName": "Dundrum Luas Stn - Ardlea Rd (Beaumont)"
+  },
+  {
+    "id": "1 142 e a",
+    "shortName": "142",
+    "longName": "Portmarnock - UCD (Belfield)"
+  },
+  {
+    "id": "1 15 c a",
+    "shortName": "15",
+    "longName": "Ballycullen Road - Clongriffin"
+  },
+  {
+    "id": "1 150 c a",
+    "shortName": "150",
+    "longName": "Rossmore - Hawkins Street"
+  },
+  {
+    "id": "1 151 c a",
+    "shortName": "151",
+    "longName": "Foxborough (Balgaddy Rd) - Docklands (East Rd)"
+  },
+  {
+    "id": "1 15A c a",
+    "shortName": "15A",
+    "longName": "Merrion Square - Limekiln Avenue"
+  },
+  {
+    "id": "1 15B c a",
     "shortName": "15B",
     "longName": "Merrion Square - Stocking Avenue"
   },
   {
-    "id": "5579_131927",
-    "shortName": "16D",
-    "longName": "Airport - Beaumont Village - Ballinteer not"
-  },
-  {
-    "id": "5579_131928",
-    "shortName": "41B",
-    "longName": "Rolestown - Lower Abbey Street"
-  },
-  {
-    "id": "5579_131929",
-    "shortName": "41D",
-    "longName": "Swords Business Park - Lwr Abbey St"
-  },
-  {
-    "id": "5579_131930",
-    "shortName": "41X",
-    "longName": "Swords - UCD Belfield"
-  },
-  {
-    "id": "5579_131931",
-    "shortName": "7E",
-    "longName": "Mountjoy Square - Dalkey"
-  },
-  {
-    "id": "5579_131932",
-    "shortName": "7A",
-    "longName": "Loughlinstown - Mountjoy Sq"
-  },
-  {
-    "id": "5579_131933",
-    "shortName": "7B",
-    "longName": "Shankill - Mountjoy Square"
-  },
-  {
-    "id": "5579_131934",
-    "shortName": "7D",
-    "longName": "Dalkey - Mountjoy Square"
-  },
-  {
-    "id": "5579_131935",
-    "shortName": "27X",
-    "longName": "Clare Hall - UCD Belfield"
-  },
-  {
-    "id": "5579_131936",
+    "id": "1 15D c a",
     "shortName": "15D",
     "longName": "Merrion Square - Whitechurch"
   },
   {
-    "id": "5579_131937",
-    "shortName": "40D",
-    "longName": "Tyrrelstown - Parnell Street"
+    "id": "1 16 c a",
+    "shortName": "16",
+    "longName": "Ballinteer - Dublin Airport"
   },
   {
-    "id": "5579_131938",
-    "shortName": "40E",
-    "longName": "Broombridge Luas - Tyrrelstown"
+    "id": "1 16D c a",
+    "shortName": "16D",
+    "longName": "Airport - Beaumont Village - Ballinteer not"
   },
   {
-    "id": "5579_131939",
-    "shortName": "33X",
-    "longName": "Skerries - Custom House Quay / St Stephen Green"
+    "id": "1 19 a",
+    "shortName": "19",
+    "longName": "Parnell Square West - Dublin Airport"
   },
   {
-    "id": "5579_131940",
-    "shortName": "38B",
-    "longName": "Damastown via Ballycoolin Ind Est - Burlington Rd"
+    "id": "1 23 a",
+    "shortName": "23",
+    "longName": "Merrion Square - Charlestown SC"
   },
   {
-    "id": "5579_131941",
-    "shortName": "39A",
-    "longName": "Ongar - UCD Belfield"
+    "id": "1 24 a",
+    "shortName": "24",
+    "longName": "Merrion Square - Dublin Airport"
   },
   {
-    "id": "5579_131942",
-    "shortName": "41C",
-    "longName": "Swords Manor Via River Valley - Lower Abbey St"
+    "id": "1 27 c a",
+    "shortName": "27",
+    "longName": "Jobstown - Clare Hall"
   },
   {
-    "id": "5579_131943",
-    "shortName": "42D",
-    "longName": "Portmarnock - DCU"
-  },
-  {
-    "id": "5579_131944",
-    "shortName": "51D",
-    "longName": "Aston Quay - Clondalkin"
-  },
-  {
-    "id": "5579_131945",
+    "id": "1 27A c a",
     "shortName": "27A",
     "longName": "Blunden Drive - Eden Quay"
   },
   {
-    "id": "5579_131946",
+    "id": "1 27B c a",
+    "shortName": "27B",
+    "longName": "Eden Quay - Harristown"
+  },
+  {
+    "id": "1 27X c a",
+    "shortName": "27X",
+    "longName": "Clare Hall - UCD Belfield"
+  },
+  {
+    "id": "1 32X c a",
+    "shortName": "32X",
+    "longName": "UCD Belfield - Malahide"
+  },
+  {
+    "id": "1 33 c a",
+    "shortName": "33",
+    "longName": "Balbriggan - Lower Abbey St"
+  },
+  {
+    "id": "1 33D c a",
+    "shortName": "33D",
+    "longName": "Portrane - St Stephens Green"
+  },
+  {
+    "id": "1 33E c a",
+    "shortName": "33E",
+    "longName": "Lwr Abbey St - Portrane - Skerries"
+  },
+  {
+    "id": "1 33X c a",
+    "shortName": "33X",
+    "longName": "Skerries - Custom House Quay / St Stephen Green"
+  },
+  {
+    "id": "1 37 c a",
+    "shortName": "37",
+    "longName": "Blanchardstown Shopping Centre - Wilton Terrace"
+  },
+  {
+    "id": "1 38 c a",
+    "shortName": "38",
+    "longName": "Damastown - Burlington Road"
+  },
+  {
+    "id": "1 38A c a",
+    "shortName": "38A",
+    "longName": "Damastown via Navan Rd - Burlington Rd"
+  },
+  {
+    "id": "1 38B c a",
+    "shortName": "38B",
+    "longName": "Damastown via Ballycoolin Ind Est - Burlington Rd"
+  },
+  {
+    "id": "1 38D c a",
+    "shortName": "38D",
+    "longName": "IBM Damastown via N3 - Burlington Rd"
+  },
+  {
+    "id": "1 39 c a",
+    "shortName": "39",
+    "longName": "Ongar - Burlington Rd"
+  },
+  {
+    "id": "1 39A c a",
+    "shortName": "39A",
+    "longName": "Ongar - UCD Belfield"
+  },
+  {
+    "id": "1 39X c a",
+    "shortName": "39X",
+    "longName": "Ongar - Burlington Road"
+  },
+  {
+    "id": "1 4 c a",
+    "shortName": "4",
+    "longName": "Monkstown Avenue - Heuston Station"
+  },
+  {
+    "id": "1 40D c a",
+    "shortName": "40D",
+    "longName": "Tyrrelstown - Parnell Street"
+  },
+  {
+    "id": "1 40E c a",
+    "shortName": "40E",
+    "longName": "Broombridge Luas - Tyrrelstown"
+  },
+  {
+    "id": "1 41 c a",
+    "shortName": "41",
+    "longName": "Swords Manor - Lower Abbey Street"
+  },
+  {
+    "id": "1 41B c a",
+    "shortName": "41B",
+    "longName": "Rolestown - Lower Abbey Street"
+  },
+  {
+    "id": "1 41C c a",
+    "shortName": "41C",
+    "longName": "Swords Manor Via River Valley - Lower Abbey St"
+  },
+  {
+    "id": "1 41D c a",
+    "shortName": "41D",
+    "longName": "Swords Business Park - Lwr Abbey St"
+  },
+  {
+    "id": "1 41X c a",
+    "shortName": "41X",
+    "longName": "Swords - UCD Belfield"
+  },
+  {
+    "id": "1 42 c a",
+    "shortName": "42",
+    "longName": "Sand's Hotel Portmarnock - Eden Quay"
+  },
+  {
+    "id": "1 42D c a",
+    "shortName": "42D",
+    "longName": "Portmarnock - DCU"
+  },
+  {
+    "id": "1 43 c a",
+    "shortName": "43",
+    "longName": "Talbot Street - Swords Business Park"
+  },
+  {
+    "id": "1 44 c a",
+    "shortName": "44",
+    "longName": "Enniskerry - DCU"
+  },
+  {
+    "id": "1 44B c a",
+    "shortName": "44B",
+    "longName": "Glencullen - Dundrum Luas"
+  },
+  {
+    "id": "1 44D a",
+    "shortName": "44D",
+    "longName": "Dundrum - OCS"
+  },
+  {
+    "id": "1 47 c a",
+    "shortName": "47",
+    "longName": "Poolbeg Street - Belarmine"
+  },
+  {
+    "id": "1 51D c a",
+    "shortName": "51D",
+    "longName": "Aston Quay - Clondalkin"
+  },
+  {
+    "id": "1 52 b",
+    "shortName": "52",
+    "longName": "Intel - Ringsend"
+  },
+  {
+    "id": "1 53 c a",
+    "shortName": "53",
+    "longName": "Dublin Ferryport - Talbot St"
+  },
+  {
+    "id": "1 56A c a",
+    "shortName": "56A",
+    "longName": "Tallaght - Ringsend Rd"
+  },
+  {
+    "id": "1 6 c a",
+    "shortName": "6",
+    "longName": "Howth Dart Stn - Lower Abbey Street"
+  },
+  {
+    "id": "1 60",
+    "shortName": "60",
+    "longName": "Forbes Street - Tallaght"
+  },
+  {
+    "id": "1 65 e",
+    "shortName": "65",
+    "longName": "Poolbeg Street - Blessington/Ballymore"
+  },
+  {
+    "id": "1 65A a",
+    "shortName": "65A",
+    "longName": "Route 65A Tallaght Sq - Blessington"
+  },
+  {
+    "id": "1 65B c a",
+    "shortName": "65B",
+    "longName": "Poolbeg Street - Citywest"
+  },
+  {
+    "id": "1 68 c a",
+    "shortName": "68",
+    "longName": "Newcastle / Greenogue Business Pk - Hawkins St"
+  },
+  {
+    "id": "1 68A c a",
     "shortName": "68A",
     "longName": "Hawkins Street - Bulfin Road"
   },
   {
-    "id": "5579_131947",
+    "id": "1 69 c a",
+    "shortName": "69",
+    "longName": "Rathcoole - Hawkins St"
+  },
+  {
+    "id": "1 69X c a",
     "shortName": "69X",
     "longName": "Rathcoole - Hawkins St"
   },
   {
-    "id": "5579_131948",
+    "id": "1 7 c a",
+    "shortName": "7",
+    "longName": "Brides Glen Luas - Mountjoy Square"
+  },
+  {
+    "id": "1 70 c a",
+    "shortName": "70",
+    "longName": "Dunboyne - Burlington Rd"
+  },
+  {
+    "id": "1 70D c a",
+    "shortName": "70D",
+    "longName": "Dunboyne - DCU"
+  },
+  {
+    "id": "1 74",
+    "shortName": "74",
+    "longName": "Dundrum Luas - Eden Quay"
+  },
+  {
+    "id": "1 77A c a",
+    "shortName": "77A",
+    "longName": "Citywest - Ringsend"
+  },
+  {
+    "id": "1 77X c a",
+    "shortName": "77X",
+    "longName": "Citywest - UCD Belfield"
+  },
+  {
+    "id": "1 7A c a",
+    "shortName": "7A",
+    "longName": "Loughlinstown - Mountjoy Sq"
+  },
+  {
+    "id": "1 7B c a",
+    "shortName": "7B",
+    "longName": "Shankill - Mountjoy Square"
+  },
+  {
+    "id": "1 7D c a",
+    "shortName": "7D",
+    "longName": "Dalkey - Mountjoy Square"
+  },
+  {
+    "id": "1 7E a",
+    "shortName": "7E",
+    "longName": "Mountjoy Square - Dalkey"
+  },
+  {
+    "id": "1 80 a",
+    "shortName": "80",
+    "longName": "Liffey Valley SC - Palmerston Park"
+  },
+  {
+    "id": "1 82 a",
+    "shortName": "82",
+    "longName": "Irishtown - Kiltipper"
+  },
+  {
+    "id": "1 99 a",
+    "shortName": "99",
+    "longName": "Phoenix Park - Phoenix Park"
+  },
+  {
+    "id": "1 C1 c",
+    "shortName": "C1",
+    "longName": "Adamstown Stn - Sandymount"
+  },
+  {
+    "id": "1 C2 c",
+    "shortName": "C2",
+    "longName": "Adamstown Stn - Sandymount"
+  },
+  {
+    "id": "1 C3 c",
+    "shortName": "C3",
+    "longName": "Maynooth - Ringsend"
+  },
+  {
+    "id": "1 C4 c",
+    "shortName": "C4",
+    "longName": "Maynooth - Ringsend"
+  },
+  {
+    "id": "1 C5 d",
+    "shortName": "C5",
+    "longName": "Maynooth - Ringsend Night Service"
+  },
+  {
+    "id": "1 C6 c",
+    "shortName": "C6",
+    "longName": "Maynooth - Celbridge - Ringsend Night Service"
+  },
+  {
+    "id": "1 E1 a",
+    "shortName": "E1",
+    "longName": "Ballywaltrim - Northwood"
+  },
+  {
+    "id": "1 E2 a",
+    "shortName": "E2",
+    "longName": "Dun Laoghaire - Harristown"
+  },
+  {
+    "id": "1 F1 a",
+    "shortName": "F1",
+    "longName": "The Square Tallaght - IKEA"
+  },
+  {
+    "id": "1 F2 a",
+    "shortName": "F2",
+    "longName": "Charlestown SC - Rossmore"
+  },
+  {
+    "id": "1 F3 a",
+    "shortName": "F3",
+    "longName": "Charlestown SC - Limekiln Avenue"
+  },
+  {
+    "id": "1 G1",
+    "shortName": "G1",
+    "longName": "Red Cow LUAS - Spencer Dock"
+  },
+  {
+    "id": "1 G2 a",
+    "shortName": "G2",
+    "longName": "Liffey Valley SC - Spencer Dock"
+  },
+  {
+    "id": "1 H1 c a",
+    "shortName": "H1",
+    "longName": "Baldoyle - Lower Abbey Street"
+  },
+  {
+    "id": "1 H2 c a",
+    "shortName": "H2",
+    "longName": "Malahide - Lower Abbey Street"
+  },
+  {
+    "id": "1 H3 c a",
+    "shortName": "H3",
+    "longName": "Howth Summit - Lower Abbey Street"
+  },
+  {
+    "id": "1 L12 a",
     "shortName": "L12",
     "longName": "Ballywaltrim - Bray Dart Station"
   },
   {
-    "id": "5579_131949",
+    "id": "1 L14 a",
     "shortName": "L14",
     "longName": "Southern Cross Road - Palermo"
   },
   {
-    "id": "5579_131950",
+    "id": "1 L25",
     "shortName": "L25",
     "longName": "Dun Laoghaire - Dundrum Town Centre"
   },
   {
-    "id": "5579_131951",
+    "id": "1 L53 c",
     "shortName": "L53",
     "longName": "Liffey Valley - Adamstown Stn"
   },
   {
-    "id": "5579_131952",
+    "id": "1 L54 b",
     "shortName": "L54",
     "longName": "River Forest - Red Cow Luas"
   },
   {
-    "id": "5579_131953",
+    "id": "1 L58 b",
     "shortName": "L58",
     "longName": "River Forest - Castletown - Hazelhatch Stn"
   },
   {
-    "id": "5579_131954",
+    "id": "1 L59 b",
     "shortName": "L59",
     "longName": "River Forest - Celbridge - Hazelhatch"
   },
   {
-    "id": "5579_131955",
+    "id": "1 L89 a",
     "shortName": "L89",
     "longName": "Broombridge Luas - Toberburr"
+  },
+  {
+    "id": "1 N4",
+    "shortName": "N4",
+    "longName": "Blanchardstown - Point Village"
+  },
+  {
+    "id": "1 P29 c",
+    "shortName": "P29",
+    "longName": "Adamstown Stn - Ringsend"
+  },
+  {
+    "id": "1 S2",
+    "shortName": "S2",
+    "longName": "Sean Moore Road - Heuston Station"
+  },
+  {
+    "id": "1 X1 a",
+    "shortName": "X1",
+    "longName": "Kilcoole - Hawkins Street"
+  },
+  {
+    "id": "1 X2 a",
+    "shortName": "X2",
+    "longName": "Newcastle - Hawkins Street"
+  },
+  {
+    "id": "1 X25 c",
+    "shortName": "X25",
+    "longName": "Maynooth - Easton Rd - UCD"
+  },
+  {
+    "id": "1 X26 c",
+    "shortName": "X26",
+    "longName": "Maynooth - Louisa Bridge - Leeson Street Lower"
+  },
+  {
+    "id": "1 X27 d",
+    "shortName": "X27",
+    "longName": "Salesian College - Aghards Rd - UCD"
+  },
+  {
+    "id": "1 X28 d",
+    "shortName": "X28",
+    "longName": "Salesian College - Celbridge Main St - UCD"
+  },
+  {
+    "id": "1 X30 d",
+    "shortName": "X30",
+    "longName": "Dodsboro - UCD"
+  },
+  {
+    "id": "1 X31 c",
+    "shortName": "X31",
+    "longName": "River Forest - UCD Belfield"
+  },
+  {
+    "id": "1 X32 c",
+    "shortName": "X32",
+    "longName": "Kildare Innovation Campus - UCD Belfield"
   }
 ]
