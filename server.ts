@@ -1,6 +1,6 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements } from "./src/api.ts";
-import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getBusStopArrivals, searchBusStops, getOperatorStop, startBackgroundPolling, type Operator } from "./src/gtfsr.ts";
+import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getAllTrainShapes, getBusStopArrivals, searchBusStops, getOperatorStop, startBackgroundPolling, type Operator } from "./src/gtfsr.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
 const VALID_OPERATORS = new Set<Operator>(["dublinbus", "buseireann", "goahead"]);
@@ -295,6 +295,15 @@ Bun.serve({
       } catch {
         return Response.json([], { status: 502 });
       }
+    }),
+    "/api/train/shapes": rateLimit(() => {
+      // Bulk endpoint: returns ALL train route shapes keyed by "origin|destination".
+      // Frontend fetches this once on app start; subsequent shape lookups are
+      // in-memory client-side. Avoids N parallel /api/train/shape requests
+      // (which can trigger CF rate limit when many trains are active).
+      return Response.json(getAllTrainShapes(), {
+        headers: { "Cache-Control": "public, max-age=86400" }, // 1 day; static GTFS data
+      });
     }),
     "/api/train/shape": rateLimit((req) => {
       const url = new URL(req.url);

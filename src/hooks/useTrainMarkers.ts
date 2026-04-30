@@ -23,7 +23,33 @@ type TrainShapeCacheEntry =
 
 const TRAIN_SHAPE_CACHE_MAX = 200;
 const trainShapeCache = new Map<string, TrainShapeCacheEntry>();
-const trainShapeInFlight = new Map<string, Promise<{ routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number } | null>>();
+
+// Single-flight bulk loader: one /api/train/shapes request shared across the
+// whole app. Avoids the previous N-parallel-request fan-out that triggered CF
+// rate limits when many trains were active.
+//
+// Failure handling: on 5xx / network error / non-OK, the cached promise is
+// cleared so the next caller can retry. The promise itself rejects, letting
+// fetchTrainShape() distinguish "bulk failed" (don't poison cache) from
+// "bulk succeeded but pair missing" (cache as not-found).
+type AllShapesData = {
+  endpoints: Record<string, string>;            // pair key -> routeKey
+  shapes: Record<string, { coords?: [number, number][] }>;  // routeKey -> shape
+};
+let allTrainShapesPromise: Promise<AllShapesData> | null = null;
+function loadAllTrainShapes(): Promise<AllShapesData> {
+  if (allTrainShapesPromise) return allTrainShapesPromise;
+  const p = fetch("/api/train/shapes").then((res) => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<AllShapesData>;
+  });
+  allTrainShapesPromise = p;
+  // Detached: clear ref on failure so next call retries; don't swallow rejection here
+  p.catch(() => {
+    if (allTrainShapesPromise === p) allTrainShapesPromise = null;
+  });
+  return p;
+}
 
 // Front-view train cab face used by vehicle markers. Body fill uses currentColor
 // so the dynamic markerColor (gray/green/orange/red by lateness) can be injected
@@ -270,8 +296,9 @@ export function useTrainMarkers({
     });
   }
 
-  // Async fetch of a train shape, populating the module-level cache.
-  // Dedupes concurrent requests; does NOT cache on 429/network error.
+  // Looks up a train shape from the bulk in-memory map (loaded once on first call).
+  // Caches the derived routeLine/routeLookup per (origin, destination) pair.
+  // On bulk-load failure, returns null without caching — next call retries.
   async function fetchTrainShape(
     origin: string,
     destination: string,
@@ -281,43 +308,25 @@ export function useTrainMarkers({
     if (cached !== undefined) {
       return cached === "not-found" ? null : cached;
     }
-    const inFlight = trainShapeInFlight.get(key);
-    if (inFlight) return inFlight;
-
-    const promise = (async (): Promise<{ routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number } | null> => {
-      try {
-        const res = await fetch(
-          `/api/train/shape?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}`,
-        );
-        if (res.status === 429) {
-          // Transient: don't poison cache; next sync tick will retry
-          return null;
-        }
-        if (!res.ok) {
-          setShapeCache(key, "not-found");
-          return null;
-        }
-        const data = await res.json() as { coords?: [number, number][] };
-        if (data.coords && data.coords.length >= 2) {
-          const built = buildRouteLine(data.coords);
-          if (built) {
-            const entry = { ...built, routeLookup: buildRouteLookup(built.routeLine) };
-            setShapeCache(key, entry);
-            return entry;
-          }
-        }
-        setShapeCache(key, "not-found");
-        return null;
-      } catch {
-        // Network error — don't poison cache; retry later
-        return null;
-      } finally {
-        trainShapeInFlight.delete(key);
+    let allShapes: AllShapesData;
+    try {
+      allShapes = await loadAllTrainShapes();
+    } catch {
+      // Transient: don't poison cache so next tick can retry once promise is reset
+      return null;
+    }
+    const routeKey = allShapes.endpoints[key];
+    const data = routeKey ? allShapes.shapes[routeKey] : undefined;
+    if (data?.coords && data.coords.length >= 2) {
+      const built = buildRouteLine(data.coords);
+      if (built) {
+        const entry = { ...built, routeLookup: buildRouteLookup(built.routeLine) };
+        setShapeCache(key, entry);
+        return entry;
       }
-    })();
-
-    trainShapeInFlight.set(key, promise);
-    return promise;
+    }
+    setShapeCache(key, "not-found");
+    return null;
   }
 
   async function onMarkerClick(trainCode: string) {
