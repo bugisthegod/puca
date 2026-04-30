@@ -130,6 +130,7 @@ function App() {
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
       setBusDirection(direction);
+      setFocusContext(null);
     },
     initialView: savedSession.mapView ?? null,
     focusContext,
