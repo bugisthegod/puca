@@ -152,7 +152,7 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
         if (sp.targetDistanceAlongRoute <= busD || sp.targetDistanceAlongRoute >= targetD) continue;
         const m = L.marker([stop.lat, stop.lng], {
           icon: L.divIcon({
-            className: `focus-stop focus-stop--intermediate focus-stop--${focusContext.operator}`,
+            className: `focus-stop focus-stop--${focusContext.operator}`,
             html: "",
             iconSize: [14, 14],
             iconAnchor: [7, 7],
@@ -164,18 +164,20 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
         intermediates.push(m);
       }
 
-      // Target stop uses the same hollow-ring style but larger + thicker ring,
-      // so the user can see "this is where I get off" without needing the
-      // tooltip to be permanent. zIndexOffset keeps target above any
-      // overlapping intermediate within the same pane.
+      // Target stop uses a bus-stop sign on a pole — a panel with the stop
+      // code at top, thin pole below, anchored where the pole meets the
+      // ground. Same "number-in-shape" language as the bus marker, but reads
+      // unambiguously as a stop sign rather than a generic destination pin.
+      const pinSvg = `<svg viewBox="0 0 32 42" class="focus-pin__svg" xmlns="http://www.w3.org/2000/svg"><rect class="sign" x="2" y="1" width="28" height="22" rx="3"/><rect class="pole" x="14.5" y="23" width="3" height="17"/></svg>`;
+      const pinCode = focusContext.targetStopCode || "";
       const target = L.marker(
         [focusContext.targetStopLat, focusContext.targetStopLng],
         {
           icon: L.divIcon({
-            className: `focus-stop focus-stop--target focus-stop--${focusContext.operator}`,
-            html: "",
-            iconSize: [18, 18],
-            iconAnchor: [9, 9],
+            className: `focus-pin focus-pin--${focusContext.operator}`,
+            html: `${pinSvg}<span class="focus-pin__code" data-len="${pinCode.length}">${pinCode}</span>`,
+            iconSize: [32, 42],
+            iconAnchor: [16, 42],
           }),
           pane: "focusPane",
           zIndexOffset: 1000,
@@ -183,7 +185,7 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
       );
       target.bindTooltip(focusContext.targetStopName, {
         direction: "top",
-        offset: [0, -11],
+        offset: [0, -34],
         className: "stop-tooltip",
         opacity: 1,
       });

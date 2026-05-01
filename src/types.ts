@@ -65,6 +65,7 @@ export type FocusContext = {
   routeShortName: string;
   direction: string;
   targetStopId: string;
+  targetStopCode: string;
   targetStopName: string;
   targetStopLat: number;
   targetStopLng: number;

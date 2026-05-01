@@ -553,6 +553,7 @@ function App() {
               routeShortName: arrival.routeShortName,
               direction: arrival.direction,
               targetStopId: stop.id,
+              targetStopCode: stop.code,
               targetStopName: stop.name,
               targetStopLat: stop.lat,
               targetStopLng: stop.lng,
