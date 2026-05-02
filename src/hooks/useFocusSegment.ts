@@ -112,8 +112,15 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
         lineInfo.routeLine, lineInfo.routeLengthMeters,
         null, null, 0,
       );
-      if (busProj.offRoute || targetProj.offRoute) return;
-      const busD = busProj.targetDistanceAlongRoute;
+      // Buses parked at a terminus / depot commonly sit > 150m from the route
+      // polyline (layby, holding bay), so projectOntoRoute returns offRoute even
+      // though the trip hasn't started yet. Treating that as "no segment to draw"
+      // makes clicks feel like the app is broken. Fudge the bus to the route
+      // start (busD = 0); the bus icon stays at its real GPS, but the line still
+      // appears from route-start → target stop. Target offRoute is fatal — means
+      // the user's stop genuinely isn't on this route.
+      if (targetProj.offRoute) return;
+      const busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
       const targetD = targetProj.targetDistanceAlongRoute;
       if (busD >= targetD) return;
 
