@@ -764,6 +764,63 @@ export function searchBusStops(operator: Operator, query: string, limit = 10): S
 
 const stopArrivalsStmtMap = new Map<Operator, ReturnType<Database["prepare"]>>();
 
+export type StopArrivalDecision =
+  | { keep: false }
+  | { keep: true; etaSec: number; delaySec: number; vehicleSeq: number | null };
+
+// Pure per-row decision used by getBusStopArrivals. Extracted so the filter
+// rules can be unit-tested without mocking SQLite, NTA, or the date clock.
+// GPS-first: when we have a vehicle ping, its closest-stop sequence is the
+// authoritative "where is the bus" signal. NTA's stopTimeUpdates is fallback.
+export function decideStopArrival(
+  row: { stop_sequence: number; arrival_sec: number },
+  live: LiveTripData,
+  vehicle: { lat: number; lng: number } | null,
+  tripStopCoords: Array<{ sequence: number; lat: number; lng: number }>,
+  nowSec: number,
+): StopArrivalDecision {
+  let vehicleSeq: number | null = null;
+  if (vehicle) {
+    // Raw degree² rather than meters² — fine for picking the closest stop
+    // along a single trip (relative order is preserved as long as stops are
+    // roughly collinear). Would need cos(lat) scaling for cross-route nearest-
+    // vehicle matching.
+    let minDistSq = Infinity;
+    for (const ts of tripStopCoords) {
+      const dLat = ts.lat - vehicle.lat;
+      const dLng = ts.lng - vehicle.lng;
+      const d = dLat * dLat + dLng * dLng;
+      if (d < minDistSq) { minDistSq = d; vehicleSeq = ts.sequence; }
+    }
+  }
+
+  if (vehicleSeq !== null) {
+    if (vehicleSeq > row.stop_sequence) return { keep: false };
+  } else if (live.stopTimeUpdates.length > 0 && live.stopTimeUpdates[0]!.sequence > row.stop_sequence) {
+    return { keep: false };
+  }
+
+  let propagated: number | null = null;
+  for (const stu of live.stopTimeUpdates) {
+    if (stu.arrivalDelaySec === null) continue;
+    if (stu.sequence <= row.stop_sequence) propagated = stu.arrivalDelaySec;
+    else if (propagated === null) { propagated = stu.arrivalDelaySec; break; }
+    else break;
+  }
+  const delaySec = propagated ?? 0;
+
+  let etaSec = row.arrival_sec + delaySec - nowSec;
+  if (etaSec < 0) {
+    if (vehicleSeq !== null && vehicleSeq <= row.stop_sequence) {
+      etaSec = 0;
+    } else {
+      return { keep: false };
+    }
+  }
+
+  return { keep: true, etaSec, delaySec, vehicleSeq };
+}
+
 export type BusStopArrival = {
   tripId: string;
   routeShortName: string;
@@ -806,16 +863,18 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
   const tripUpdates = await pollTripUpdates();
   const nowSec = secondsIntoDublinDay();
 
-  // Set of tripIds that currently have a live GPS ping. Use the cached vehicles
-  // snapshot rather than pollVehicles() to avoid a second NTA call per stop —
-  // the frontend's bus-mode polling keeps this cache warm for us.
-  const runningTripIds = new Set<string>();
+  // Map tripId → live GPS. Used as ground truth for "is the bus past my stop"
+  // because NTA's stopTimeUpdates can drop earlier stops based on schedule
+  // alone — when a bus runs late, NTA may strip stops that the bus hasn't
+  // actually reached yet, causing the trip to disappear from arrivals.
+  const vehicleByTripId = new Map<string, GtfsVehiclePosition>();
   for (const v of getCachedVehicles()) {
-    if (v.tripId) runningTripIds.add(v.tripId);
+    if (v.tripId) vehicleByTripId.set(v.tripId, v);
   }
 
   const routes = operatorRoutes[operator];
   const shapes = operatorShapes[operator];
+  const stopsDict = operatorStops[operator];
   const routeIdToShortName = new Map<string, string>();
   for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
 
@@ -827,25 +886,24 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
     const live = tripUpdates.get(r.trip_id);
     if (!live) continue;
 
-    // Only surface trips that haven't already passed this stop — first
-    // stopTimeUpdate in the live list is the bus's current/next stop, so
-    // anything earlier in sequence has already been served.
-    if (live.stopTimeUpdates.length > 0 && live.stopTimeUpdates[0]!.sequence > r.stop_sequence) continue;
-
     if (isTripEnded(operator, r.trip_id, nowSec, tripUpdates)) continue;
 
-    let delaySec = 0;
-    let propagated: number | null = null;
-    for (const stu of live.stopTimeUpdates) {
-      if (stu.arrivalDelaySec === null) continue;
-      if (stu.sequence <= r.stop_sequence) propagated = stu.arrivalDelaySec;
-      else if (propagated === null) { propagated = stu.arrivalDelaySec; break; }
-      else break;
+    // Build trip stop coords on demand only when we have a vehicle to match —
+    // saves one SQLite query per non-running trip. Loop routes that revisit
+    // a stop can mismatch sequence, but those are rare for the operators we cover.
+    const vehicle = vehicleByTripId.get(r.trip_id);
+    let tripStopCoords: Array<{ sequence: number; lat: number; lng: number }> = [];
+    if (vehicle) {
+      const tripStops = getTripScheduledStops(operator, r.trip_id);
+      tripStopCoords = tripStops.flatMap((ts) => {
+        const s = stopsDict[ts.stopId];
+        return s ? [{ sequence: ts.sequence, lat: s.lat, lng: s.lng }] : [];
+      });
     }
-    if (propagated !== null) delaySec = propagated;
 
-    const etaSec = r.arrival_sec + delaySec - nowSec;
-    if (etaSec < 0) continue;
+    const decision = decideStopArrival(r, live, vehicle ?? null, tripStopCoords, nowSec);
+    if (!decision.keep) continue;
+    const { etaSec, delaySec } = decision;
 
     const routeId = live.routeId;
     const directionId = live.directionId;
@@ -866,7 +924,7 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
       delaySec,
       stopSequence: r.stop_sequence,
       direction: dirKey,
-      status: runningTripIds.has(r.trip_id) ? "running" : "scheduled",
+      status: vehicleByTripId.has(r.trip_id) ? "running" : "scheduled",
     });
   }
 

@@ -3,6 +3,7 @@ import {
   mergeTripStops,
   getBusRouteShape,
   getTrainRouteShape,
+  decideStopArrival,
   type ScheduledRow,
   type LiveTripData,
 } from "../src/gtfsr";
@@ -167,6 +168,128 @@ describe("getBusRouteShape", () => {
 
   test("returns null for an unknown shortName", () => {
     expect(getBusRouteShape("dublinbus", "NOPE_999")).toBeNull();
+  });
+});
+
+describe("decideStopArrival", () => {
+  // Reusable fixture: a 12-stop trip where the user's stop is sequence 8.
+  // Stops are spaced ~0.001° apart (~110 m) along a NW->SE diagonal so
+  // closest-stop matching has unambiguous winners.
+  const tripStopCoords = Array.from({ length: 12 }, (_, i) => ({
+    sequence: i + 1,
+    lat: 53.35 + i * 0.001,
+    lng: -6.27 + i * 0.001,
+  }));
+  const userRow = { stop_sequence: 8, arrival_sec: 72_240 }; // 20:04
+  const nowSec = 72_540; // 20:09 — sched already past
+
+  function liveWithFutureStopsOnly(): LiveTripData {
+    return {
+      routeId: "R38",
+      directionId: 0,
+      stopTimeUpdates: [
+        { sequence: 10, stopId: "T10", arrivalDelaySec: 0, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+        { sequence: 11, stopId: "T11", arrivalDelaySec: 0, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+      ],
+    };
+  }
+
+  test("the bug: NTA stops 4-9 dropped, GPS shows bus still upstream → keep with Due", () => {
+    // Vehicle GPS sits exactly on sequence 8 — closest match is the user's stop.
+    const vehicle = { lat: tripStopCoords[7]!.lat, lng: tripStopCoords[7]!.lng };
+    const result = decideStopArrival(userRow, liveWithFutureStopsOnly(), vehicle, tripStopCoords, nowSec);
+    expect(result.keep).toBe(true);
+    if (!result.keep) return;
+    expect(result.etaSec).toBe(0); // clamped to "Due"
+    expect(result.delaySec).toBe(0);
+    expect(result.vehicleSeq).toBe(8);
+  });
+
+  test("vehicle GPS confirms bus genuinely past user's stop → drop", () => {
+    const vehicle = { lat: tripStopCoords[10]!.lat, lng: tripStopCoords[10]!.lng };
+    const result = decideStopArrival(userRow, liveWithFutureStopsOnly(), vehicle, tripStopCoords, nowSec);
+    expect(result.keep).toBe(false);
+  });
+
+  test("no GPS + NTA says past → fall back to NTA filter, drop", () => {
+    const result = decideStopArrival(userRow, liveWithFutureStopsOnly(), null, [], nowSec);
+    expect(result.keep).toBe(false);
+  });
+
+  test("no GPS + NTA seq matches user's stop but ETA already negative → drop", () => {
+    const live: LiveTripData = {
+      routeId: "R38",
+      directionId: 0,
+      stopTimeUpdates: [
+        { sequence: 8, stopId: "T8", arrivalDelaySec: 60, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+        { sequence: 9, stopId: "T9", arrivalDelaySec: 60, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+      ],
+    };
+    // sched 20:04 + 60s delay = 20:05, now = 20:09 → still negative ETA
+    // No GPS to override, so this would normally drop.
+    const result = decideStopArrival(userRow, live, null, [], nowSec);
+    expect(result.keep).toBe(false);
+  });
+
+  test("no GPS + sched in future → keep with computed ETA and delay", () => {
+    const futureRow = { stop_sequence: 8, arrival_sec: 73_200 }; // 20:20
+    const live: LiveTripData = {
+      routeId: "R38",
+      directionId: 0,
+      stopTimeUpdates: [
+        { sequence: 7, stopId: "T7", arrivalDelaySec: 120, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+        { sequence: 9, stopId: "T9", arrivalDelaySec: 120, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+      ],
+    };
+    const result = decideStopArrival(futureRow, live, null, [], nowSec);
+    expect(result.keep).toBe(true);
+    if (!result.keep) return;
+    expect(result.delaySec).toBe(120); // backward-propagated from stop 7
+    expect(result.etaSec).toBe(73_200 + 120 - nowSec); // 780s = 13min
+  });
+
+  test("GPS upstream + sched in future → keep with normal ETA, no clamp", () => {
+    const futureRow = { stop_sequence: 8, arrival_sec: 73_200 };
+    const vehicle = { lat: tripStopCoords[5]!.lat, lng: tripStopCoords[5]!.lng }; // at stop 6
+    const result = decideStopArrival(futureRow, liveWithFutureStopsOnly(), vehicle, tripStopCoords, nowSec);
+    expect(result.keep).toBe(true);
+    if (!result.keep) return;
+    expect(result.etaSec).toBeGreaterThan(0);
+    expect(result.vehicleSeq).toBe(6);
+  });
+
+  test("GPS at user's stop (sequence equal) → keep, treats as upstream", () => {
+    const vehicle = { lat: tripStopCoords[7]!.lat, lng: tripStopCoords[7]!.lng };
+    const result = decideStopArrival(userRow, liveWithFutureStopsOnly(), vehicle, tripStopCoords, nowSec);
+    expect(result.keep).toBe(true);
+    if (!result.keep) return;
+    expect(result.vehicleSeq).toBe(8);
+  });
+
+  test("vehicle present but tripStopCoords empty → falls back to NTA filter", () => {
+    const vehicle = { lat: 53.355, lng: -6.265 };
+    // Empty coords means we couldn't compute a vehicleSeq — should NOT incorrectly keep.
+    // NTA's first stopTimeUpdate is at sequence 10 > 8 → fall back filter drops.
+    const result = decideStopArrival(userRow, liveWithFutureStopsOnly(), vehicle, [], nowSec);
+    expect(result.keep).toBe(false);
+  });
+
+  test("backward delay propagation wins over forward", () => {
+    // Bus has explicit delay at stop 6 (prior) AND at stop 11 (future).
+    // For row at stop 8, we should inherit stop 6's delay, not stop 11's.
+    const futureRow = { stop_sequence: 8, arrival_sec: 73_200 };
+    const live: LiveTripData = {
+      routeId: "R38",
+      directionId: 0,
+      stopTimeUpdates: [
+        { sequence: 6, stopId: "T6", arrivalDelaySec: 180, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+        { sequence: 11, stopId: "T11", arrivalDelaySec: 30, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+      ],
+    };
+    const result = decideStopArrival(futureRow, live, null, [], nowSec);
+    expect(result.keep).toBe(true);
+    if (!result.keep) return;
+    expect(result.delaySec).toBe(180);
   });
 });
 
