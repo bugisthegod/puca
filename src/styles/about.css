@@ -89,6 +89,14 @@
   border-radius: 10px;
 }
 .fav-row:hover { background: rgba(255, 255, 255, 0.07); }
+.fav-row--dublinbus { --op-stripe: var(--op-dublinbus); }
+.fav-row--buseireann { --op-stripe: var(--op-buseireann); }
+.fav-row--goahead { --op-stripe: var(--op-goahead); }
+.fav-row.fav-row--dublinbus,
+.fav-row.fav-row--buseireann,
+.fav-row.fav-row--goahead {
+  box-shadow: inset 4px 0 0 var(--op-stripe);
+}
 .fav-row__main {
   flex: 1;
   min-width: 0;
@@ -579,10 +587,20 @@
   border-color: rgba(0, 0, 0, 0.06);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
+:root[data-theme="light"] .fav-row.fav-row--dublinbus,
+:root[data-theme="light"] .fav-row.fav-row--buseireann,
+:root[data-theme="light"] .fav-row.fav-row--goahead {
+  box-shadow: inset 4px 0 0 var(--op-stripe), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
 :root[data-theme="light"] .fav-row:hover {
   background: #fff;
   border-color: rgba(0, 0, 0, 0.12);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+:root[data-theme="light"] .fav-row.fav-row--dublinbus:hover,
+:root[data-theme="light"] .fav-row.fav-row--buseireann:hover,
+:root[data-theme="light"] .fav-row.fav-row--goahead:hover {
+  box-shadow: inset 4px 0 0 var(--op-stripe), 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 :root[data-theme="light"] .fav-row__remove {
   border-color: rgba(0, 0, 0, 0.15);

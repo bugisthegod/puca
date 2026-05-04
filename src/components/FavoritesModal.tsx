@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import type { Favorites, BusFavorite, TrainFavorite, BusStopFavorite } from "../favorites";
 import { busKey, trainKey, stopKey } from "../favorites";
 import type { BusOperator } from "../types";
@@ -61,7 +61,7 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
                   {favs.buses.map((b) => {
                     const k = busKey(b);
                     return (
-                      <li key={k} className="fav-row">
+                      <li key={k} className={`fav-row fav-row--${b.operator}`}>
                         <button
                           type="button"
                           className="fav-row__main"
@@ -99,7 +99,7 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
                   {favs.stops.map((s) => {
                     const k = stopKey(s);
                     return (
-                      <li key={k} className="fav-row">
+                      <li key={k} className={`fav-row fav-row--${s.operator}`}>
                         <button
                           type="button"
                           className="fav-row__main"
