@@ -1,6 +1,6 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements } from "./src/api.ts";
-import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getAllTrainShapes, getBusStopArrivals, searchBusStops, getOperatorStop, startBackgroundPolling, type Operator } from "./src/gtfsr.ts";
+import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getAllTrainShapes, getBusStopArrivals, searchBusStops, searchAllBusStops, getOperatorStop, startBackgroundPolling, type Operator } from "./src/gtfsr.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
 const VALID_OPERATORS = new Set<Operator>(["dublinbus", "buseireann", "goahead"]);
@@ -272,12 +272,17 @@ Bun.serve({
     }),
     "/api/bus/stops/search": rateLimit((req) => {
       const url = new URL(req.url);
-      const operator = parseOperator(url.searchParams.get("operator") ?? "dublinbus");
-      if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
       const q = url.searchParams.get("q") ?? "";
-      return Response.json(searchBusStops(operator, q), {
-        headers: { "Cache-Control": "public, max-age=3600" }, // stops list is static
-      });
+      const headers = { "Cache-Control": "public, max-age=3600" }; // stops list is static
+      // operator omitted → cross-operator search. Lets the UI search "1234"
+      // and pull matches from all three fleets in one round-trip.
+      const opParam = url.searchParams.get("operator");
+      if (opParam === null) {
+        return Response.json(searchAllBusStops(q), { headers });
+      }
+      const operator = parseOperator(opParam);
+      if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
+      return Response.json(searchBusStops(operator, q), { headers });
     }),
     "/api/bus/stop/:stopId/arrivals": rateLimit(async (req) => {
       const url = new URL(req.url);

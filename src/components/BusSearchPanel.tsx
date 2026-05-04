@@ -17,7 +17,7 @@ type RouteWithOperator = BusRoute & { operator: BusOperator };
 
 type BusShape = { [dir: string]: { headsign: string } } | null;
 
-type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number };
+type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number; operator: BusOperator };
 
 type StopArrival = {
   tripId: string;
@@ -31,6 +31,11 @@ type StopArrival = {
 };
 
 const ALL_OPERATORS: BusOperator[] = ["dublinbus", "buseireann", "goahead"];
+const OPERATOR_INITIALS: Record<BusOperator, string> = {
+  dublinbus: "DB",
+  buseireann: "BÉ",
+  goahead: "GA",
+};
 const OPERATOR_LABEL: Record<BusOperator, string> = {
   dublinbus: "Dublin Bus",
   buseireann: "Bus Éireann",
@@ -49,7 +54,8 @@ type BusSearchPanelProps = {
   busSearchTab: BusSearchTab;
   onTabChange: (tab: BusSearchTab) => void;
   busStopId: string | null;
-  onStopIdChange: (stopId: string | null) => void;
+  busStopOperator: BusOperator | null;
+  onStopIdChange: (stopId: string | null, operator: BusOperator | null) => void;
   onPickArrival: (arrival: StopArrival, operator: BusOperator, stop: StopSearchResult) => void;
   stopIsFavorite: boolean;
   onToggleStopFavorite: (stop: StopSearchResult) => void;
@@ -70,6 +76,7 @@ export default function BusSearchPanel({
   busSearchTab,
   onTabChange,
   busStopId,
+  busStopOperator,
   onStopIdChange,
   onPickArrival,
   stopIsFavorite,
@@ -145,14 +152,15 @@ export default function BusSearchPanel({
     setStopHighlightIndex(-1);
   }, [stopQuery, stopFocused]);
 
-  // Debounced stop search against the operator's stops list.
+  // Debounced cross-operator stop search. Omits `operator=` so the backend
+  // returns matches from all three fleets in one round-trip.
   useEffect(() => {
     if (busSearchTab !== "stop") return;
     const q = stopQuery.trim();
     if (!q) { setStopResults([]); return; }
     let cancelled = false;
     const timer = setTimeout(() => {
-      fetch(`/api/bus/stops/search?operator=${encodeURIComponent(busOperator)}&q=${encodeURIComponent(q)}`)
+      fetch(`/api/bus/stops/search?q=${encodeURIComponent(q)}`)
         .then((r) => (r.ok ? r.json() : []))
         .then((data: StopSearchResult[]) => {
           if (!cancelled) setStopResults(data);
@@ -160,7 +168,7 @@ export default function BusSearchPanel({
         .catch(() => { if (!cancelled) setStopResults([]); });
     }, 120);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [stopQuery, busOperator, busSearchTab]);
+  }, [stopQuery, busSearchTab]);
 
   // Abort controller for the in-flight arrivals fetch. Stop-switch + network
   // jitter can race: stop A's response arriving after stop B's would stamp A's
@@ -168,7 +176,7 @@ export default function BusSearchPanel({
   // every new call (and on effect cleanup) closes that window.
   const arrivalsAbortRef = useRef<AbortController | null>(null);
 
-  const fetchArrivals = React.useCallback(async (stopId: string) => {
+  const fetchArrivals = React.useCallback(async (stopId: string, operator: BusOperator) => {
     arrivalsAbortRef.current?.abort();
     const ac = new AbortController();
     arrivalsAbortRef.current = ac;
@@ -176,7 +184,7 @@ export default function BusSearchPanel({
     setArrivalsError(null);
     try {
       const res = await fetch(
-        `/api/bus/stop/${encodeURIComponent(stopId)}/arrivals?operator=${encodeURIComponent(busOperator)}`,
+        `/api/bus/stop/${encodeURIComponent(stopId)}/arrivals?operator=${encodeURIComponent(operator)}`,
         { signal: ac.signal },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -189,42 +197,46 @@ export default function BusSearchPanel({
     } finally {
       if (!ac.signal.aborted) setArrivalsLoading(false);
     }
-  }, [busOperator]);
+  }, []);
 
   // Auto-refresh arrivals for the selected stop every 30s.
-  // busStopId guard: after an operator change, selectedStop is briefly stale
-  // (belongs to the previous operator) while rehydrate catches up. Fetching
-  // during that window would hit the new operator's endpoint with a stop_id
-  // it doesn't know about → 404.
+  // busStopId/busStopOperator guard: after a stop change, selectedStop is
+  // briefly stale (still the previous pick) until rehydrate catches up.
+  // Fetching with a stop_id that doesn't belong to that operator's fleet
+  // would 404 — match both id and operator before firing.
   useEffect(() => {
     if (busSearchTab !== "stop" || !selectedStop) return;
     if (!busStopId || selectedStop.id !== busStopId) return;
-    fetchArrivals(selectedStop.id);
-    const id = setInterval(() => fetchArrivals(selectedStop.id), 30_000);
+    if (!busStopOperator || selectedStop.operator !== busStopOperator) return;
+    const op = selectedStop.operator;
+    fetchArrivals(selectedStop.id, op);
+    const id = setInterval(() => fetchArrivals(selectedStop.id, op), 30_000);
     return () => {
       clearInterval(id);
       arrivalsAbortRef.current?.abort();
     };
-  }, [busSearchTab, selectedStop, fetchArrivals, busStopId]);
+  }, [busSearchTab, selectedStop, fetchArrivals, busStopId, busStopOperator]);
 
-  // Rehydrate selected stop on mount / operator change from session-provided stopId.
+  // Rehydrate selected stop on mount / id change from session-provided stopId.
+  // The stop carries its own operator now (cross-operator search), so we read
+  // busStopOperator instead of falling back to the global busOperator.
   useEffect(() => {
     if (busSearchTab !== "stop") return;
-    if (!busStopId) { setSelectedStop(null); setArrivals(null); return; }
-    if (selectedStop && selectedStop.id === busStopId) return;
+    if (!busStopId || !busStopOperator) { setSelectedStop(null); setArrivals(null); return; }
+    if (selectedStop && selectedStop.id === busStopId && selectedStop.operator === busStopOperator) return;
     // Rehydrate from a saved stopId — searchBusStops does an exact id match
     // as its first branch, so one tiny fetch round-trips the full metadata.
     // Clear if the stop no longer exists (e.g. operator removed it from GTFS).
-    fetch(`/api/bus/stops/search?operator=${encodeURIComponent(busOperator)}&q=${encodeURIComponent(busStopId)}`)
+    fetch(`/api/bus/stops/search?operator=${encodeURIComponent(busStopOperator)}&q=${encodeURIComponent(busStopId)}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: StopSearchResult[]) => {
         const match = data.find((s) => s.id === busStopId);
         if (match) setSelectedStop(match);
-        else onStopIdChange(null);
+        else onStopIdChange(null, null);
       })
-      .catch(() => onStopIdChange(null));
+      .catch(() => onStopIdChange(null, null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busSearchTab, busStopId, busOperator]);
+  }, [busSearchTab, busStopId, busStopOperator]);
 
   const filtered = query.trim()
     ? routes.filter(
@@ -273,7 +285,7 @@ export default function BusSearchPanel({
     setStopQuery("");
     setStopFocused(false);
     setStopResults([]);
-    onStopIdChange(s.id);
+    onStopIdChange(s.id, s.operator);
   }
 
   function handleStopKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -297,7 +309,7 @@ export default function BusSearchPanel({
     setSelectedStop(null);
     setArrivals(null);
     setStopQuery("");
-    onStopIdChange(null);
+    onStopIdChange(null, null);
   }
 
   function etaLabel(etaSeconds: number): string {
@@ -356,16 +368,22 @@ export default function BusSearchPanel({
                   onSelect={collapseSelection}
                 />
                 {focused && filtered.length > 0 && (
-                  <ul className="station-dropdown">
+                  <ul className="station-dropdown route-results">
                     {filtered.slice(0, 30).map((r, i) => (
                       <li
                         key={`${r.operator}:${r.id}`}
-                        className={i === highlightIndex ? "highlighted" : ""}
+                        className={`route-result route-result--${r.operator}${i === highlightIndex ? " highlighted" : ""}`}
                         onMouseDown={() => selectRoute(r)}
                         onMouseEnter={() => setHighlightIndex(i)}
                       >
                         <strong>{r.shortName}</strong> — {r.longName}
-                        <span className="route-operator-badge">{OPERATOR_LABEL[r.operator]}</span>
+                        <span
+                          className={`operator-badge operator-badge--${r.operator}`}
+                          title={OPERATOR_LABEL[r.operator]}
+                          aria-label={OPERATOR_LABEL[r.operator]}
+                        >
+                          {OPERATOR_INITIALS[r.operator]}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -429,15 +447,22 @@ export default function BusSearchPanel({
                     onSelect={collapseSelection}
                   />
                   {stopFocused && stopResults.length > 0 && (
-                    <ul className="station-dropdown">
+                    <ul className="station-dropdown stop-results">
                       {stopResults.map((s, i) => (
                         <li
-                          key={s.id}
-                          className={i === stopHighlightIndex ? "highlighted" : ""}
+                          key={`${s.operator}:${s.id}`}
+                          className={`stop-result stop-result--${s.operator}${i === stopHighlightIndex ? " highlighted" : ""}`}
                           onMouseDown={() => selectStop(s)}
                           onMouseEnter={() => setStopHighlightIndex(i)}
                         >
                           <strong>{s.code || s.id}</strong> — {s.name}
+                          <span
+                            className={`operator-badge operator-badge--${s.operator}`}
+                            title={OPERATOR_LABEL[s.operator]}
+                            aria-label={OPERATOR_LABEL[s.operator]}
+                          >
+                            {OPERATOR_INITIALS[s.operator]}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -445,11 +470,18 @@ export default function BusSearchPanel({
                 </div>
               ) : (
                 <>
-                  <div className="stop-selected">
+                  <div className={`stop-selected stop-selected--${selectedStop.operator}`}>
                     <div className="stop-selected__text">
                       <strong>{selectedStop.code || selectedStop.id}</strong>
                       <span>{selectedStop.name}</span>
                     </div>
+                    <span
+                      className={`operator-badge operator-badge--${selectedStop.operator}`}
+                      title={OPERATOR_LABEL[selectedStop.operator]}
+                      aria-label={OPERATOR_LABEL[selectedStop.operator]}
+                    >
+                      {OPERATOR_INITIALS[selectedStop.operator]}
+                    </span>
                     <FavStar
                       active={stopIsFavorite}
                       onToggle={() => onToggleStopFavorite(selectedStop)}

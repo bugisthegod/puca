@@ -127,12 +127,55 @@
   border-radius: 6px;
   background: rgba(37, 168, 100, 0.18);
   border: 1px solid rgba(37, 168, 100, 0.35);
+  border-left-width: 4px;
 }
 
 .stop-selected--loading {
   opacity: 0.55;
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+.stop-selected--dublinbus { border-left-color: var(--op-dublinbus); }
+.stop-selected--buseireann { border-left-color: var(--op-buseireann); }
+.stop-selected--goahead { border-left-color: var(--op-goahead); }
+
+.stop-result,
+.route-result {
+  border-left: 3px solid transparent;
+  padding-left: 9px !important;
+}
+
+.stop-result--dublinbus,
+.route-result--dublinbus { border-left-color: var(--op-dublinbus); }
+.stop-result--buseireann,
+.route-result--buseireann { border-left-color: var(--op-buseireann); }
+.stop-result--goahead,
+.route-result--goahead { border-left-color: var(--op-goahead); }
+
+.operator-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ddd;
+}
+
+.operator-badge--dublinbus { background: var(--op-dublinbus); color: var(--op-dublinbus-text); }
+.operator-badge--buseireann { background: var(--op-buseireann); color: #fff; }
+.operator-badge--goahead { background: var(--op-goahead); color: #fff; }
+
+/* In the dropdown the row already wraps text with margin-left:auto needs
+   the row to be flex-aligned; the existing .station-dropdown li uses
+   default block layout, so float the badge in stop-result lists. */
+.stop-results .stop-result .operator-badge,
+.route-results .route-result .operator-badge {
+  float: right;
+  margin-left: 8px;
 }
 
 .stop-selected__text {

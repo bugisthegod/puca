@@ -109,6 +109,7 @@ function App() {
   const [busDirection, setBusDirection] = useState<string | null>(savedSession.busDirection ?? null);
   const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedSession.busSearchTab ?? "route");
   const [busStopId, setBusStopId] = useState<string | null>(savedSession.busStopId ?? null);
+  const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedSession.busStopOperator ?? null);
   const [panelCollapsed, setPanelCollapsed] = useState(true);
   const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
@@ -179,7 +180,7 @@ function App() {
 
   const busFavKey = busRoute && busDirection ? { shortName: busRoute, operator: busOperator, direction: busDirection } : null;
   const busIsFav = busFavKey ? hasBus(favs, busFavKey) : false;
-  const stopIsFav = busStopId ? hasStop(favs, { stopId: busStopId, operator: busOperator }) : false;
+  const stopIsFav = busStopId && busStopOperator ? hasStop(favs, { stopId: busStopId, operator: busStopOperator }) : false;
   function showToast(title: string, body?: string, ms = 3000) {
     const next = { title, body };
     setToast(next);
@@ -204,10 +205,10 @@ function App() {
     }
     toggleTrain(f);
   };
-  const onToggleStopFav = (stop: { id: string; name: string; code: string }) => {
+  const onToggleStopFav = (stop: { id: string; name: string; code: string; operator: BusOperator }) => {
     const fav: BusStopFavorite = {
       stopId: stop.id,
-      operator: busOperator,
+      operator: stop.operator,
       stopCode: stop.code,
       stopName: stop.name,
     };
@@ -231,7 +232,7 @@ function App() {
     const save = () => {
       const mv = getMapView();
       if (mv) lastMapViewRef.current = mv;
-      saveSession({ mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, mapView: lastMapViewRef.current });
+      saveSession({ mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, busStopOperator, mapView: lastMapViewRef.current });
     };
     const onVisibility = () => { if (document.hidden) save(); };
     document.addEventListener("visibilitychange", onVisibility);
@@ -240,7 +241,7 @@ function App() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", save);
     };
-  }, [mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, getMapView]);
+  }, [mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, busStopOperator, getMapView]);
 
   async function handleLocate() {
     if (locating) return;
@@ -381,6 +382,7 @@ function App() {
     setBusRoute(null);
     setBusDirection(null);
     setBusStopId(null);
+    setBusStopOperator(null);
     setBuses([]);
     setFocusContext(null);
     setPanelCollapsed(true);
@@ -493,6 +495,7 @@ function App() {
             setFocusContext(null);
             setBusSearchTab("stop");
             setBusStopId(s.stopId);
+            setBusStopOperator(s.operator);
             setPanelCollapsed(false);
           }}
           onRemoveBus={removeBus}
@@ -535,7 +538,19 @@ function App() {
             if (tab === "route") setFocusContext(null);
           }}
           busStopId={busStopId}
-          onStopIdChange={setBusStopId}
+          busStopOperator={busStopOperator}
+          onStopIdChange={(id, op) => {
+            setBusStopId(id);
+            setBusStopOperator(op);
+            // Picking a stop in an operator different from the current
+            // route-mode default would otherwise leave the all-fleet browse
+            // pinned to the old operator — sync it so a tab back to route
+            // mode shows buses near the chosen stop.
+            if (op && op !== busOperator) {
+              setBusOperator(op);
+              setBuses([]);
+            }
+          }}
           collapsed={panelCollapsed}
           onCollapsedChange={setPanelCollapsed}
           onShowToast={showToast}
@@ -581,12 +596,14 @@ function App() {
         inService={inService}
         resumeLabel={SERVICE_RESUME_LABEL}
         busOperator={busOperator}
+        busSearchTab={busSearchTab}
         onModeChange={(m) => {
           setMode(m);
           setSearchCodes(null);
           setBusRoute(null);
           setBusDirection(null);
           setBusStopId(null);
+          setBusStopOperator(null);
           setBusSearchTab(m === "bus" ? "stop" : "route");
           setFocusContext(null);
           setPanelCollapsed(true);

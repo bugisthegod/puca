@@ -720,7 +720,7 @@ export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[
 // Stop lookups — used by the "search by bus stop" UI
 // ---------------------------------------------------------------------------
 
-export type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number };
+export type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number; operator: Operator };
 
 export function getOperatorStop(operator: Operator, stopId: string): { name: string; lat: number; lng: number; code?: string } | null {
   return operatorStops[operator][stopId] ?? null;
@@ -735,18 +735,18 @@ export function searchBusStops(operator: Operator, query: string, limit = 10): S
   // stopId back to a full StopSearchResult without a separate endpoint.
   const direct = stops[q];
   if (direct) {
-    out.push({ id: q, name: direct.name, code: direct.code ?? "", lat: direct.lat, lng: direct.lng });
+    out.push({ id: q, name: direct.name, code: direct.code ?? "", lat: direct.lat, lng: direct.lng, operator });
   }
   const isDigits = /^\d+$/.test(q);
   if (isDigits) {
     for (const [id, s] of Object.entries(stops)) {
-      if (s.code && s.code === q) out.push({ id, name: s.name, code: s.code, lat: s.lat, lng: s.lng });
+      if (s.code && s.code === q) out.push({ id, name: s.name, code: s.code, lat: s.lat, lng: s.lng, operator });
       if (out.length >= limit) break;
     }
     if (out.length < limit) {
       for (const [id, s] of Object.entries(stops)) {
         if (out.find((r) => r.id === id)) continue;
-        if (s.code && s.code.startsWith(q)) out.push({ id, name: s.name, code: s.code, lat: s.lat, lng: s.lng });
+        if (s.code && s.code.startsWith(q)) out.push({ id, name: s.name, code: s.code, lat: s.lat, lng: s.lng, operator });
         if (out.length >= limit) break;
       }
     }
@@ -755,9 +755,23 @@ export function searchBusStops(operator: Operator, query: string, limit = 10): S
   const qLower = q.toLowerCase();
   for (const [id, s] of Object.entries(stops)) {
     if (s.name.toLowerCase().startsWith(qLower)) {
-      out.push({ id, name: s.name, code: s.code ?? "", lat: s.lat, lng: s.lng });
+      out.push({ id, name: s.name, code: s.code ?? "", lat: s.lat, lng: s.lng, operator });
       if (out.length >= limit) break;
     }
+  }
+  return out;
+}
+
+const ALL_OPERATORS: readonly Operator[] = ["dublinbus", "buseireann", "goahead"];
+
+// Cross-operator stop search. Each operator gets its own per-call limit so a
+// dense match in one operator's stops can't starve the others — the user
+// typing "1234" should see Dublin Bus 1234, Bus Éireann 1234, Go-Ahead 1234
+// in the same dropdown rather than the first one that fills the cap.
+export function searchAllBusStops(query: string, perOperatorLimit = 5): StopSearchResult[] {
+  const out: StopSearchResult[] = [];
+  for (const op of ALL_OPERATORS) {
+    out.push(...searchBusStops(op, query, perOperatorLimit));
   }
   return out;
 }

@@ -23,6 +23,10 @@ export interface Session {
   busDirection: string | null;
   busSearchTab: BusSearchTab;
   busStopId: string | null;
+  // Stop search is cross-operator, so a stopId alone no longer identifies a
+  // stop — the same code can exist in multiple fleets. Persist the picked
+  // stop's operator alongside the id so rehydrate can hit the right API.
+  busStopOperator: BusOperator | null;
   mapView: MapView | null;
 }
 
@@ -56,7 +60,14 @@ export function loadSession(): Partial<Session> {
     if (typeof s.busRoute === "string") out.busRoute = s.busRoute;
     if (typeof s.busDirection === "string") out.busDirection = s.busDirection;
     if (s.busSearchTab && BUS_SEARCH_TABS.includes(s.busSearchTab)) out.busSearchTab = s.busSearchTab;
-    if (typeof s.busStopId === "string") out.busStopId = s.busStopId;
+    // Legacy sessions (pre-cross-operator-stop-search) only stored busStopId,
+    // implicitly scoped to the global busOperator. After the change a stopId
+    // without its own operator is ambiguous — drop it so the user picks again
+    // rather than risk hitting the wrong fleet's arrivals API.
+    if (typeof s.busStopId === "string" && s.busStopOperator && OPERATORS.includes(s.busStopOperator)) {
+      out.busStopId = s.busStopId;
+      out.busStopOperator = s.busStopOperator;
+    }
     const mv = validMapView(s.mapView);
     if (mv) out.mapView = mv;
     return out;
