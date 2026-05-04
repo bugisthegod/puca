@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import type { Filter } from "../utils";
 import type { Mode } from "../hooks/useTrainMap";
 import type { BusOperator } from "../types";
-import type { BusSearchTab } from "../session";
 import SleepingPuca from "./SleepingPuca";
 
 type InfoPanelProps = {
@@ -13,7 +12,6 @@ type InfoPanelProps = {
   inService: boolean;
   resumeLabel: string;
   busOperator: BusOperator;
-  busSearchTab: BusSearchTab;
   onModeChange: (m: Mode) => void;
   onFilterChange: (f: Filter) => void;
   onBusOperatorChange: (op: BusOperator) => void;
@@ -45,7 +43,6 @@ export default function InfoPanel({
   inService,
   resumeLabel,
   busOperator,
-  busSearchTab,
   onModeChange,
   onFilterChange,
   onBusOperatorChange,
@@ -117,11 +114,7 @@ export default function InfoPanel({
                 {label}
               </button>
             ))}
-            {/* Stop tab is cross-operator — each result row carries its own
-                operator badge, so the global selector is dead state there.
-                Only show it for route mode where it still drives the
-                browse-all-buses fleet. */}
-            {mode === "bus" && busSearchTab === "route" && BUS_OPERATORS.map(({ value, label }) => (
+            {mode === "bus" && BUS_OPERATORS.map(({ value, label }) => (
               <button
                 key={value}
                 className={`filter-btn${busOperator === value ? " active" : ""}`}

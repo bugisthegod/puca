@@ -596,7 +596,6 @@ function App() {
         inService={inService}
         resumeLabel={SERVICE_RESUME_LABEL}
         busOperator={busOperator}
-        busSearchTab={busSearchTab}
         onModeChange={(m) => {
           setMode(m);
           setSearchCodes(null);
