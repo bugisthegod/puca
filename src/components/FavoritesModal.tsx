@@ -137,7 +137,7 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
                   {favs.trains.map((t) => {
                     const k = trainKey(t);
                     return (
-                      <li key={k} className="fav-row">
+                      <li key={k} className="fav-row fav-row--train">
                         <button
                           type="button"
                           className="fav-row__main"
