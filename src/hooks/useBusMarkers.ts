@@ -148,6 +148,10 @@ export function useBusMarkers({
   const busMarkers = useRef<Map<string, BusMarkerEntry>>(new Map());
   const busShapeLayerRef = useRef<L.Polyline | null>(null);
   const busStopMarkersRef = useRef<L.CircleMarker[]>([]);
+  // Single ring marker on the polyline's terminus stop. Pairs with the search
+  // panel "Going to <headsign>" label so the user can spot which end is the
+  // destination without overlay markers along the whole line.
+  const routeEndMarkerRef = useRef<L.Marker | null>(null);
   // Variant branch polylines for the currently displayed route+direction.
   // shapeId → list of branch polylines. Populated in the shape useEffect,
   // styled (not re-added/removed) by highlightVariant/clearVariantHighlight.
@@ -470,6 +474,10 @@ export function useBusMarkers({
         map.removeLayer(busShapeLayerRef.current);
         busShapeLayerRef.current = null;
       }
+      if (routeEndMarkerRef.current) {
+        map.removeLayer(routeEndMarkerRef.current);
+        routeEndMarkerRef.current = null;
+      }
       return;
     }
 
@@ -673,6 +681,11 @@ export function useBusMarkers({
       busShapeLayerRef.current = null;
     }
 
+    if (routeEndMarkerRef.current) {
+      map.removeLayer(routeEndMarkerRef.current);
+      routeEndMarkerRef.current = null;
+    }
+
     for (const m of busStopMarkersRef.current) map.removeLayer(m);
     busStopMarkersRef.current = [];
 
@@ -698,6 +711,34 @@ export function useBusMarkers({
       weight: 6,
       opacity: 0.85,
     }).addTo(map);
+
+    // Terminus ring marker — single visual cue for "this end is the destination".
+    // Coords come from the GTFS shape (road points), not stop locations, so
+    // anchor on the last stop in dirData.stops if available, otherwise fall
+    // back to the polyline's last vertex.
+    const lastStop = dirData.stops?.[dirData.stops.length - 1];
+    const endLatLng: [number, number] | null = lastStop
+      ? [lastStop.lat, lastStop.lng]
+      : (dirData.coords[dirData.coords.length - 1] ?? null);
+    if (endLatLng) {
+      const ringSvg = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="#fff" stroke="${routeColor}" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="${routeColor}"/></svg>`;
+      routeEndMarkerRef.current = L.marker(endLatLng, {
+        icon: L.divIcon({
+          className: "route-end-marker",
+          html: ringSvg,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        }),
+        zIndexOffset: 800,
+      })
+        .bindTooltip(dirData.headsign, {
+          direction: "top",
+          offset: [0, -10],
+          className: "stop-tooltip",
+          opacity: 1,
+        })
+        .addTo(map);
+    }
 
     // Variant branches: drawn once here as faint overlays above the main line
     // but below the stop markers. interactive:false so clicks pass through to
