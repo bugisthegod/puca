@@ -150,24 +150,21 @@ describe("isInServiceHours", () => {
     return new Date(`2024-07-15T${uh}:${um}:00Z`);
   }
 
-  describe("train (in service 05:00 – 00:30)", () => {
+  describe("train (in service 05:00 – 00:00)", () => {
     test("midday is in service", () => {
       expect(isInServiceHours("train", dublinWinter(12, 0))).toBe(true);
     });
-    test("00:29 is in service (just before nightly cutoff)", () => {
-      expect(isInServiceHours("train", dublinWinter(0, 29))).toBe(true);
+    test("23:59 is in service (just before nightly cutoff)", () => {
+      expect(isInServiceHours("train", dublinWinter(23, 59))).toBe(true);
     });
-    test("00:30 closes the window", () => {
-      expect(isInServiceHours("train", dublinWinter(0, 30))).toBe(false);
+    test("00:00 closes the window", () => {
+      expect(isInServiceHours("train", dublinWinter(0, 0))).toBe(false);
     });
     test("04:59 is still off-hours", () => {
       expect(isInServiceHours("train", dublinWinter(4, 59))).toBe(false);
     });
     test("05:00 reopens the window", () => {
       expect(isInServiceHours("train", dublinWinter(5, 0))).toBe(true);
-    });
-    test("23:59 is in service", () => {
-      expect(isInServiceHours("train", dublinWinter(23, 59))).toBe(true);
     });
   });
 
