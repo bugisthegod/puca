@@ -95,7 +95,7 @@ const EN = {
   "about.install.android.platform": "Android · Chrome",
   "about.install.android.s1": "Tap the menu (⋮).",
   "about.install.android.s2": "Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.",
-  "about.install.note": "Launches full-screen, no browser chrome.",
+  "about.install.note": "For a better experience, install to your home screen.",
 
   // AboutModal — footer
   "about.footer.line1": "Data from Irish Rail and the National Transport Authority.",
@@ -150,6 +150,9 @@ const EN = {
   "train.status.ready": "Ready",
   "train.status.scheduled": "Scheduled",
   "train.toast.notonmap.title": "Not on the map yet",
+
+  // App — back-to-all-buses button
+  "bus.back.all": "All buses",
 
   // BusSearchPanel
   "bus.search.tab.route": "Route",
@@ -283,7 +286,7 @@ const ZH: Record<Key, string> = {
   "about.install.android.platform": "Android · Chrome",
   "about.install.android.s1": "点击菜单（⋮）。",
   "about.install.android.s2": "点击<strong>安装应用</strong>或<strong>添加到主屏幕</strong>。",
-  "about.install.note": "全屏启动，无浏览器界面。",
+  "about.install.note": "为了更好的体验，建议添加到主屏幕。",
 
   // AboutModal — footer
   "about.footer.line1": "数据来源：Irish Rail 与 National Transport Authority。",
@@ -338,6 +341,9 @@ const ZH: Record<Key, string> = {
   "train.status.ready": "待发",
   "train.status.scheduled": "已计划",
   "train.toast.notonmap.title": "还未上线地图",
+
+  // App — back-to-all-buses button
+  "bus.back.all": "全部公交",
 
   // BusSearchPanel
   "bus.search.tab.route": "线路",

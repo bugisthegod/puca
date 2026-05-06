@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import PucaMark from "./PucaMark";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
-import { useLocale, type Locale } from "../i18n";
+import { useLocale } from "../i18n";
 
 export type ThemePref = "light" | "dark" | "system";
 export type FabSide = "left" | "right";
@@ -92,15 +92,30 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
   return (
     <div className="about-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={t("about.dialog.aria")}>
       <div className="about-modal" onClick={(e) => e.stopPropagation()}>
-        <select
+        <div
           className={`about-modal__lang${scrolled ? " is-scrolled" : ""}`}
-          value={locale}
-          onChange={(e) => setLocale(e.currentTarget.value as Locale)}
+          role="radiogroup"
           aria-label={t("about.lang.label")}
         >
-          <option value="en">English</option>
-          <option value="zh">中文</option>
-        </select>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={locale === "en"}
+            className={`about-modal__lang__btn${locale === "en" ? " is-active" : ""}`}
+            onClick={() => { if (locale !== "en") setLocale("en"); }}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={locale === "zh"}
+            className={`about-modal__lang__btn${locale === "zh" ? " is-active" : ""}`}
+            onClick={() => { if (locale !== "zh") setLocale("zh"); }}
+          >
+            中
+          </button>
+        </div>
         <button
           type="button"
           className="about-modal__close"

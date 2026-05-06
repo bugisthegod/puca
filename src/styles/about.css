@@ -224,36 +224,45 @@
   position: absolute;
   top: 14px;
   left: 14px;
-  height: 32px;
-  padding: 0 26px 0 12px;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
   background-color: rgba(255, 255, 255, 0.06);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'><path d='M1 1l4 4 4-4' stroke='white' stroke-opacity='0.7' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 10px 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.85);
   border-radius: 16px;
-  font: inherit;
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
   z-index: 2;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  transition: background-color 0.15s, color 0.15s, opacity 0.18s ease, transform 0.18s ease;
-}
-
-.about-modal__lang:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .about-modal__lang.is-scrolled {
   opacity: 0;
   transform: translateY(-6px);
   pointer-events: none;
+}
+
+.about-modal__lang__btn {
+  min-width: 32px;
+  height: 26px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.about-modal__lang__btn:hover:not(.is-active) {
+  color: #fff;
+}
+
+.about-modal__lang__btn.is-active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
 /* --- Hero --- */
@@ -543,12 +552,16 @@
 }
 :root[data-theme="light"] .about-modal__lang {
   background-color: rgba(0, 0, 0, 0.05);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'><path d='M1 1l4 4 4-4' stroke='black' stroke-opacity='0.55' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   border-color: rgba(0, 0, 0, 0.08);
-  color: rgba(0, 0, 0, 0.7);
 }
-:root[data-theme="light"] .about-modal__lang:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+:root[data-theme="light"] .about-modal__lang__btn {
+  color: rgba(0, 0, 0, 0.55);
+}
+:root[data-theme="light"] .about-modal__lang__btn:hover:not(.is-active) {
+  color: #000;
+}
+:root[data-theme="light"] .about-modal__lang__btn.is-active {
+  background: rgba(0, 0, 0, 0.1);
   color: #000;
 }
 :root[data-theme="light"] .about-hero__name {

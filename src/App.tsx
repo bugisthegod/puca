@@ -587,7 +587,7 @@ function App() {
             setFocusContext(null);
           }}
         >
-          &larr; All buses
+          &larr; {t("bus.back.all")}
         </button>
       )}
       <InfoPanel
