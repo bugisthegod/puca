@@ -124,6 +124,7 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
     O: t("popup.train.stoptype.O"),
     T: t("popup.train.stoptype.T"),
     C: t("popup.train.stoptype.C"),
+    N: t("popup.train.stoptype.N"),
     S: t("popup.train.stoptype.S"),
     D: t("popup.train.stoptype.D"),
   };
