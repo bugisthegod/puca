@@ -54,6 +54,48 @@ function readCompassPref(): boolean {
   }
 }
 
+// Last successful geolocation fix, scoped to recent sessions so the next
+// locate tap can paint a marker instantly instead of waiting ~1.3s for the
+// Android FLP roundtrip. TTL is intentionally short — this is a cold-start
+// speedup, not a long-lived "last known location" feature. Past the TTL
+// the position is stale enough that a brief blank wait is preferable to
+// flashing an outdated marker.
+const LAST_FIX_KEY = "puca:lastFix";
+const LAST_FIX_TTL_MS = 2 * 60 * 60 * 1000;
+
+interface CachedFix {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  ts: number;
+}
+
+function readCachedFix(): CachedFix | null {
+  try {
+    const raw = localStorage.getItem(LAST_FIX_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const { lat, lng, accuracy, ts } = parsed as Record<string, unknown>;
+    if (
+      typeof lat !== "number" || !Number.isFinite(lat) || lat < -90 || lat > 90 ||
+      typeof lng !== "number" || !Number.isFinite(lng) || lng < -180 || lng > 180 ||
+      typeof accuracy !== "number" || !Number.isFinite(accuracy) || accuracy < 0 ||
+      typeof ts !== "number" || !Number.isFinite(ts)
+    ) return null;
+    if (Date.now() - ts > LAST_FIX_TTL_MS) return null;
+    return { lat, lng, accuracy, ts };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedFix(fix: CachedFix): void {
+  try {
+    localStorage.setItem(LAST_FIX_KEY, JSON.stringify(fix));
+  } catch { /* quota / disabled */ }
+}
+
 export function useMapInstance(
   mapRef: RefObject<HTMLDivElement | null>,
   mode: Mode,
@@ -184,51 +226,65 @@ export function useMapInstance(
         void startCompass();
       }
 
+      const applyFix = (lat: number, lng: number, accuracy: number): void => {
+        const latlng: L.LatLngExpression = [lat, lng];
+        if (!userMarkerRef.current) {
+          const icon = L.divIcon({
+            className: "user-loc-marker",
+            html:
+              '<div class="user-loc-icon">' +
+              '<svg class="user-loc-cone" viewBox="0 0 80 80" aria-hidden="true">' +
+              '<defs>' +
+              '<radialGradient id="user-loc-grad" cx="40" cy="40" r="38" gradientUnits="userSpaceOnUse">' +
+              '<stop offset="0.15" stop-color="#1e88e5" stop-opacity="0.9"/>' +
+              '<stop offset="1" stop-color="#1e88e5" stop-opacity="0"/>' +
+              '</radialGradient>' +
+              '</defs>' +
+              // ~100° wedge pointing up (12 o'clock), centered on (40,40) with radius 38
+              '<path d="M40 40 L10.88 15.58 A38 38 0 0 1 69.12 15.58 Z" fill="url(#user-loc-grad)"/>' +
+              '</svg>' +
+              '<div class="user-loc-dot"></div>' +
+              "</div>",
+            iconSize: [80, 80],
+            iconAnchor: [40, 40],
+          });
+          userMarkerRef.current = L.marker(latlng, {
+            icon,
+            interactive: false,
+            keyboard: false,
+          }).addTo(map);
+          const el = userMarkerRef.current.getElement();
+          userIconInnerRef.current =
+            el?.querySelector<HTMLElement>(".user-loc-icon") ?? null;
+          accuracyCircleRef.current = L.circle(latlng, {
+            radius: accuracy,
+            color: "#1e88e5",
+            fillColor: "#1e88e5",
+            fillOpacity: 0.12,
+            weight: 1,
+            interactive: false,
+          }).addTo(map);
+        } else {
+          userMarkerRef.current.setLatLng(latlng);
+          accuracyCircleRef.current?.setLatLng(latlng).setRadius(accuracy);
+        }
+        map.setView(latlng, 14);
+      };
+
+      // First-tap-of-session optimization for Android: paint the last-known
+      // fix immediately so the map moves without waiting on FLP. Skip when a
+      // marker already exists — subsequent taps in the same session ride the
+      // OS maximumAge cache and don't need this.
+      if (!userMarkerRef.current) {
+        const cached = readCachedFix();
+        if (cached) applyFix(cached.lat, cached.lng, cached.accuracy);
+      }
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
-          const latlng: L.LatLngExpression = [latitude, longitude];
-          if (!userMarkerRef.current) {
-            const icon = L.divIcon({
-              className: "user-loc-marker",
-              html:
-                '<div class="user-loc-icon">' +
-                '<svg class="user-loc-cone" viewBox="0 0 80 80" aria-hidden="true">' +
-                '<defs>' +
-                '<radialGradient id="user-loc-grad" cx="40" cy="40" r="38" gradientUnits="userSpaceOnUse">' +
-                '<stop offset="0.15" stop-color="#1e88e5" stop-opacity="0.9"/>' +
-                '<stop offset="1" stop-color="#1e88e5" stop-opacity="0"/>' +
-                '</radialGradient>' +
-                '</defs>' +
-                // ~100° wedge pointing up (12 o'clock), centered on (40,40) with radius 38
-                '<path d="M40 40 L10.88 15.58 A38 38 0 0 1 69.12 15.58 Z" fill="url(#user-loc-grad)"/>' +
-                '</svg>' +
-                '<div class="user-loc-dot"></div>' +
-                "</div>",
-              iconSize: [80, 80],
-              iconAnchor: [40, 40],
-            });
-            userMarkerRef.current = L.marker(latlng, {
-              icon,
-              interactive: false,
-              keyboard: false,
-            }).addTo(map);
-            const el = userMarkerRef.current.getElement();
-            userIconInnerRef.current =
-              el?.querySelector<HTMLElement>(".user-loc-icon") ?? null;
-            accuracyCircleRef.current = L.circle(latlng, {
-              radius: accuracy,
-              color: "#1e88e5",
-              fillColor: "#1e88e5",
-              fillOpacity: 0.12,
-              weight: 1,
-              interactive: false,
-            }).addTo(map);
-          } else {
-            userMarkerRef.current.setLatLng(latlng);
-            accuracyCircleRef.current?.setLatLng(latlng).setRadius(accuracy);
-          }
-          map.setView(latlng, 14);
+          applyFix(latitude, longitude, accuracy);
+          writeCachedFix({ lat: latitude, lng: longitude, accuracy, ts: Date.now() });
           resolve();
         },
         (err) => reject(err),
