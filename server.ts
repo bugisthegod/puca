@@ -10,6 +10,34 @@ function parseOperator(raw: string | null): Operator | null {
   return VALID_OPERATORS.has(raw as Operator) ? (raw as Operator) : null;
 }
 
+// Clamp ?mins= for Irish Rail station endpoint: NaN/huge values would still
+// hit the upstream API and pollute cache keys.
+function clampMins(raw: string | null, fallback: number): number {
+  if (!raw) return fallback;
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(120, Math.max(1, n));
+}
+
+// Irish Rail TrainDate format: "6 may 2026" / "06 may 2026" (lowercase short month).
+// Day 1-31, month must be a real short name, year within ±1 of today — keeps
+// cache keys bounded so an attacker can't blow up the cache by varying ?date=.
+// Frontend doesn't send ?date= at all (server defaults to today), so failing
+// validation simply falls back to today is fine.
+const TRAIN_DATE_RE = /^(0?[1-9]|[12]\d|3[01]) (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec) \d{4}$/;
+
+function isValidTrainDate(raw: string): boolean {
+  if (!TRAIN_DATE_RE.test(raw)) return false;
+  const year = parseInt(raw.slice(-4), 10);
+  const thisYear = new Date().getFullYear();
+  return year >= thisYear - 1 && year <= thisYear + 1;
+}
+
+// Service worker cache version: bumped automatically per Fly deploy so PWA
+// clients re-precache after each release. Local dev gets a stable "dev" name
+// so the cache isn't churned on restart.
+const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
+
 // Irish Rail's "today" is Dublin's today — not fly's UTC today, which can be
 // yesterday during summer-evening / early-morning windows.
 const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE", {
@@ -94,12 +122,16 @@ Bun.serve({
   port: 3000,
   routes: {
     "/": index,
-    "/sw.js": () => new Response(Bun.file("./public/sw.js"), {
-      headers: {
-        "Content-Type": "application/javascript",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-      },
-    }),
+    "/sw.js": async () => {
+      const text = await Bun.file("./public/sw.js").text();
+      const body = text.replace('"__CACHE_VERSION__"', JSON.stringify(SW_CACHE_VERSION));
+      return new Response(body, {
+        headers: {
+          "Content-Type": "application/javascript",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+    },
     "/manifest.json": staticFile("./public/manifest.json", 86400),
     "/og-image.png": staticFile("./public/og-image.png", 604800),
     "/icon-192.png": staticFile("./public/icon-192.png", 604800),
@@ -130,8 +162,7 @@ Bun.serve({
       try {
         const code = req.params.code;
         const url = new URL(req.url);
-        const minsParam = url.searchParams.get("mins");
-        const numMins = minsParam ? parseInt(minsParam, 10) : 90;
+        const numMins = clampMins(url.searchParams.get("mins"), 90);
         const data = await getStationData(code, numMins);
         return Response.json(data, { headers });
       } catch {
@@ -211,7 +242,8 @@ Bun.serve({
       try {
         const trainId = req.params.id;
         const url = new URL(req.url);
-        const trainDate = url.searchParams.get("date") ?? todayFormatted();
+        const dateRaw = url.searchParams.get("date");
+        const trainDate = dateRaw && isValidTrainDate(dateRaw) ? dateRaw : todayFormatted();
         const movements = await getTrainMovements(trainId, trainDate);
         return Response.json(movements, { headers });
       } catch {
@@ -219,7 +251,8 @@ Bun.serve({
       }
     }),
     "/api/bus/routes": rateLimit(async (req) => {
-      const operator = (new URL(req.url).searchParams.get("operator") ?? "dublinbus") as Operator;
+      const operator = parseOperator(new URL(req.url).searchParams.get("operator") ?? "dublinbus");
+      if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
       return Response.json(getBusRoutes(operator), {
         headers: { "Cache-Control": "public, max-age=3600" }, // 1 hour; route list is static
       });
@@ -236,14 +269,22 @@ Bun.serve({
       if (!isInServiceHours("bus")) return Response.json([], { headers: vehicleHeaders });
       try {
         const url = new URL(req.url);
-        const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
+        const operator = parseOperator(url.searchParams.get("operator") ?? "dublinbus");
+        if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
         const route = url.searchParams.get("route");
         if (!route) {
           const vehicles = await getAllBusVehicles(operator);
           return Response.json(vehicles, { headers: vehicleHeaders });
         }
         const dirParam = url.searchParams.get("direction");
-        const direction = dirParam !== null ? Number(dirParam) : undefined;
+        let direction: 0 | 1 | undefined = undefined;
+        if (dirParam !== null) {
+          const n = Number(dirParam);
+          if (n !== 0 && n !== 1) {
+            return Response.json({ error: "direction must be 0 or 1" }, { status: 400 });
+          }
+          direction = n;
+        }
         const vehicles = await getBusVehiclesByRoute(operator, route, direction);
         return Response.json(vehicles, { headers: vehicleHeaders });
       } catch {
@@ -252,7 +293,8 @@ Bun.serve({
     }),
     "/api/bus/shape/:route": rateLimit(async (req) => {
       const url = new URL(req.url);
-      const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
+      const operator = parseOperator(url.searchParams.get("operator") ?? "dublinbus");
+      if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
       const shape = getBusRouteShape(operator, req.params.route);
       return Response.json(shape ?? {}, {
         headers: { "Cache-Control": "public, max-age=86400" }, // 1 day; shapes are static
@@ -263,7 +305,8 @@ Bun.serve({
       if (!isInServiceHours("bus")) return Response.json({}, { headers: tripHeaders });
       try {
         const url = new URL(req.url);
-        const operator = (url.searchParams.get("operator") ?? "dublinbus") as Operator;
+        const operator = parseOperator(url.searchParams.get("operator") ?? "dublinbus");
+        if (!operator) return Response.json({ error: "unknown operator" }, { status: 400 });
         const trip = await getBusTripStops(operator, req.params.tripId);
         return Response.json(trip ?? {}, { headers: tripHeaders });
       } catch {

@@ -1,5 +1,6 @@
-// Bump CACHE_VERSION to invalidate all caches after a deploy.
-const CACHE_VERSION = "v1.4.2";
+// CACHE_VERSION is replaced at /sw.js serve time with FLY_MACHINE_VERSION
+// (or "dev" locally). Don't edit manually — bump happens per deploy.
+const CACHE_VERSION = "__CACHE_VERSION__";
 const CACHE_NAME = `puca-${CACHE_VERSION}`;
 // Tile cache version is independent of app version — tiles don't change
 // between deploys, so app upgrades shouldn't pay a re-download tax.
