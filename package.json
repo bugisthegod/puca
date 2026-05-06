@@ -1,8 +1,13 @@
 {
   "name": "puca",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun ./server.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build": "bun build ./index.html --outdir=dist"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/leaflet": "^1.9.21",
