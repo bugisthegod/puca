@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
+import { useLocale } from "../i18n";
 
 export interface TourStep {
   target?: string;
@@ -17,6 +18,7 @@ const TOOLTIP_GAP = 14;
 const EDGE_MARGIN = 12;
 
 export default function OnboardingTour({ steps, onClose }: Props) {
+  const { t } = useLocale();
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [viewport, setViewport] = useState({
@@ -90,7 +92,7 @@ export default function OnboardingTour({ steps, onClose }: Props) {
       className={`tour${centered ? " tour--no-target" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-label="Guided tour"
+      aria-label={t("tour.aria")}
     >
       <div className="tour__backdrop" aria-hidden="true" />
       {highlightStyle && <div className="tour__highlight" style={highlightStyle} />}
@@ -106,17 +108,17 @@ export default function OnboardingTour({ steps, onClose }: Props) {
             <span className="tour__skip-spacer" />
           ) : (
             <button type="button" className="tour__skip" onClick={onClose}>
-              Skip
+              {t("tour.skip")}
             </button>
           )}
           <div className="tour__nav">
             {index > 0 && (
               <button type="button" className="tour__btn tour__btn--ghost" onClick={back}>
-                Back
+                {t("tour.back")}
               </button>
             )}
             <button type="button" className="tour__btn tour__btn--primary" onClick={next}>
-              {isLast ? "Got it" : "Next"}
+              {isLast ? t("tour.gotit") : t("tour.next")}
             </button>
           </div>
         </div>

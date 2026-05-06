@@ -3,6 +3,7 @@ import type { Station, SearchResult } from "../types";
 import { getStationsOnce } from "../stationsClient";
 import FavStar from "./FavStar";
 import { hasTrain, type Favorites, type TrainFavorite } from "../favorites";
+import { useLocale } from "../i18n";
 
 // Collapse any text selection in the input to its end. Stops Android's
 // Smart Text Selection from scanning highlighted text and surfacing the
@@ -26,6 +27,7 @@ interface SearchPanelProps {
 }
 
 export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, collapsed, onCollapsedChange, onShowToast }: SearchPanelProps) {
+  const { t } = useLocale();
   const saved = sessionStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
 
@@ -172,7 +174,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
       {collapsed ? (
-        <button className="fab search-fab" onClick={() => onCollapsedChange(false)} aria-label="Search" title="Search">
+        <button className="fab search-fab" onClick={() => onCollapsedChange(false)} aria-label={t("train.search.fab.aria")} title={t("train.search.fab.aria")}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" />
@@ -185,7 +187,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           autoCorrect="off"
           autoCapitalize="none"
           spellcheck={false}
-          placeholder="From station..."
+          placeholder={t("train.search.placeholder.from")}
           value={fromQuery}
           onChange={(e) => {
             const v = e.currentTarget.value;
@@ -212,7 +214,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           </ul>
         )}
       </div>
-      <button className="swap-btn" onClick={handleSwap} title="Swap stations">
+      <button className="swap-btn" onClick={handleSwap} title={t("train.search.swap.title")}>
         ⇅
       </button>
       <div className="search-field">
@@ -221,7 +223,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           autoCorrect="off"
           autoCapitalize="none"
           spellcheck={false}
-          placeholder="To station..."
+          placeholder={t("train.search.placeholder.to")}
           value={toQuery}
           onChange={(e) => {
             const v = e.currentTarget.value;
@@ -250,11 +252,11 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
       </div>
       <div className="search-actions">
         <button className="search-btn" onClick={() => handleSearchWith(from, to)} disabled={!from || !to || loading}>
-          {loading ? "Searching..." : "Search"}
+          {loading ? t("train.search.btn.searching") : t("train.search.btn.search")}
         </button>
         {(from || to || results !== null) && (
           <button className="search-btn clear-btn" onClick={handleClear}>
-            Clear
+            {t("train.search.btn.clear")}
           </button>
         )}
       </div>
@@ -263,7 +265,9 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           <div className="search-results">
             <div className="search-result-header">
               <span className="search-result-msg has-results">
-                Found {results.length} train{results.length !== 1 ? "s" : ""}
+                {results.length === 1
+                  ? t("train.search.results.found.one")
+                  : t("train.search.results.found.many", { n: results.length })}
               </span>
               {from && to && (
                 <FavStar
@@ -286,7 +290,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
                     className={`train-item train-item--${r.status}`}
                     onClick={() => {
                       if (!canFocus) {
-                        onShowToast("Not on the map yet");
+                        onShowToast(t("train.toast.notonmap.title"));
                         return;
                       }
                       onTrainSelect(r.code);
@@ -296,7 +300,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
                     <div className="train-item-header">
                       <span className="train-item-code">{r.code}</span>
                       <span className={`train-item-status train-item-status--${r.status}`}>
-                        {r.status === "running" ? "Running" : r.status === "ready" ? "Ready" : "Scheduled"}
+                        {r.status === "running" ? t("train.status.running") : r.status === "ready" ? t("train.status.ready") : t("train.status.scheduled")}
                       </span>
                     </div>
                     <div className="train-item-route">{r.origin} → {r.destination}</div>
@@ -312,7 +316,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
           </div>
         ) : (
           <div className="search-result-header">
-            <span className="search-result-msg no-results">No active trains on this route</span>
+            <span className="search-result-msg no-results">{t("train.search.results.empty")}</span>
             {from && to && (
               <FavStar
                 active={hasTrain(favs, { from, to })}

@@ -3,6 +3,7 @@ import type { Filter } from "../utils";
 import type { Mode } from "../hooks/useTrainMap";
 import type { BusOperator } from "../types";
 import SleepingPuca from "./SleepingPuca";
+import { useLocale } from "../i18n";
 
 type InfoPanelProps = {
   vehicleCount: number;
@@ -17,11 +18,9 @@ type InfoPanelProps = {
   onBusOperatorChange: (op: BusOperator) => void;
 };
 
-const MODES: { value: Mode; label: string }[] = [
-  { value: "train", label: "Train" },
-  { value: "bus", label: "Bus" },
-];
-
+// Filter and operator labels stay in their original spelling — DART, Commuter,
+// Intercity are Irish Rail product names; Dublin Bus / Bus Éireann / Go-Ahead
+// are operator brand names. They aren't translated even when locale is zh.
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "dart", label: "DART" },
@@ -47,9 +46,18 @@ export default function InfoPanel({
   onFilterChange,
   onBusOperatorChange,
 }: InfoPanelProps) {
+  const { t } = useLocale();
   const [drilledIn, setDrilledIn] = useState(false);
-  const unit = mode === "train" ? "trains" : "buses";
-  const showCount = `${vehicleCount} ${unit} running`;
+  const showCount = mode === "train"
+    ? t("info.running.train", { n: vehicleCount })
+    : t("info.running.bus", { n: vehicleCount });
+
+  const modes: { value: Mode; label: string }[] = [
+    { value: "train", label: t("info.mode.train") },
+    { value: "bus", label: t("info.mode.bus") },
+  ];
+  // Only the "All" filter label is translated; DART/Commuter/Intercity stay original.
+  const filters = FILTERS.map((f) => f.value === "all" ? { ...f, label: t("info.filter.all") } : f);
 
   function handleModeClick(next: Mode) {
     if (next !== mode) onModeChange(next);
@@ -72,20 +80,24 @@ export default function InfoPanel({
               type="button"
               className="filter-btn filter-back"
               onClick={() => setDrilledIn(false)}
-              aria-label="Back"
+              aria-label={t("info.back.aria")}
             >
               ←
             </button>
             <SleepingPuca size={52} />
             <div className="service-text">
-              <span id="train-count">Púca's having a kip</span>
-              <span className="service-next">Next {mode} at {resumeLabel}</span>
+              <span id="train-count">{t("info.kip")}</span>
+              <span className="service-next">
+                {mode === "train"
+                  ? t("info.next.train", { time: resumeLabel })
+                  : t("info.next.bus", { time: resumeLabel })}
+              </span>
             </div>
           </div>
         )
       )}
       <div id="filter-bar" className={drilledIn ? "" : "filter-bar--root"}>
-        {!drilledIn && MODES.map(({ value, label }) => (
+        {!drilledIn && modes.map(({ value, label }) => (
           <button
             key={value}
             className="filter-btn"
@@ -100,12 +112,12 @@ export default function InfoPanel({
               type="button"
               className="filter-btn filter-back"
               onClick={() => setDrilledIn(false)}
-              aria-label="Back"
+              aria-label={t("info.back.aria")}
             >
               ←
             </button>
             <span className="filter-sep" />
-            {mode === "train" && FILTERS.map(({ value, label }) => (
+            {mode === "train" && filters.map(({ value, label }) => (
               <button
                 key={value}
                 className={`filter-btn${filter === value ? " active" : ""}`}

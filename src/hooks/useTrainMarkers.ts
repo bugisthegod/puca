@@ -12,6 +12,7 @@ import {
   type Filter,
 } from "../utils";
 import type { Mode } from "./useTrainMap";
+import { t } from "../i18n";
 
 // ---------------------------------------------------------------------------
 // Module-level train shape cache (survives across renders / updates)
@@ -84,15 +85,22 @@ function formatMessage(message: string): string {
   return escapeHtml(message).replace(/\\r?\\n|\r?\n/g, "<br>");
 }
 
+function buildStatusText(status: string, late: number | null): string {
+  if (status === "N") return t("popup.train.status.notrunning");
+  if (status === "T") return t("popup.train.status.terminated");
+  if (late === null) return t("popup.train.status.running");
+  if (late === 0) return t("popup.status.ontime");
+  if (late < 0) {
+    const n = Math.abs(late);
+    return n === 1 ? t("popup.status.early.one") : t("popup.status.early.many", { n });
+  }
+  return late === 1 ? t("popup.status.late.one") : t("popup.status.late.many", { n: late });
+}
+
 function buildPopupHTML(train: Train): string {
   const route = parseRoute(train.message);
   const late = parseLateMinutes(train.message);
-  const statusText =
-    train.status === "N" ? "Not yet running" :
-    train.status === "T" ? "Terminated" :
-    late === null ? "Running" :
-    late <= 0 ? `On time${late < 0 ? ` (${Math.abs(late)} min${Math.abs(late) !== 1 ? "s" : ""} early)` : ""}` :
-    `${late} min${late !== 1 ? "s" : ""} late`;
+  const statusText = buildStatusText(train.status, late);
 
   return `
     <div class="popup-content">
@@ -102,7 +110,7 @@ function buildPopupHTML(train: Train): string {
         <span class="popup-status ${lateClass(train.status, late)}">${statusText}</span>
         ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
       </div>
-      <div class="popup-loading">Loading stops…</div>
+      <div class="popup-loading">${t("popup.train.loading")}</div>
     </div>
   `;
 }
@@ -110,19 +118,14 @@ function buildPopupHTML(train: Train): string {
 function buildPopupWithMovements(train: Train, movements: TrainMovement[]): string {
   const route = parseRoute(train.message);
   const late = parseLateMinutes(train.message);
-  const statusText =
-    train.status === "N" ? "Not yet running" :
-    train.status === "T" ? "Terminated" :
-    late === null ? "Running" :
-    late <= 0 ? `On time${late < 0 ? ` (${Math.abs(late)} min${Math.abs(late) !== 1 ? "s" : ""} early)` : ""}` :
-    `${late} min${late !== 1 ? "s" : ""} late`;
+  const statusText = buildStatusText(train.status, late);
 
   const stopTypeLabel: Record<string, string> = {
-    O: "Origin",
-    T: "Terminus",
-    C: "Current",
-    S: "Stop",
-    D: "Destination",
+    O: t("popup.train.stoptype.O"),
+    T: t("popup.train.stoptype.T"),
+    C: t("popup.train.stoptype.C"),
+    S: t("popup.train.stoptype.S"),
+    D: t("popup.train.stoptype.D"),
   };
 
   const rows = movements
@@ -165,10 +168,10 @@ function buildPopupWithMovements(train: Train, movements: TrainMovement[]): stri
                <table class="movements-table">
                  <thead>
                    <tr>
-                     <th>Station</th>
-                     <th>Type</th>
-                     <th>Arr</th>
-                     <th>Dep</th>
+                     <th>${t("popup.train.col.station")}</th>
+                     <th>${t("popup.train.col.type")}</th>
+                     <th>${t("popup.train.col.arr")}</th>
+                     <th>${t("popup.train.col.dep")}</th>
                    </tr>
                  </thead>
                  <tbody>${rows}</tbody>
@@ -384,7 +387,7 @@ export function useTrainMarkers({
       const popup = e.marker.getPopup();
       if (popup && popup.isOpen()) {
         popup.setContent(
-          buildPopupHTML(e.train).replace("Loading stops…", "Could not load movement data.")
+          buildPopupHTML(e.train).replace(t("popup.train.loading"), t("popup.train.error"))
         );
       }
     }

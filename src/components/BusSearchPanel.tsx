@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { BusRoute, BusOperator } from "../types";
 import type { BusSearchTab } from "../session";
 import FavStar from "./FavStar";
+import { useLocale } from "../i18n";
 
 // Collapse any text selection in the input to its end. Stops Android's
 // Smart Text Selection from scanning highlighted text and surfacing the
@@ -85,6 +86,7 @@ export default function BusSearchPanel({
   onCollapsedChange,
   onShowToast,
 }: BusSearchPanelProps) {
+  const { t } = useLocale();
   const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
@@ -193,7 +195,7 @@ export default function BusSearchPanel({
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
       setArrivals(null);
-      setArrivalsError("Could not load arrivals");
+      setArrivalsError(t("bus.search.arrivals.error"));
     } finally {
       if (!ac.signal.aborted) setArrivalsLoading(false);
     }
@@ -313,15 +315,15 @@ export default function BusSearchPanel({
   }
 
   function etaLabel(etaSeconds: number): string {
-    if (etaSeconds < 60) return "Due";
+    if (etaSeconds < 60) return t("bus.search.eta.due");
     const min = Math.round(etaSeconds / 60);
-    return `${min} min`;
+    return t("bus.search.eta.min", { n: min });
   }
 
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
       {collapsed ? (
-        <button className="fab search-fab" onClick={() => onCollapsedChange(false)} aria-label="Search" title="Search">
+        <button className="fab search-fab" onClick={() => onCollapsedChange(false)} aria-label={t("bus.search.fab.aria")} title={t("bus.search.fab.aria")}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" />
@@ -337,7 +339,7 @@ export default function BusSearchPanel({
               className={`bus-search-tab${busSearchTab === "route" ? " active" : ""}`}
               onClick={() => onTabChange("route")}
             >
-              Route
+              {t("bus.search.tab.route")}
             </button>
             <button
               type="button"
@@ -346,7 +348,7 @@ export default function BusSearchPanel({
               className={`bus-search-tab${busSearchTab === "stop" ? " active" : ""}`}
               onClick={() => onTabChange("stop")}
             >
-              Stop
+              {t("bus.search.tab.stop")}
             </button>
           </div>
           {busSearchTab === "route" ? (
@@ -357,7 +359,7 @@ export default function BusSearchPanel({
                   autoCorrect="off"
                   autoCapitalize="none"
                   spellcheck={false}
-                  placeholder="Bus route (e.g. 39A, 7)..."
+                  placeholder={t("bus.search.placeholder.route")}
                   value={query}
                   onChange={(e) => {
                     setQuery(e.currentTarget.value);
@@ -404,17 +406,17 @@ export default function BusSearchPanel({
               )}
               {selectedRoute && selectedDirection && (
                 <div className="direction-status">
-                  <span>Going to {directions[selectedDirection] ?? selectedDirection}</span>
+                  <span>{t("bus.search.going", { dest: directions[selectedDirection] ?? selectedDirection })}</span>
                   <FavStar active={isFavorite} onToggle={onToggleFavorite} />
                   <button className="search-btn clear-btn" onClick={() => onSelectDirection(null)}>
-                    Change
+                    {t("bus.search.btn.change")}
                   </button>
                 </div>
               )}
               {selectedRoute && (
                 <div className="search-actions">
                   <button className="search-btn clear-btn" onClick={handleClear}>
-                    Clear
+                    {t("bus.search.btn.clear")}
                   </button>
                 </div>
               )}
@@ -428,7 +430,7 @@ export default function BusSearchPanel({
                 <div className="stop-selected stop-selected--loading">
                   <div className="stop-selected__text">
                     <strong>…</strong>
-                    <span>Loading stop…</span>
+                    <span>{t("bus.search.loading.stop")}</span>
                   </div>
                 </div>
               ) : !selectedStop ? (
@@ -439,7 +441,7 @@ export default function BusSearchPanel({
                     autoCapitalize="none"
                     spellcheck={false}
                     inputMode="search"
-                    placeholder="Stop number or name..."
+                    placeholder={t("bus.search.placeholder.stop")}
                     value={stopQuery}
                     onChange={(e) => setStopQuery(e.currentTarget.value)}
                     onFocus={() => setStopFocused(true)}
@@ -487,18 +489,18 @@ export default function BusSearchPanel({
                       onToggle={() => onToggleStopFavorite(selectedStop)}
                     />
                     <button className="search-btn clear-btn" onClick={clearStopSelection}>
-                      Change
+                      {t("bus.search.btn.change")}
                     </button>
                   </div>
                   <div className="stop-arrivals">
                     {arrivalsLoading && arrivals === null && (
-                      <div className="stop-arrivals__empty">Loading…</div>
+                      <div className="stop-arrivals__empty">{t("bus.search.arrivals.loading")}</div>
                     )}
                     {arrivalsError && (
                       <div className="stop-arrivals__empty">{arrivalsError}</div>
                     )}
                     {arrivals && arrivals.length === 0 && (
-                      <div className="stop-arrivals__empty">No upcoming buses.</div>
+                      <div className="stop-arrivals__empty">{t("bus.search.arrivals.empty")}</div>
                     )}
                     {arrivals && arrivals.length > 0 && (
                       <ul className="stop-arrivals__list">
@@ -509,7 +511,7 @@ export default function BusSearchPanel({
                               className={`stop-arrival${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}`}
                               onClick={() => {
                                 if (a.status === "scheduled") {
-                                  onShowToast("Not on the map yet");
+                                  onShowToast(t("bus.search.toast.notonmap.title"));
                                   return;
                                 }
                                 if (!selectedStop) return;

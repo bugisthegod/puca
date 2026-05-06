@@ -2,7 +2,7 @@ import L from "leaflet";
 import "leaflet.markercluster";
 (window as unknown as { L: typeof L }).L = L;
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator, FocusContext } from "./types";
 import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
@@ -19,6 +19,7 @@ import OfflineBanner from "./components/OfflineBanner";
 import { registerServiceWorker } from "./sw-register";
 import { useFavorites } from "./hooks/useFavorites";
 import { hasBus, hasTrain, hasStop, totalFavorites, MAX_FAVORITES, type TrainFavorite, type BusStopFavorite } from "./favorites";
+import { useLocale } from "./i18n";
 import "./style.css";
 
 const savedSession = loadSession();
@@ -64,43 +65,44 @@ const needsCompassToggle =
   typeof DeviceOrientationEvent !== "undefined" &&
   typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === "function";
 
-const TOUR_STEPS: TourStep[] = [
-  {
-    title: "Welcome to Púca",
-    body: "A live map of Ireland's trains and buses. Quick tour — takes 20 seconds.",
-  },
-  {
-    target: "#info-panel",
-    title: "Switch mode",
-    body: "Toggle between Train and Bus, or filter what's shown.",
-  },
-  {
-    target: "#search-panel",
-    title: "Search",
-    body: "Find trains between two stations, or a bus route by number.",
-  },
-  {
-    title: "Tap a vehicle",
-    body: "Tap any bus or train on the map for live arrivals, delays, and stops.",
-  },
-  {
-    target: ".about-fab",
-    title: "Settings & help",
-    body: "Toggle dark mode, enable the compass, revisit this tour, or find install tips here.",
-  },
-  {
-    target: ".fav-fab",
-    title: "Save favourites",
-    body: "Star a route or train search, then come back to it from here.",
-  },
-  {
-    target: ".locate-btn",
-    title: "Locate me",
-    body: "Centre the map on your position to see what's nearby. You're all set!",
-  },
-];
-
 function App() {
+  const { locale, t } = useLocale();
+  const tourSteps: TourStep[] = useMemo(() => [
+    {
+      title: t("tour.welcome.title"),
+      body: t("tour.welcome.body"),
+    },
+    {
+      target: "#info-panel",
+      title: t("tour.mode.title"),
+      body: t("tour.mode.body"),
+    },
+    {
+      target: "#search-panel",
+      title: t("tour.search.title"),
+      body: t("tour.search.body"),
+    },
+    {
+      title: t("tour.tap.title"),
+      body: t("tour.tap.body"),
+    },
+    {
+      target: ".about-fab",
+      title: t("tour.settings.title"),
+      body: t("tour.settings.body"),
+    },
+    {
+      target: ".fav-fab",
+      title: t("tour.favs.title"),
+      body: t("tour.favs.body"),
+    },
+    {
+      target: ".locate-btn",
+      title: t("tour.locate.title"),
+      body: t("tour.locate.body"),
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [locale]);
   const [mode, setMode] = useState<Mode>(savedSession.mode ?? "train");
   const [trains, setTrains] = useState<Train[]>([]);
   const [buses, setBuses] = useState<BusVehicle[]>([]);
@@ -114,7 +116,7 @@ function App() {
   const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
   const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
-  const [lastUpdated, setLastUpdated] = useState<string>("Updated: —");
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
@@ -187,7 +189,7 @@ function App() {
     setTimeout(() => setToast((t) => (t?.title === title ? null : t)), ms);
   }
   function showFavLimitToast() {
-    showToast(`Favorites full (${MAX_FAVORITES} max). Remove one first.`);
+    showToast(t("toast.fav.full", { max: MAX_FAVORITES }));
   }
   const onToggleBusFav = () => {
     if (!busFavKey) return;
@@ -255,10 +257,10 @@ function App() {
       // a non-technical user can translate into a fix.
       const code = (err as GeolocationPositionError)?.code;
       const next =
-        code === 1 ? { title: "Location is off", body: "Enable it in your device settings" }
-        : code === 2 ? { title: "Location unavailable", body: "Try again in a moment" }
-        : code === 3 ? { title: "Timed out", body: "Try again" }
-        : { title: "Couldn't get your location" };
+        code === 1 ? { title: t("toast.location.off.title"), body: t("toast.location.off.body") }
+        : code === 2 ? { title: t("toast.location.unavailable.title"), body: t("toast.location.unavailable.body") }
+        : code === 3 ? { title: t("toast.location.timeout.title"), body: t("toast.location.timeout.body") }
+        : { title: t("toast.location.unknown.title") };
       setToast(next);
       setTimeout(() => setToast((t) => (t?.title === next.title ? null : t)), 5000);
     } finally {
@@ -272,7 +274,7 @@ function App() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: Train[] = await res.json();
       setTrains(data);
-      setLastUpdated(`Updated: ${new Date().toLocaleTimeString()}`);
+      setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error("Failed to fetch trains:", err);
     }
@@ -286,7 +288,7 @@ function App() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: BusVehicle[] = await res.json();
       setBuses(data);
-      setLastUpdated(`Updated: ${new Date().toLocaleTimeString()}`);
+      setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error("Failed to fetch buses:", err);
     }
@@ -298,7 +300,7 @@ function App() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: BusVehicle[] = await res.json();
       setBuses(data);
-      setLastUpdated(`Updated: ${new Date().toLocaleTimeString()}`);
+      setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error("Failed to fetch all buses:", err);
     }
@@ -404,7 +406,7 @@ function App() {
             type="button"
             className="app-toast__close"
             onClick={() => setToast(null)}
-            aria-label="Dismiss"
+            aria-label={t("toast.dismiss")}
           >
             ×
           </button>
@@ -415,8 +417,8 @@ function App() {
         className={`fab locate-btn${locating ? " loading" : ""}`}
         onClick={handleLocate}
         disabled={locating}
-        aria-label="Locate me"
-        title="Locate me"
+        aria-label={t("fab.locate.aria")}
+        title={t("fab.locate.aria")}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3" />
@@ -427,8 +429,8 @@ function App() {
         type="button"
         className="fab fav-fab"
         onClick={() => setShowFavs(true)}
-        aria-label="Favorites"
-        title="Favorites"
+        aria-label={t("fab.favs.aria")}
+        title={t("fab.favs.aria")}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1L3.2 9.4l6.1-.9z" />
@@ -438,8 +440,8 @@ function App() {
         type="button"
         className="fab about-fab"
         onClick={openAbout}
-        aria-label="About Púca"
-        title="About Púca"
+        aria-label={t("fab.about.aria")}
+        title={t("fab.about.aria")}
       >
         <PucaMark size={28} />
         {!seenAbout && <span className="about-fab__badge" aria-hidden="true" />}
@@ -459,7 +461,7 @@ function App() {
           onSetFabSide={setFabSide}
         />
       )}
-      {showTour && <OnboardingTour steps={TOUR_STEPS} onClose={closeTour} />}
+      {showTour && <OnboardingTour steps={tourSteps} onClose={closeTour} />}
       {showFavs && (
         <FavoritesModal
           onClose={() => setShowFavs(false)}
@@ -590,7 +592,7 @@ function App() {
       )}
       <InfoPanel
         vehicleCount={vehicleCount}
-        lastUpdated={lastUpdated}
+        lastUpdated={lastUpdated ? t("info.updated", { time: lastUpdated }) : t("info.updated.empty")}
         mode={mode}
         filter={filter}
         inService={inService}

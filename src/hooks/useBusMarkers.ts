@@ -4,6 +4,7 @@ import type { Feature, LineString } from "geojson";
 import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProjection";
 import { escapeHtml } from "../utils";
 import type { Mode } from "./useTrainMap";
+import { t as i18n } from "../i18n";
 
 // ---------------------------------------------------------------------------
 // Module-level dedupe for bus trip fetches.
@@ -227,13 +228,14 @@ export function useBusMarkers({
     const min = Math.round(sec / 60);
     if (min <= 0) {
       const early = Math.abs(min);
+      if (early < 1) return { text: i18n("popup.status.ontime"), cls: "" };
       return {
-        text: early >= 1 ? `On time (${early} min${early !== 1 ? "s" : ""} early)` : "On time",
+        text: early === 1 ? i18n("popup.status.early.one") : i18n("popup.status.early.many", { n: early }),
         cls: "",
       };
     }
     return {
-      text: `${min} min${min !== 1 ? "s" : ""} late`,
+      text: min === 1 ? i18n("popup.status.late.one") : i18n("popup.status.late.many", { n: min }),
       cls: min >= 10 ? "popup-status--red" : "popup-status--yellow",
     };
   }
@@ -286,20 +288,20 @@ export function useBusMarkers({
           .join("")
       : "";
     const body = loading
-      ? `<div class="popup-loading">Loading stops…</div>`
+      ? `<div class="popup-loading">${i18n("popup.bus.loading")}</div>`
       : trip && trip.stops.length > 0
         ? `<div class="popup-table-wrap">
              <table class="movements-table">
                <thead>
-                 <tr><th>#</th><th>Stop</th><th>Sched</th><th>Exp</th></tr>
+                 <tr><th>${i18n("popup.bus.col.num")}</th><th>${i18n("popup.bus.col.stop")}</th><th>${i18n("popup.bus.col.sched")}</th><th>${i18n("popup.bus.col.exp")}</th></tr>
                </thead>
                <tbody>${rows}</tbody>
              </table>
            </div>`
-        : `<div class="popup-message">No upcoming stop data available.</div>`;
+        : `<div class="popup-message">${i18n("popup.bus.empty")}</div>`;
     const showJump = onSelectBusRouteRef.current && currentBusRouteRef.current !== bus.routeShortName;
     const jumpBtn = showJump
-      ? `<button class="popup-route-jump" type="button" data-route="${encodeURIComponent(bus.routeShortName)}" data-dir="${bus.directionId}">Show all ${escapeHtml(bus.routeShortName)}</button>`
+      ? `<button class="popup-route-jump" type="button" data-route="${encodeURIComponent(bus.routeShortName)}" data-dir="${bus.directionId}">${i18n("popup.bus.showall", { route: escapeHtml(bus.routeShortName) })}</button>`
       : "";
     const stops = trip?.stops ?? [];
     const originDest = stops.length >= 2
@@ -311,15 +313,15 @@ export function useBusMarkers({
     const metaHtml = `
       <div class="popup-meta">
         ${status.text ? `<span class="popup-status ${status.cls}">${status.text}</span>` : ""}
-        <span class="popup-dir">Vehicle ${vehicleLabel}</span>
+        <span class="popup-dir">${i18n("popup.bus.vehicle", { label: vehicleLabel })}</span>
       </div>
     `;
     const staleBanner = bus.stale
       ? `<div class="popup-stale-banner">
            <div class="popup-stale-icon">${PUCA_SVG}</div>
            <div class="popup-stale-text">
-             <strong>Púca ran off with this bus</strong>
-             <span>Heh heh, times below may be off.</span>
+             <strong>${i18n("popup.bus.stale.title")}</strong>
+             <span>${i18n("popup.bus.stale.body")}</span>
            </div>
          </div>`
       : "";

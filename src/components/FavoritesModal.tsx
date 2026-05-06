@@ -3,6 +3,7 @@ import type { Favorites, BusFavorite, TrainFavorite, BusStopFavorite } from "../
 import { busKey, trainKey, stopKey } from "../favorites";
 import type { BusOperator } from "../types";
 import { useBackToClose } from "../hooks/useBackToClose";
+import { useLocale } from "../i18n";
 
 type Props = {
   onClose: () => void;
@@ -22,6 +23,7 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
 };
 
 export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, onPickStop, onRemoveBus, onRemoveTrain, onRemoveStop }: Props) {
+  const { t } = useLocale();
   useBackToClose(onClose);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -34,13 +36,13 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
   const empty = favs.buses.length === 0 && favs.trains.length === 0 && favs.stops.length === 0;
 
   return (
-    <div className="about-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Favorites">
+    <div className="about-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={t("favs.dialog.aria")}>
       <div className="about-modal" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           className="about-modal__close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("about.close")}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M18 6L6 18M6 6l12 12" />
@@ -48,15 +50,15 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
         </button>
         <div className="about-modal__scroll">
           <div className="about-block">
-            <div className="about-block__label">Favorites</div>
+            <div className="about-block__label">{t("favs.title")}</div>
             {empty && (
               <div className="fav-empty">
-                No favorites yet. Tap the star next to a bus direction, train search, or bus stop to save it.
+                {t("favs.empty")}
               </div>
             )}
             {favs.buses.length > 0 && (
               <>
-                <div className="about-block__label" style={{ marginTop: 8 }}>Buses</div>
+                <div className="about-block__label" style={{ marginTop: 8 }}>{t("favs.section.buses")}</div>
                 <ul className="fav-list">
                   {favs.buses.map((b) => {
                     const k = busKey(b);
@@ -77,8 +79,8 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
                         <button
                           type="button"
                           className="fav-row__remove"
-                          aria-label={`Remove ${b.shortName} from favorites`}
-                          title="Remove"
+                          aria-label={t("favs.remove.bus.aria", { name: b.shortName })}
+                          title={t("favs.remove.title")}
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemoveBus(k);
@@ -94,7 +96,7 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
             )}
             {favs.stops.length > 0 && (
               <>
-                <div className="about-block__label" style={{ marginTop: favs.buses.length > 0 ? 16 : 8 }}>Bus stops</div>
+                <div className="about-block__label" style={{ marginTop: favs.buses.length > 0 ? 16 : 8 }}>{t("favs.section.stops")}</div>
                 <ul className="fav-list">
                   {favs.stops.map((s) => {
                     const k = stopKey(s);
@@ -115,8 +117,8 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
                         <button
                           type="button"
                           className="fav-row__remove"
-                          aria-label={`Remove ${s.stopName} from favorites`}
-                          title="Remove"
+                          aria-label={t("favs.remove.stop.aria", { name: s.stopName })}
+                          title={t("favs.remove.title")}
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemoveStop(k);
@@ -132,27 +134,27 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
             )}
             {favs.trains.length > 0 && (
               <>
-                <div className="about-block__label" style={{ marginTop: (favs.buses.length > 0 || favs.stops.length > 0) ? 16 : 8 }}>Trains</div>
+                <div className="about-block__label" style={{ marginTop: (favs.buses.length > 0 || favs.stops.length > 0) ? 16 : 8 }}>{t("favs.section.trains")}</div>
                 <ul className="fav-list">
-                  {favs.trains.map((t) => {
-                    const k = trainKey(t);
+                  {favs.trains.map((tr) => {
+                    const k = trainKey(tr);
                     return (
                       <li key={k} className="fav-row fav-row--train">
                         <button
                           type="button"
                           className="fav-row__main"
                           onClick={() => {
-                            onPickTrain(t);
+                            onPickTrain(tr);
                             onClose();
                           }}
                         >
-                          <span>{t.fromName} &rarr; {t.toName}</span>
+                          <span>{tr.fromName} &rarr; {tr.toName}</span>
                         </button>
                         <button
                           type="button"
                           className="fav-row__remove"
-                          aria-label={`Remove ${t.fromName} to ${t.toName} from favorites`}
-                          title="Remove"
+                          aria-label={t("favs.remove.train.aria", { from: tr.fromName, to: tr.toName })}
+                          title={t("favs.remove.title")}
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemoveTrain(k);
