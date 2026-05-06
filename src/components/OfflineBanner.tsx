@@ -1,19 +1,18 @@
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribe(callback: () => void): () => void {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+
+const getSnapshot = () => navigator.onLine;
 
 export default function OfflineBanner() {
-  const [online, setOnline] = useState(navigator.onLine);
-
-  useEffect(() => {
-    const up = () => setOnline(true);
-    const down = () => setOnline(false);
-    window.addEventListener("online", up);
-    window.addEventListener("offline", down);
-    return () => {
-      window.removeEventListener("online", up);
-      window.removeEventListener("offline", down);
-    };
-  }, []);
-
+  const online = useSyncExternalStore(subscribe, getSnapshot);
   if (online) return null;
   return (
     <div className="offline-banner" role="status" aria-live="polite">
