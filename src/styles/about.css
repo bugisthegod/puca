@@ -149,8 +149,8 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(4px) saturate(120%);
+  -webkit-backdrop-filter: blur(4px) saturate(120%);
   animation: about-fade-in 0.2s ease-out;
 }
 
