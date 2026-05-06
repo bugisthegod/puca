@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach, afterEach } from "bun:test";
-import { getStationData, getCurrentTrains } from "../src/api";
+import { getStationData, getCurrentTrains, getTrainMovements } from "../src/api";
 
 const EMPTY_STATION_XML = `<?xml version="1.0"?><ArrayOfObjStationData></ArrayOfObjStationData>`;
 const EMPTY_CURRENT_XML = `<?xml version="1.0"?><ArrayOfObjTrainPositions></ArrayOfObjTrainPositions>`;
@@ -24,6 +24,32 @@ describe("api in-flight dedup", () => {
       return new Response(body);
     }) as typeof fetch;
   }
+
+  function mockFetchStatus(status: number) {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      fetchCalls.push(typeof input === "string" ? input : input.toString());
+      return new Response("upstream failed", { status });
+    }) as typeof fetch;
+  }
+
+  test("Irish Rail HTTP failures reject instead of becoming empty results", async () => {
+    mockFetchStatus(503);
+
+    await expect(getCurrentTrains()).rejects.toThrow("HTTP 503");
+    await expect(getStationData("FAILA", 90)).rejects.toThrow("HTTP 503");
+    await expect(getTrainMovements("FAILTRAIN", "6 may 2026")).rejects.toThrow("HTTP 503");
+  });
+
+  test("failed Irish Rail calls are not cached", async () => {
+    mockFetchStatus(503);
+    await expect(getStationData("FAILB", 90)).rejects.toThrow("HTTP 503");
+    expect(fetchCalls.length).toBe(1);
+
+    mockFetch(10, EMPTY_STATION_XML);
+    const result = await getStationData("FAILB", 90);
+    expect(result).toEqual([]);
+    expect(fetchCalls.length).toBe(2);
+  });
 
   test("1000 concurrent misses on the same station hit upstream once", async () => {
     mockFetch(50, EMPTY_STATION_XML);
