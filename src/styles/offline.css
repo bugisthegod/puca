@@ -67,6 +67,16 @@
   opacity: 0.55;
 }
 
+/* Mobile: these three stack directly above the bottom info-panel, and the
+   outer shadow smears onto the panel's translucent edge. */
+@media (max-width: 600px) {
+  .locate-btn,
+  .fav-fab,
+  .about-fab {
+    box-shadow: none;
+  }
+}
+
 /* Locate-me floating button (one-shot geolocation). Desktop: bottom-right
    above attribution. Mobile: top-right (info-panel moves to bottom there). */
 .locate-btn {
