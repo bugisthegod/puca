@@ -246,7 +246,7 @@ const NTA_MIN_INTERVAL_MS = 32_000;
 // Trip updates (schedule + delays per stop) change much slower than GPS positions.
 // 75s lands in the 60-90s ideal range while staying out of phase with the 35s
 // vehicles cycle.
-const NTA_TRIP_UPDATES_INTERVAL_MS = 70_000;
+const NTA_TRIP_UPDATES_INTERVAL_MS = 75_000;
 
 type RawTripUpdateMap = Map<string, {
   tripId: string;
