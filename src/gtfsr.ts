@@ -685,7 +685,7 @@ export async function getBusTripStops(operator: Operator, tripId: string): Promi
 // that push the effective end forward, so they stay non-stale until truly done.
 const ENDED_TRIP_BUFFER_SEC = 15 * 60;
 
-// Dublin-local seconds-since-midnight. The bus service-hours gate (05:00–23:30)
+// Dublin-local seconds-since-midnight. The bus service-hours gate (05:00–00:00)
 // already prevents this check from running in the cross-midnight window, so
 // arrival_sec and nowSec stay comparable without wrap-around handling.
 function secondsIntoDublinDay(now: Date = new Date()): number {

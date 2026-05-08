@@ -78,13 +78,13 @@ function dublinMinutes(now: Date): number {
 
 /** Whether the given transit mode is currently within its daily service window.
  *  Train: 05:00 – 00:00 (off-hours 00:00–05:00)
- *  Bus:   05:00 – 23:30 (off-hours 23:30–05:00)
+ *  Bus:   05:00 – 00:00 (off-hours 00:00–05:00)
  *  Both resume at 05:00 Europe/Dublin time.
  */
 export function isInServiceHours(mode: "train" | "bus", now: Date = new Date()): boolean {
   const mins = dublinMinutes(now);
   if (mode === "train") return mins >= 300;
-  return mins >= 300 && mins < 23 * 60 + 30;
+  return mins >= 300;
 }
 
 /** Label shown when off-hours — always next 05:00 service resume. */

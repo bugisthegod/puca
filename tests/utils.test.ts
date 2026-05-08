@@ -168,18 +168,18 @@ describe("isInServiceHours", () => {
     });
   });
 
-  describe("bus (in service 05:00 – 23:30)", () => {
+  describe("bus (in service 05:00 – 00:00)", () => {
     test("04:59 is off-hours", () => {
       expect(isInServiceHours("bus", dublinWinter(4, 59))).toBe(false);
     });
     test("05:00 opens the window", () => {
       expect(isInServiceHours("bus", dublinWinter(5, 0))).toBe(true);
     });
-    test("23:29 is in service", () => {
-      expect(isInServiceHours("bus", dublinWinter(23, 29))).toBe(true);
+    test("23:59 is in service (just before nightly cutoff)", () => {
+      expect(isInServiceHours("bus", dublinWinter(23, 59))).toBe(true);
     });
-    test("23:30 closes the window", () => {
-      expect(isInServiceHours("bus", dublinWinter(23, 30))).toBe(false);
+    test("00:00 closes the window", () => {
+      expect(isInServiceHours("bus", dublinWinter(0, 0))).toBe(false);
     });
     test("00:00 is off-hours (no overnight bus)", () => {
       expect(isInServiceHours("bus", dublinWinter(0, 0))).toBe(false);
