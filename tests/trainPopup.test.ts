@@ -1,5 +1,6 @@
-import { describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
 import type { Train, TrainMovement } from "../src/types";
+import { setLocale } from "../src/i18n";
 import {
   buildTrainPopupErrorHTML,
   buildTrainPopupHTML,
@@ -8,6 +9,10 @@ import {
   formatTrainPopupMessage,
   trainPopupStatusClass,
 } from "../src/hooks/trainPopup";
+
+beforeAll(() => {
+  setLocale("en");
+});
 
 function train(overrides: Partial<Train> = {}): Train {
   return {

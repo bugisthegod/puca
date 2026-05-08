@@ -42,17 +42,21 @@ function trainPopupHeader(train: Train): string {
   `;
 }
 
-export function buildTrainPopupHTML(train: Train): string {
+function buildTrainPopupShell(train: Train, bodyHtml: string): string {
   return `
     <div class="popup-content">
       ${trainPopupHeader(train)}
-      <div class="popup-loading">${t("popup.train.loading")}</div>
+      ${bodyHtml}
     </div>
   `;
 }
 
+export function buildTrainPopupHTML(train: Train): string {
+  return buildTrainPopupShell(train, `<div class="popup-loading">${t("popup.train.loading")}</div>`);
+}
+
 export function buildTrainPopupErrorHTML(train: Train): string {
-  return buildTrainPopupHTML(train).replace(t("popup.train.loading"), t("popup.train.error"));
+  return buildTrainPopupShell(train, `<div class="popup-message">${t("popup.train.error")}</div>`);
 }
 
 export function buildTrainPopupWithMovements(train: Train, movements: TrainMovement[]): string {
@@ -91,12 +95,8 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
     })
     .join("");
 
-  return `
-    <div class="popup-content">
-      ${trainPopupHeader(train)}
-      ${
-        movements.length > 0
-          ? `<div class="popup-table-wrap">
+  const bodyHtml = movements.length > 0
+    ? `<div class="popup-table-wrap">
                <table class="movements-table">
                  <thead>
                    <tr>
@@ -109,8 +109,7 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
                  <tbody>${rows}</tbody>
                </table>
              </div>`
-          : `<div class="popup-message">${formatTrainPopupMessage(train.message)}</div>`
-      }
-    </div>
-  `;
+    : `<div class="popup-message">${formatTrainPopupMessage(train.message)}</div>`;
+
+  return buildTrainPopupShell(train, bodyHtml);
 }

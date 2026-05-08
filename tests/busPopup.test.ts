@@ -1,11 +1,16 @@
-import { describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
 import type { BusVehicle } from "../src/types";
+import { setLocale } from "../src/i18n";
 import {
   buildBusPopupHTML,
   busPopupStatusFromDelay,
   formatBusPopupSec,
   type BusTripPopupData,
 } from "../src/hooks/busPopup";
+
+beforeAll(() => {
+  setLocale("en");
+});
 
 function bus(overrides: Partial<BusVehicle> = {}): BusVehicle {
   return {
