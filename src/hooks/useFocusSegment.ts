@@ -64,6 +64,14 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
       pane.style.zIndex = "550";
     }
 
+    function focusBusOnly(activeMap: L.Map, busLatLng: L.LatLng): void {
+      const zoom = Math.max(activeMap.getZoom(), 15);
+      activeMap.flyTo(busLatLng, zoom, {
+        duration: 0.7,
+        easeLinearity: 0.3,
+      });
+    }
+
     let cancelled = false;
 
     (async () => {
@@ -100,7 +108,10 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
 
       const busLatLng = busEntry.marker.getLatLng();
       const lineInfo = buildRouteLine(dirData.coords);
-      if (!lineInfo) return;
+      if (!lineInfo) {
+        focusBusOnly(map, busLatLng);
+        return;
+      }
 
       const busProj = projectOntoRoute(
         busLatLng.lat, busLatLng.lng,
@@ -119,19 +130,30 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
       // start (busD = 0); the bus icon stays at its real GPS, but the line still
       // appears from route-start → target stop. Target offRoute is fatal — means
       // the user's stop genuinely isn't on this route.
-      if (targetProj.offRoute) return;
+      if (targetProj.offRoute) {
+        focusBusOnly(map, busLatLng);
+        return;
+      }
       const busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
       const targetD = targetProj.targetDistanceAlongRoute;
-      if (busD >= targetD) return;
+      if (busD >= targetD) {
+        focusBusOnly(map, busLatLng);
+        return;
+      }
 
       let slicedCoords: [number, number][];
       try {
         const sliced = lineSliceAlong(lineInfo.routeLine, busD / 1000, targetD / 1000, { units: "kilometers" });
         slicedCoords = sliced.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
       } catch {
+        focusBusOnly(map, busLatLng);
         return;
       }
-      if (cancelled || slicedCoords.length < 2) return;
+      if (cancelled) return;
+      if (slicedCoords.length < 2) {
+        focusBusOnly(map, busLatLng);
+        return;
+      }
 
       const color = operatorColor(focusContext.operator);
 

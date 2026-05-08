@@ -62,6 +62,12 @@ export function filterBusRoutes(routes: RouteWithOperator[], query: string): Rou
   );
 }
 
+export function displayEtaSeconds(etaSeconds: number, fetchedAt: number | null, clockNow: number): number {
+  if (fetchedAt === null) return etaSeconds;
+  const elapsedSec = Math.floor((clockNow - fetchedAt) / 1000);
+  return Math.max(0, etaSeconds - elapsedSec);
+}
+
 type BusSearchPanelProps = {
   onSelectRoute: (shortName: string | null, operator?: BusOperator) => void;
   selectedRoute: string | null;
@@ -121,6 +127,8 @@ export default function BusSearchPanel({
   const [arrivals, setArrivals] = useState<StopArrival[] | null>(null);
   const [arrivalsLoading, setArrivalsLoading] = useState(false);
   const [arrivalsError, setArrivalsError] = useState<string | null>(null);
+  const [arrivalsFetchedAt, setArrivalsFetchedAt] = useState<number | null>(null);
+  const [arrivalClockNow, setArrivalClockNow] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -203,15 +211,30 @@ export default function BusSearchPanel({
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: StopArrival[] = await res.json();
-      if (!ac.signal.aborted) setArrivals(data);
+      if (!ac.signal.aborted) {
+        const now = Date.now();
+        setArrivals(data);
+        setArrivalsFetchedAt(now);
+        setArrivalClockNow(now);
+      }
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
       setArrivals(null);
+      setArrivalsFetchedAt(null);
       setArrivalsError(t("bus.search.arrivals.error"));
     } finally {
       if (!ac.signal.aborted) setArrivalsLoading(false);
     }
   }, []);
+
+  // Keep stop ETAs feeling alive between 30s fetches. The upstream TripUpdates
+  // cadence stays unchanged; this only subtracts local elapsed time from the
+  // last server-calculated ETA until the next fetch recalibrates it.
+  useEffect(() => {
+    if (!arrivals || arrivals.length === 0) return;
+    const id = setInterval(() => setArrivalClockNow(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, [arrivals]);
 
   // Auto-refresh arrivals for the selected stop every 30s.
   // busStopId/busStopOperator guard: after a stop change, selectedStop is
@@ -316,6 +339,7 @@ export default function BusSearchPanel({
   function clearStopSelection() {
     setSelectedStop(null);
     setArrivals(null);
+    setArrivalsFetchedAt(null);
     setStopQuery("");
     onStopIdChange(null, null);
   }
@@ -528,7 +552,7 @@ export default function BusSearchPanel({
                               <span className="stop-arrival__route">{a.routeShortName}</span>
                               <span className="stop-arrival__headsign">{a.headsign}</span>
                               <span className={`stop-arrival__eta${a.delaySec >= 300 ? " late" : ""}`}>
-                                {etaLabel(a.etaSeconds)}
+                                {etaLabel(displayEtaSeconds(a.etaSeconds, arrivalsFetchedAt, arrivalClockNow))}
                               </span>
                             </button>
                           </li>

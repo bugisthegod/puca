@@ -3,6 +3,7 @@ import {
   BUS_OPERATOR_INITIALS,
   BUS_OPERATOR_LABEL,
   BUS_SEARCH_OPERATORS,
+  displayEtaSeconds,
   filterBusRoutes,
   getBusDirections,
   type RouteWithOperator,
@@ -46,6 +47,12 @@ describe("BusSearchPanel smoke helpers", () => {
       "0": "Maynooth",
       "1": "1",
     });
+  });
+
+  test("keeps displayed stop ETAs moving between arrivals fetches", () => {
+    expect(displayEtaSeconds(600, null, 31_000)).toBe(600);
+    expect(displayEtaSeconds(600, 1_000, 31_000)).toBe(570);
+    expect(displayEtaSeconds(20, 1_000, 31_000)).toBe(0);
   });
 });
 
