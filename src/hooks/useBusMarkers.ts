@@ -617,7 +617,7 @@ export function useBusMarkers({
     map.flyToBounds(busShapeLayerRef.current.getBounds(), {
       paddingTopLeft: [20, 40],
       paddingBottomRight: [20, 60],
-      duration: 1.1,
+      duration: 1.5,
       easeLinearity: 0.3,
     });
 

@@ -268,7 +268,10 @@ export function useMapInstance(
           userMarkerRef.current.setLatLng(latlng);
           accuracyCircleRef.current?.setLatLng(latlng).setRadius(accuracy);
         }
-        map.setView(latlng, 14);
+        map.flyTo(latlng, 14, {
+          duration: 1.0,
+          easeLinearity: 0.3,
+        });
       };
 
       // First-tap-of-session optimization for Android: paint the last-known

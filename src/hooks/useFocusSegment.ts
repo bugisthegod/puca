@@ -67,7 +67,7 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
     function focusBusOnly(activeMap: L.Map, busLatLng: L.LatLng): void {
       const zoom = Math.max(activeMap.getZoom(), 15);
       activeMap.flyTo(busLatLng, zoom, {
-        duration: 0.7,
+        duration: 1.0,
         easeLinearity: 0.3,
       });
     }
@@ -229,18 +229,18 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
         paddingTopLeft: [20, 60],
         paddingBottomRight: [20, 80],
         maxZoom: 16,
-        duration: 1.1,
+        duration: 1.35,
         easeLinearity: 0.3,
       });
 
       // Restore polyline visibility after the zoom animation lands. Match the
-      // flyToBounds duration (1.1s) plus a small buffer so the stroke swap
+      // flyToBounds duration (1.35s) plus a small buffer so the stroke swap
       // happens off-screen of the animation.
       setTimeout(() => {
         if (cancelled) return;
         if (!map.hasLayer(polyline)) return;
         polyline.setStyle({ opacity: 0.85 });
-      }, 1150);
+      }, 1400);
     })();
 
     return () => {
