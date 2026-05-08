@@ -2,6 +2,7 @@ import { test, expect, describe } from "bun:test";
 import {
   mergeTripStops,
   getBusRouteShape,
+  getGtfsrHealthSnapshot,
   getTrainRouteShape,
   decideStopArrival,
   type ScheduledRow,
@@ -168,6 +169,24 @@ describe("getBusRouteShape", () => {
 
   test("returns null for an unknown shortName", () => {
     expect(getBusRouteShape("dublinbus", "NOPE_999")).toBeNull();
+  });
+});
+
+describe("getGtfsrHealthSnapshot", () => {
+  test("returns safe operational metadata without requiring live NTA data", async () => {
+    const health = await getGtfsrHealthSnapshot();
+
+    expect(health.backgroundPollingStarted).toBe(false);
+    expect(health.nta.vehicles.count).toBe(0);
+    expect(health.nta.vehicles.ageSec).toBeNull();
+    expect(health.nta.vehicles.intervalMs).toBeGreaterThan(0);
+    expect(health.nta.tripUpdates.count).toBe(0);
+    expect(health.nta.tripUpdates.ageSec).toBeNull();
+    expect(health.nta.tripUpdates.intervalMs).toBeGreaterThan(0);
+    expect(Object.keys(health.db).sort()).toEqual(["buseireann", "dublinbus", "goahead"]);
+    for (const status of Object.values(health.db)) {
+      expect(["connected", "available", "missing", "error"]).toContain(status.status);
+    }
   });
 });
 

@@ -286,6 +286,8 @@ let vehicleCache: GtfsVehiclePosition[] | null = null;
 let tripUpdateCache: RawTripUpdateMap | null = null;
 let lastVehicleCall = 0;
 let lastTripUpdateCall = 0;
+let vehicleCacheUpdatedAt = 0;
+let tripUpdateCacheUpdatedAt = 0;
 
 // ---------------------------------------------------------------------------
 // Vehicles
@@ -336,6 +338,7 @@ async function fetchVehicles(): Promise<void> {
     }
 
     vehicleCache = vehicles;
+    vehicleCacheUpdatedAt = Date.now();
     log.info("nta.vehicles.ok", { vehicle_count: vehicles.length, duration_ms });
   } catch (err) {
     log.error("nta.vehicles.exception", {
@@ -413,6 +416,7 @@ async function fetchTripUpdates(): Promise<void> {
     }
 
     tripUpdateCache = map;
+    tripUpdateCacheUpdatedAt = Date.now();
     log.info("nta.trip_updates.ok", { trip_count: map.size, duration_ms });
   } catch (err) {
     log.error("nta.trip_updates.exception", {
@@ -482,6 +486,77 @@ export function startBackgroundPolling(): void {
 
 export function getGtfsrVehiclePositions(): GtfsVehiclePosition[] {
   return getCachedVehicles();
+}
+
+export type GtfsrHealthSnapshot = {
+  backgroundPollingStarted: boolean;
+  nta: {
+    vehicles: {
+      count: number;
+      ageSec: number | null;
+      lastAttemptAgeSec: number | null;
+      intervalMs: number;
+    };
+    tripUpdates: {
+      count: number;
+      ageSec: number | null;
+      lastAttemptAgeSec: number | null;
+      intervalMs: number;
+    };
+  };
+  db: Record<Operator, {
+    status: "connected" | "available" | "missing" | "error";
+  }>;
+};
+
+function ageSec(timestampMs: number, now: number): number | null {
+  if (timestampMs <= 0) return null;
+  return Math.max(0, Math.round((now - timestampMs) / 1000));
+}
+
+async function getDbHealth(operator: Operator): Promise<GtfsrHealthSnapshot["db"][Operator]> {
+  const cached = scheduleDbMap.get(operator);
+  if (cached) {
+    try {
+      cached.query("SELECT 1").get();
+      return { status: "connected" };
+    } catch {
+      return { status: "error" };
+    }
+  }
+
+  try {
+    const exists = await Bun.file(DB_PATHS[operator]).exists();
+    if (cached === null) return { status: exists ? "error" : "missing" };
+    return { status: exists ? "available" : "missing" };
+  } catch {
+    return { status: "error" };
+  }
+}
+
+export async function getGtfsrHealthSnapshot(now = Date.now()): Promise<GtfsrHealthSnapshot> {
+  const dbEntries = await Promise.all(
+    ALL_OPERATORS.map(async (operator) => [operator, await getDbHealth(operator)] as const),
+  );
+
+  return {
+    backgroundPollingStarted,
+    nta: {
+      vehicles: {
+        count: vehicleCache?.length ?? 0,
+        ageSec: ageSec(vehicleCacheUpdatedAt, now),
+        lastAttemptAgeSec: ageSec(lastVehicleCall, now),
+        intervalMs: NTA_MIN_INTERVAL_MS,
+      },
+      tripUpdates: {
+        count: tripUpdateCache?.size ?? 0,
+        ageSec: ageSec(tripUpdateCacheUpdatedAt, now),
+        lastAttemptAgeSec: ageSec(lastTripUpdateCall, now),
+        intervalMs: NTA_TRIP_UPDATES_INTERVAL_MS,
+      },
+    },
+    db: Object.fromEntries(dbEntries) as GtfsrHealthSnapshot["db"],
+  };
 }
 
 export function getBusRoutes(operator: Operator): BusRoute[] {

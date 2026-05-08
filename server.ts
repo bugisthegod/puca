@@ -1,6 +1,6 @@
 import index from "./index.html";
 import { getCurrentTrains, getStationData, getTrainMovements } from "./src/api.ts";
-import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getAllTrainShapes, getBusStopArrivals, searchBusStops, searchAllBusStops, getOperatorStop, startBackgroundPolling, type Operator } from "./src/gtfsr.ts";
+import { getGtfsrVehiclePositions, getBusRoutes, getBusVehiclesByRoute, getAllBusVehicles, getBusRouteShape, getBusTripStops, getTrainRouteShape, getAllTrainShapes, getBusStopArrivals, searchBusStops, searchAllBusStops, getOperatorStop, getGtfsrHealthSnapshot, startBackgroundPolling, type Operator } from "./src/gtfsr.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
 const VALID_OPERATORS = new Set<Operator>(["dublinbus", "buseireann", "goahead"]);
@@ -37,6 +37,8 @@ function isValidTrainDate(raw: string): boolean {
 // clients re-precache after each release. Local dev gets a stable "dev" name
 // so the cache isn't churned on restart.
 const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
+const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
+const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
 
 // Irish Rail's "today" is Dublin's today — not fly's UTC today, which can be
 // yesterday during summer-evening / early-morning windows.
@@ -78,6 +80,12 @@ function isLocalIp(ip: string): boolean {
   return ip === "local" || ip === "127.0.0.1" || ip === "::1";
 }
 
+function hasOriginAccess(req: Request): boolean {
+  const ip = getClientIp(req);
+  if (isLocalIp(ip)) return true;
+  return Boolean(ORIGIN_SECRET && req.headers.get("x-origin-secret") === ORIGIN_SECRET);
+}
+
 function rateLimit<T extends (req: any) => Response | Promise<Response>>(handler: T): T {
   return (async (req: any) => {
     const ip = getClientIp(req);
@@ -116,12 +124,40 @@ function staticFile(path: string, ttlSec: number) {
   });
 }
 
+function memoryMb(): number {
+  return Math.round(process.memoryUsage().rss / 1024 / 1024);
+}
+
+async function detailedHealth() {
+  return {
+    ok: true,
+    uptimeSec: Math.round(process.uptime()),
+    memoryMb: memoryMb(),
+    gtfsr: await getGtfsrHealthSnapshot(),
+  };
+}
+
 startBackgroundPolling();
 
 Bun.serve({
-  port: 3000,
+  port: PORT,
   routes: {
     "/": index,
+    "/health": rateLimit((req) => {
+      if (!hasOriginAccess(req)) return Response.json({ error: "not found" }, { status: 404 });
+      return Response.json(
+        { ok: true },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }),
+    "/api/health/details": rateLimit(async (req) => {
+      if (!hasOriginAccess(req)) {
+        return Response.json({ error: "not found" }, { status: 404 });
+      }
+      return Response.json(await detailedHealth(), {
+        headers: { "Cache-Control": "no-store" },
+      });
+    }),
     "/sw.js": async () => {
       const text = await Bun.file("./public/sw.js").text();
       const body = text.replace('"__CACHE_VERSION__"', JSON.stringify(SW_CACHE_VERSION));
@@ -372,4 +408,4 @@ Bun.serve({
   } : false,
 });
 
-console.log("Púca running on http://localhost:3000");
+console.log(`Púca running on http://localhost:${PORT}`);
