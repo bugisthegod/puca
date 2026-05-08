@@ -341,7 +341,7 @@ const ZH: Record<Key, string> = {
   "train.status.running": "运行中",
   "train.status.ready": "待发",
   "train.status.scheduled": "已计划",
-  "train.toast.notonmap.title": "还未上线地图",
+  "train.toast.notonmap.title": "不在地图上哦",
 
   // App — back-to-all-buses button
   "bus.back.all": "全部公交",
@@ -361,7 +361,7 @@ const ZH: Record<Key, string> = {
   "bus.search.arrivals.empty": "暂无即将到站的公交。",
   "bus.search.eta.due": "即将到站",
   "bus.search.eta.min": "{n} 分钟",
-  "bus.search.toast.notonmap.title": "还未上线地图",
+  "bus.search.toast.notonmap.title": "不在地图上哦",
 
   // FavoritesModal
   "favs.dialog.aria": "收藏",
@@ -420,7 +420,7 @@ const ZH: Record<Key, string> = {
   "popup.bus.empty": "暂无即将到站的数据。",
   "popup.bus.showall": "显示全部 {route}",
   "popup.bus.vehicle": "车辆 {label}",
-  "popup.bus.stale.title": "Púca 把这辆公交偷跑了",
+  "popup.bus.stale.title": "Púca 把这辆公交开跑了",
   "popup.bus.stale.body": "嘿嘿，下面的时刻可能不准。",
   "popup.bus.col.num": "#",
   "popup.bus.col.stop": "站点",
