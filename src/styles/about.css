@@ -261,8 +261,8 @@
 }
 
 .about-modal__lang__btn.is-active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: rgba(37, 168, 100, 0.25);
+  color: #25a864;
 }
 
 /* --- Hero --- */
@@ -561,8 +561,8 @@
   color: #000;
 }
 :root[data-theme="light"] .about-modal__lang__btn.is-active {
-  background: rgba(0, 0, 0, 0.1);
-  color: #000;
+  background: rgba(37, 168, 100, 0.25);
+  color: #25a864;
 }
 :root[data-theme="light"] .about-hero__name {
   color: #16161c;
@@ -881,4 +881,3 @@
   min-width: 0;
   align-self: center;
 }
-

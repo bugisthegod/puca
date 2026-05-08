@@ -521,14 +521,6 @@ function App() {
             <div className="app-toast__title">{toast.title}</div>
             {toast.body && <div className="app-toast__body">{toast.body}</div>}
           </div>
-          <button
-            type="button"
-            className="app-toast__close"
-            onClick={() => setToast(null)}
-            aria-label={t("toast.dismiss")}
-          >
-            ×
-          </button>
         </div>
       )}
       <button
