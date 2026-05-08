@@ -228,6 +228,7 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
       map.flyToBounds(polyline.getBounds(), {
         paddingTopLeft: [20, 60],
         paddingBottomRight: [20, 80],
+        maxZoom: 16,
         duration: 1.1,
         easeLinearity: 0.3,
       });
