@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { Station, SearchResult } from "../types";
 import { getStationsOnce } from "../stationsClient";
 import FavStar from "./FavStar";
@@ -26,7 +26,7 @@ interface SearchPanelProps {
   onShowToast: (title: string, body?: string) => void;
 }
 
-export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, collapsed, onCollapsedChange, onShowToast }: SearchPanelProps) {
+function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, collapsed, onCollapsedChange, onShowToast }: SearchPanelProps) {
   const { t } = useLocale();
   const saved = sessionStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
@@ -79,7 +79,10 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
     return stations.filter((s) => s.name.toLowerCase().includes(q));
   };
 
-  const currentList = focusedField === "from" ? filteredStations(fromQuery) : filteredStations(toQuery);
+  const currentList = useMemo(
+    () => (focusedField === "from" ? filteredStations(fromQuery) : filteredStations(toQuery)),
+    [focusedField, fromQuery, toQuery, stations],
+  );
 
   function selectStation(field: "from" | "to", station: Station) {
     if (field === "from") {
@@ -201,7 +204,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
         />
         {focusedField === "from" && (
           <ul className="station-dropdown" ref={dropdownRef}>
-            {filteredStations(fromQuery).map((s, i) => (
+            {currentList.map((s, i) => (
               <li
                 key={s.code}
                 className={i === highlightIndex ? "highlighted" : ""}
@@ -237,7 +240,7 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
         />
         {focusedField === "to" && (
           <ul className="station-dropdown" ref={dropdownRef}>
-            {filteredStations(toQuery).map((s, i) => (
+            {currentList.map((s, i) => (
               <li
                 key={s.code}
                 className={i === highlightIndex ? "highlighted" : ""}
@@ -335,3 +338,5 @@ export default function SearchPanel({ onSearch, onClear, onTrainSelect, favs, on
     </div>
   );
 }
+
+export default React.memo(SearchPanel);

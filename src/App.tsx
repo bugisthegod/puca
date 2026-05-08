@@ -2,7 +2,7 @@ import L from "leaflet";
 import "leaflet.markercluster";
 (window as unknown as { L: typeof L }).L = L;
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator, FocusContext } from "./types";
 import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
@@ -18,7 +18,7 @@ import PucaMark from "./components/PucaMark";
 import OfflineBanner from "./components/OfflineBanner";
 import { registerServiceWorker } from "./sw-register";
 import { useFavorites } from "./hooks/useFavorites";
-import { hasBus, hasTrain, hasStop, totalFavorites, MAX_FAVORITES, type TrainFavorite, type BusStopFavorite } from "./favorites";
+import { hasBus, hasTrain, hasStop, totalFavorites, MAX_FAVORITES, type BusFavorite, type TrainFavorite, type BusStopFavorite } from "./favorites";
 import { useLocale } from "./i18n";
 import "./style.css";
 
@@ -179,47 +179,57 @@ function App() {
   const { favs, toggleBus, toggleTrain, toggleStop, removeBus, removeTrain, removeStop } = useFavorites();
   const [showFavs, setShowFavs] = useState(false);
   const [searchResetKey, setSearchResetKey] = useState(0);
+  const favsRef = useRef(favs);
+  favsRef.current = favs;
+  const busOperatorRef = useRef(busOperator);
+  busOperatorRef.current = busOperator;
 
-  const busFavKey = busRoute && busDirection ? { shortName: busRoute, operator: busOperator, direction: busDirection } : null;
+  const busFavKey = useMemo(
+    () => busRoute && busDirection ? { shortName: busRoute, operator: busOperator, direction: busDirection } : null,
+    [busDirection, busOperator, busRoute],
+  );
   const busIsFav = busFavKey ? hasBus(favs, busFavKey) : false;
   const stopIsFav = busStopId && busStopOperator ? hasStop(favs, { stopId: busStopId, operator: busStopOperator }) : false;
-  function showToast(title: string, body?: string, ms = 3000) {
+  const showToast = useCallback((title: string, body?: string, ms = 3000) => {
     const next = { title, body };
     setToast(next);
     setTimeout(() => setToast((t) => (t?.title === title ? null : t)), ms);
-  }
-  function showFavLimitToast() {
+  }, []);
+  const showFavLimitToast = useCallback(() => {
     showToast(t("toast.fav.full", { max: MAX_FAVORITES }));
-  }
-  const onToggleBusFav = () => {
+  }, [showToast, t]);
+  const onToggleBusFav = useCallback(() => {
     if (!busFavKey) return;
-    if (!busIsFav && totalFavorites(favs) >= MAX_FAVORITES) {
+    const latestFavs = favsRef.current;
+    if (!busIsFav && totalFavorites(latestFavs) >= MAX_FAVORITES) {
       showFavLimitToast();
       return;
     }
     const headsign = busShape?.[busDirection!]?.headsign ?? busDirection!;
     toggleBus({ ...busFavKey, headsign });
-  };
-  const tryToggleTrain = (f: TrainFavorite) => {
-    if (!hasTrain(favs, f) && totalFavorites(favs) >= MAX_FAVORITES) {
+  }, [busDirection, busFavKey, busIsFav, busShape, showFavLimitToast, toggleBus]);
+  const tryToggleTrain = useCallback((f: TrainFavorite) => {
+    const latestFavs = favsRef.current;
+    if (!hasTrain(latestFavs, f) && totalFavorites(latestFavs) >= MAX_FAVORITES) {
       showFavLimitToast();
       return;
     }
     toggleTrain(f);
-  };
-  const onToggleStopFav = (stop: { id: string; name: string; code: string; operator: BusOperator }) => {
+  }, [showFavLimitToast, toggleTrain]);
+  const onToggleStopFav = useCallback((stop: { id: string; name: string; code: string; operator: BusOperator }) => {
     const fav: BusStopFavorite = {
       stopId: stop.id,
       operator: stop.operator,
       stopCode: stop.code,
       stopName: stop.name,
     };
-    if (!hasStop(favs, fav) && totalFavorites(favs) >= MAX_FAVORITES) {
+    const latestFavs = favsRef.current;
+    if (!hasStop(latestFavs, fav) && totalFavorites(latestFavs) >= MAX_FAVORITES) {
       showFavLimitToast();
       return;
     }
     toggleStop(fav);
-  };
+  }, [showFavLimitToast, toggleStop]);
 
   function openAbout() {
     setShowAbout(true);
@@ -378,8 +388,8 @@ function App() {
     };
   }, [busRoute, busOperator]);
 
-  function handleBusOperatorChange(op: BusOperator) {
-    if (op === busOperator) return;
+  const handleBusOperatorChange = useCallback((op: BusOperator) => {
+    if (op === busOperatorRef.current) return;
     setBusOperator(op);
     setBusRoute(null);
     setBusDirection(null);
@@ -388,7 +398,116 @@ function App() {
     setBuses([]);
     setFocusContext(null);
     setPanelCollapsed(true);
-  }
+  }, []);
+
+  const handlePickBusFavorite = useCallback((f: BusFavorite) => {
+    setMode("bus");
+    setBusOperator(f.operator);
+    setBusRoute(f.shortName);
+    setBusDirection(f.direction);
+    setBuses([]);
+    // Symmetric to onPickStop: clear any stop selection + focus so the
+    // panel doesn't stay stuck on the stop tab while the map shows the
+    // route.
+    setBusSearchTab("route");
+    setBusStopId(null);
+    setFocusContext(null);
+    setPanelCollapsed(false);
+  }, []);
+
+  const handlePickTrainFavorite = useCallback((f: TrainFavorite) => {
+    sessionStorage.setItem("search", JSON.stringify({ from: f.from, to: f.to, fromQuery: f.fromName, toQuery: f.toName }));
+    setMode((current) => (current === "train" ? current : "train"));
+    setSearchResetKey((k) => k + 1);
+    setPanelCollapsed(false);
+  }, []);
+
+  const handleCloseFavorites = useCallback(() => setShowFavs(false), []);
+
+  const handleTrainSearch = useCallback((codes: string[]) => {
+    setSearchCodes(codes.length > 0 ? codes : []);
+  }, []);
+
+  const handleClearTrainSearch = useCallback(() => {
+    setSearchCodes(null);
+  }, []);
+
+  const handlePickStopFavorite = useCallback((s: BusStopFavorite) => {
+    setMode((current) => (current === "bus" ? current : "bus"));
+    if (s.operator !== busOperatorRef.current) {
+      setBusOperator(s.operator);
+      setBuses([]);
+    }
+    setBusRoute(null);
+    setBusDirection(null);
+    setFocusContext(null);
+    setBusSearchTab("stop");
+    setBusStopId(s.stopId);
+    setBusStopOperator(s.operator);
+    setPanelCollapsed(false);
+  }, []);
+
+  const handleSelectBusRoute = useCallback((r: string | null, op?: BusOperator) => {
+    if (op && op !== busOperatorRef.current) {
+      setBusOperator(op);
+      setBuses([]);
+    }
+    setBusRoute(r);
+    setBusDirection(null);
+  }, []);
+
+  const handleBusTabChange = useCallback((tab: BusSearchTab) => {
+    setBusSearchTab(tab);
+    if (tab === "route") setFocusContext(null);
+  }, []);
+
+  const handleStopIdChange = useCallback((id: string | null, op: BusOperator | null) => {
+    setBusStopId(id);
+    setBusStopOperator(op);
+    // Picking a stop in an operator different from the current route-mode
+    // default would otherwise leave the all-fleet browse pinned to the old
+    // operator — sync it so a tab back to route mode shows buses near the
+    // chosen stop.
+    if (op && op !== busOperatorRef.current) {
+      setBusOperator(op);
+      setBuses([]);
+    }
+  }, []);
+
+  const handlePickArrival = useCallback((arrival: Parameters<React.ComponentProps<typeof BusSearchPanel>["onPickArrival"]>[0], op: BusOperator, stop: Parameters<React.ComponentProps<typeof BusSearchPanel>["onPickArrival"]>[2]) => {
+    // Clear any selected route so the user lands in all-buses mode — the
+    // target tripId is included in fetchAllBuses, so the focus effect can
+    // find the marker without drawing the whole polyline.
+    setBusRoute(null);
+    setBusDirection(null);
+    setFocusContext({
+      tripId: arrival.tripId,
+      operator: op,
+      routeShortName: arrival.routeShortName,
+      direction: arrival.direction,
+      targetStopId: stop.id,
+      targetStopCode: stop.code,
+      targetStopName: stop.name,
+      targetStopLat: stop.lat,
+      targetStopLng: stop.lng,
+    });
+  }, []);
+
+  const handleModeChange = useCallback((m: Mode) => {
+    setMode(m);
+    setSearchCodes(null);
+    setBusRoute(null);
+    setBusDirection(null);
+    setBusStopId(null);
+    setBusStopOperator(null);
+    setBusSearchTab(m === "bus" ? "stop" : "route");
+    setFocusContext(null);
+    setPanelCollapsed(true);
+    // SearchPanel rehydrates from/to queries from this sessionStorage key
+    // on mount, so App-state clearing alone isn't enough — clear the
+    // persisted copy too or remounting restores the train search.
+    sessionStorage.removeItem("search");
+  }, []);
 
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
 
@@ -464,42 +583,11 @@ function App() {
       {showTour && <OnboardingTour steps={tourSteps} onClose={closeTour} />}
       {showFavs && (
         <FavoritesModal
-          onClose={() => setShowFavs(false)}
+          onClose={handleCloseFavorites}
           favs={favs}
-          onPickBus={(f) => {
-            setMode("bus");
-            setBusOperator(f.operator);
-            setBusRoute(f.shortName);
-            setBusDirection(f.direction);
-            setBuses([]);
-            // Symmetric to onPickStop: clear any stop selection + focus so the
-            // panel doesn't stay stuck on the stop tab while the map shows the
-            // route.
-            setBusSearchTab("route");
-            setBusStopId(null);
-            setFocusContext(null);
-            setPanelCollapsed(false);
-          }}
-          onPickTrain={(f) => {
-            sessionStorage.setItem("search", JSON.stringify({ from: f.from, to: f.to, fromQuery: f.fromName, toQuery: f.toName }));
-            if (mode !== "train") setMode("train");
-            setSearchResetKey((k) => k + 1);
-            setPanelCollapsed(false);
-          }}
-          onPickStop={(s) => {
-            if (mode !== "bus") setMode("bus");
-            if (s.operator !== busOperator) {
-              setBusOperator(s.operator);
-              setBuses([]);
-            }
-            setBusRoute(null);
-            setBusDirection(null);
-            setFocusContext(null);
-            setBusSearchTab("stop");
-            setBusStopId(s.stopId);
-            setBusStopOperator(s.operator);
-            setPanelCollapsed(false);
-          }}
+          onPickBus={handlePickBusFavorite}
+          onPickTrain={handlePickTrainFavorite}
+          onPickStop={handlePickStopFavorite}
           onRemoveBus={removeBus}
           onRemoveTrain={removeTrain}
           onRemoveStop={removeStop}
@@ -508,8 +596,8 @@ function App() {
       {mode === "train" ? (
         <SearchPanel
           key={searchResetKey}
-          onSearch={(codes) => setSearchCodes(codes.length > 0 ? codes : [])}
-          onClear={() => setSearchCodes(null)}
+          onSearch={handleTrainSearch}
+          onClear={handleClearTrainSearch}
           onTrainSelect={focusTrain}
           favs={favs}
           onToggleTrain={tryToggleTrain}
@@ -519,14 +607,7 @@ function App() {
         />
       ) : (
         <BusSearchPanel
-          onSelectRoute={(r, op) => {
-            if (op && op !== busOperator) {
-              setBusOperator(op);
-              setBuses([]);
-            }
-            setBusRoute(r);
-            setBusDirection(null);
-          }}
+          onSelectRoute={handleSelectBusRoute}
           selectedRoute={busRoute}
           onSelectDirection={setBusDirection}
           selectedDirection={busDirection}
@@ -535,47 +616,16 @@ function App() {
           onToggleFavorite={onToggleBusFav}
           busOperator={busOperator}
           busSearchTab={busSearchTab}
-          onTabChange={(tab) => {
-            setBusSearchTab(tab);
-            if (tab === "route") setFocusContext(null);
-          }}
+          onTabChange={handleBusTabChange}
           busStopId={busStopId}
           busStopOperator={busStopOperator}
-          onStopIdChange={(id, op) => {
-            setBusStopId(id);
-            setBusStopOperator(op);
-            // Picking a stop in an operator different from the current
-            // route-mode default would otherwise leave the all-fleet browse
-            // pinned to the old operator — sync it so a tab back to route
-            // mode shows buses near the chosen stop.
-            if (op && op !== busOperator) {
-              setBusOperator(op);
-              setBuses([]);
-            }
-          }}
+          onStopIdChange={handleStopIdChange}
           collapsed={panelCollapsed}
           onCollapsedChange={setPanelCollapsed}
           onShowToast={showToast}
           stopIsFavorite={stopIsFav}
           onToggleStopFavorite={onToggleStopFav}
-          onPickArrival={(arrival, op, stop) => {
-            // Clear any selected route so the user lands in all-buses mode —
-            // the target tripId is included in fetchAllBuses, so the focus
-            // effect can find the marker without drawing the whole polyline.
-            setBusRoute(null);
-            setBusDirection(null);
-            setFocusContext({
-              tripId: arrival.tripId,
-              operator: op,
-              routeShortName: arrival.routeShortName,
-              direction: arrival.direction,
-              targetStopId: stop.id,
-              targetStopCode: stop.code,
-              targetStopName: stop.name,
-              targetStopLat: stop.lat,
-              targetStopLng: stop.lng,
-            });
-          }}
+          onPickArrival={handlePickArrival}
         />
       )}
       {mode === "bus" && (busRoute !== null || focusContext !== null) && (
@@ -598,21 +648,7 @@ function App() {
         inService={inService}
         resumeLabel={SERVICE_RESUME_LABEL}
         busOperator={busOperator}
-        onModeChange={(m) => {
-          setMode(m);
-          setSearchCodes(null);
-          setBusRoute(null);
-          setBusDirection(null);
-          setBusStopId(null);
-          setBusStopOperator(null);
-          setBusSearchTab(m === "bus" ? "stop" : "route");
-          setFocusContext(null);
-          setPanelCollapsed(true);
-          // SearchPanel rehydrates from/to queries from this sessionStorage key
-          // on mount, so App-state clearing alone isn't enough — clear the
-          // persisted copy too or remounting restores the train search.
-          sessionStorage.removeItem("search");
-        }}
+        onModeChange={handleModeChange}
         onFilterChange={setFilter}
         onBusOperatorChange={handleBusOperatorChange}
       />

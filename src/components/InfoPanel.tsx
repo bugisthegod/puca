@@ -34,7 +34,7 @@ export const INFO_BUS_OPERATORS: { value: BusOperator; label: string }[] = [
   { value: "goahead", label: "Go-Ahead" },
 ];
 
-export default function InfoPanel({
+function InfoPanel({
   vehicleCount,
   lastUpdated,
   mode,
@@ -141,3 +141,5 @@ export default function InfoPanel({
     </div>
   );
 }
+
+export default React.memo(InfoPanel);

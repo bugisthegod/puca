@@ -90,7 +90,7 @@ type BusSearchPanelProps = {
   onShowToast: (title: string, body?: string) => void;
 };
 
-export default function BusSearchPanel({
+function BusSearchPanel({
   onSelectRoute,
   selectedRoute,
   onSelectDirection,
@@ -232,7 +232,7 @@ export default function BusSearchPanel({
   // last server-calculated ETA until the next fetch recalibrates it.
   useEffect(() => {
     if (!arrivals || arrivals.length === 0) return;
-    const id = setInterval(() => setArrivalClockNow(Date.now()), 10_000);
+    const id = setInterval(() => setArrivalClockNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, [arrivals]);
 
@@ -275,7 +275,7 @@ export default function BusSearchPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busSearchTab, busStopId, busStopOperator]);
 
-  const filtered = filterBusRoutes(routes, query);
+  const filtered = useMemo(() => filterBusRoutes(routes, query), [routes, query]);
 
   function selectRoute(r: RouteWithOperator) {
     setQuery(r.shortName);
@@ -569,3 +569,5 @@ export default function BusSearchPanel({
     </div>
   );
 }
+
+export default React.memo(BusSearchPanel);

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import type { Train, TrainMovement, Station } from "../types";
 import type { Feature, LineString } from "geojson";
 import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProjection";
@@ -124,6 +124,7 @@ export function useTrainMarkers({
   modeRef.current = mode;
   const searchCodesRef = useRef<string[] | null>(searchCodes);
   searchCodesRef.current = searchCodes;
+  const onMarkerClickRef = useRef<(trainCode: string) => void>(() => {});
 
   // -------------------------------------------------------------------------
   // Helpers
@@ -261,6 +262,7 @@ export function useTrainMarkers({
       }
     }
   }
+  onMarkerClickRef.current = onMarkerClick;
 
   // -------------------------------------------------------------------------
   // Sync train markers when trains data changes
@@ -395,7 +397,7 @@ export function useTrainMarkers({
         const marker = makeTrainMarker(train);
         const hitMarker = makeHitMarker(train);
 
-        hitMarker.on("click", () => onMarkerClick(train.code));
+        hitMarker.on("click", () => onMarkerClickRef.current(train.code));
         // Keep hit target in sync: mirror position on every frame, follow
         // visible marker on/off the map so there's no stray hit layer.
         marker.on("move", (e) => hitMarker.setLatLng((e as L.LeafletEvent & { latlng: L.LatLng }).latlng));
@@ -493,13 +495,13 @@ export function useTrainMarkers({
   // Public API
   // -------------------------------------------------------------------------
 
-  function focusTrain(code: string) {
+  const focusTrain = useCallback((code: string) => {
     const map = leafletMap.current;
     const entry = markers.current.get(code);
     if (!map || !entry) return;
     map.setView(entry.marker.getLatLng(), 13, { animate: false });
-    void onMarkerClick(code);
-  }
+    void onMarkerClickRef.current(code);
+  }, []);
 
   return { markers, routeLineRef, clearRouteLine, focusTrain };
 }

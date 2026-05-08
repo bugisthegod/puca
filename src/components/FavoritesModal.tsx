@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import type { Favorites, BusFavorite, TrainFavorite, BusStopFavorite } from "../favorites";
 import { busKey, trainKey, stopKey } from "../favorites";
 import type { BusOperator } from "../types";
@@ -22,7 +22,7 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
   goahead: "Go-Ahead",
 };
 
-export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, onPickStop, onRemoveBus, onRemoveTrain, onRemoveStop }: Props) {
+function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, onPickStop, onRemoveBus, onRemoveTrain, onRemoveStop }: Props) {
   const { t } = useLocale();
   useBackToClose(onClose);
   useEffect(() => {
@@ -174,3 +174,5 @@ export default function FavoritesModal({ onClose, favs, onPickBus, onPickTrain, 
     </div>
   );
 }
+
+export default React.memo(FavoritesModal);

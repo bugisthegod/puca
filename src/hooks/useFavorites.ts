@@ -1,9 +1,41 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { loadFavorites, saveFavorites, toggleBus, toggleTrain, toggleStop, removeBus, removeTrain, removeStop, type Favorites, type BusFavorite, type TrainFavorite, type BusStopFavorite } from "../favorites";
 
 export function useFavorites() {
   const [favs, setFavs] = useState<Favorites>(() => loadFavorites());
-  useEffect(() => { saveFavorites(favs); }, [favs]);
+  const didMount = useRef(false);
+  const dirtyRef = useRef(false);
+  const latestFavsRef = useRef(favs);
+  latestFavsRef.current = favs;
+
+  const flushFavorites = useCallback(() => {
+    if (!dirtyRef.current) return;
+    saveFavorites(latestFavsRef.current);
+    dirtyRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) flushFavorites();
+    };
+    window.addEventListener("pagehide", flushFavorites);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flushFavorites);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [flushFavorites]);
+
+  useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
+    dirtyRef.current = true;
+    const id = window.setTimeout(flushFavorites, 0);
+    return () => window.clearTimeout(id);
+  }, [favs, flushFavorites]);
+
   return {
     favs,
     toggleBus: useCallback((f: BusFavorite) => setFavs((s) => toggleBus(s, f)), []),
