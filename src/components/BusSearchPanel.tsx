@@ -14,9 +14,9 @@ function collapseSelection(e: { currentTarget: HTMLInputElement }): void {
   }
 }
 
-type RouteWithOperator = BusRoute & { operator: BusOperator };
+export type RouteWithOperator = BusRoute & { operator: BusOperator };
 
-type BusShape = { [dir: string]: { headsign: string } } | null;
+export type BusShape = { [dir: string]: { headsign: string } } | null;
 
 type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number; operator: BusOperator };
 
@@ -31,17 +31,36 @@ type StopArrival = {
   status: "running" | "scheduled";
 };
 
-const ALL_OPERATORS: BusOperator[] = ["dublinbus", "buseireann", "goahead"];
-const OPERATOR_INITIALS: Record<BusOperator, string> = {
+export const BUS_SEARCH_OPERATORS: BusOperator[] = ["dublinbus", "buseireann", "goahead"];
+export const BUS_OPERATOR_INITIALS: Record<BusOperator, string> = {
   dublinbus: "DB",
   buseireann: "BÉ",
   goahead: "GA",
 };
-const OPERATOR_LABEL: Record<BusOperator, string> = {
+export const BUS_OPERATOR_LABEL: Record<BusOperator, string> = {
   dublinbus: "Dublin Bus",
   buseireann: "Bus Éireann",
   goahead: "Go-Ahead",
 };
+
+export function getBusDirections(busShape: BusShape): { [dir: string]: string } {
+  if (!busShape) return {};
+  const heads: { [dir: string]: string } = {};
+  for (const dir of Object.keys(busShape)) {
+    heads[dir] = busShape[dir]?.headsign || dir;
+  }
+  return heads;
+}
+
+export function filterBusRoutes(routes: RouteWithOperator[], query: string): RouteWithOperator[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return routes;
+  return routes.filter(
+    (r) =>
+      r.shortName.toLowerCase().includes(q) ||
+      r.longName.toLowerCase().includes(q),
+  );
+}
 
 type BusSearchPanelProps = {
   onSelectRoute: (shortName: string | null, operator?: BusOperator) => void;
@@ -106,7 +125,7 @@ export default function BusSearchPanel({
   useEffect(() => {
     let cancelled = false;
     Promise.all(
-      ALL_OPERATORS.map((op) =>
+      BUS_SEARCH_OPERATORS.map((op) =>
         fetch(`/api/bus/routes?operator=${encodeURIComponent(op)}`)
           .then((r) => (r.ok ? r.json() : []))
           .then((data: BusRoute[]) => data.map((r) => ({ ...r, operator: op })))
@@ -122,14 +141,7 @@ export default function BusSearchPanel({
     if (!selectedRoute) setQuery("");
   }, [selectedRoute]);
 
-  const directions = useMemo<{ [dir: string]: string }>(() => {
-    if (!busShape) return {};
-    const heads: { [dir: string]: string } = {};
-    for (const dir of Object.keys(busShape)) {
-      heads[dir] = busShape[dir]?.headsign ?? dir;
-    }
-    return heads;
-  }, [busShape]);
+  const directions = useMemo(() => getBusDirections(busShape), [busShape]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -240,13 +252,7 @@ export default function BusSearchPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busSearchTab, busStopId, busStopOperator]);
 
-  const filtered = query.trim()
-    ? routes.filter(
-        (r) =>
-          r.shortName.toLowerCase().includes(query.toLowerCase()) ||
-          r.longName.toLowerCase().includes(query.toLowerCase()),
-      )
-    : routes;
+  const filtered = filterBusRoutes(routes, query);
 
   function selectRoute(r: RouteWithOperator) {
     setQuery(r.shortName);
@@ -381,10 +387,10 @@ export default function BusSearchPanel({
                         <strong>{r.shortName}</strong> — {r.longName}
                         <span
                           className={`operator-badge operator-badge--${r.operator}`}
-                          title={OPERATOR_LABEL[r.operator]}
-                          aria-label={OPERATOR_LABEL[r.operator]}
+                          title={BUS_OPERATOR_LABEL[r.operator]}
+                          aria-label={BUS_OPERATOR_LABEL[r.operator]}
                         >
-                          {OPERATOR_INITIALS[r.operator]}
+                          {BUS_OPERATOR_INITIALS[r.operator]}
                         </span>
                       </li>
                     ))}
@@ -460,10 +466,10 @@ export default function BusSearchPanel({
                           <strong>{s.code || s.id}</strong> — {s.name}
                           <span
                             className={`operator-badge operator-badge--${s.operator}`}
-                            title={OPERATOR_LABEL[s.operator]}
-                            aria-label={OPERATOR_LABEL[s.operator]}
+                            title={BUS_OPERATOR_LABEL[s.operator]}
+                            aria-label={BUS_OPERATOR_LABEL[s.operator]}
                           >
-                            {OPERATOR_INITIALS[s.operator]}
+                            {BUS_OPERATOR_INITIALS[s.operator]}
                           </span>
                         </li>
                       ))}
@@ -479,10 +485,10 @@ export default function BusSearchPanel({
                     </div>
                     <span
                       className={`operator-badge operator-badge--${selectedStop.operator}`}
-                      title={OPERATOR_LABEL[selectedStop.operator]}
-                      aria-label={OPERATOR_LABEL[selectedStop.operator]}
+                      title={BUS_OPERATOR_LABEL[selectedStop.operator]}
+                      aria-label={BUS_OPERATOR_LABEL[selectedStop.operator]}
                     >
-                      {OPERATOR_INITIALS[selectedStop.operator]}
+                      {BUS_OPERATOR_INITIALS[selectedStop.operator]}
                     </span>
                     <FavStar
                       active={stopIsFavorite}

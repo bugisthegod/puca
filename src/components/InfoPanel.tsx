@@ -21,14 +21,14 @@ type InfoPanelProps = {
 // Filter and operator labels stay in their original spelling — DART, Commuter,
 // Intercity are Irish Rail product names; Dublin Bus / Bus Éireann / Go-Ahead
 // are operator brand names. They aren't translated even when locale is zh.
-const FILTERS: { value: Filter; label: string }[] = [
+export const INFO_FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "dart", label: "DART" },
   { value: "commuter", label: "Commuter" },
   { value: "intercity", label: "Intercity" },
 ];
 
-const BUS_OPERATORS: { value: BusOperator; label: string }[] = [
+export const INFO_BUS_OPERATORS: { value: BusOperator; label: string }[] = [
   { value: "dublinbus", label: "Dublin Bus" },
   { value: "buseireann", label: "Bus Éireann" },
   { value: "goahead", label: "Go-Ahead" },
@@ -57,7 +57,7 @@ export default function InfoPanel({
     { value: "bus", label: t("info.mode.bus") },
   ];
   // Only the "All" filter label is translated; DART/Commuter/Intercity stay original.
-  const filters = FILTERS.map((f) => f.value === "all" ? { ...f, label: t("info.filter.all") } : f);
+  const filters = INFO_FILTERS.map((f) => f.value === "all" ? { ...f, label: t("info.filter.all") } : f);
 
   function handleModeClick(next: Mode) {
     if (next !== mode) onModeChange(next);
@@ -126,7 +126,7 @@ export default function InfoPanel({
                 {label}
               </button>
             ))}
-            {mode === "bus" && BUS_OPERATORS.map(({ value, label }) => (
+            {mode === "bus" && INFO_BUS_OPERATORS.map(({ value, label }) => (
               <button
                 key={value}
                 className={`filter-btn${busOperator === value ? " active" : ""}`}
