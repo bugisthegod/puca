@@ -13,35 +13,14 @@ import trainShapes from "./data/train-shapes.json" with { type: "json" };
 import trainEndpoints from "./data/train-routes-by-endpoints.json" with { type: "json" };
 import { log, errToMeta } from "./logger";
 import { isInServiceHours } from "./utils";
+import type { BusOperator as Operator, BusRoute, BusVehicle } from "./types";
 
 const NTA_VEHICLES_URL = "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json";
 const NTA_TRIP_UPDATES_URL = "https://api.nationaltransport.ie/gtfsr/v2/TripUpdates?format=json";
 
-export type Operator = "dublinbus" | "buseireann" | "goahead";
+export type { BusOperator as Operator, BusRoute, BusVehicle } from "./types";
 
-export type GtfsVehiclePosition = {
-  tripId: string;
-  routeId: string;
-  lat: number;
-  lng: number;
-  bearing: number | null;
-  speed: number | null;
-  timestamp: number;
-  label: string;
-  directionId: number;
-};
-
-export type BusVehicle = GtfsVehiclePosition & {
-  routeShortName: string;
-  shapeId: string | null;
-  stale: boolean;
-};
-
-export type BusRoute = {
-  id: string;
-  shortName: string;
-  longName: string;
-};
+export type GtfsVehiclePosition = Omit<BusVehicle, "routeShortName" | "shapeId" | "stale">;
 
 export type StopTimeUpdate = {
   sequence: number;
