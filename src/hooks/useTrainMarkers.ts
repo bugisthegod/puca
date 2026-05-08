@@ -5,14 +5,12 @@ import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProje
 import {
   markerColor,
   trainCategory,
-  parseLateMinutes,
   parseRoute,
-  fmtTime,
-  escapeHtml,
   type Filter,
 } from "../utils";
 import type { Mode } from "./useTrainMap";
-import { t } from "../i18n";
+import { buildTrainPopupErrorHTML, buildTrainPopupHTML, buildTrainPopupWithMovements } from "./trainPopup";
+import { makeTrainIcon } from "./trainMarkerIcon";
 
 // ---------------------------------------------------------------------------
 // Module-level train shape cache (survives across renders / updates)
@@ -52,11 +50,6 @@ function loadAllTrainShapes(): Promise<AllShapesData> {
   return p;
 }
 
-// Front-view train cab face used by vehicle markers. Body fill uses currentColor
-// so the dynamic markerColor (gray/green/orange/red by lateness) can be injected
-// via inline style on the wrapping divIcon.
-const TRAIN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4 Q2 1 5 1 H15 Q18 1 18 4 V18 H2 Z" fill="currentColor"/><path d="M4 4 H16 V10 H4 Z" fill="rgba(255,255,255,0.95)"/><path d="M4 4 L4.5 3 H15.5 L16 4 Z" fill="rgba(255,255,255,0.95)"/><line x1="10" y1="3" x2="10" y2="10" stroke="currentColor" stroke-width="0.6"/><rect x="2" y="11" width="16" height="1" fill="rgba(0,0,0,0.22)"/><rect x="8" y="13" width="4" height="5" fill="rgba(0,0,0,0.18)" rx="0.5"/><circle cx="4.5" cy="15.5" r="1.3" fill="#fff5b8"/><circle cx="15.5" cy="15.5" r="1.3" fill="#fff5b8"/></svg>`;
-
 // Insertion-order LRU cap: drop oldest entries once the cache exceeds the limit.
 function setShapeCache(key: string, value: TrainShapeCacheEntry): void {
   trainShapeCache.delete(key); // ensure re-insertion moves key to the end of insertion order
@@ -66,122 +59,6 @@ function setShapeCache(key: string, value: TrainShapeCacheEntry): void {
     if (oldest === undefined) break;
     trainShapeCache.delete(oldest);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Popup HTML builders
-// ---------------------------------------------------------------------------
-
-function lateClass(status: string, late: number | null): string {
-  if (status === "N" || status === "T") return "";
-  if (late === null || late <= 0) return "";
-  if (late >= 10) return "popup-status--red";
-  return "popup-status--yellow";
-}
-
-// Irish Rail's PublicMessage sometimes contains literal "\n" (two chars)
-// instead of an actual newline — escape first, then normalize both to <br>.
-function formatMessage(message: string): string {
-  return escapeHtml(message).replace(/\\r?\\n|\r?\n/g, "<br>");
-}
-
-function buildStatusText(status: string, late: number | null): string {
-  if (status === "N") return t("popup.train.status.notrunning");
-  if (status === "T") return t("popup.train.status.terminated");
-  if (late === null) return t("popup.train.status.running");
-  if (late === 0) return t("popup.status.ontime");
-  if (late < 0) {
-    const n = Math.abs(late);
-    return n === 1 ? t("popup.status.early.one") : t("popup.status.early.many", { n });
-  }
-  return late === 1 ? t("popup.status.late.one") : t("popup.status.late.many", { n: late });
-}
-
-function buildPopupHTML(train: Train): string {
-  const route = parseRoute(train.message);
-  const late = parseLateMinutes(train.message);
-  const statusText = buildStatusText(train.status, late);
-
-  return `
-    <div class="popup-content">
-      <div class="popup-title">${escapeHtml(train.code)}</div>
-      ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
-      <div class="popup-meta">
-        <span class="popup-status ${lateClass(train.status, late)}">${statusText}</span>
-        ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
-      </div>
-      <div class="popup-loading">${t("popup.train.loading")}</div>
-    </div>
-  `;
-}
-
-function buildPopupWithMovements(train: Train, movements: TrainMovement[]): string {
-  const route = parseRoute(train.message);
-  const late = parseLateMinutes(train.message);
-  const statusText = buildStatusText(train.status, late);
-
-  const stopTypeLabel: Record<string, string> = {
-    O: t("popup.train.stoptype.O"),
-    T: t("popup.train.stoptype.T"),
-    C: t("popup.train.stoptype.C"),
-    N: t("popup.train.stoptype.N"),
-    S: t("popup.train.stoptype.S"),
-    D: t("popup.train.stoptype.D"),
-  };
-
-  const rows = movements
-    .map((m) => {
-      const isCurrent = m.stopType === "C";
-      const rowClass = isCurrent ? "movement-current" : "";
-      const schArr = fmtTime(m.scheduledArrival);
-      const schDep = fmtTime(m.scheduledDepart);
-      const expArr = fmtTime(m.expectedArrival);
-      const expDep = fmtTime(m.expectedDepart);
-      const actArr = fmtTime(m.arrival);
-      const actDep = fmtTime(m.departure);
-
-      // Show actual times if available, otherwise expected, otherwise scheduled
-      const showArr = actArr !== "—" ? actArr : expArr !== "—" ? expArr : schArr;
-      const showDep = actDep !== "—" ? actDep : expDep !== "—" ? expDep : schDep;
-
-      return `
-        <tr class="${rowClass}">
-          <td>${escapeHtml(m.stationName)}${isCurrent ? " ▶" : ""}</td>
-          <td>${escapeHtml(stopTypeLabel[m.stopType] ?? m.stopType)}</td>
-          <td>${showArr}</td>
-          <td>${showDep}</td>
-        </tr>
-      `;
-    })
-    .join("");
-
-  return `
-    <div class="popup-content">
-      <div class="popup-title">${escapeHtml(train.code)}</div>
-      ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
-      <div class="popup-meta">
-        <span class="popup-status ${lateClass(train.status, late)}">${statusText}</span>
-        ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
-      </div>
-      ${
-        movements.length > 0
-          ? `<div class="popup-table-wrap">
-               <table class="movements-table">
-                 <thead>
-                   <tr>
-                     <th>${t("popup.train.col.station")}</th>
-                     <th>${t("popup.train.col.type")}</th>
-                     <th>${t("popup.train.col.arr")}</th>
-                     <th>${t("popup.train.col.dep")}</th>
-                   </tr>
-                 </thead>
-                 <tbody>${rows}</tbody>
-               </table>
-             </div>`
-          : `<div class="popup-message">${formatMessage(train.message)}</div>`
-      }
-    </div>
-  `;
 }
 
 // ---------------------------------------------------------------------------
@@ -270,15 +147,6 @@ export function useTrainMarkers({
     }
   }
 
-  function makeTrainIcon(color: string): L.DivIcon {
-    return L.divIcon({
-      className: "train-marker",
-      html: `<div class="train-icon" style="color:${color}">${TRAIN_SVG}</div>`,
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-    });
-  }
-
   function makeTrainMarker(train: Train): L.Marker {
     // interactive:false so clicks pass through to the oversized invisible
     // hitMarker — without this, the divIcon (markerPane z=600) sits above the
@@ -341,7 +209,7 @@ export function useTrainMarkers({
 
     clearRouteLine();
 
-    marker.bindPopup(buildPopupHTML(train), { maxWidth: 520, minWidth: 380, autoPan: false }).openPopup();
+    marker.bindPopup(buildTrainPopupHTML(train), { maxWidth: 520, minWidth: 380, autoPan: false }).openPopup();
     leafletMap.current?.panTo(marker.getLatLng(), { animate: true, duration: 0.4 });
 
     try {
@@ -350,7 +218,7 @@ export function useTrainMarkers({
       const movements: TrainMovement[] = await res.json();
       const popup = marker.getPopup();
       if (popup && popup.isOpen()) {
-        popup.setContent(buildPopupWithMovements(train, movements));
+        popup.setContent(buildTrainPopupWithMovements(train, movements));
         // Scroll to current stop after DOM updates
         requestAnimationFrame(() => {
           const wrap = document.querySelector(".popup-table-wrap");
@@ -388,7 +256,7 @@ export function useTrainMarkers({
       const popup = e.marker.getPopup();
       if (popup && popup.isOpen()) {
         popup.setContent(
-          buildPopupHTML(e.train).replace(t("popup.train.loading"), t("popup.train.error"))
+          buildTrainPopupErrorHTML(e.train)
         );
       }
     }
