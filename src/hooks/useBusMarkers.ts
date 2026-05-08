@@ -5,6 +5,7 @@ import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProje
 import type { Mode } from "./useTrainMap";
 import { buildBusPopupHTML as buildBusPopupContentHTML, type BusTripPopupData } from "./busPopup";
 import { makeBusIcon as makeBusMarkerIcon } from "./busMarkerIcon";
+import { busRouteColor, reconcileSelectedVariant, variantStyleForShape } from "./busVariantStyle";
 
 // ---------------------------------------------------------------------------
 // Module-level dedupe for bus trip fetches.
@@ -171,27 +172,19 @@ export function useBusMarkers({
   // per route+direction change; highlight is purely setStyle + bringToFront,
   // which is idempotent under event storms.
   // -------------------------------------------------------------------------
-  function currentRouteColor(): string {
-    const op = busOperatorRef.current;
-    return op === "buseireann" ? "#d52b1e" : op === "goahead" ? "#1e6bb8" : "#f9a825";
-  }
-
   function applyVariantStyles() {
-    const color = currentRouteColor();
+    const color = busRouteColor(busOperatorRef.current);
     const selected = selectedShapeIdRef.current;
     const active = activeShapeIdsRef.current;
     for (const [shapeId, polylines] of Object.entries(variantLayersRef.current)) {
-      const isSelected = shapeId === selected;
-      const isActive = active.has(shapeId);
       // Selected wins over inactive — if the user clicked a bus and its shape
       // subsequently leaves the active set (trip ended, bus gone), the
       // buses useEffect clears selectedShapeIdRef below, so we won't end up
       // highlighting something that no longer exists.
-      const opacity = isSelected ? 0.95 : isActive ? 0.35 : 0;
-      const weight = isSelected ? 5 : 3;
+      const style = variantStyleForShape(shapeId, selected, active, color);
       for (const pl of polylines) {
-        pl.setStyle({ color, weight, opacity });
-        if (isSelected) pl.bringToFront();
+        pl.setStyle({ color: style.color, weight: style.weight, opacity: style.opacity });
+        if (style.bringToFront) pl.bringToFront();
       }
     }
   }
@@ -519,9 +512,7 @@ export function useBusMarkers({
       if (b.shapeId) nextActive.add(b.shapeId);
     }
     activeShapeIdsRef.current = nextActive;
-    if (selectedShapeIdRef.current && !nextActive.has(selectedShapeIdRef.current)) {
-      selectedShapeIdRef.current = null;
-    }
+    selectedShapeIdRef.current = reconcileSelectedVariant(selectedShapeIdRef.current, nextActive);
     applyVariantStyles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buses, mode, busShape, busDirection, busOperator]);
@@ -559,10 +550,7 @@ export function useBusMarkers({
     const dirData = busShape[busDirection];
     if (!dirData || dirData.coords.length < 2) return;
 
-    const routeColor =
-      busOperator === "buseireann" ? "#d52b1e" :
-      busOperator === "goahead" ? "#1e6bb8" :
-      "#f9a825";
+    const routeColor = busRouteColor(busOperator);
 
     busShapeLayerRef.current = L.polyline(dirData.coords, {
       color: routeColor,
