@@ -1,12 +1,16 @@
-import { test, expect, describe } from "bun:test";
+import { test, expect, describe, afterEach } from "bun:test";
 import {
   mergeTripStops,
   getBusRouteShape,
   getGtfsrHealthSnapshot,
   getTrainRouteShape,
   decideStopArrival,
+  getAllBusVehicles,
+  __resetGtfsrRealtimeStateForTest,
+  __seedGtfsrRealtimeStateForTest,
   type ScheduledRow,
   type LiveTripData,
+  type GtfsVehiclePosition,
 } from "../src/gtfsr";
 
 const stops = {
@@ -187,6 +191,103 @@ describe("getGtfsrHealthSnapshot", () => {
     for (const status of Object.values(health.db)) {
       expect(["connected", "available", "missing", "error"]).toContain(status.status);
     }
+  });
+});
+
+describe("realtime cache request path", () => {
+  const originalFetch = globalThis.fetch;
+  const originalDate = globalThis.Date;
+  const originalApiKey = process.env.NTA_API_KEY;
+
+  function pendingFetch() {
+    const resolvers: Array<(response: Response) => void> = [];
+    const calls: string[] = [];
+    const fetch = ((input: RequestInfo | URL) => {
+      calls.push(typeof input === "string" ? input : input.toString());
+      return new Promise<Response>((resolve) => {
+        resolvers.push(resolve);
+      });
+    }) as typeof globalThis.fetch;
+    return {
+      calls,
+      fetch,
+      resolveAll: () => resolvers.splice(0).forEach((resolve) => resolve(Response.json({ entity: [] }))),
+    };
+  }
+
+  async function expectSettlesQuickly<T>(promise: Promise<T>): Promise<T> {
+    const timeout = new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 25));
+    const result = await Promise.race([promise, timeout]);
+    expect(result).not.toBe("timeout");
+    return result as T;
+  }
+
+  function mockServiceHourClock(): void {
+    const fixedMs = originalDate.parse("2026-05-09T12:00:00+01:00");
+    globalThis.Date = class extends originalDate {
+      constructor(...args: any[]) {
+        if (args.length > 0) super(args[0]);
+        else super(fixedMs);
+      }
+
+      static override now() {
+        return fixedMs;
+      }
+    } as DateConstructor;
+  }
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    globalThis.Date = originalDate;
+    if (originalApiKey === undefined) delete process.env.NTA_API_KEY;
+    else process.env.NTA_API_KEY = originalApiKey;
+    __resetGtfsrRealtimeStateForTest();
+  });
+
+  test("returns stale vehicle cache without awaiting a slow NTA refresh", async () => {
+    mockServiceHourClock();
+    process.env.NTA_API_KEY = "test-key";
+    const slowFetch = pendingFetch();
+    globalThis.fetch = slowFetch.fetch;
+    const cachedVehicle: GtfsVehiclePosition = {
+      tripId: "T1",
+      routeId: "1 38A c a",
+      lat: 53.35,
+      lng: -6.26,
+      bearing: null,
+      speed: null,
+      timestamp: 1,
+      label: "Bus 1",
+      directionId: 0,
+    };
+    __seedGtfsrRealtimeStateForTest({
+      vehicles: [cachedVehicle],
+      tripUpdates: new Map(),
+      lastVehicleCallMs: 0,
+      lastTripUpdateCallMs: Date.now(),
+    });
+
+    const vehicles = await expectSettlesQuickly(getAllBusVehicles("dublinbus"));
+    slowFetch.resolveAll();
+
+    expect(vehicles).toHaveLength(1);
+    expect(vehicles[0]!.tripId).toBe("T1");
+    expect(vehicles[0]!.routeShortName).toBe("38A");
+    expect(slowFetch.calls).toHaveLength(1);
+  });
+
+  test("returns an empty list quickly on cold cache instead of waiting for NTA", async () => {
+    mockServiceHourClock();
+    process.env.NTA_API_KEY = "test-key";
+    const slowFetch = pendingFetch();
+    globalThis.fetch = slowFetch.fetch;
+    __resetGtfsrRealtimeStateForTest();
+
+    const vehicles = await expectSettlesQuickly(getAllBusVehicles("dublinbus"));
+    slowFetch.resolveAll();
+
+    expect(vehicles).toEqual([]);
+    expect(slowFetch.calls).toHaveLength(2);
   });
 });
 

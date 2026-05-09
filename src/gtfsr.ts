@@ -234,10 +234,10 @@ function getTripShapeMap(operator: Operator): Map<string, string> {
 // Cache + NTA rate gate
 // ---------------------------------------------------------------------------
 // NTA Fair Usage Policy: "each token will be restricted to calling the GTFS Real
-// Time API once every 60 seconds." We enforce this per-endpoint: any pollX call
-// within 60s of the last NTA request for that endpoint returns the cached data
-// instead of hitting NTA. Frontend can poll at whatever cadence it wants — only
-// pollVehicles / pollTripUpdates are allowed to call NTA, and only past the gate.
+// Time API once every 60 seconds." We enforce this per-endpoint: refreshes inside
+// the interval return immediately. Frontend can poll at whatever cadence it wants:
+// user requests read stale cache, while background refreshes are the only code path
+// that waits for NTA.
 
 // Vehicles at strict 30s started getting NTA 429s ~25% of the time (quota
 // appears to be ~3 calls/60s sliding window across V + TU). 35s drops the
@@ -247,6 +247,11 @@ const NTA_MIN_INTERVAL_MS = 35_000;
 // 75s lands in the 60-90s ideal range while staying out of phase with the 35s
 // vehicles cycle.
 const NTA_TRIP_UPDATES_INTERVAL_MS = 75_000;
+// NTA occasionally accepts the connection but takes many seconds to respond.
+// User requests never await these fetches, but bounding background work keeps
+// the polling cadence and connection pool from getting dragged around by a
+// single slow upstream response.
+const NTA_FETCH_TIMEOUT_MS = 5_000;
 
 type RawTripUpdateMap = Map<string, {
   tripId: string;
@@ -267,6 +272,42 @@ let lastVehicleCall = 0;
 let lastTripUpdateCall = 0;
 let vehicleCacheUpdatedAt = 0;
 let tripUpdateCacheUpdatedAt = 0;
+let vehicleRefreshPromise: Promise<void> | null = null;
+let tripUpdateRefreshPromise: Promise<void> | null = null;
+
+export function __resetGtfsrRealtimeStateForTest(): void {
+  vehicleCache = null;
+  tripUpdateCache = null;
+  lastVehicleCall = 0;
+  lastTripUpdateCall = 0;
+  vehicleCacheUpdatedAt = 0;
+  tripUpdateCacheUpdatedAt = 0;
+  vehicleRefreshPromise = null;
+  tripUpdateRefreshPromise = null;
+}
+
+export function __seedGtfsrRealtimeStateForTest({
+  vehicles,
+  tripUpdates,
+  lastVehicleCallMs = 0,
+  lastTripUpdateCallMs = 0,
+}: {
+  vehicles?: GtfsVehiclePosition[];
+  tripUpdates?: RawTripUpdateMap;
+  lastVehicleCallMs?: number;
+  lastTripUpdateCallMs?: number;
+}): void {
+  if (vehicles !== undefined) {
+    vehicleCache = vehicles;
+    vehicleCacheUpdatedAt = Date.now();
+  }
+  if (tripUpdates !== undefined) {
+    tripUpdateCache = tripUpdates;
+    tripUpdateCacheUpdatedAt = Date.now();
+  }
+  lastVehicleCall = lastVehicleCallMs;
+  lastTripUpdateCall = lastTripUpdateCallMs;
+}
 
 // ---------------------------------------------------------------------------
 // Vehicles
@@ -283,6 +324,7 @@ async function fetchVehicles(): Promise<void> {
   try {
     const res = await fetch(NTA_VEHICLES_URL, {
       headers: { "x-api-key": apiKey, "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(NTA_FETCH_TIMEOUT_MS),
     });
     const duration_ms = Date.now() - start;
 
@@ -328,16 +370,25 @@ async function fetchVehicles(): Promise<void> {
   }
 }
 
-async function pollVehicles(): Promise<GtfsVehiclePosition[]> {
+async function refreshVehiclesIfDue(): Promise<void> {
+  if (!isInServiceHours("bus")) return;
   if (Date.now() - lastVehicleCall < NTA_MIN_INTERVAL_MS) {
-    return vehicleCache ?? [];
+    return;
   }
+  if (vehicleRefreshPromise) return vehicleRefreshPromise;
   lastVehicleCall = Date.now();
-  await fetchVehicles();
-  return vehicleCache ?? [];
+  vehicleRefreshPromise = fetchVehicles().finally(() => {
+    vehicleRefreshPromise = null;
+  });
+  return vehicleRefreshPromise;
 }
 
-function getCachedVehicles(): GtfsVehiclePosition[] {
+function triggerVehicleRefreshIfStale(): void {
+  void refreshVehiclesIfDue().catch((err) => log.error("nta.vehicles.refresh_failed", errToMeta(err)));
+}
+
+function getCachedVehicles({ refreshIfStale = false }: { refreshIfStale?: boolean } = {}): GtfsVehiclePosition[] {
+  if (refreshIfStale) triggerVehicleRefreshIfStale();
   return vehicleCache ?? [];
 }
 
@@ -356,6 +407,7 @@ async function fetchTripUpdates(): Promise<void> {
   try {
     const res = await fetch(NTA_TRIP_UPDATES_URL, {
       headers: { "x-api-key": apiKey, "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(NTA_FETCH_TIMEOUT_MS),
     });
     const duration_ms = Date.now() - start;
 
@@ -406,12 +458,25 @@ async function fetchTripUpdates(): Promise<void> {
   }
 }
 
-async function pollTripUpdates(): Promise<RawTripUpdateMap> {
+async function refreshTripUpdatesIfDue(): Promise<void> {
+  if (!isInServiceHours("bus")) return;
   if (Date.now() - lastTripUpdateCall < NTA_TRIP_UPDATES_INTERVAL_MS) {
-    return tripUpdateCache ?? new Map();
+    return;
   }
+  if (tripUpdateRefreshPromise) return tripUpdateRefreshPromise;
   lastTripUpdateCall = Date.now();
-  await fetchTripUpdates();
+  tripUpdateRefreshPromise = fetchTripUpdates().finally(() => {
+    tripUpdateRefreshPromise = null;
+  });
+  return tripUpdateRefreshPromise;
+}
+
+function triggerTripUpdatesRefreshIfStale(): void {
+  void refreshTripUpdatesIfDue().catch((err) => log.error("nta.trip_updates.refresh_failed", errToMeta(err)));
+}
+
+function getCachedTripUpdates({ refreshIfStale = false }: { refreshIfStale?: boolean } = {}): RawTripUpdateMap {
+  if (refreshIfStale) triggerTripUpdatesRefreshIfStale();
   return tripUpdateCache ?? new Map();
 }
 
@@ -432,11 +497,11 @@ export function startBackgroundPolling(): void {
 
   const tickVehicles = () => {
     if (!isInServiceHours("bus")) return;
-    void pollVehicles().catch((err) => log.error("nta.background_vehicles_failed", errToMeta(err)));
+    void refreshVehiclesIfDue().catch((err) => log.error("nta.background_vehicles_failed", errToMeta(err)));
   };
   const tickTripUpdates = () => {
     if (!isInServiceHours("bus")) return;
-    void pollTripUpdates().catch((err) => log.error("nta.background_trip_updates_failed", errToMeta(err)));
+    void refreshTripUpdatesIfDue().catch((err) => log.error("nta.background_trip_updates_failed", errToMeta(err)));
   };
 
   // Pre-warm both caches immediately on boot so the first user request after a
@@ -464,7 +529,7 @@ export function startBackgroundPolling(): void {
 // ---------------------------------------------------------------------------
 
 export function getGtfsrVehiclePositions(): GtfsVehiclePosition[] {
-  return getCachedVehicles();
+  return getCachedVehicles({ refreshIfStale: true });
 }
 
 export type GtfsrHealthSnapshot = {
@@ -668,7 +733,7 @@ export function mergeTripStops(
 
 export async function getBusTripStops(operator: Operator, tripId: string): Promise<TripUpdate | null> {
   const stops = operatorStops[operator];
-  const updates = await pollTripUpdates();
+  const updates = getCachedTripUpdates({ refreshIfStale: true });
   const liveTrip = updates.get(tripId);
   const scheduledRows = getTripScheduledStops(operator, tripId);
   const shapeId = getTripShapeId(operator, tripId);
@@ -735,9 +800,9 @@ export async function getBusVehiclesByRoute(operator: Operator, shortName: strin
   const route = routes.find((r) => r.shortName.toLowerCase() === shortName.toLowerCase());
   if (!route) return [];
 
-  const all = await pollVehicles();
+  const all = getCachedVehicles({ refreshIfStale: true });
   const shapeMap = getTripShapeMap(operator);
-  const tripUpdates = await pollTripUpdates();
+  const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
   const nowSec = secondsIntoDublinDay();
 
   const result: BusVehicle[] = [];
@@ -755,9 +820,9 @@ export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[
   const routeIdToShortName = new Map<string, string>();
   for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
 
-  const all = await pollVehicles();
+  const all = getCachedVehicles({ refreshIfStale: true });
   const shapeMap = getTripShapeMap(operator);
-  const tripUpdates = await pollTripUpdates();
+  const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
   const nowSec = secondsIntoDublinDay();
 
   const result: BusVehicle[] = [];
@@ -928,7 +993,7 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
     return [];
   }
 
-  const tripUpdates = await pollTripUpdates();
+  const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
   const nowSec = secondsIntoDublinDay();
 
   // Map tripId → live GPS. Used as ground truth for "is the bus past my stop"
