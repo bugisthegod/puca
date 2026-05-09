@@ -10,10 +10,10 @@ function dummyEntry(code: string): TrainMarkerEntry {
     targetLng: -6.2603,
     velocityLat: 0,
     velocityLng: 0,
-    lastUpdateTime: performance.now(),
+    lastUpdateTime: 0,
     correctionFromLat: 53.3498,
     correctionFromLng: -6.2603,
-    correctionStartTime: performance.now(),
+    correctionStartTime: 0,
     routeLine: null,
     routeLookup: null,
     routeLengthMeters: null,
@@ -27,6 +27,7 @@ function dummyEntry(code: string): TrainMarkerEntry {
 }
 
 const alive = () => true;
+type SleepFn = (ms: number) => Promise<void>;
 
 describe("pollForMarker", () => {
   test("returns entry immediately when already present", async () => {
@@ -34,67 +35,62 @@ describe("pollForMarker", () => {
     const entry = dummyEntry("E123");
     markers.set("E123", entry);
 
-    const started = performance.now();
     const result = await pollForMarker(markers, "E123", 30, 50, alive);
-    const elapsed = performance.now() - started;
 
     expect(result).toBe(entry);
-    expect(elapsed).toBeLessThan(50); // should return on first check, no delay
   });
 
   test("returns entry after it appears mid-retry", async () => {
     const markers = new Map<string, TrainMarkerEntry>();
+    let injected = false;
+    const sleep: SleepFn = async () => {
+      if (!injected) {
+        injected = true;
+        markers.set("E123", dummyEntry("E123"));
+      }
+    };
 
-    // Inject the entry after 100ms (which is after two 50ms retries)
-    setTimeout(() => {
-      const entry = dummyEntry("E123");
-      markers.set("E123", entry);
-    }, 100);
-
-    const started = performance.now();
-    const result = await pollForMarker(markers, "E123", 10, 50, alive);
-    const elapsed = performance.now() - started;
+    const result = await pollForMarker(markers, "E123", 10, 50, alive, sleep);
 
     expect(result).not.toBeUndefined();
     expect(result!.train.code).toBe("E123");
-    expect(elapsed).toBeGreaterThanOrEqual(90);
-    expect(elapsed).toBeLessThan(200);
   });
 
   test("returns undefined when entry never appears", async () => {
     const markers = new Map<string, TrainMarkerEntry>();
+    let calls = 0;
+    const sleep: SleepFn = async () => { calls++; };
 
-    const started = performance.now();
-    const result = await pollForMarker(markers, "E123", 5, 20, alive);
-    const elapsed = performance.now() - started;
+    const result = await pollForMarker(markers, "E123", 5, 20, alive, sleep);
 
     expect(result).toBeUndefined();
-    expect(elapsed).toBeGreaterThanOrEqual(100); // 5 * 20ms
+    expect(calls).toBe(5);
   });
 
   test("returns early when alive() flips to false mid-retry", async () => {
     const markers = new Map<string, TrainMarkerEntry>();
     let aliveFlag = true;
+    let calls = 0;
+    const sleep: SleepFn = async () => {
+      calls++;
+      if (calls >= 3) aliveFlag = false;
+    };
 
-    // Flip alive after 60ms (roughly 3 retries at 20ms)
-    setTimeout(() => { aliveFlag = false; }, 60);
-
-    const started = performance.now();
-    const result = await pollForMarker(markers, "E123", 10, 20, () => aliveFlag);
-    const elapsed = performance.now() - started;
+    const result = await pollForMarker(markers, "E123", 10, 20, () => aliveFlag, sleep);
 
     expect(result).toBeUndefined();
-    expect(elapsed).toBeLessThan(120); // should bail early, not wait full 10 * 20 = 200ms
+    expect(calls).toBe(3);
   });
 
   test("distinguishes different codes in the same map", async () => {
     const markers = new Map<string, TrainMarkerEntry>();
-    const entryB = dummyEntry("P456");
-    markers.set("P456", entryB);
+    markers.set("P456", dummyEntry("P456"));
+    let calls = 0;
+    const sleep: SleepFn = async () => { calls++; };
 
-    // E123 is not in the map, so it should return undefined after retries
-    const result = await pollForMarker(markers, "E123", 3, 10, alive);
+    const result = await pollForMarker(markers, "E123", 3, 10, alive, sleep);
 
     expect(result).toBeUndefined();
+    expect(calls).toBe(3);
   });
 });

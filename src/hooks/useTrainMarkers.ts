@@ -94,17 +94,20 @@ export interface TrainMarkerEntry {
 // main trains poll landing, or a running train whose GPS is temporarily (0,0).
 // ---------------------------------------------------------------------------
 
+type SleepFn = (ms: number) => Promise<void>;
+
 export async function pollForMarker(
   markers: Map<string, TrainMarkerEntry>,
   code: string,
   maxAttempts: number,
   intervalMs: number,
   alive: () => boolean,
+  sleep: SleepFn = (ms) => new Promise((r) => setTimeout(r, ms)),
 ): Promise<TrainMarkerEntry | undefined> {
   let entry = markers.get(code);
   let attempts = 0;
   while (!entry && attempts < maxAttempts && alive()) {
-    await new Promise((r) => setTimeout(r, intervalMs));
+    await sleep(intervalMs);
     entry = markers.get(code);
     attempts++;
   }
