@@ -275,7 +275,7 @@ let tripUpdateCacheUpdatedAt = 0;
 let vehicleRefreshPromise: Promise<void> | null = null;
 let tripUpdateRefreshPromise: Promise<void> | null = null;
 
-export function __resetGtfsrRealtimeStateForTest(): void {
+function resetRealtimeStateForTest(): void {
   vehicleCache = null;
   tripUpdateCache = null;
   lastVehicleCall = 0;
@@ -286,7 +286,7 @@ export function __resetGtfsrRealtimeStateForTest(): void {
   tripUpdateRefreshPromise = null;
 }
 
-export function __seedGtfsrRealtimeStateForTest({
+function seedRealtimeStateForTest({
   vehicles,
   tripUpdates,
   lastVehicleCallMs = 0,
@@ -308,6 +308,11 @@ export function __seedGtfsrRealtimeStateForTest({
   lastVehicleCall = lastVehicleCallMs;
   lastTripUpdateCall = lastTripUpdateCallMs;
 }
+
+export const __testing = {
+  resetRealtimeState: resetRealtimeStateForTest,
+  seedRealtimeState: seedRealtimeStateForTest,
+};
 
 // ---------------------------------------------------------------------------
 // Vehicles
@@ -388,6 +393,11 @@ function triggerVehicleRefreshIfStale(): void {
 }
 
 function getCachedVehicles({ refreshIfStale = false }: { refreshIfStale?: boolean } = {}): GtfsVehiclePosition[] {
+  if (!isInServiceHours("bus")) {
+    vehicleCache = null;
+    vehicleCacheUpdatedAt = 0;
+    return [];
+  }
   if (refreshIfStale) triggerVehicleRefreshIfStale();
   return vehicleCache ?? [];
 }
@@ -476,6 +486,11 @@ function triggerTripUpdatesRefreshIfStale(): void {
 }
 
 function getCachedTripUpdates({ refreshIfStale = false }: { refreshIfStale?: boolean } = {}): RawTripUpdateMap {
+  if (!isInServiceHours("bus")) {
+    tripUpdateCache = null;
+    tripUpdateCacheUpdatedAt = 0;
+    return new Map();
+  }
   if (refreshIfStale) triggerTripUpdatesRefreshIfStale();
   return tripUpdateCache ?? new Map();
 }

@@ -146,7 +146,7 @@ jobs:
             --head "$BRANCH" \
             --title "chore: ack NTA feed update (${{ steps.feed.outputs.feed_start }})" \
             --body "$(cat <<'BODY'
-          Tracks #${{ steps.issue.outputs.num }} — see issue for the full action checklist.
+          Fixes #${{ steps.issue.outputs.num }} — see issue for the full action checklist.
 
           This PR only bumps the witness file:
           - `.github/data/last-feed-uuid`: `${{ steps.feed.outputs.old_uuid }}` → `${{ steps.feed.outputs.uuid }}`

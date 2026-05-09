@@ -6,8 +6,9 @@ import {
   getTrainRouteShape,
   decideStopArrival,
   getAllBusVehicles,
-  __resetGtfsrRealtimeStateForTest,
-  __seedGtfsrRealtimeStateForTest,
+  getBusTripStops,
+  getGtfsrVehiclePositions,
+  __testing,
   type ScheduledRow,
   type LiveTripData,
   type GtfsVehiclePosition,
@@ -224,6 +225,15 @@ describe("realtime cache request path", () => {
 
   function mockServiceHourClock(): void {
     const fixedMs = originalDate.parse("2026-05-09T12:00:00+01:00");
+    mockClock(fixedMs);
+  }
+
+  function mockOffHoursClock(): void {
+    const fixedMs = originalDate.parse("2026-05-09T01:00:00+01:00");
+    mockClock(fixedMs);
+  }
+
+  function mockClock(fixedMs: number): void {
     globalThis.Date = class extends originalDate {
       constructor(...args: any[]) {
         if (args.length > 0) super(args[0]);
@@ -241,7 +251,7 @@ describe("realtime cache request path", () => {
     globalThis.Date = originalDate;
     if (originalApiKey === undefined) delete process.env.NTA_API_KEY;
     else process.env.NTA_API_KEY = originalApiKey;
-    __resetGtfsrRealtimeStateForTest();
+    __testing.resetRealtimeState();
   });
 
   test("returns stale vehicle cache without awaiting a slow NTA refresh", async () => {
@@ -260,7 +270,7 @@ describe("realtime cache request path", () => {
       label: "Bus 1",
       directionId: 0,
     };
-    __seedGtfsrRealtimeStateForTest({
+    __testing.seedRealtimeState({
       vehicles: [cachedVehicle],
       tripUpdates: new Map(),
       lastVehicleCallMs: 0,
@@ -281,13 +291,50 @@ describe("realtime cache request path", () => {
     process.env.NTA_API_KEY = "test-key";
     const slowFetch = pendingFetch();
     globalThis.fetch = slowFetch.fetch;
-    __resetGtfsrRealtimeStateForTest();
+    __testing.resetRealtimeState();
 
     const vehicles = await expectSettlesQuickly(getAllBusVehicles("dublinbus"));
     slowFetch.resolveAll();
 
     expect(vehicles).toEqual([]);
     expect(slowFetch.calls).toHaveLength(2);
+  });
+
+  test("does not serve stale vehicles outside bus service hours", () => {
+    mockOffHoursClock();
+    __testing.seedRealtimeState({
+      vehicles: [{
+        tripId: "T1",
+        routeId: "1 38A c a",
+        lat: 53.35,
+        lng: -6.26,
+        bearing: null,
+        speed: null,
+        timestamp: 1,
+        label: "Bus 1",
+        directionId: 0,
+      }],
+    });
+
+    expect(getGtfsrVehiclePositions()).toEqual([]);
+  });
+
+  test("does not serve stale TripUpdates outside bus service hours", async () => {
+    mockOffHoursClock();
+    __testing.seedRealtimeState({
+      tripUpdates: new Map([
+        ["T1", {
+          tripId: "T1",
+          routeId: "1 38A c a",
+          directionId: 0,
+          stopTimeUpdates: [
+            { sequence: 1, stopId: "S1", arrivalDelaySec: 60, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+          ],
+        }],
+      ]),
+    });
+
+    await expect(getBusTripStops("dublinbus", "T1")).resolves.toBeNull();
   });
 });
 
