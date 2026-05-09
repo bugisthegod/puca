@@ -6,6 +6,10 @@ const CACHE_NAME = `puca-${CACHE_VERSION}`;
 // between deploys, so app upgrades shouldn't pay a re-download tax.
 const TILE_CACHE = "puca-tiles-v1";
 const TILE_CACHE_MAX = 1000;
+const TILE_CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const TILE_TOUCH_INTERVAL_MS = 60 * 60 * 1000;
+const TILE_CACHE_AT_HEADER = "x-puca-cache-at";
+const TILE_ACCESS_AT_HEADER = "x-puca-access-at";
 // How long navigation waits on the network before falling back to cache.
 // Hot fly machine responds in <500ms; cold start takes multiple seconds,
 // so this bound keeps launches snappy while still letting deploys land
@@ -52,8 +56,19 @@ self.addEventListener("activate", (event) => {
 });
 
 function isTileRequest(url) {
-  return url.hostname.endsWith(".basemaps.cartocdn.com")
+  const isCarto = url.hostname === "basemaps.cartocdn.com"
+      || url.hostname.endsWith(".basemaps.cartocdn.com");
+  const isRailway = url.hostname === "tiles.openrailwaymap.org"
       || url.hostname.endsWith(".tiles.openrailwaymap.org");
+  if (url.search) return false;
+
+  const cartoMatch = url.pathname.match(/^\/rastertiles\/(?:voyager|dark_all)\/(\d{1,2})\/\d+\/\d+(?:@2x)?\.png$/);
+  const railwayMatch = url.pathname.match(/^\/standard\/(\d{1,2})\/\d+\/\d+\.png$/);
+  const match = isCarto ? cartoMatch : isRailway ? railwayMatch : null;
+  if (!match) return false;
+
+  const zoom = Number.parseInt(match[1], 10);
+  return Number.isFinite(zoom) && zoom >= 0 && zoom <= 20;
 }
 
 self.addEventListener("fetch", (event) => {
@@ -67,7 +82,7 @@ self.addEventListener("fetch", (event) => {
   // paying a network RTT, and to lighten load on OpenRailwayMap's small
   // community-run server.
   if (isTileRequest(url)) {
-    event.respondWith(tileHandler(req));
+    event.respondWith(tileHandler(event, req));
     return;
   }
 
@@ -137,14 +152,31 @@ async function navigationHandler(event, req) {
 const tileInflight = new Map();
 const TILE_FETCH_TIMEOUT_MS = 15_000;
 
-async function tileHandler(req) {
+async function tileHandler(event, req) {
   const cache = await caches.open(TILE_CACHE);
   const cached = await cache.match(req);
-  // Cache-first: tiles are immutable, so revalidating on every hit just
-  // saturates the connection pool and starves genuinely new tile fetches
-  // during pan/zoom.
-  if (cached) return cached;
+  const now = Date.now();
+  if (cached) {
+    const cacheAt = readTimeHeader(cached, TILE_CACHE_AT_HEADER);
+    const accessAt = readTimeHeader(cached, TILE_ACCESS_AT_HEADER);
+    const isStale = now - cacheAt > TILE_CACHE_MAX_AGE_MS;
 
+    if (!isStale && now - accessAt > TILE_TOUCH_INTERVAL_MS) {
+      event.waitUntil(touchTile(cache, req, cached, now).catch(() => {}));
+    }
+
+    // Serve stale tiles instantly, but refresh them in the background so map
+    // data eventually catches up without putting network latency on pan/zoom.
+    if (isStale) {
+      event.waitUntil(fetchAndCacheTile(cache, req).catch(() => {}));
+    }
+    return cached;
+  }
+
+  return fetchAndCacheTile(cache, req);
+}
+
+async function fetchAndCacheTile(cache, req) {
   let p = tileInflight.get(req.url);
   if (!p) {
     // Re-issue as CORS so the response isn't opaque — opaque responses get
@@ -160,8 +192,15 @@ async function tileHandler(req) {
     p = fetch(corsReq)
       .then((res) => {
         clearTimeout(timer);
-        if (res.ok) cache.put(req, res.clone()).then(() => trimTileCache(cache));
+        if (res.ok) {
+          const cacheable = responseWithTileMetadata(res, Date.now(), Date.now());
+          cache.put(req, cacheable).then(() => trimTileCache(cache)).catch(() => {});
+        }
         return res;
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        throw err;
       })
       .finally(() => tileInflight.delete(req.url));
     tileInflight.set(req.url, p);
@@ -176,12 +215,44 @@ async function tileHandler(req) {
   }
 }
 
+function readTimeHeader(res, header) {
+  const value = Number.parseInt(res.headers.get(header) ?? "0", 10);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function responseWithTileMetadata(res, cacheAt, accessAt) {
+  const headers = new Headers(res.headers);
+  headers.set(TILE_CACHE_AT_HEADER, String(cacheAt));
+  headers.set(TILE_ACCESS_AT_HEADER, String(accessAt));
+  return new Response(res.clone().body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
+}
+
+async function touchTile(cache, req, cached, accessAt) {
+  const cacheAt = readTimeHeader(cached, TILE_CACHE_AT_HEADER) || accessAt;
+  await cache.put(req, responseWithTileMetadata(cached, cacheAt, accessAt));
+}
+
 async function trimTileCache(cache) {
   const keys = await cache.keys();
   const overflow = keys.length - TILE_CACHE_MAX;
   if (overflow <= 0) return;
+  const entries = await Promise.all(
+    keys.map(async (req, index) => {
+      const res = await cache.match(req);
+      return {
+        req,
+        index,
+        accessAt: res ? readTimeHeader(res, TILE_ACCESS_AT_HEADER) : 0,
+      };
+    }),
+  );
+  entries.sort((a, b) => (a.accessAt - b.accessAt) || (a.index - b.index));
   for (let i = 0; i < overflow; i++) {
-    cache.delete(keys[i]);
+    await cache.delete(entries[i].req);
   }
 }
 
