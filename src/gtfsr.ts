@@ -976,6 +976,7 @@ export type BusStopArrival = {
   etaSeconds: number;
   delaySec: number;
   stopSequence: number;
+  stopsAway: number | null;
   direction: string;
   // "running" — trip has a live vehicle_position, can be focused on the map.
   // "scheduled" — NTA has a trip_update prediction but the bus hasn't reported
@@ -1051,7 +1052,7 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
 
     const decision = decideStopArrival(r, live, vehicle ?? null, tripStopCoords, nowSec);
     if (!decision.keep) continue;
-    const { etaSec, delaySec } = decision;
+    const { etaSec, delaySec, vehicleSeq } = decision;
 
     const routeId = live.routeId;
     const directionId = live.directionId;
@@ -1071,6 +1072,7 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
       etaSeconds: etaSec,
       delaySec,
       stopSequence: r.stop_sequence,
+      stopsAway: vehicleSeq === null ? null : Math.max(0, r.stop_sequence - vehicleSeq),
       direction: dirKey,
       status: vehicleByTripId.has(r.trip_id) ? "running" : "scheduled",
     });

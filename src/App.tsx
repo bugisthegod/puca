@@ -10,7 +10,7 @@ import { useTrainMap, type Mode } from "./hooks/useTrainMap";
 import { loadSession, saveSession, type BusSearchTab } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
-import BusSearchPanel from "./components/BusSearchPanel";
+import BusSearchPanel, { type BusStopSummary } from "./components/BusSearchPanel";
 import AboutModal from "./components/AboutModal";
 import FavoritesModal from "./components/FavoritesModal";
 import OnboardingTour, { type TourStep } from "./components/OnboardingTour";
@@ -112,6 +112,9 @@ function App() {
   const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedSession.busSearchTab ?? "route");
   const [busStopId, setBusStopId] = useState<string | null>(savedSession.busStopId ?? null);
   const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedSession.busStopOperator ?? null);
+  const [busStopSummary, setBusStopSummary] = useState<BusStopSummary | null>(null);
+  const [infoPanelDrilledIn, setInfoPanelDrilledIn] = useState(false);
+  const [arrivalFocusResetSignal, setArrivalFocusResetSignal] = useState(0);
   const [panelCollapsed, setPanelCollapsed] = useState(true);
   const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
@@ -458,7 +461,11 @@ function App() {
 
   const handleBusTabChange = useCallback((tab: BusSearchTab) => {
     setBusSearchTab(tab);
-    if (tab === "route") setFocusContext(null);
+    if (tab === "route") {
+      setFocusContext(null);
+      setArrivalFocusResetSignal((n) => n + 1);
+      setInfoPanelDrilledIn(false);
+    }
   }, []);
 
   const handleStopIdChange = useCallback((id: string | null, op: BusOperator | null) => {
@@ -480,6 +487,7 @@ function App() {
     // find the marker without drawing the whole polyline.
     setBusRoute(null);
     setBusDirection(null);
+    setInfoPanelDrilledIn(true);
     setFocusContext({
       tripId: arrival.tripId,
       operator: op,
@@ -500,6 +508,7 @@ function App() {
     setBusDirection(null);
     setBusStopId(null);
     setBusStopOperator(null);
+    setBusStopSummary(null);
     setBusSearchTab(m === "bus" ? "stop" : "route");
     setFocusContext(null);
     setPanelCollapsed(true);
@@ -617,6 +626,8 @@ function App() {
           onShowToast={showToast}
           stopIsFavorite={stopIsFav}
           onToggleStopFavorite={onToggleStopFav}
+          onStopSummaryChange={setBusStopSummary}
+          arrivalFocusResetSignal={arrivalFocusResetSignal}
           onPickArrival={handlePickArrival}
         />
       )}
@@ -627,6 +638,8 @@ function App() {
             setBusRoute(null);
             setBusDirection(null);
             setFocusContext(null);
+            setArrivalFocusResetSignal((n) => n + 1);
+            setInfoPanelDrilledIn(false);
           }}
         >
           &larr; {t("bus.back.all")}
@@ -636,10 +649,14 @@ function App() {
         vehicleCount={vehicleCount}
         lastUpdated={lastUpdated ? t("info.updated", { time: lastUpdated }) : t("info.updated.empty")}
         mode={mode}
+        busSearchTab={busSearchTab}
         filter={filter}
         inService={inService}
         resumeLabel={SERVICE_RESUME_LABEL}
         busOperator={busOperator}
+        busStopSummary={busStopSummary}
+        drilledIn={infoPanelDrilledIn}
+        onDrilledInChange={setInfoPanelDrilledIn}
         onModeChange={handleModeChange}
         onFilterChange={setFilter}
         onBusOperatorChange={handleBusOperatorChange}

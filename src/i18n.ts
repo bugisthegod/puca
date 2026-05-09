@@ -134,6 +134,7 @@ const EN = {
   "info.back.aria": "Back",
   "info.updated": "Updated: {time}",
   "info.updated.empty": "Updated: —",
+  "info.stop.noarrivals": "No upcoming buses",
 
   // SearchPanel (train)
   "train.search.placeholder.from": "From station...",
@@ -169,6 +170,8 @@ const EN = {
   "bus.search.arrivals.empty": "No upcoming buses.",
   "bus.search.eta.due": "Due",
   "bus.search.eta.min": "{n} min",
+  "bus.search.stops.atstop": "at stop",
+  "bus.search.stops.away": "{n} stops away",
   "bus.search.toast.notonmap.title": "Not mapped yet",
 
   // FavoritesModal
@@ -326,6 +329,7 @@ const ZH: Record<Key, string> = {
   "info.back.aria": "返回",
   "info.updated": "更新于 {time}",
   "info.updated.empty": "更新于 —",
+  "info.stop.noarrivals": "暂无即将到站的公交",
 
   // SearchPanel (train)
   "train.search.placeholder.from": "出发站...",
@@ -361,6 +365,8 @@ const ZH: Record<Key, string> = {
   "bus.search.arrivals.empty": "暂无即将到站的公交。",
   "bus.search.eta.due": "即将到站",
   "bus.search.eta.min": "{n} 分钟",
+  "bus.search.stops.atstop": "已到本站",
+  "bus.search.stops.away": "还有 {n} 站",
   "bus.search.toast.notonmap.title": "暂未上图",
 
   // FavoritesModal

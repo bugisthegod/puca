@@ -19,6 +19,18 @@
   transition: padding 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), min-width 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
+/* Keep filter-bar height consistent with route mode even when empty */
+#info-panel.info-panel--stop-summary #filter-bar {
+  min-height: 35px;
+}
+
+/* Desktop: ensure both route and stop panels have the same outer box height */
+@media (min-width: 601px) {
+  #info-panel:not(.info-panel--compact) {
+    min-height: 152px;
+  }
+}
+
 #panel-header,
 #last-updated {
   animation: info-item-in 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
@@ -76,6 +88,71 @@
   margin-bottom: 14px;
 }
 
+.info-stop-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0 0 4px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 4px solid var(--brand-mid);
+  animation: info-item-in 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.info-stop-summary--dublinbus { border-left-color: var(--op-dublinbus); }
+.info-stop-summary--buseireann { border-left-color: var(--op-buseireann); }
+.info-stop-summary--goahead { border-left-color: var(--op-goahead); }
+
+.info-stop-summary__stop,
+.info-stop-summary__arrival {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.info-stop-summary__stop strong,
+.info-stop-summary__route {
+  flex: 0 0 auto;
+  font-weight: 800;
+  color: #fff;
+}
+
+.info-stop-summary__stop span,
+.info-stop-summary__headsign {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #cfcfcf;
+  font-size: 0.78rem;
+}
+
+.info-stop-summary__route {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--brand-mid);
+  font-size: 0.78rem;
+}
+
+.info-stop-summary__headsign {
+  flex: 1 1 auto;
+}
+
+.info-stop-summary__meta,
+.info-stop-summary__empty {
+  flex: 0 0 auto;
+  color: var(--brand-light);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.info-stop-summary__empty {
+  color: #aaa;
+}
+
 #panel-header.panel-header--closed {
   justify-content: flex-start;
   gap: 12px;
@@ -111,6 +188,11 @@
     flex-wrap: wrap;
   }
 
+  #info-panel.info-panel--stop-summary {
+    min-width: unset;
+    min-height: 88px;
+  }
+
   #panel-header {
     flex: 0 0 100%;
     margin-bottom: 0;
@@ -118,6 +200,25 @@
 
   #last-updated {
     display: none;
+  }
+
+  .info-stop-summary {
+    flex: 0 0 100%;
+    margin-bottom: 0;
+    padding: 8px 10px;
+  }
+
+  #info-panel.info-panel--stop-summary #filter-bar {
+    display: none;
+  }
+
+  .info-stop-summary__arrival {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .info-stop-summary__meta {
+    margin-left: auto;
   }
 
 

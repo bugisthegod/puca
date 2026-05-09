@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import type { Filter } from "../utils";
 import type { Mode } from "../hooks/useTrainMap";
 import type { BusOperator } from "../types";
+import type { BusStopSummary } from "./BusSearchPanel";
 import SleepingPuca from "./SleepingPuca";
 import { useLocale } from "../i18n";
 
@@ -9,10 +10,14 @@ type InfoPanelProps = {
   vehicleCount: number;
   lastUpdated: string;
   mode: Mode;
+  busSearchTab: "route" | "stop";
   filter: Filter;
   inService: boolean;
   resumeLabel: string;
   busOperator: BusOperator;
+  busStopSummary: BusStopSummary | null;
+  drilledIn: boolean;
+  onDrilledInChange: (drilledIn: boolean) => void;
   onModeChange: (m: Mode) => void;
   onFilterChange: (f: Filter) => void;
   onBusOperatorChange: (op: BusOperator) => void;
@@ -38,19 +43,23 @@ function InfoPanel({
   vehicleCount,
   lastUpdated,
   mode,
+  busSearchTab,
   filter,
   inService,
   resumeLabel,
   busOperator,
+  busStopSummary,
+  drilledIn,
+  onDrilledInChange,
   onModeChange,
   onFilterChange,
   onBusOperatorChange,
 }: InfoPanelProps) {
   const { t } = useLocale();
-  const [drilledIn, setDrilledIn] = useState(false);
   const showCount = mode === "train"
     ? t("info.running.train", { n: vehicleCount })
     : t("info.running.bus", { n: vehicleCount });
+  const showBusStopSummary = drilledIn && mode === "bus" && busSearchTab === "stop" && busStopSummary;
 
   const modes: { value: Mode; label: string }[] = [
     { value: "train", label: t("info.mode.train") },
@@ -61,17 +70,43 @@ function InfoPanel({
 
   function handleModeClick(next: Mode) {
     if (next !== mode) onModeChange(next);
-    setDrilledIn(true);
+    onDrilledInChange(true);
   }
 
+  const panelClassName = [
+    drilledIn ? "" : "info-panel--compact",
+    showBusStopSummary ? "info-panel--stop-summary" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <div id="info-panel" className={drilledIn ? "" : "info-panel--compact"}>
+    <div id="info-panel" className={panelClassName}>
       {drilledIn && (
         inService ? (
           <>
-            <div id="panel-header">
-              <span id="train-count">{showCount}</span>
-            </div>
+            {!showBusStopSummary && (
+              <div id="panel-header">
+                <span id="train-count">{showCount}</span>
+              </div>
+            )}
+            {showBusStopSummary && (
+              <div className={`info-stop-summary info-stop-summary--${busStopSummary.operator}`}>
+                <div className="info-stop-summary__stop">
+                  <strong>{busStopSummary.stopCode}</strong>
+                  <span>{busStopSummary.stopName}</span>
+                </div>
+                {busStopSummary.nextArrival ? (
+                  <div className="info-stop-summary__arrival">
+                    <span className="info-stop-summary__route">{busStopSummary.nextArrival.routeShortName}</span>
+                    <span className="info-stop-summary__headsign">{busStopSummary.nextArrival.headsign}</span>
+                    <span className="info-stop-summary__meta">
+                      {[busStopSummary.nextArrival.stopsAwayText, busStopSummary.nextArrival.etaText].filter(Boolean).join(" · ")}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="info-stop-summary__empty">{busStopSummary.emptyText}</div>
+                )}
+              </div>
+            )}
             <div id="last-updated">{lastUpdated}</div>
           </>
         ) : (
@@ -79,7 +114,7 @@ function InfoPanel({
             <button
               type="button"
               className="filter-btn filter-back"
-              onClick={() => setDrilledIn(false)}
+              onClick={() => onDrilledInChange(false)}
               aria-label={t("info.back.aria")}
             >
               ←
@@ -106,12 +141,12 @@ function InfoPanel({
             {label}
           </button>
         ))}
-        {drilledIn && inService && (
+        {drilledIn && inService && !showBusStopSummary && (
           <>
             <button
               type="button"
               className="filter-btn filter-back"
-              onClick={() => setDrilledIn(false)}
+              onClick={() => onDrilledInChange(false)}
               aria-label={t("info.back.aria")}
             >
               ←

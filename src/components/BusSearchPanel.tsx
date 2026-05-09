@@ -18,17 +18,32 @@ export type RouteWithOperator = BusRoute & { operator: BusOperator };
 
 export type BusShape = { [dir: string]: { headsign: string } } | null;
 
-type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number; operator: BusOperator };
+export type StopSearchResult = { id: string; name: string; code: string; lat: number; lng: number; operator: BusOperator };
 
-type StopArrival = {
+export type StopArrival = {
   tripId: string;
   routeShortName: string;
   headsign: string;
   etaSeconds: number;
   delaySec: number;
   stopSequence: number;
+  stopsAway: number | null;
   direction: string;
   status: "running" | "scheduled";
+};
+
+export type BusStopSummary = {
+  stopCode: string;
+  stopName: string;
+  operator: BusOperator;
+  selected: boolean;
+  emptyText: string | null;
+  nextArrival: {
+    routeShortName: string;
+    headsign: string;
+    etaText: string;
+    stopsAwayText: string | null;
+  } | null;
 };
 
 export const BUS_SEARCH_OPERATORS: BusOperator[] = ["dublinbus", "buseireann", "goahead"];
@@ -85,6 +100,8 @@ type BusSearchPanelProps = {
   onPickArrival: (arrival: StopArrival, operator: BusOperator, stop: StopSearchResult) => void;
   stopIsFavorite: boolean;
   onToggleStopFavorite: (stop: StopSearchResult) => void;
+  onStopSummaryChange: (summary: BusStopSummary | null) => void;
+  arrivalFocusResetSignal: number;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   onShowToast: (title: string, body?: string) => void;
@@ -107,11 +124,13 @@ function BusSearchPanel({
   onPickArrival,
   stopIsFavorite,
   onToggleStopFavorite,
+  onStopSummaryChange,
+  arrivalFocusResetSignal,
   collapsed,
   onCollapsedChange,
   onShowToast,
 }: BusSearchPanelProps) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
@@ -129,6 +148,7 @@ function BusSearchPanel({
   const [arrivalsError, setArrivalsError] = useState<string | null>(null);
   const [arrivalsFetchedAt, setArrivalsFetchedAt] = useState<number | null>(null);
   const [arrivalClockNow, setArrivalClockNow] = useState(() => Date.now());
+  const [selectedArrivalTripId, setSelectedArrivalTripId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,6 +333,10 @@ function BusSearchPanel({
 
   function selectStop(s: StopSearchResult) {
     setSelectedStop(s);
+    setArrivals(null);
+    setArrivalsFetchedAt(null);
+    setArrivalsError(null);
+    setSelectedArrivalTripId(null);
     setStopQuery("");
     setStopFocused(false);
     setStopResults([]);
@@ -340,6 +364,7 @@ function BusSearchPanel({
     setSelectedStop(null);
     setArrivals(null);
     setArrivalsFetchedAt(null);
+    setSelectedArrivalTripId(null);
     setStopQuery("");
     onStopIdChange(null, null);
   }
@@ -349,6 +374,37 @@ function BusSearchPanel({
     const min = Math.round(etaSeconds / 60);
     return t("bus.search.eta.min", { n: min });
   }
+
+  function stopsAwayLabel(stopsAway: number | null | undefined): string | null {
+    if (stopsAway === null || stopsAway === undefined) return null;
+    if (stopsAway === 0) return t("bus.search.stops.atstop");
+    return t("bus.search.stops.away", { n: stopsAway });
+  }
+
+  useEffect(() => {
+    setSelectedArrivalTripId(null);
+  }, [arrivalFocusResetSignal]);
+
+  useEffect(() => {
+    if (busSearchTab !== "stop" || !selectedStop) {
+      onStopSummaryChange(null);
+      return;
+    }
+    const next = arrivals?.find((a) => a.tripId === selectedArrivalTripId) ?? arrivals?.[0] ?? null;
+    onStopSummaryChange({
+      stopCode: selectedStop.code || selectedStop.id,
+      stopName: selectedStop.name,
+      operator: selectedStop.operator,
+      selected: selectedArrivalTripId !== null && next?.tripId === selectedArrivalTripId,
+      emptyText: arrivals === null ? t("bus.search.arrivals.loading") : t("info.stop.noarrivals"),
+      nextArrival: next ? {
+        routeShortName: next.routeShortName,
+        headsign: next.headsign,
+        etaText: etaLabel(displayEtaSeconds(next.etaSeconds, arrivalsFetchedAt, arrivalClockNow)),
+        stopsAwayText: next.stopsAway === 0 ? null : stopsAwayLabel(next.stopsAway),
+      } : null,
+    });
+  }, [busSearchTab, selectedStop, arrivals, arrivalsFetchedAt, arrivalClockNow, selectedArrivalTripId, locale, onStopSummaryChange]);
 
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
@@ -544,9 +600,10 @@ function BusSearchPanel({
                                   onShowToast(t("bus.search.toast.notonmap.title"));
                                   return;
                                 }
+                                setSelectedArrivalTripId(a.tripId);
                                 if (!selectedStop) return;
                                 if (window.innerWidth <= 600) onCollapsedChange(true);
-                                onPickArrival(a, busOperator, selectedStop);
+                                onPickArrival(a, selectedStop.operator, selectedStop);
                               }}
                             >
                               <span className="stop-arrival__route">{a.routeShortName}</span>
