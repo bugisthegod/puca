@@ -152,6 +152,11 @@ export function useTrainMarkers({
   searchCodesRef.current = searchCodes;
   const onMarkerClickRef = useRef<(trainCode: string) => void>(() => {});
 
+  // Monotonic counter so each focusTrain call invalidates any still-running
+  // earlier call. Prevents stale retries from stealing focus after the user
+  // already clicked a different train.
+  const focusRequestIdRef = useRef(0);
+
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
@@ -522,19 +527,19 @@ export function useTrainMarkers({
   // -------------------------------------------------------------------------
 
   const focusTrain = useCallback(async (code: string) => {
-    const map = leafletMap.current;
-    if (!map) return;
+    const requestId = ++focusRequestIdRef.current;
+    if (!leafletMap.current) return;
 
     const entry = await pollForMarker(
       markers.current,
       code,
-      30,   // max attempts
-      200,  // interval ms
-      () => !!leafletMap.current,
+      30,
+      200,
+      () => !!leafletMap.current && requestId === focusRequestIdRef.current,
     );
 
-    if (!entry || !leafletMap.current) return;
-    map.setView(entry.marker.getLatLng(), 13, { animate: false });
+    if (!entry || requestId !== focusRequestIdRef.current || !leafletMap.current) return;
+    leafletMap.current.setView(entry.marker.getLatLng(), 13, { animate: false });
     void onMarkerClickRef.current(code);
   }, []);
 
