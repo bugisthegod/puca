@@ -162,21 +162,21 @@ async function tileHandler(event, req) {
     const isStale = now - cacheAt > TILE_CACHE_MAX_AGE_MS;
 
     if (!isStale && now - accessAt > TILE_TOUCH_INTERVAL_MS) {
-      event.waitUntil(touchTile(cache, req, cached, now).catch(() => {}));
+      event.waitUntil(touchTile(cache, req, cached.clone(), now).catch(() => {}));
     }
 
     // Serve stale tiles instantly, but refresh them in the background so map
     // data eventually catches up without putting network latency on pan/zoom.
     if (isStale) {
-      event.waitUntil(fetchAndCacheTile(cache, req).catch(() => {}));
+      event.waitUntil(fetchAndCacheTile(event, cache, req).catch(() => {}));
     }
     return cached;
   }
 
-  return fetchAndCacheTile(cache, req);
+  return fetchAndCacheTile(event, cache, req);
 }
 
-async function fetchAndCacheTile(cache, req) {
+async function fetchAndCacheTile(event, cache, req) {
   let p = tileInflight.get(req.url);
   if (!p) {
     // Re-issue as CORS so the response isn't opaque — opaque responses get
@@ -194,7 +194,9 @@ async function fetchAndCacheTile(cache, req) {
         clearTimeout(timer);
         if (res.ok) {
           const cacheable = responseWithTileMetadata(res, Date.now(), Date.now());
-          cache.put(req, cacheable).then(() => trimTileCache(cache)).catch(() => {});
+          event.waitUntil(
+            cache.put(req, cacheable).then(() => trimTileCache(cache)).catch(() => {}),
+          );
         }
         return res;
       })
