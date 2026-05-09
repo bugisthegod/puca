@@ -38,7 +38,7 @@ export function useTrainMap(
   busOperator: BusOperator = "dublinbus",
   options: UseTrainMapOptions = {},
 ): {
-  focusTrain: (code: string) => void;
+  focusTrain: (code: string) => Promise<void>;
   locateUser: () => Promise<void>;
   getMapView: () => MapView | null;
   compassPref: boolean;

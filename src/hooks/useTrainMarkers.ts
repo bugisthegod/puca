@@ -89,6 +89,29 @@ export interface TrainMarkerEntry {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: poll a markers map until an entry appears (async retry loop).
+// Used by focusTrain to handle the gap between search-result click and the
+// main trains poll landing, or a running train whose GPS is temporarily (0,0).
+// ---------------------------------------------------------------------------
+
+export async function pollForMarker(
+  markers: Map<string, TrainMarkerEntry>,
+  code: string,
+  maxAttempts: number,
+  intervalMs: number,
+  alive: () => boolean,
+): Promise<TrainMarkerEntry | undefined> {
+  let entry = markers.get(code);
+  let attempts = 0;
+  while (!entry && attempts < maxAttempts && alive()) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    entry = markers.get(code);
+    attempts++;
+  }
+  return entry;
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
@@ -112,7 +135,7 @@ export function useTrainMarkers({
   markers: React.MutableRefObject<Map<string, TrainMarkerEntry>>;
   routeLineRef: React.RefObject<L.Polyline | null>;
   clearRouteLine: () => void;
-  focusTrain: (code: string) => void;
+  focusTrain: (code: string) => Promise<void>;
 } {
   const markers = useRef<Map<string, TrainMarkerEntry>>(new Map());
   const routeLineRef = useRef<L.Polyline | null>(null);
@@ -495,10 +518,19 @@ export function useTrainMarkers({
   // Public API
   // -------------------------------------------------------------------------
 
-  const focusTrain = useCallback((code: string) => {
+  const focusTrain = useCallback(async (code: string) => {
     const map = leafletMap.current;
-    const entry = markers.current.get(code);
-    if (!map || !entry) return;
+    if (!map) return;
+
+    const entry = await pollForMarker(
+      markers.current,
+      code,
+      30,   // max attempts
+      200,  // interval ms
+      () => !!leafletMap.current,
+    );
+
+    if (!entry || !leafletMap.current) return;
     map.setView(entry.marker.getLatLng(), 13, { animate: false });
     void onMarkerClickRef.current(code);
   }, []);
