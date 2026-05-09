@@ -115,6 +115,7 @@ function App() {
   const [busStopSummary, setBusStopSummary] = useState<BusStopSummary | null>(null);
   const [infoPanelDrilledIn, setInfoPanelDrilledIn] = useState(false);
   const [arrivalFocusResetSignal, setArrivalFocusResetSignal] = useState(0);
+  const [arrivalFocusUnavailable, setArrivalFocusUnavailable] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(true);
   const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
@@ -137,9 +138,13 @@ function App() {
       setBusRoute(route);
       setBusDirection(direction);
       setFocusContext(null);
+      setArrivalFocusUnavailable(false);
     },
     initialView: savedSession.mapView ?? null,
     focusContext,
+    onFocusSegmentStatus: (status) => {
+      setArrivalFocusUnavailable(status === "unavailable");
+    },
   });
   const [locating, setLocating] = useState(false);
   const [toast, setToast] = useState<{ title: string; body?: string } | null>(null);
@@ -400,6 +405,7 @@ function App() {
     setBusStopOperator(null);
     setBuses([]);
     setFocusContext(null);
+    setArrivalFocusUnavailable(false);
     setPanelCollapsed(true);
   }, []);
 
@@ -415,6 +421,7 @@ function App() {
     setBusSearchTab("route");
     setBusStopId(null);
     setFocusContext(null);
+    setArrivalFocusUnavailable(false);
     setPanelCollapsed(false);
   }, []);
 
@@ -444,6 +451,7 @@ function App() {
     setBusRoute(null);
     setBusDirection(null);
     setFocusContext(null);
+    setArrivalFocusUnavailable(false);
     setBusSearchTab("stop");
     setBusStopId(s.stopId);
     setBusStopOperator(s.operator);
@@ -465,12 +473,14 @@ function App() {
       setFocusContext(null);
       setArrivalFocusResetSignal((n) => n + 1);
       setInfoPanelDrilledIn(false);
+      setArrivalFocusUnavailable(false);
     }
   }, []);
 
   const handleStopIdChange = useCallback((id: string | null, op: BusOperator | null) => {
     setBusStopId(id);
     setBusStopOperator(op);
+    setArrivalFocusUnavailable(false);
     // Picking a stop in an operator different from the current route-mode
     // default would otherwise leave the all-fleet browse pinned to the old
     // operator — sync it so a tab back to route mode shows buses near the
@@ -488,6 +498,7 @@ function App() {
     setBusRoute(null);
     setBusDirection(null);
     setInfoPanelDrilledIn(true);
+    setArrivalFocusUnavailable(false);
     setFocusContext({
       tripId: arrival.tripId,
       operator: op,
@@ -511,6 +522,7 @@ function App() {
     setBusStopSummary(null);
     setBusSearchTab(m === "bus" ? "stop" : "route");
     setFocusContext(null);
+    setArrivalFocusUnavailable(false);
     setPanelCollapsed(true);
     // SearchPanel rehydrates from/to queries from this sessionStorage key
     // on mount, so App-state clearing alone isn't enough — clear the
@@ -628,6 +640,7 @@ function App() {
           onToggleStopFavorite={onToggleStopFav}
           onStopSummaryChange={setBusStopSummary}
           arrivalFocusResetSignal={arrivalFocusResetSignal}
+          arrivalFocusUnavailable={arrivalFocusUnavailable}
           onPickArrival={handlePickArrival}
         />
       )}
@@ -640,6 +653,7 @@ function App() {
             setFocusContext(null);
             setArrivalFocusResetSignal((n) => n + 1);
             setInfoPanelDrilledIn(false);
+            setArrivalFocusUnavailable(false);
           }}
         >
           &larr; {t("bus.back.all")}

@@ -107,6 +107,25 @@ describe("mergeTripStops", () => {
     expect(result.directionId).toBe(0);
   });
 
+  test("fills expected arrivals from GPS-inferred delay when live updates have no delays", () => {
+    const live: LiveTripData = {
+      routeId: "R1",
+      directionId: 0,
+      stopTimeUpdates: [
+        { sequence: 3, stopId: "S3", arrivalDelaySec: null, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+      ],
+    };
+    const result = mergeTripStops("T1", scheduledFour, live, stops, null, { fromSequence: 2, delaySec: 180 })!;
+    expect(result.stops[0]!.arrivalDelaySec).toBeNull();
+    expect(result.stops[0]!.expectedArrivalSec).toBeNull();
+    expect(result.stops[1]!.arrivalDelaySec).toBe(180);
+    expect(result.stops[1]!.expectedArrivalSec).toBe(1280);
+    expect(result.stops[2]!.arrivalDelaySec).toBe(180);
+    expect(result.stops[2]!.expectedArrivalSec).toBe(1380);
+    expect(result.stops[3]!.arrivalDelaySec).toBe(180);
+    expect(result.stops[3]!.expectedArrivalSec).toBe(1480);
+  });
+
   test("scheduled stopId wins over live stopId when sequences match", () => {
     const live: LiveTripData = {
       routeId: "R1",
@@ -346,6 +365,7 @@ describe("decideStopArrival", () => {
     sequence: i + 1,
     lat: 53.35 + i * 0.001,
     lng: -6.27 + i * 0.001,
+    arrivalSec: 71_760 + i * 60,
   }));
   const userRow = { stop_sequence: 8, arrival_sec: 72_240 }; // 20:04
   const nowSec = 72_540; // 20:09 — sched already past
@@ -423,6 +443,25 @@ describe("decideStopArrival", () => {
     if (!result.keep) return;
     expect(result.etaSec).toBeGreaterThan(0);
     expect(result.vehicleSeq).toBe(6);
+  });
+
+  test("GPS upstream + no NTA delay infers ETA from current scheduled stop", () => {
+    const live: LiveTripData = {
+      routeId: "R38",
+      directionId: 0,
+      stopTimeUpdates: [
+        { sequence: 10, stopId: "T10", arrivalDelaySec: null, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+        { sequence: 11, stopId: "T11", arrivalDelaySec: null, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+      ],
+    };
+    const vehicle = { lat: tripStopCoords[5]!.lat, lng: tripStopCoords[5]!.lng }; // at stop 6
+    const result = decideStopArrival(userRow, live, vehicle, tripStopCoords, nowSec);
+    expect(result.keep).toBe(true);
+    if (!result.keep) return;
+    expect(result.vehicleSeq).toBe(6);
+    expect(result.etaSource).toBe("gps-inferred");
+    expect(result.delaySec).toBe(nowSec - tripStopCoords[5]!.arrivalSec);
+    expect(result.etaSec).toBe(userRow.arrival_sec - tripStopCoords[5]!.arrivalSec);
   });
 
   test("GPS at user's stop (sequence equal) → keep, treats as upstream", () => {

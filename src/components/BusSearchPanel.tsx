@@ -102,6 +102,7 @@ type BusSearchPanelProps = {
   onToggleStopFavorite: (stop: StopSearchResult) => void;
   onStopSummaryChange: (summary: BusStopSummary | null) => void;
   arrivalFocusResetSignal: number;
+  arrivalFocusUnavailable: boolean;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   onShowToast: (title: string, body?: string) => void;
@@ -126,6 +127,7 @@ function BusSearchPanel({
   onToggleStopFavorite,
   onStopSummaryChange,
   arrivalFocusResetSignal,
+  arrivalFocusUnavailable,
   collapsed,
   onCollapsedChange,
   onShowToast,
@@ -377,7 +379,7 @@ function BusSearchPanel({
 
   function stopsAwayLabel(stopsAway: number | null | undefined): string | null {
     if (stopsAway === null || stopsAway === undefined) return null;
-    if (stopsAway === 0) return t("bus.search.stops.atstop");
+    if (stopsAway === 0) return null;
     return t("bus.search.stops.away", { n: stopsAway });
   }
 
@@ -390,21 +392,34 @@ function BusSearchPanel({
       onStopSummaryChange(null);
       return;
     }
-    const next = arrivals?.find((a) => a.tripId === selectedArrivalTripId) ?? arrivals?.[0] ?? null;
+    const selectedArrival = selectedArrivalTripId
+      ? arrivals?.find((a) => a.tripId === selectedArrivalTripId) ?? null
+      : null;
+    const selectedArrivalMissing = selectedArrivalTripId !== null && arrivals !== null && !selectedArrival;
+    const selectedArrivalUnavailable = selectedArrivalTripId !== null && arrivalFocusUnavailable;
+    const next = selectedArrivalUnavailable ? null : selectedArrivalTripId ? selectedArrival : arrivals?.[0] ?? null;
+    const etaSeconds = next ? displayEtaSeconds(next.etaSeconds, arrivalsFetchedAt, arrivalClockNow) : null;
+    const etaText = next?.stopsAway === 0
+      ? t("bus.search.eta.due")
+      : next?.stopsAway !== null && next?.stopsAway !== undefined
+        ? etaSeconds !== null && etaSeconds >= 60 ? etaLabel(etaSeconds) : ""
+        : etaSeconds !== null ? etaLabel(etaSeconds) : "";
     onStopSummaryChange({
       stopCode: selectedStop.code || selectedStop.id,
       stopName: selectedStop.name,
       operator: selectedStop.operator,
       selected: selectedArrivalTripId !== null && next?.tripId === selectedArrivalTripId,
-      emptyText: arrivals === null ? t("bus.search.arrivals.loading") : t("info.stop.noarrivals"),
+      emptyText: selectedArrivalUnavailable || selectedArrivalMissing
+        ? t("bus.search.arrivals.maybePassed")
+        : arrivalsError ?? (arrivalsLoading || arrivals === null ? t("bus.search.arrivals.loading") : t("info.stop.noarrivals")),
       nextArrival: next ? {
         routeShortName: next.routeShortName,
         headsign: next.headsign,
-        etaText: etaLabel(displayEtaSeconds(next.etaSeconds, arrivalsFetchedAt, arrivalClockNow)),
-        stopsAwayText: next.stopsAway === 0 ? null : stopsAwayLabel(next.stopsAway),
+        etaText,
+        stopsAwayText: stopsAwayLabel(next.stopsAway),
       } : null,
     });
-  }, [busSearchTab, selectedStop, arrivals, arrivalsFetchedAt, arrivalClockNow, selectedArrivalTripId, locale, onStopSummaryChange]);
+  }, [busSearchTab, selectedStop, arrivals, arrivalsError, arrivalsFetchedAt, arrivalsLoading, arrivalClockNow, arrivalFocusUnavailable, selectedArrivalTripId, locale, onStopSummaryChange]);
 
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>

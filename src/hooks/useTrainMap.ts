@@ -23,6 +23,7 @@ interface UseTrainMapOptions {
   onSelectBusRoute?: (route: string, direction: string) => void;
   initialView?: MapView | null;
   focusContext?: FocusContext | null;
+  onFocusSegmentStatus?: (status: "ok" | "unavailable") => void;
 }
 
 export function useTrainMap(
@@ -44,7 +45,7 @@ export function useTrainMap(
   startCompass: () => Promise<boolean>;
   stopCompass: () => void;
 } {
-  const { currentBusRoute = null, onSelectBusRoute, initialView = null, focusContext = null } = options;
+  const { currentBusRoute = null, onSelectBusRoute, initialView = null, focusContext = null, onFocusSegmentStatus } = options;
 
   const onSelectBusRouteRef = useRef(onSelectBusRoute);
   onSelectBusRouteRef.current = onSelectBusRoute;
@@ -97,6 +98,7 @@ export function useTrainMap(
     busMarkers,
     buses,
     mode,
+    onSegmentStatus: onFocusSegmentStatus,
   });
 
   // Bus container lifecycle — recreated on mode/operator/single-route change.

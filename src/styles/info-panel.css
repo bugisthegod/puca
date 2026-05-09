@@ -19,11 +19,6 @@
   transition: padding 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), min-width 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* Keep filter-bar height consistent with route mode even when empty */
-#info-panel.info-panel--stop-summary #filter-bar {
-  min-height: 35px;
-}
-
 /* Desktop: ensure both route and stop panels have the same outer box height */
 @media (min-width: 601px) {
   #info-panel:not(.info-panel--compact) {
@@ -181,16 +176,15 @@
     right: calc(8px + env(safe-area-inset-right));
     left: calc(8px + env(safe-area-inset-left));
     min-width: unset;
-    padding: 14px 14px;
+    padding: 10px 14px;
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
   }
 
-  #info-panel.info-panel--stop-summary {
-    min-width: unset;
-    min-height: 88px;
+  #info-panel.info-panel--stop-summary #filter-bar {
+    display: none;
   }
 
   #panel-header {
@@ -208,10 +202,6 @@
     padding: 8px 10px;
   }
 
-  #info-panel.info-panel--stop-summary #filter-bar {
-    display: none;
-  }
-
   .info-stop-summary__arrival {
     flex-wrap: wrap;
     row-gap: 4px;
@@ -220,8 +210,6 @@
   .info-stop-summary__meta {
     margin-left: auto;
   }
-
-
 
   /* Mobile compact: detach from both edges, center horizontally. */
   #info-panel.info-panel--compact {

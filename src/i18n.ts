@@ -168,9 +168,9 @@ const EN = {
   "bus.search.arrivals.loading": "Loading…",
   "bus.search.arrivals.error": "Could not load arrivals",
   "bus.search.arrivals.empty": "No upcoming buses.",
+  "bus.search.arrivals.maybePassed": "May have passed",
   "bus.search.eta.due": "Due",
   "bus.search.eta.min": "{n} min",
-  "bus.search.stops.atstop": "at stop",
   "bus.search.stops.away": "{n} stops away",
   "bus.search.toast.notonmap.title": "Not mapped yet",
 
@@ -363,9 +363,9 @@ const ZH: Record<Key, string> = {
   "bus.search.arrivals.loading": "加载中…",
   "bus.search.arrivals.error": "无法加载到站信息",
   "bus.search.arrivals.empty": "暂无即将到站的公交。",
+  "bus.search.arrivals.maybePassed": "可能已过站",
   "bus.search.eta.due": "即将到站",
   "bus.search.eta.min": "{n} 分钟",
-  "bus.search.stops.atstop": "已到本站",
   "bus.search.stops.away": "还有 {n} 站",
   "bus.search.toast.notonmap.title": "暂未上图",
 

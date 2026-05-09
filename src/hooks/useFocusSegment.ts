@@ -23,9 +23,10 @@ interface UseFocusSegmentOptions {
   busMarkers: MutableRefObject<Map<string, BusMarkerEntry>>;
   buses: BusVehicle[];
   mode: Mode;
+  onSegmentStatus?: (status: "ok" | "unavailable") => void;
 }
 
-export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: UseFocusSegmentOptions): void {
+export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode, onSegmentStatus }: UseFocusSegmentOptions): void {
   const layersRef = useRef<{
     polyline: L.Polyline | null;
     intermediates: L.Marker[];
@@ -92,7 +93,10 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
       if (cancelled) return;
 
       const dirData = shape[focusContext.direction];
-      if (!dirData || dirData.coords.length < 2) return;
+      if (!dirData || dirData.coords.length < 2) {
+        onSegmentStatus?.("unavailable");
+        return;
+      }
 
       // Wait briefly for the bus marker to appear — onPickArrival clears the
       // selected route, which triggers fetchAllBuses, which usually lands within
@@ -104,11 +108,16 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
         busEntry = busMarkers.current.get(focusContext.tripId);
         attempts++;
       }
-      if (cancelled || !busEntry) return;
+      if (cancelled) return;
+      if (!busEntry) {
+        onSegmentStatus?.("unavailable");
+        return;
+      }
 
       const busLatLng = busEntry.marker.getLatLng();
       const lineInfo = buildRouteLine(dirData.coords);
       if (!lineInfo) {
+        onSegmentStatus?.("unavailable");
         focusBusOnly(map, busLatLng);
         return;
       }
@@ -131,12 +140,14 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
       // appears from route-start → target stop. Target offRoute is fatal — means
       // the user's stop genuinely isn't on this route.
       if (targetProj.offRoute) {
+        onSegmentStatus?.("unavailable");
         focusBusOnly(map, busLatLng);
         return;
       }
       const busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
       const targetD = targetProj.targetDistanceAlongRoute;
       if (busD >= targetD) {
+        onSegmentStatus?.("unavailable");
         focusBusOnly(map, busLatLng);
         return;
       }
@@ -146,11 +157,13 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
         const sliced = lineSliceAlong(lineInfo.routeLine, busD / 1000, targetD / 1000, { units: "kilometers" });
         slicedCoords = sliced.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
       } catch {
+        onSegmentStatus?.("unavailable");
         focusBusOnly(map, busLatLng);
         return;
       }
       if (cancelled) return;
       if (slicedCoords.length < 2) {
+        onSegmentStatus?.("unavailable");
         focusBusOnly(map, busLatLng);
         return;
       }
@@ -221,6 +234,7 @@ export function useFocusSegment({ focusContext, leafletMap, busMarkers, mode }: 
       target.addTo(map);
 
       layersRef.current = { polyline, intermediates, target };
+      onSegmentStatus?.("ok");
 
       // Frame the whole segment (bus → target) so it fills the viewport —
       // matches the flyToBounds behaviour when a user picks a route from the

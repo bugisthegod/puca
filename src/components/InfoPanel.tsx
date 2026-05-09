@@ -59,7 +59,8 @@ function InfoPanel({
   const showCount = mode === "train"
     ? t("info.running.train", { n: vehicleCount })
     : t("info.running.bus", { n: vehicleCount });
-  const showBusStopSummary = drilledIn && mode === "bus" && busSearchTab === "stop" && busStopSummary;
+  const stopSummary = drilledIn && mode === "bus" && busSearchTab === "stop" ? busStopSummary : null;
+  const showBusStopSummary = stopSummary !== null;
 
   const modes: { value: Mode; label: string }[] = [
     { value: "train", label: t("info.mode.train") },
@@ -89,21 +90,21 @@ function InfoPanel({
               </div>
             )}
             {showBusStopSummary && (
-              <div className={`info-stop-summary info-stop-summary--${busStopSummary.operator}`}>
+              <div className={`info-stop-summary info-stop-summary--${stopSummary.operator}`}>
                 <div className="info-stop-summary__stop">
-                  <strong>{busStopSummary.stopCode}</strong>
-                  <span>{busStopSummary.stopName}</span>
+                  <strong>{stopSummary.stopCode}</strong>
+                  <span>{stopSummary.stopName}</span>
                 </div>
-                {busStopSummary.nextArrival ? (
+                {stopSummary.nextArrival ? (
                   <div className="info-stop-summary__arrival">
-                    <span className="info-stop-summary__route">{busStopSummary.nextArrival.routeShortName}</span>
-                    <span className="info-stop-summary__headsign">{busStopSummary.nextArrival.headsign}</span>
+                    <span className="info-stop-summary__route">{stopSummary.nextArrival.routeShortName}</span>
+                    <span className="info-stop-summary__headsign">{stopSummary.nextArrival.headsign}</span>
                     <span className="info-stop-summary__meta">
-                      {[busStopSummary.nextArrival.stopsAwayText, busStopSummary.nextArrival.etaText].filter(Boolean).join(" · ")}
+                      {[stopSummary.nextArrival.stopsAwayText, stopSummary.nextArrival.etaText].filter(Boolean).join(" · ")}
                     </span>
                   </div>
                 ) : (
-                  <div className="info-stop-summary__empty">{busStopSummary.emptyText}</div>
+                  <div className="info-stop-summary__empty">{stopSummary.emptyText}</div>
                 )}
               </div>
             )}
