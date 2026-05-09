@@ -678,6 +678,12 @@ type ArrivalTiming = {
 type TripStopPoint = { sequence: number; lat: number; lng: number; arrivalSec?: number };
 type DelayFallbackMode = "prior-only" | "forward-if-no-prior";
 
+function sortedStopTimeUpdates(
+  stopTimeUpdates: LiveTripData["stopTimeUpdates"],
+): LiveTripData["stopTimeUpdates"] {
+  return [...stopTimeUpdates].sort((a, b) => a.sequence - b.sequence);
+}
+
 function findClosestTripStop(
   vehicle: { lat: number; lng: number } | null,
   tripStopCoords: TripStopPoint[],
@@ -707,7 +713,7 @@ function getPropagatedDelay(
   fallbackMode: DelayFallbackMode,
 ): number | null {
   let propagated: number | null = null;
-  for (const stu of stopTimeUpdates) {
+  for (const stu of sortedStopTimeUpdates(stopTimeUpdates)) {
     if (stu.arrivalDelaySec === null) continue;
     if (stu.sequence <= sequence) propagated = stu.arrivalDelaySec;
     else if (fallbackMode === "forward-if-no-prior" && propagated === null) { propagated = stu.arrivalDelaySec; break; }
@@ -1031,10 +1037,11 @@ export function decideStopArrival(
   const closestStop = findClosestTripStop(vehicle, tripStopCoords);
   const vehicleSeq = closestStop?.sequence ?? null;
   const vehicleScheduledArrivalSec = closestStop?.arrivalSec ?? null;
+  const sortedUpdates = sortedStopTimeUpdates(live.stopTimeUpdates);
 
   if (vehicleSeq !== null) {
     if (vehicleSeq > row.stop_sequence) return { keep: false };
-  } else if (live.stopTimeUpdates.length > 0 && live.stopTimeUpdates[0]!.sequence > row.stop_sequence) {
+  } else if (sortedUpdates.length > 0 && sortedUpdates[0]!.sequence > row.stop_sequence) {
     return { keep: false };
   }
 
@@ -1044,7 +1051,7 @@ export function decideStopArrival(
   const timing = computeArrivalTiming({
     arrivalSec: row.arrival_sec,
     sequence: row.stop_sequence,
-    live,
+    live: { ...live, stopTimeUpdates: sortedUpdates },
     gpsInferredDelay,
     nowSec,
     delayFallbackMode: "forward-if-no-prior",

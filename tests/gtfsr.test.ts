@@ -497,6 +497,22 @@ describe("decideStopArrival", () => {
     if (!result.keep) return;
     expect(result.delaySec).toBe(180);
   });
+
+  test("delay propagation is stable when NTA stopTimeUpdates arrive out of order", () => {
+    const futureRow = { stop_sequence: 8, arrival_sec: 73_200 };
+    const live: LiveTripData = {
+      routeId: "R38",
+      directionId: 0,
+      stopTimeUpdates: [
+        { sequence: 11, stopId: "T11", arrivalDelaySec: 30, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+        { sequence: 6, stopId: "T6", arrivalDelaySec: 180, departureDelaySec: null, scheduleRelationship: "SCHEDULED" },
+      ],
+    };
+    const result = decideStopArrival(futureRow, live, null, [], nowSec);
+    expect(result.keep).toBe(true);
+    if (!result.keep) return;
+    expect(result.delaySec).toBe(180);
+  });
 });
 
 describe("getTrainRouteShape", () => {
