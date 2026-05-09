@@ -89,6 +89,32 @@ export interface TrainMarkerEntry {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: poll a markers map until an entry appears (async retry loop).
+// Used by focusTrain to handle the gap between search-result click and the
+// main trains poll landing, or a running train whose GPS is temporarily (0,0).
+// ---------------------------------------------------------------------------
+
+type SleepFn = (ms: number) => Promise<void>;
+
+export async function pollForMarker(
+  markers: Map<string, TrainMarkerEntry>,
+  code: string,
+  maxAttempts: number,
+  intervalMs: number,
+  alive: () => boolean,
+  sleep: SleepFn = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<TrainMarkerEntry | undefined> {
+  let entry = markers.get(code);
+  let attempts = 0;
+  while (!entry && attempts < maxAttempts && alive()) {
+    await sleep(intervalMs);
+    entry = markers.get(code);
+    attempts++;
+  }
+  return entry;
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
@@ -112,7 +138,7 @@ export function useTrainMarkers({
   markers: React.MutableRefObject<Map<string, TrainMarkerEntry>>;
   routeLineRef: React.RefObject<L.Polyline | null>;
   clearRouteLine: () => void;
-  focusTrain: (code: string) => void;
+  focusTrain: (code: string) => Promise<void>;
 } {
   const markers = useRef<Map<string, TrainMarkerEntry>>(new Map());
   const routeLineRef = useRef<L.Polyline | null>(null);
@@ -125,6 +151,11 @@ export function useTrainMarkers({
   const searchCodesRef = useRef<string[] | null>(searchCodes);
   searchCodesRef.current = searchCodes;
   const onMarkerClickRef = useRef<(trainCode: string) => void>(() => {});
+
+  // Monotonic counter so each focusTrain call invalidates any still-running
+  // earlier call. Prevents stale retries from stealing focus after the user
+  // already clicked a different train.
+  const focusRequestIdRef = useRef(0);
 
   // -------------------------------------------------------------------------
   // Helpers
@@ -495,11 +526,20 @@ export function useTrainMarkers({
   // Public API
   // -------------------------------------------------------------------------
 
-  const focusTrain = useCallback((code: string) => {
-    const map = leafletMap.current;
-    const entry = markers.current.get(code);
-    if (!map || !entry) return;
-    map.setView(entry.marker.getLatLng(), 13, { animate: false });
+  const focusTrain = useCallback(async (code: string) => {
+    const requestId = ++focusRequestIdRef.current;
+    if (!leafletMap.current) return;
+
+    const entry = await pollForMarker(
+      markers.current,
+      code,
+      30,
+      200,
+      () => !!leafletMap.current && requestId === focusRequestIdRef.current,
+    );
+
+    if (!entry || requestId !== focusRequestIdRef.current || !leafletMap.current) return;
+    leafletMap.current.setView(entry.marker.getLatLng(), 13, { animate: false });
     void onMarkerClickRef.current(code);
   }, []);
 
