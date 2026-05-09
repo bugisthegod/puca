@@ -667,12 +667,94 @@ export type LiveTripData = {
   }>;
 };
 
+type GpsInferredDelay = { fromSequence: number; delaySec: number };
+type ArrivalTimingSource = "nta" | "gps-inferred" | "schedule";
+type ArrivalTiming = {
+  delaySec: number | null;
+  expectedArrivalSec: number | null;
+  etaSec: number | null;
+  source: ArrivalTimingSource;
+};
+type TripStopPoint = { sequence: number; lat: number; lng: number; arrivalSec?: number };
+type DelayFallbackMode = "prior-only" | "forward-if-no-prior";
+
+function sortedStopTimeUpdates(
+  stopTimeUpdates: LiveTripData["stopTimeUpdates"],
+): LiveTripData["stopTimeUpdates"] {
+  return [...stopTimeUpdates].sort((a, b) => a.sequence - b.sequence);
+}
+
+function findClosestTripStop(
+  vehicle: { lat: number; lng: number } | null,
+  tripStopCoords: TripStopPoint[],
+): TripStopPoint | null {
+  if (!vehicle) return null;
+  let closest: TripStopPoint | null = null;
+  let minDistSq = Infinity;
+  for (const ts of tripStopCoords) {
+    // Raw degree² rather than meters² — fine for picking the closest stop
+    // along a single trip (relative order is preserved as long as stops are
+    // roughly collinear). Would need cos(lat) scaling for cross-route nearest-
+    // vehicle matching.
+    const dLat = ts.lat - vehicle.lat;
+    const dLng = ts.lng - vehicle.lng;
+    const d = dLat * dLat + dLng * dLng;
+    if (d < minDistSq) {
+      minDistSq = d;
+      closest = ts;
+    }
+  }
+  return closest;
+}
+
+function getPropagatedDelay(
+  stopTimeUpdates: LiveTripData["stopTimeUpdates"],
+  sequence: number,
+  fallbackMode: DelayFallbackMode,
+): number | null {
+  let propagated: number | null = null;
+  for (const stu of sortedStopTimeUpdates(stopTimeUpdates)) {
+    if (stu.arrivalDelaySec === null) continue;
+    if (stu.sequence <= sequence) propagated = stu.arrivalDelaySec;
+    else if (fallbackMode === "forward-if-no-prior" && propagated === null) { propagated = stu.arrivalDelaySec; break; }
+    else break;
+  }
+  return propagated;
+}
+
+function computeArrivalTiming({
+  arrivalSec,
+  sequence,
+  live,
+  gpsInferredDelay,
+  nowSec,
+  delayFallbackMode,
+}: {
+  arrivalSec: number;
+  sequence: number;
+  live: LiveTripData | undefined;
+  gpsInferredDelay: GpsInferredDelay | null;
+  nowSec: number | null;
+  delayFallbackMode: DelayFallbackMode;
+}): ArrivalTiming {
+  const ntaDelay = live ? getPropagatedDelay(live.stopTimeUpdates, sequence, delayFallbackMode) : null;
+  const inferredDelay = gpsInferredDelay && sequence >= gpsInferredDelay.fromSequence
+    ? gpsInferredDelay.delaySec
+    : null;
+  const delaySec = ntaDelay ?? inferredDelay;
+  const source: ArrivalTimingSource = ntaDelay !== null ? "nta" : inferredDelay !== null ? "gps-inferred" : "schedule";
+  const expectedArrivalSec = delaySec !== null ? arrivalSec + delaySec : null;
+  const etaSec = nowSec === null ? null : (expectedArrivalSec ?? arrivalSec) - nowSec;
+  return { delaySec, expectedArrivalSec, etaSec, source };
+}
+
 export function mergeTripStops(
   tripId: string,
   scheduledRows: ScheduledRow[],
   liveTrip: LiveTripData | undefined,
   stops: StopsDict,
   shapeId: string | null = null,
+  gpsInferredDelay: GpsInferredDelay | null = null,
 ): TripUpdate | null {
   if (scheduledRows.length === 0 && !liveTrip) return null;
 
@@ -687,15 +769,19 @@ export function mergeTripStops(
     // GTFS-R delay propagation: stops without a specific update inherit
     // the delay from the most recent prior stop that had one.
     // isCurrent marks the first stop with an explicit live update (bus is at or approaching).
-    let propagatedDelay: number | null = null;
     let currentAssigned = false;
     const mergedStops: StopTimeUpdate[] = scheduledRows.map((row) => {
       const live = liveBySeq.get(row.sequence);
       const stopName = stops[row.stopId]?.name ?? (live?.stopId ?? row.stopId);
       const hasExplicitDelay = live?.arrivalDelaySec !== undefined && live.arrivalDelaySec !== null;
-      if (hasExplicitDelay) propagatedDelay = live!.arrivalDelaySec;
-      const arrivalDelaySec = live?.arrivalDelaySec ?? propagatedDelay;
-      const expectedArrivalSec = arrivalDelaySec !== null ? row.arrivalSec + arrivalDelaySec : null;
+      const timing = computeArrivalTiming({
+        arrivalSec: row.arrivalSec,
+        sequence: row.sequence,
+        live: liveTrip,
+        gpsInferredDelay,
+        nowSec: null,
+        delayFallbackMode: "prior-only",
+      });
       const isCurrent = hasExplicitDelay && !currentAssigned;
       if (isCurrent) currentAssigned = true;
       return {
@@ -705,8 +791,8 @@ export function mergeTripStops(
         lat: stops[row.stopId]?.lat ?? 0,
         lng: stops[row.stopId]?.lng ?? 0,
         scheduledArrivalSec: row.arrivalSec,
-        expectedArrivalSec,
-        arrivalDelaySec,
+        expectedArrivalSec: timing.expectedArrivalSec,
+        arrivalDelaySec: timing.delaySec,
         departureDelaySec: live?.departureDelaySec ?? null,
         scheduleRelationship: live?.scheduleRelationship ?? "SCHEDULED",
         isCurrent,
@@ -746,13 +832,34 @@ export function mergeTripStops(
   };
 }
 
+function inferDelayFromVehiclePosition(
+  scheduledRows: ScheduledRow[],
+  stops: StopsDict,
+  vehicle: { lat: number; lng: number } | null,
+  nowSec: number,
+): GpsInferredDelay | null {
+  if (!vehicle || scheduledRows.length === 0) return null;
+  const tripStopCoords = scheduledRows.flatMap((row): TripStopPoint[] => {
+    const stop = stops[row.stopId];
+    return stop ? [{ sequence: row.sequence, lat: stop.lat, lng: stop.lng, arrivalSec: row.arrivalSec }] : [];
+  });
+  const best = findClosestTripStop(vehicle, tripStopCoords);
+  if (!best || best.arrivalSec === undefined) return null;
+  return {
+    fromSequence: best.sequence,
+    delaySec: Math.max(0, nowSec - best.arrivalSec),
+  };
+}
+
 export async function getBusTripStops(operator: Operator, tripId: string): Promise<TripUpdate | null> {
   const stops = operatorStops[operator];
   const updates = getCachedTripUpdates({ refreshIfStale: true });
   const liveTrip = updates.get(tripId);
   const scheduledRows = getTripScheduledStops(operator, tripId);
   const shapeId = getTripShapeId(operator, tripId);
-  return mergeTripStops(tripId, scheduledRows, liveTrip, stops, shapeId);
+  const vehicle = getCachedVehicles().find((v) => v.tripId === tripId) ?? null;
+  const gpsInferredDelay = inferDelayFromVehiclePosition(scheduledRows, stops, vehicle, secondsIntoDublinDay());
+  return mergeTripStops(tripId, scheduledRows, liveTrip, stops, shapeId, gpsInferredDelay);
 }
 
 // "Stale" flag attached to each returned vehicle: true when the trip NTA has
@@ -914,7 +1021,7 @@ const stopArrivalsStmtMap = new Map<Operator, ReturnType<Database["prepare"]>>()
 
 export type StopArrivalDecision =
   | { keep: false }
-  | { keep: true; etaSec: number; delaySec: number; vehicleSeq: number | null };
+  | { keep: true; etaSec: number; delaySec: number; vehicleSeq: number | null; etaSource: "nta" | "gps-inferred" | "schedule" };
 
 // Pure per-row decision used by getBusStopArrivals. Extracted so the filter
 // rules can be unit-tested without mocking SQLite, NTA, or the date clock.
@@ -924,40 +1031,33 @@ export function decideStopArrival(
   row: { stop_sequence: number; arrival_sec: number },
   live: LiveTripData,
   vehicle: { lat: number; lng: number } | null,
-  tripStopCoords: Array<{ sequence: number; lat: number; lng: number }>,
+  tripStopCoords: TripStopPoint[],
   nowSec: number,
 ): StopArrivalDecision {
-  let vehicleSeq: number | null = null;
-  if (vehicle) {
-    // Raw degree² rather than meters² — fine for picking the closest stop
-    // along a single trip (relative order is preserved as long as stops are
-    // roughly collinear). Would need cos(lat) scaling for cross-route nearest-
-    // vehicle matching.
-    let minDistSq = Infinity;
-    for (const ts of tripStopCoords) {
-      const dLat = ts.lat - vehicle.lat;
-      const dLng = ts.lng - vehicle.lng;
-      const d = dLat * dLat + dLng * dLng;
-      if (d < minDistSq) { minDistSq = d; vehicleSeq = ts.sequence; }
-    }
-  }
+  const closestStop = findClosestTripStop(vehicle, tripStopCoords);
+  const vehicleSeq = closestStop?.sequence ?? null;
+  const vehicleScheduledArrivalSec = closestStop?.arrivalSec ?? null;
+  const sortedUpdates = sortedStopTimeUpdates(live.stopTimeUpdates);
 
   if (vehicleSeq !== null) {
     if (vehicleSeq > row.stop_sequence) return { keep: false };
-  } else if (live.stopTimeUpdates.length > 0 && live.stopTimeUpdates[0]!.sequence > row.stop_sequence) {
+  } else if (sortedUpdates.length > 0 && sortedUpdates[0]!.sequence > row.stop_sequence) {
     return { keep: false };
   }
 
-  let propagated: number | null = null;
-  for (const stu of live.stopTimeUpdates) {
-    if (stu.arrivalDelaySec === null) continue;
-    if (stu.sequence <= row.stop_sequence) propagated = stu.arrivalDelaySec;
-    else if (propagated === null) { propagated = stu.arrivalDelaySec; break; }
-    else break;
-  }
-  const delaySec = propagated ?? 0;
-
-  let etaSec = row.arrival_sec + delaySec - nowSec;
+  const gpsInferredDelay = vehicleSeq !== null && vehicleScheduledArrivalSec !== null
+    ? { fromSequence: vehicleSeq, delaySec: Math.max(0, nowSec - vehicleScheduledArrivalSec) }
+    : null;
+  const timing = computeArrivalTiming({
+    arrivalSec: row.arrival_sec,
+    sequence: row.stop_sequence,
+    live: { ...live, stopTimeUpdates: sortedUpdates },
+    gpsInferredDelay,
+    nowSec,
+    delayFallbackMode: "forward-if-no-prior",
+  });
+  const delaySec = timing.delaySec ?? 0;
+  let etaSec = timing.etaSec ?? (row.arrival_sec - nowSec);
   if (etaSec < 0) {
     if (vehicleSeq !== null && vehicleSeq <= row.stop_sequence) {
       etaSec = 0;
@@ -966,7 +1066,7 @@ export function decideStopArrival(
     }
   }
 
-  return { keep: true, etaSec, delaySec, vehicleSeq };
+  return { keep: true, etaSec, delaySec, vehicleSeq, etaSource: timing.source };
 }
 
 export type BusStopArrival = {
@@ -976,6 +1076,8 @@ export type BusStopArrival = {
   etaSeconds: number;
   delaySec: number;
   stopSequence: number;
+  stopsAway: number | null;
+  etaSource: "nta" | "gps-inferred" | "schedule";
   direction: string;
   // "running" — trip has a live vehicle_position, can be focused on the map.
   // "scheduled" — NTA has a trip_update prediction but the bus hasn't reported
@@ -1040,18 +1142,18 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
     // saves one SQLite query per non-running trip. Loop routes that revisit
     // a stop can mismatch sequence, but those are rare for the operators we cover.
     const vehicle = vehicleByTripId.get(r.trip_id);
-    let tripStopCoords: Array<{ sequence: number; lat: number; lng: number }> = [];
+    let tripStopCoords: Array<{ sequence: number; lat: number; lng: number; arrivalSec: number }> = [];
     if (vehicle) {
       const tripStops = getTripScheduledStops(operator, r.trip_id);
       tripStopCoords = tripStops.flatMap((ts) => {
         const s = stopsDict[ts.stopId];
-        return s ? [{ sequence: ts.sequence, lat: s.lat, lng: s.lng }] : [];
+        return s ? [{ sequence: ts.sequence, lat: s.lat, lng: s.lng, arrivalSec: ts.arrivalSec }] : [];
       });
     }
 
     const decision = decideStopArrival(r, live, vehicle ?? null, tripStopCoords, nowSec);
     if (!decision.keep) continue;
-    const { etaSec, delaySec } = decision;
+    const { etaSec, delaySec, vehicleSeq, etaSource } = decision;
 
     const routeId = live.routeId;
     const directionId = live.directionId;
@@ -1071,6 +1173,8 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
       etaSeconds: etaSec,
       delaySec,
       stopSequence: r.stop_sequence,
+      stopsAway: vehicleSeq === null ? null : Math.max(0, r.stop_sequence - vehicleSeq),
+      etaSource,
       direction: dirKey,
       status: vehicleByTripId.has(r.trip_id) ? "running" : "scheduled",
     });
