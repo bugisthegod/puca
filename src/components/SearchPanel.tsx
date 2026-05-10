@@ -202,18 +202,21 @@ function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, co
           onKeyDown={(e) => handleKeyDown(e, "from")}
           onSelect={collapseSelection}
         />
-        {focusedField === "from" && (
+        {focusedField === "from" && (currentList.length > 0 || fromQuery.trim()) && (
           <ul className="station-dropdown" ref={dropdownRef}>
-            {currentList.map((s, i) => (
-              <li
-                key={s.code}
-                className={i === highlightIndex ? "highlighted" : ""}
-                onMouseDown={() => selectStation("from", s)}
-                onMouseEnter={() => setHighlightIndex(i)}
-              >
-                {s.name}
-              </li>
-            ))}
+            {currentList.length > 0
+              ? currentList.map((s, i) => (
+                <li
+                  key={s.code}
+                  className={i === highlightIndex ? "highlighted" : ""}
+                  onMouseDown={() => selectStation("from", s)}
+                  onMouseEnter={() => setHighlightIndex(i)}
+                >
+                  {s.name}
+                </li>
+              ))
+              : <li className="search-empty">{t("train.search.station.empty")}</li>
+            }
           </ul>
         )}
       </div>
@@ -238,18 +241,21 @@ function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, co
           onKeyDown={(e) => handleKeyDown(e, "to")}
           onSelect={collapseSelection}
         />
-        {focusedField === "to" && (
+        {focusedField === "to" && (currentList.length > 0 || toQuery.trim()) && (
           <ul className="station-dropdown" ref={dropdownRef}>
-            {currentList.map((s, i) => (
-              <li
-                key={s.code}
-                className={i === highlightIndex ? "highlighted" : ""}
-                onMouseDown={() => selectStation("to", s)}
-                onMouseEnter={() => setHighlightIndex(i)}
-              >
-                {s.name}
-              </li>
-            ))}
+            {currentList.length > 0
+              ? currentList.map((s, i) => (
+                <li
+                  key={s.code}
+                  className={i === highlightIndex ? "highlighted" : ""}
+                  onMouseDown={() => selectStation("to", s)}
+                  onMouseEnter={() => setHighlightIndex(i)}
+                >
+                  {s.name}
+                </li>
+              ))
+              : <li className="search-empty">{t("train.search.station.empty")}</li>
+            }
           </ul>
         )}
       </div>

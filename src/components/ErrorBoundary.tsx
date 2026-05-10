@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import PucaMark from "./PucaMark";
+import { t } from "../i18n";
 
 interface Props {
   children: ReactNode;
@@ -23,18 +24,16 @@ export default class ErrorBoundary extends Component<Props, State> {
   override render() {
     if (this.state.hasError) {
       return (
-        <div class="error-fallback">
-          <div class="error-fallback__inner">
+        <div className="error-fallback">
+          <div className="error-fallback__inner">
             <PucaMark size={120} />
-            <h1 class="error-fallback__title">Oops, Púca broke something</h1>
-            <p class="error-fallback__text">
-              A little gremlin snuck into the code. Give it another go?
-            </p>
+            <h1 className="error-fallback__title">{t("error.title")}</h1>
+            <p className="error-fallback__text">{t("error.body")}</p>
             <button
-              class="error-fallback__btn"
+              className="error-fallback__btn"
               onClick={() => window.location.reload()}
             >
-              Try again
+              {t("error.btn")}
             </button>
           </div>
         </div>
