@@ -31,6 +31,8 @@ let throwOnSessionSet = false;
 } as Storage;
 
 import { clearBusSearchSession, loadBusSearchSession, loadSession, saveBusSearchSession, saveSession, type BusSearchSession, type Session } from "../src/session";
+import { saveFavorites } from "../src/favorites";
+import type { Favorites } from "../src/favorites";
 
 const KEY = "puca-session-v1";
 const BUS_SEARCH_KEY = "puca-bus-search-v1";
@@ -219,5 +221,46 @@ describe("saveBusSearchSession / clearBusSearchSession", () => {
   test("swallows storage errors silently — persistence is best-effort", () => {
     throwOnSessionSet = true;
     expect(() => saveBusSearchSession(completeBusSearchSession)).not.toThrow();
+  });
+});
+
+describe("persistence split: search → sessionStorage, app state & favorites → localStorage", () => {
+  test("saveSession writes to localStorage only, never touches sessionStorage", () => {
+    saveSession(completeSession);
+    const lsRaw = lsStore.get(KEY);
+    expect(lsRaw).not.toBeNull();
+    expect(ssStore.has(KEY)).toBe(false);
+    const parsed = JSON.parse(lsRaw!);
+    // Must not leak bus search fields back into localStorage
+    expect(parsed.busRoute).toBeUndefined();
+    expect(parsed.busDirection).toBeUndefined();
+    expect(parsed.busSearchTab).toBeUndefined();
+    expect(parsed.busStopId).toBeUndefined();
+    expect(parsed.busStopOperator).toBeUndefined();
+  });
+
+  test("saveBusSearchSession writes to sessionStorage only, never touches localStorage", () => {
+    saveBusSearchSession(completeBusSearchSession);
+    const ssRaw = ssStore.get(BUS_SEARCH_KEY);
+    expect(ssRaw).not.toBeNull();
+    expect(lsStore.has(BUS_SEARCH_KEY)).toBe(false);
+    const parsed = JSON.parse(ssRaw!);
+    // Bus search fields should all be present
+    expect(parsed.busRoute).toBe("39A");
+    expect(parsed.busSearchTab).toBe("stop");
+    expect(parsed.busStopId).toBe("8220DB000270");
+  });
+
+  test("saveFavorites writes to localStorage only, never touches sessionStorage", () => {
+    const FAV_KEY = "puca-favorites-v1";
+    const favs: Favorites = {
+      buses: [{ shortName: "39A", operator: "dublinbus" as const, direction: "0", headsign: "UCD" }],
+      trains: [{ from: "DUBLN", to: "CORK", fromName: "Dublin", toName: "Cork" }],
+      stops: [{ stopId: "X1", operator: "buseireann" as const, stopCode: "X1", stopName: "X Stop" }],
+    };
+    saveFavorites(favs);
+    const lsRaw = lsStore.get(FAV_KEY);
+    expect(lsRaw).not.toBeNull();
+    expect(ssStore.has(FAV_KEY)).toBe(false);
   });
 });

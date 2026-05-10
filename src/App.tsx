@@ -529,7 +529,7 @@ function App() {
     // SearchPanel rehydrates from/to queries from this sessionStorage key
     // on mount, so App-state clearing alone isn't enough — clear the
     // persisted copy too or remounting restores the train search.
-    sessionStorage.removeItem("search");
+    try { sessionStorage.removeItem("search"); } catch {}
   }, []);
 
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
