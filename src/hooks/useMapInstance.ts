@@ -46,11 +46,11 @@ const COMPASS_PREF_KEY = "puca:compass";
 function readCompassPref(): boolean {
   try {
     const v = localStorage.getItem(COMPASS_PREF_KEY);
-    // Default to on — users opt out rather than in. "off" is the only value
-    // that disables; anything else (including null/unset) means on.
-    return v !== "off";
+    // Default to off. Only a previous explicit user opt-in should enable the
+    // compass and trigger motion/orientation permission prompts.
+    return v === "on";
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -385,17 +385,11 @@ export function useMapInstance(
     }
   }, [mode]);
 
-  // Auto-restore compass on mount. On iOS this will silently fail
-  // (requestPermission() needs a fresh user gesture per page load) — the pref
-  // stays on, the toggle still shows On, and tapping On in About re-fires the
-  // request inside a gesture to reactivate it. On non-iOS platforms there's no
-  // permission gate and no toggle in the UI, so ignore pref and always start.
+  // Auto-restore compass only after an explicit user opt-in. On iOS this will
+  // silently fail after a reload because requestPermission() needs a fresh user
+  // gesture; the saved pref keeps the toggle On so tapping it can retry.
   useEffect(() => {
-    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-      requestPermission?: () => Promise<"granted" | "denied">;
-    };
-    const needsPermission = typeof DOE?.requestPermission === "function";
-    if (!needsPermission || readCompassPref()) {
+    if (readCompassPref()) {
       void startCompass();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

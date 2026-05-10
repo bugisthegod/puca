@@ -78,7 +78,7 @@ const EN = {
 
   // AboutModal — Compass setting
   "about.compass.label": "Compass",
-  "about.compass.info": "Shows which way you're facing on the map. iOS asks for motion permission after each reload — tap On again if the compass isn't showing.",
+  "about.compass.info": "Shows which way you're facing on the map. Off by default; if your device asks for permission every time, keeping it off is recommended.",
   "about.compass.off": "Off",
   "about.compass.on": "On",
 
@@ -284,7 +284,7 @@ const ZH: Record<Key, string> = {
 
   // AboutModal — Compass setting
   "about.compass.label": "指南针",
-  "about.compass.info": "在地图上显示你面朝的方向。iOS 每次重新加载都会再请求一次方向感应权限 —— 如果指南针未显示，请再次点击「开」。",
+  "about.compass.info": "在地图上显示你面朝的方向。默认关闭；如果设备每次都弹权限提醒，建议保持关闭。",
   "about.compass.off": "关",
   "about.compass.on": "开",
 
