@@ -423,7 +423,7 @@ function App() {
     setBusStopId(null);
     setFocusContext(null);
     setArrivalFocusUnavailable(false);
-    setPanelCollapsed(false);
+    setPanelCollapsed(true);
   }, []);
 
   const handlePickTrainFavorite = useCallback((f: TrainFavorite) => {

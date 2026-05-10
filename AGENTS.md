@@ -143,3 +143,8 @@ Auto-stop (`auto_stop_machines = 'stop'`) watches HTTP idleness, not SSH. Multi-
 - **Favorites live in `localStorage`.** `src/favorites.ts` persists user-curated bookmarks. Never move favorites to `sessionStorage`.
 - **Long-lived app state lives in `localStorage`.** `src/session.ts` `Session` interface covers mode, filter, bus operator, and map view. Opening the app should restore where the user left off.
 - When adding new state, decide upfront which bucket it belongs to. If unsure, search state goes to sessionStorage.
+
+## React patterns
+
+- **Don't default to `useEffect`.** Before adding an effect, ask: can this be solved by changing a prop/state in the event handler instead? Many "reactive" behaviors (e.g. collapsing a panel when a condition is true) are better handled directly where the action happens — no effect, no async, no timing uncertainty.
+- A `useEffect` that synchronizes two pieces of state is often a sign the design can be simplified.
