@@ -11,6 +11,7 @@ import { clearBusSearchSession, loadBusSearchSession, loadSession, saveSession, 
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel, { type BusStopSummary } from "./components/BusSearchPanel";
+import ErrorBoundary from "./components/ErrorBoundary";
 import AboutModal from "./components/AboutModal";
 import FavoritesModal from "./components/FavoritesModal";
 import OnboardingTour, { type TourStep } from "./components/OnboardingTour";
@@ -706,6 +707,6 @@ faviconPng.href = "/icon-192.png";
 document.head.appendChild(faviconPng);
 
 const root = createRoot(document.getElementById("root")!);
-root.render(<App />);
+root.render(<ErrorBoundary><App /></ErrorBoundary>);
 
 registerServiceWorker();

@@ -509,6 +509,9 @@ function BusSearchPanel({
                     ))}
                   </ul>
                 )}
+                {focused && filtered.length === 0 && query.trim() && (
+                  <div className="search-empty">{t("bus.search.route.empty")}</div>
+                )}
               </div>
               )}
               {selectedRoute && !selectedDirection && (
@@ -590,6 +593,9 @@ function BusSearchPanel({
                         </li>
                       ))}
                     </ul>
+                  )}
+                  {stopFocused && stopResults.length === 0 && stopQuery.trim() && (
+                    <div className="search-empty">{t("bus.search.stop.empty")}</div>
                   )}
                 </div>
               ) : (

@@ -1,0 +1,73 @@
+.error-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 40px 24px;
+  background: #f7faf5;
+}
+
+[data-theme="dark"] .error-fallback {
+  background: #121a14;
+}
+
+.error-fallback__inner {
+  text-align: center;
+  max-width: 320px;
+}
+
+.error-fallback__inner svg {
+  opacity: 0.85;
+  transform: rotate(-6deg);
+  margin-bottom: 16px;
+}
+
+.error-fallback__title {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a4a2e;
+  margin: 0 0 8px;
+}
+
+[data-theme="dark"] .error-fallback__title {
+  color: #4dd6a0;
+}
+
+.error-fallback__text {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: #5a7a60;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .error-fallback__text {
+  color: #6a9a72;
+}
+
+.error-fallback__btn {
+  display: inline-block;
+  padding: 10px 28px;
+  background: #1a7a4a;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.error-fallback__btn:hover {
+  background: #156135;
+}
+
+[data-theme="dark"] .error-fallback__btn {
+  background: #30a063;
+}
+
+[data-theme="dark"] .error-fallback__btn:hover {
+  background: #2d8859;
+}

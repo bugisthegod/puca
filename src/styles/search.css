@@ -353,3 +353,10 @@
   }
 
 }
+
+.search-empty {
+  padding: 10px 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.35);
+}
