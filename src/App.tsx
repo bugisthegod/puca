@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator, FocusContext } from "./types";
 import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
-import { clearBusSearchSession, loadBusSearchSession, loadSession, saveBusSearchSession, saveSession, type BusSearchTab } from "./session";
+import { clearBusSearchSession, loadBusSearchSession, loadSession, saveSession, type BusSearchTab } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel, { type BusStopSummary } from "./components/BusSearchPanel";
@@ -263,19 +263,6 @@ function App() {
       window.removeEventListener("pagehide", save);
     };
   }, [mode, filter, busOperator, getMapView]);
-
-  useEffect(() => {
-    const current = loadBusSearchSession();
-    saveBusSearchSession({
-      busRoute,
-      busDirection,
-      busSearchTab,
-      busStopId,
-      busStopOperator,
-      routeQuery: current.routeQuery ?? "",
-      stopQuery: current.stopQuery ?? "",
-    });
-  }, [busRoute, busDirection, busSearchTab, busStopId, busStopOperator]);
 
   async function handleLocate() {
     if (locating) return;

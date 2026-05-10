@@ -133,7 +133,7 @@ function BusSearchPanel({
   onShowToast,
 }: BusSearchPanelProps) {
   const { locale, t } = useLocale();
-  const saved = loadBusSearchSession();
+  const [saved] = useState(() => loadBusSearchSession());
   const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
   const [query, setQuery] = useState(saved.routeQuery ?? "");
   const [focused, setFocused] = useState(false);
