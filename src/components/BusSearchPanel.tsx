@@ -471,6 +471,7 @@ function BusSearchPanel({
           </div>
           {busSearchTab === "route" ? (
             <>
+              {!selectedRoute && (
               <div className="search-field">
                 <input
                   type="text"
@@ -509,7 +510,10 @@ function BusSearchPanel({
                   </ul>
                 )}
               </div>
-              {selectedRoute && !selectedDirection && Object.keys(directions).length > 0 && (
+              )}
+              {selectedRoute && !selectedDirection && (
+                <>
+                {Object.keys(directions).length > 0 && (
                 <div className="direction-buttons">
                   {Object.entries(directions).map(([dir, headsign]) => (
                     <button
@@ -521,20 +525,20 @@ function BusSearchPanel({
                     </button>
                   ))}
                 </div>
+                )}
+                <div className="search-actions">
+                  <button className="search-btn clear-btn" onClick={handleClear}>
+                    {t("bus.search.btn.change")}
+                  </button>
+                </div>
+                </>
               )}
               {selectedRoute && selectedDirection && (
                 <div className="direction-status">
                   <span>{t("bus.search.going", { dest: directions[selectedDirection] ?? selectedDirection })}</span>
                   <FavStar active={isFavorite} onToggle={onToggleFavorite} />
-                  <button className="search-btn clear-btn" onClick={() => onSelectDirection(null)}>
-                    {t("bus.search.btn.change")}
-                  </button>
-                </div>
-              )}
-              {selectedRoute && (
-                <div className="search-actions">
                   <button className="search-btn clear-btn" onClick={handleClear}>
-                    {t("bus.search.btn.clear")}
+                    {t("bus.search.btn.change")}
                   </button>
                 </div>
               )}
