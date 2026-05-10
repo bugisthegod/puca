@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { BusRoute, BusOperator } from "../types";
-import type { BusSearchTab } from "../session";
+import { loadBusSearchSession, saveBusSearchSession, type BusSearchTab } from "../session";
 import FavStar from "./FavStar";
 import { useLocale } from "../i18n";
 
@@ -133,14 +133,16 @@ function BusSearchPanel({
   onShowToast,
 }: BusSearchPanelProps) {
   const { locale, t } = useLocale();
+  const [saved] = useState(() => loadBusSearchSession());
   const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(saved.routeQuery ?? "");
   const [focused, setFocused] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const panelRef = useRef<HTMLDivElement>(null);
+  const prevSelectedRouteRef = useRef(selectedRoute);
 
   // --- Stop-mode state ---
-  const [stopQuery, setStopQuery] = useState("");
+  const [stopQuery, setStopQuery] = useState(saved.stopQuery ?? "");
   const [stopFocused, setStopFocused] = useState(false);
   const [stopResults, setStopResults] = useState<StopSearchResult[]>([]);
   const [stopHighlightIndex, setStopHighlightIndex] = useState(-1);
@@ -168,8 +170,23 @@ function BusSearchPanel({
   }, []);
 
   useEffect(() => {
-    if (!selectedRoute) setQuery("");
+    if (selectedRoute === null && prevSelectedRouteRef.current !== null) {
+      setQuery("");
+    }
+    prevSelectedRouteRef.current = selectedRoute;
   }, [selectedRoute]);
+
+  useEffect(() => {
+    saveBusSearchSession({
+      busRoute: selectedRoute,
+      busDirection: selectedDirection,
+      busSearchTab,
+      busStopId,
+      busStopOperator,
+      routeQuery: query,
+      stopQuery,
+    });
+  }, [selectedRoute, selectedDirection, busSearchTab, busStopId, busStopOperator, query, stopQuery]);
 
   const directions = useMemo(() => getBusDirections(busShape), [busShape]);
 

@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, test } from "bun:test";
 // localStorage inside loadSession/saveSession (not at import time), so installing
 // the stub before the import is belt-and-braces, not strictly required.
 const lsStore = new Map<string, string>();
+const ssStore = new Map<string, string>();
 let throwOnSet = false;
+let throwOnSessionSet = false;
 (globalThis as { localStorage?: Storage }).localStorage = {
   getItem: (k: string) => lsStore.get(k) ?? null,
   setItem: (k: string, v: string) => {
@@ -16,26 +18,47 @@ let throwOnSet = false;
   key: () => null,
   get length() { return lsStore.size; },
 } as Storage;
+(globalThis as { sessionStorage?: Storage }).sessionStorage = {
+  getItem: (k: string) => ssStore.get(k) ?? null,
+  setItem: (k: string, v: string) => {
+    if (throwOnSessionSet) throw new Error("QuotaExceededError");
+    ssStore.set(k, v);
+  },
+  removeItem: (k: string) => { ssStore.delete(k); },
+  clear: () => { ssStore.clear(); },
+  key: () => null,
+  get length() { return ssStore.size; },
+} as Storage;
 
-import { loadSession, saveSession, type Session } from "../src/session";
+import { clearBusSearchSession, loadBusSearchSession, loadSession, saveBusSearchSession, saveSession, type BusSearchSession, type Session } from "../src/session";
+import { saveFavorites } from "../src/favorites";
+import type { Favorites } from "../src/favorites";
 
 const KEY = "puca-session-v1";
+const BUS_SEARCH_KEY = "puca-bus-search-v1";
 
 const completeSession: Session = {
   mode: "bus",
   filter: "all",
   busOperator: "dublinbus",
+  mapView: { lat: 53.349, lng: -6.260, zoom: 14 },
+};
+
+const completeBusSearchSession: BusSearchSession = {
   busRoute: "39A",
   busDirection: "0",
   busSearchTab: "stop",
   busStopId: "8220DB000270",
   busStopOperator: "dublinbus",
-  mapView: { lat: 53.349, lng: -6.260, zoom: 14 },
+  routeQuery: "39A",
+  stopQuery: "Parnell",
 };
 
 beforeEach(() => {
   lsStore.clear();
+  ssStore.clear();
   throwOnSet = false;
+  throwOnSessionSet = false;
 });
 
 describe("loadSession", () => {
@@ -61,58 +84,16 @@ describe("loadSession", () => {
     expect(out.busOperator).toBe("dublinbus");
   });
 
-  test("invalid filter / operator / busSearchTab are individually dropped", () => {
+  test("invalid filter / operator are individually dropped", () => {
     lsStore.set(KEY, JSON.stringify({
       ...completeSession,
       filter: "luas",
       busOperator: "notReal",
-      busSearchTab: "neither",
     }));
     const out = loadSession();
     expect(out.filter).toBeUndefined();
     expect(out.busOperator).toBeUndefined();
-    expect(out.busSearchTab).toBeUndefined();
     expect(out.mode).toBe("bus"); // unrelated valid fields still rehydrate
-  });
-
-  describe("legacy busStopId migration", () => {
-    // Pre-cross-operator-search clients stored busStopId scoped implicitly to
-    // the global busOperator. After cross-operator search a stopId without
-    // its own operator could hit the wrong fleet's arrivals API. The expected
-    // behavior is to drop the orphan so the user re-picks rather than risk
-    // pinging dublinbus for a buseireann stopId.
-    test("busStopId without busStopOperator is dropped", () => {
-      lsStore.set(KEY, JSON.stringify({
-        mode: "bus",
-        busOperator: "dublinbus",
-        busStopId: "8220DB000270",
-      }));
-      const out = loadSession();
-      expect(out.busStopId).toBeUndefined();
-      expect(out.busStopOperator).toBeUndefined();
-      expect(out.mode).toBe("bus");
-      expect(out.busOperator).toBe("dublinbus");
-    });
-
-    test("busStopId with valid busStopOperator is kept as a pair", () => {
-      lsStore.set(KEY, JSON.stringify({
-        busStopId: "X1",
-        busStopOperator: "buseireann",
-      }));
-      const out = loadSession();
-      expect(out.busStopId).toBe("X1");
-      expect(out.busStopOperator).toBe("buseireann");
-    });
-
-    test("busStopId with an unrecognized busStopOperator is dropped", () => {
-      lsStore.set(KEY, JSON.stringify({
-        busStopId: "X1",
-        busStopOperator: "imaginary",
-      }));
-      const out = loadSession();
-      expect(out.busStopId).toBeUndefined();
-      expect(out.busStopOperator).toBeUndefined();
-    });
   });
 
   describe("mapView validation", () => {
@@ -185,5 +166,101 @@ describe("saveSession", () => {
   test("swallows storage errors silently — persistence is best-effort", () => {
     throwOnSet = true;
     expect(() => saveSession(completeSession)).not.toThrow();
+  });
+});
+
+describe("loadBusSearchSession", () => {
+  test("returns empty Partial when nothing is stored", () => {
+    expect(loadBusSearchSession()).toEqual({});
+  });
+
+  test("returns empty Partial on malformed JSON, no throw", () => {
+    ssStore.set(BUS_SEARCH_KEY, "{not json");
+    expect(loadBusSearchSession()).toEqual({});
+  });
+
+  test("round-trips a complete bus search session", () => {
+    saveBusSearchSession(completeBusSearchSession);
+    expect(loadBusSearchSession()).toEqual(completeBusSearchSession);
+  });
+
+  test("invalid tab is dropped but valid fields survive", () => {
+    ssStore.set(BUS_SEARCH_KEY, JSON.stringify({
+      ...completeBusSearchSession,
+      busSearchTab: "neither",
+    }));
+    const out = loadBusSearchSession();
+    expect(out.busSearchTab).toBeUndefined();
+    expect(out.busRoute).toBe("39A");
+    expect(out.routeQuery).toBe("39A");
+  });
+
+  test("busStopId without busStopOperator is dropped", () => {
+    ssStore.set(BUS_SEARCH_KEY, JSON.stringify({
+      ...completeBusSearchSession,
+      busStopOperator: null,
+    }));
+    const out = loadBusSearchSession();
+    expect(out.busStopId).toBeUndefined();
+    expect(out.busStopOperator).toBeUndefined();
+  });
+});
+
+describe("saveBusSearchSession / clearBusSearchSession", () => {
+  test("writes the JSON-serialized bus search session under the v1 key", () => {
+    saveBusSearchSession(completeBusSearchSession);
+    expect(ssStore.get(BUS_SEARCH_KEY)).toBe(JSON.stringify(completeBusSearchSession));
+  });
+
+  test("clear removes the bus search session key", () => {
+    ssStore.set(BUS_SEARCH_KEY, JSON.stringify(completeBusSearchSession));
+    clearBusSearchSession();
+    expect(ssStore.has(BUS_SEARCH_KEY)).toBe(false);
+  });
+
+  test("swallows storage errors silently — persistence is best-effort", () => {
+    throwOnSessionSet = true;
+    expect(() => saveBusSearchSession(completeBusSearchSession)).not.toThrow();
+  });
+});
+
+describe("persistence split: search → sessionStorage, app state & favorites → localStorage", () => {
+  test("saveSession writes to localStorage only, never touches sessionStorage", () => {
+    saveSession(completeSession);
+    const lsRaw = lsStore.get(KEY);
+    expect(lsRaw).not.toBeNull();
+    expect(ssStore.has(KEY)).toBe(false);
+    const parsed = JSON.parse(lsRaw!);
+    // Must not leak bus search fields back into localStorage
+    expect(parsed.busRoute).toBeUndefined();
+    expect(parsed.busDirection).toBeUndefined();
+    expect(parsed.busSearchTab).toBeUndefined();
+    expect(parsed.busStopId).toBeUndefined();
+    expect(parsed.busStopOperator).toBeUndefined();
+  });
+
+  test("saveBusSearchSession writes to sessionStorage only, never touches localStorage", () => {
+    saveBusSearchSession(completeBusSearchSession);
+    const ssRaw = ssStore.get(BUS_SEARCH_KEY);
+    expect(ssRaw).not.toBeNull();
+    expect(lsStore.has(BUS_SEARCH_KEY)).toBe(false);
+    const parsed = JSON.parse(ssRaw!);
+    // Bus search fields should all be present
+    expect(parsed.busRoute).toBe("39A");
+    expect(parsed.busSearchTab).toBe("stop");
+    expect(parsed.busStopId).toBe("8220DB000270");
+  });
+
+  test("saveFavorites writes to localStorage only, never touches sessionStorage", () => {
+    const FAV_KEY = "puca-favorites-v1";
+    const favs: Favorites = {
+      buses: [{ shortName: "39A", operator: "dublinbus" as const, direction: "0", headsign: "UCD" }],
+      trains: [{ from: "DUBLN", to: "CORK", fromName: "Dublin", toName: "Cork" }],
+      stops: [{ stopId: "X1", operator: "buseireann" as const, stopCode: "X1", stopName: "X Stop" }],
+    };
+    saveFavorites(favs);
+    const lsRaw = lsStore.get(FAV_KEY);
+    expect(lsRaw).not.toBeNull();
+    expect(ssStore.has(FAV_KEY)).toBe(false);
   });
 });

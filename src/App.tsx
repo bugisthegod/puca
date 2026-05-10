@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator, FocusContext } from "./types";
 import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
-import { loadSession, saveSession, type BusSearchTab } from "./session";
+import { clearBusSearchSession, loadBusSearchSession, loadSession, saveSession, type BusSearchTab } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
 import BusSearchPanel, { type BusStopSummary } from "./components/BusSearchPanel";
@@ -23,6 +23,7 @@ import { useLocale } from "./i18n";
 import "./style.css";
 
 const savedSession = loadSession();
+const savedBusSearch = loadBusSearchSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
 const THEME_KEY = "puca:theme";
@@ -107,11 +108,11 @@ function App() {
   const [trains, setTrains] = useState<Train[]>([]);
   const [buses, setBuses] = useState<BusVehicle[]>([]);
   const [busOperator, setBusOperator] = useState<BusOperator>(savedSession.busOperator ?? "dublinbus");
-  const [busRoute, setBusRoute] = useState<string | null>(savedSession.busRoute ?? null);
-  const [busDirection, setBusDirection] = useState<string | null>(savedSession.busDirection ?? null);
-  const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedSession.busSearchTab ?? "route");
-  const [busStopId, setBusStopId] = useState<string | null>(savedSession.busStopId ?? null);
-  const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedSession.busStopOperator ?? null);
+  const [busRoute, setBusRoute] = useState<string | null>(savedBusSearch.busRoute ?? null);
+  const [busDirection, setBusDirection] = useState<string | null>(savedBusSearch.busDirection ?? null);
+  const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedBusSearch.busSearchTab ?? "route");
+  const [busStopId, setBusStopId] = useState<string | null>(savedBusSearch.busStopId ?? null);
+  const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedBusSearch.busStopOperator ?? null);
   const [busStopSummary, setBusStopSummary] = useState<BusStopSummary | null>(null);
   const [infoPanelDrilledIn, setInfoPanelDrilledIn] = useState(false);
   const [arrivalFocusResetSignal, setArrivalFocusResetSignal] = useState(0);
@@ -252,7 +253,7 @@ function App() {
     const save = () => {
       const mv = getMapView();
       if (mv) lastMapViewRef.current = mv;
-      saveSession({ mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, busStopOperator, mapView: lastMapViewRef.current });
+      saveSession({ mode, filter, busOperator, mapView: lastMapViewRef.current });
     };
     const onVisibility = () => { if (document.hidden) save(); };
     document.addEventListener("visibilitychange", onVisibility);
@@ -261,7 +262,7 @@ function App() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", save);
     };
-  }, [mode, filter, busOperator, busRoute, busDirection, busSearchTab, busStopId, busStopOperator, getMapView]);
+  }, [mode, filter, busOperator, getMapView]);
 
   async function handleLocate() {
     if (locating) return;
@@ -524,10 +525,11 @@ function App() {
     setFocusContext(null);
     setArrivalFocusUnavailable(false);
     setPanelCollapsed(true);
+    clearBusSearchSession();
     // SearchPanel rehydrates from/to queries from this sessionStorage key
     // on mount, so App-state clearing alone isn't enough — clear the
     // persisted copy too or remounting restores the train search.
-    sessionStorage.removeItem("search");
+    try { sessionStorage.removeItem("search"); } catch {}
   }, []);
 
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
