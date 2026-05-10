@@ -5,7 +5,7 @@ import "leaflet.markercluster";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import type { Train, BusVehicle, BusOperator, FocusContext } from "./types";
-import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
+import { isInServiceHours, isLiveRunningTrain, isTrainLiveDataUnavailable, SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
 import { clearBusSearchSession, loadBusSearchSession, loadSession, saveSession, type BusSearchTab } from "./session";
 import InfoPanel from "./components/InfoPanel";
@@ -533,7 +533,8 @@ function App() {
     try { sessionStorage.removeItem("search"); } catch {}
   }, []);
 
-  const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
+  const trainLiveDataUnavailable = mode === "train" && isTrainLiveDataUnavailable(trains);
+  const vehicleCount = mode === "train" ? trains.filter((t) => isLiveRunningTrain(t)).length : buses.length;
 
   return (
     <>
@@ -672,6 +673,7 @@ function App() {
         resumeLabel={SERVICE_RESUME_LABEL}
         busOperator={busOperator}
         busStopSummary={busStopSummary}
+        trainLiveDataUnavailable={trainLiveDataUnavailable}
         drilledIn={infoPanelDrilledIn}
         onDrilledInChange={setInfoPanelDrilledIn}
         onModeChange={handleModeChange}

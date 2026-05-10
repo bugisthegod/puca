@@ -16,6 +16,7 @@ type InfoPanelProps = {
   resumeLabel: string;
   busOperator: BusOperator;
   busStopSummary: BusStopSummary | null;
+  trainLiveDataUnavailable: boolean;
   drilledIn: boolean;
   onDrilledInChange: (drilledIn: boolean) => void;
   onModeChange: (m: Mode) => void;
@@ -49,6 +50,7 @@ function InfoPanel({
   resumeLabel,
   busOperator,
   busStopSummary,
+  trainLiveDataUnavailable,
   drilledIn,
   onDrilledInChange,
   onModeChange,
@@ -77,6 +79,7 @@ function InfoPanel({
   const panelClassName = [
     drilledIn ? "" : "info-panel--compact",
     showBusStopSummary ? "info-panel--stop-summary" : "",
+    mode === "train" && trainLiveDataUnavailable ? "info-panel--live-warning" : "",
   ].filter(Boolean).join(" ");
 
   return (
@@ -85,9 +88,26 @@ function InfoPanel({
         inService ? (
           <>
             {!showBusStopSummary && (
-              <div id="panel-header">
-                <span id="train-count">{showCount}</span>
-              </div>
+              <>
+                <div id="panel-header">
+                  <span id="train-count">{showCount}</span>
+                  {mode === "train" && trainLiveDataUnavailable && (
+                    <button
+                      type="button"
+                      className="filter-btn filter-back info-live-warning__back"
+                      onClick={() => onDrilledInChange(false)}
+                      aria-label={t("info.back.aria")}
+                    >
+                      ←
+                    </button>
+                  )}
+                </div>
+                {mode === "train" && trainLiveDataUnavailable && (
+                  <div className="info-live-warning" role="status">
+                    {t("info.train.live.unavailable")}
+                  </div>
+                )}
+              </>
             )}
             {showBusStopSummary && (
               <div className={`info-stop-summary info-stop-summary--${stopSummary.operator}`}>
@@ -142,7 +162,7 @@ function InfoPanel({
             {label}
           </button>
         ))}
-        {drilledIn && inService && !showBusStopSummary && (
+        {drilledIn && inService && !showBusStopSummary && !(mode === "train" && trainLiveDataUnavailable) && (
           <>
             <button
               type="button"

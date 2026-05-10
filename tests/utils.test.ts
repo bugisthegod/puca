@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import {
   escapeHtml,
   fmtTime,
+  isLiveRunningTrain,
   isInServiceHours,
+  isTrainLiveDataUnavailable,
   markerColor,
   parseLateMinutes,
   parseRoute,
@@ -117,6 +119,43 @@ describe("trainCategory", () => {
     expect(trainCategory("A001")).toBe("intercity");
     expect(trainCategory("D123")).toBe("intercity");
     expect(trainCategory("")).toBe("intercity");
+  });
+});
+
+describe("train live data health", () => {
+  const liveNow = new Date("2026-05-10T17:40:00Z"); // 18:40 in Dublin summer time
+
+  function train(overrides: Partial<Train>): Train {
+    return {
+      code: "E117",
+      lat: 53.2,
+      lng: -6.1,
+      status: "R",
+      message: "E117\n18:33 - Malahide to Greystones (2 mins late)",
+      direction: "Southbound",
+      date: "10 May 2026",
+      ...overrides,
+    };
+  }
+
+  test("counts today's plausible R train as live", () => {
+    expect(isLiveRunningTrain(train({}), liveNow)).toBe(true);
+    expect(isTrainLiveDataUnavailable([train({})], liveNow)).toBe(false);
+  });
+
+  test("treats previous-day ghost R trains as unavailable live data", () => {
+    const ghost = train({
+      date: "09 May 2026",
+      message: "E117\n22:33 - Malahide to Greystones (1442 mins late)",
+    });
+
+    expect(isLiveRunningTrain(ghost, liveNow)).toBe(false);
+    expect(isTrainLiveDataUnavailable([ghost], liveNow)).toBe(true);
+  });
+
+  test("does not warn during normal off-hours", () => {
+    const offHours = new Date("2026-05-09T02:00:00Z");
+    expect(isTrainLiveDataUnavailable([], offHours)).toBe(false);
   });
 });
 

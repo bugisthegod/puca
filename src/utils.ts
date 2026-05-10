@@ -51,6 +51,39 @@ export function trainCategory(code: string): "dart" | "commuter" | "intercity" {
   return "intercity";
 }
 
+const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE", {
+  timeZone: "Europe/Dublin",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+function irishRailDateFor(now: Date): string {
+  const parts = DUBLIN_DATE_FMT.formatToParts(now);
+  const day = parts.find((p) => p.type === "day")!.value;
+  const month = parts.find((p) => p.type === "month")!.value;
+  const year = parts.find((p) => p.type === "year")!.value;
+  return `${day} ${month} ${year}`.toLowerCase();
+}
+
+/** A defensive check for Irish Rail's live-position feed.
+ *  Occasionally the feed leaves a previous-day train marked R with a huge
+ *  lateness value. Treat that as stale so the map doesn't claim it is live.
+ */
+export function isLiveRunningTrain(train: Train, now: Date = new Date()): boolean {
+  if (train.status !== "R") return false;
+  if (train.date.trim().toLowerCase() !== irishRailDateFor(now)) return false;
+
+  const late = parseLateMinutes(train.message);
+  return late === null || Math.abs(late) <= 12 * 60;
+}
+
+export function isTrainLiveDataUnavailable(trains: Train[], now: Date = new Date()): boolean {
+  if (!isInServiceHours("train", now)) return false;
+  if (trains.length === 0) return true;
+  return !trains.some((train) => isLiveRunningTrain(train, now));
+}
+
 /** Format a time string for display in the popup. */
 export function fmtTime(t: string): string {
   if (!t) return "—";
