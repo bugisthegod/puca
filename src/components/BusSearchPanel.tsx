@@ -205,14 +205,6 @@ function BusSearchPanel({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  useEffect(() => {
-    setHighlightIndex(-1);
-  }, [query, focused]);
-
-  useEffect(() => {
-    setStopHighlightIndex(-1);
-  }, [stopQuery, stopFocused]);
-
   // Debounced cross-operator stop search. Omits `operator=` so the backend
   // returns matches from all three fleets in one round-trip.
   useEffect(() => {
@@ -482,9 +474,10 @@ function BusSearchPanel({
                   value={query}
                   onChange={(e) => {
                     setQuery(e.currentTarget.value);
+                    setHighlightIndex(-1);
                     if (!e.currentTarget.value) onSelectRoute(null);
                   }}
-                  onFocus={() => setFocused(true)}
+                  onFocus={() => { setFocused(true); setHighlightIndex(-1); }}
                   onKeyDown={handleKeyDown}
                   onSelect={collapseSelection}
                 />
@@ -568,8 +561,8 @@ function BusSearchPanel({
                     inputMode="search"
                     placeholder={t("bus.search.placeholder.stop")}
                     value={stopQuery}
-                    onChange={(e) => setStopQuery(e.currentTarget.value)}
-                    onFocus={() => setStopFocused(true)}
+                    onChange={(e) => { setStopQuery(e.currentTarget.value); setStopHighlightIndex(-1); }}
+                    onFocus={() => { setStopFocused(true); setStopHighlightIndex(-1); }}
                     onKeyDown={handleStopKeyDown}
                     onSelect={collapseSelection}
                   />
