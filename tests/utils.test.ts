@@ -143,6 +143,14 @@ describe("train live data health", () => {
     expect(isTrainLiveDataUnavailable([train({})], liveNow)).toBe(false);
   });
 
+  test("accepts leading-zero Irish Rail train dates", () => {
+    const earlyMonth = new Date("2026-05-06T17:40:00Z");
+    const leadingZero = train({ date: "06 May 2026" });
+
+    expect(isLiveRunningTrain(leadingZero, earlyMonth)).toBe(true);
+    expect(isTrainLiveDataUnavailable([leadingZero], earlyMonth)).toBe(false);
+  });
+
   test("treats previous-day ghost R trains as unavailable live data", () => {
     const ghost = train({
       date: "09 May 2026",

@@ -533,8 +533,9 @@ function App() {
     try { sessionStorage.removeItem("search"); } catch {}
   }, []);
 
-  const trainLiveDataUnavailable = mode === "train" && isTrainLiveDataUnavailable(trains);
-  const vehicleCount = mode === "train" ? trains.filter((t) => isLiveRunningTrain(t)).length : buses.length;
+  const trainNow = new Date();
+  const trainLiveDataUnavailable = mode === "train" && isTrainLiveDataUnavailable(trains, trainNow);
+  const vehicleCount = mode === "train" ? trains.filter((t) => isLiveRunningTrain(t, trainNow)).length : buses.length;
 
   return (
     <>

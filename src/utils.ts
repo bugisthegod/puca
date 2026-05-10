@@ -66,13 +66,17 @@ function irishRailDateFor(now: Date): string {
   return `${day} ${month} ${year}`.toLowerCase();
 }
 
+function normalizeIrishRailDate(date: string): string {
+  return date.trim().toLowerCase().replace(/^0(?=\d\s)/, "");
+}
+
 /** A defensive check for Irish Rail's live-position feed.
  *  Occasionally the feed leaves a previous-day train marked R with a huge
  *  lateness value. Treat that as stale so the map doesn't claim it is live.
  */
 export function isLiveRunningTrain(train: Train, now: Date = new Date()): boolean {
   if (train.status !== "R") return false;
-  if (train.date.trim().toLowerCase() !== irishRailDateFor(now)) return false;
+  if (normalizeIrishRailDate(train.date) !== irishRailDateFor(now)) return false;
 
   const late = parseLateMinutes(train.message);
   return late === null || Math.abs(late) <= 12 * 60;
