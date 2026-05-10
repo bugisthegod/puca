@@ -63,6 +63,9 @@ const EN = {
   // AboutModal — tour button
   "about.tour.btn": "Take the tour",
 
+  // AboutModal — donation button
+  "about.donate.btn": "Buy Púca a treat",
+
   // AboutModal — Language setting
   "about.lang.label": "Language",
 
@@ -265,6 +268,9 @@ const ZH: Record<Key, string> = {
 
   // AboutModal — tour button
   "about.tour.btn": "查看引导",
+
+  // AboutModal — donation button
+  "about.donate.btn": "请 Púca 吃颗糖",
 
   // AboutModal — Language setting
   "about.lang.label": "语言",

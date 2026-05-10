@@ -751,6 +751,43 @@
   border-color: rgba(37, 168, 100, 0.7);
 }
 
+.about-donate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(255, 123, 172, 0.18), rgba(255, 221, 106, 0.14));
+  border: 1px solid rgba(255, 123, 172, 0.42);
+  color: #ff8fbd;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  text-decoration: none;
+}
+
+.about-donate-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 123, 172, 0.26), rgba(255, 221, 106, 0.2));
+  border-color: rgba(255, 123, 172, 0.68);
+}
+
+.about-donate-btn:active {
+  transform: scale(0.98);
+}
+
+:root[data-theme="light"] .about-donate-btn {
+  background: linear-gradient(135deg, rgba(255, 123, 172, 0.14), rgba(255, 204, 92, 0.16));
+  border-color: rgba(224, 77, 136, 0.28);
+  color: #c73f7c;
+}
+:root[data-theme="light"] .about-donate-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 123, 172, 0.22), rgba(255, 204, 92, 0.24));
+  border-color: rgba(224, 77, 136, 0.46);
+}
+
 .about-theme-toggle {
   display: flex;
   gap: 8px;

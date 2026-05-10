@@ -297,6 +297,20 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
 
         <div className="about-divider" />
 
+        <section className="about-block about-donate-block">
+          <a
+            href="https://buymeacoffee.com/bugisthegod"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="about-donate-btn"
+          >
+            <span aria-hidden="true">🍭</span>
+            {t("about.donate.btn")}
+          </a>
+        </section>
+
+        <div className="about-divider" />
+
         <footer className="about-footer">
           {t("about.footer.line1")}
           <br />{t("about.footer.line2")}
