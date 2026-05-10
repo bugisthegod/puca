@@ -353,3 +353,11 @@
   }
 
 }
+
+.station-dropdown li.search-empty,
+.station-dropdown li.search-empty:hover {
+  color: rgba(255, 255, 255, 0.3);
+  background: none;
+  cursor: default;
+  pointer-events: none;
+}

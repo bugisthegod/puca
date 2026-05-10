@@ -488,25 +488,28 @@ function BusSearchPanel({
                   onKeyDown={handleKeyDown}
                   onSelect={collapseSelection}
                 />
-                {focused && filtered.length > 0 && (
+                {focused && (filtered.length > 0 || query.trim()) && (
                   <ul className="station-dropdown route-results">
-                    {filtered.slice(0, 30).map((r, i) => (
-                      <li
-                        key={`${r.operator}:${r.id}`}
-                        className={`route-result route-result--${r.operator}${i === highlightIndex ? " highlighted" : ""}`}
-                        onMouseDown={() => selectRoute(r)}
-                        onMouseEnter={() => setHighlightIndex(i)}
-                      >
-                        <strong>{r.shortName}</strong> — {r.longName}
-                        <span
-                          className={`operator-badge operator-badge--${r.operator}`}
-                          title={BUS_OPERATOR_LABEL[r.operator]}
-                          aria-label={BUS_OPERATOR_LABEL[r.operator]}
+                    {filtered.length > 0
+                      ? filtered.slice(0, 30).map((r, i) => (
+                        <li
+                          key={`${r.operator}:${r.id}`}
+                          className={`route-result route-result--${r.operator}${i === highlightIndex ? " highlighted" : ""}`}
+                          onMouseDown={() => selectRoute(r)}
+                          onMouseEnter={() => setHighlightIndex(i)}
                         >
-                          {BUS_OPERATOR_INITIALS[r.operator]}
-                        </span>
-                      </li>
-                    ))}
+                          <strong>{r.shortName}</strong> — {r.longName}
+                          <span
+                            className={`operator-badge operator-badge--${r.operator}`}
+                            title={BUS_OPERATOR_LABEL[r.operator]}
+                            aria-label={BUS_OPERATOR_LABEL[r.operator]}
+                          >
+                            {BUS_OPERATOR_INITIALS[r.operator]}
+                          </span>
+                        </li>
+                      ))
+                      : <li className="search-empty">{t("bus.search.route.empty")}</li>
+                    }
                   </ul>
                 )}
               </div>
@@ -570,25 +573,28 @@ function BusSearchPanel({
                     onKeyDown={handleStopKeyDown}
                     onSelect={collapseSelection}
                   />
-                  {stopFocused && stopResults.length > 0 && (
+                  {stopFocused && (stopResults.length > 0 || stopQuery.trim()) && (
                     <ul className="station-dropdown stop-results">
-                      {stopResults.map((s, i) => (
-                        <li
-                          key={`${s.operator}:${s.id}`}
-                          className={`stop-result stop-result--${s.operator}${i === stopHighlightIndex ? " highlighted" : ""}`}
-                          onMouseDown={() => selectStop(s)}
-                          onMouseEnter={() => setStopHighlightIndex(i)}
-                        >
-                          <strong>{s.code || s.id}</strong> — {s.name}
-                          <span
-                            className={`operator-badge operator-badge--${s.operator}`}
-                            title={BUS_OPERATOR_LABEL[s.operator]}
-                            aria-label={BUS_OPERATOR_LABEL[s.operator]}
+                      {stopResults.length > 0
+                        ? stopResults.map((s, i) => (
+                          <li
+                            key={`${s.operator}:${s.id}`}
+                            className={`stop-result stop-result--${s.operator}${i === stopHighlightIndex ? " highlighted" : ""}`}
+                            onMouseDown={() => selectStop(s)}
+                            onMouseEnter={() => setStopHighlightIndex(i)}
                           >
-                            {BUS_OPERATOR_INITIALS[s.operator]}
-                          </span>
-                        </li>
-                      ))}
+                            <strong>{s.code || s.id}</strong> — {s.name}
+                            <span
+                              className={`operator-badge operator-badge--${s.operator}`}
+                              title={BUS_OPERATOR_LABEL[s.operator]}
+                              aria-label={BUS_OPERATOR_LABEL[s.operator]}
+                            >
+                              {BUS_OPERATOR_INITIALS[s.operator]}
+                            </span>
+                          </li>
+                        ))
+                        : <li className="search-empty">{t("bus.search.stop.empty")}</li>
+                      }
                     </ul>
                   )}
                 </div>

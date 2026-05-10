@@ -101,6 +101,11 @@ const EN = {
   "about.footer.line1": "Data from Irish Rail and the National Transport Authority.",
   "about.footer.line2": "Not affiliated with either.",
 
+  // Error boundary
+  "error.title": "Oops, Púca broke something",
+  "error.body": "A little gremlin snuck into the code. Give it another go?",
+  "error.btn": "Try again",
+
   // OnboardingTour
   "tour.aria": "Guided tour",
   "tour.skip": "Skip",
@@ -147,6 +152,7 @@ const EN = {
   "train.search.results.found.one": "Found 1 train",
   "train.search.results.found.many": "Found {n} trains",
   "train.search.results.empty": "No active trains on this route",
+  "train.search.station.empty": "No matching stations",
   "train.status.running": "Running",
   "train.status.ready": "Ready",
   "train.status.scheduled": "Scheduled",
@@ -169,6 +175,8 @@ const EN = {
   "bus.search.arrivals.error": "Could not load arrivals",
   "bus.search.arrivals.empty": "No upcoming buses.",
   "bus.search.arrivals.maybePassed": "May have passed",
+  "bus.search.route.empty": "No matching routes",
+  "bus.search.stop.empty": "No matching stops",
   "bus.search.eta.due": "Due",
   "bus.search.eta.min": "{n} min",
   "bus.search.stops.away": "{n} stops away",
@@ -296,6 +304,11 @@ const ZH: Record<Key, string> = {
   "about.footer.line1": "数据来源：Irish Rail 与 National Transport Authority。",
   "about.footer.line2": "本应用与两者均无关联。",
 
+  // Error boundary
+  "error.title": "糟糕，Púca 出了点问题",
+  "error.body": "代码里溜进了一只小精灵。再试一次？",
+  "error.btn": "再试一次",
+
   // OnboardingTour
   "tour.aria": "引导教程",
   "tour.skip": "跳过",
@@ -342,6 +355,7 @@ const ZH: Record<Key, string> = {
   "train.search.results.found.one": "找到 1 班列车",
   "train.search.results.found.many": "找到 {n} 班列车",
   "train.search.results.empty": "该线路暂无运行中的列车",
+  "train.search.station.empty": "未找到匹配站点",
   "train.status.running": "运行中",
   "train.status.ready": "待发",
   "train.status.scheduled": "尚未运行",
@@ -364,6 +378,8 @@ const ZH: Record<Key, string> = {
   "bus.search.arrivals.error": "无法加载到站信息",
   "bus.search.arrivals.empty": "暂无即将到站的公交。",
   "bus.search.arrivals.maybePassed": "可能已过站",
+  "bus.search.route.empty": "未找到匹配线路",
+  "bus.search.stop.empty": "未找到匹配站点",
   "bus.search.eta.due": "即将到站",
   "bus.search.eta.min": "{n} 分钟",
   "bus.search.stops.away": "还有 {n} 站",
