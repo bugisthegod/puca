@@ -77,6 +77,10 @@ export function filterBusRoutes(routes: RouteWithOperator[], query: string): Rou
   );
 }
 
+type UnifiedResult =
+  | { kind: "route"; route: RouteWithOperator }
+  | { kind: "stop"; stop: StopSearchResult };
+
 export function displayEtaSeconds(etaSeconds: number, fetchedAt: number | null, clockNow: number): number {
   if (fetchedAt === null) return etaSeconds;
   const elapsedSec = Math.floor((clockNow - fetchedAt) / 1000);
@@ -135,17 +139,15 @@ function BusSearchPanel({
   const { locale, t } = useLocale();
   const [saved] = useState(() => loadBusSearchSession());
   const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
-  const [query, setQuery] = useState(saved.routeQuery ?? "");
+  const [query, setQuery] = useState(saved.busSearchTab === "stop" ? saved.stopQuery ?? "" : saved.routeQuery ?? "");
   const [focused, setFocused] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const panelRef = useRef<HTMLDivElement>(null);
   const prevSelectedRouteRef = useRef(selectedRoute);
 
   // --- Stop-mode state ---
-  const [stopQuery, setStopQuery] = useState(saved.stopQuery ?? "");
-  const [stopFocused, setStopFocused] = useState(false);
+  const [stopQuery, setStopQuery] = useState(saved.busSearchTab === "stop" ? saved.stopQuery ?? "" : saved.routeQuery ?? "");
   const [stopResults, setStopResults] = useState<StopSearchResult[]>([]);
-  const [stopHighlightIndex, setStopHighlightIndex] = useState(-1);
   const [selectedStop, setSelectedStop] = useState<StopSearchResult | null>(null);
   const [arrivals, setArrivals] = useState<StopArrival[] | null>(null);
   const [arrivalsLoading, setArrivalsLoading] = useState(false);
@@ -172,6 +174,7 @@ function BusSearchPanel({
   useEffect(() => {
     if (selectedRoute === null && prevSelectedRouteRef.current !== null) {
       setQuery("");
+      setStopQuery("");
     }
     prevSelectedRouteRef.current = selectedRoute;
   }, [selectedRoute]);
@@ -194,7 +197,6 @@ function BusSearchPanel({
     function handleClick(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         setFocused(false);
-        setStopFocused(false);
         const target = e.target as HTMLElement;
         if (window.innerWidth <= 600 && target.closest("#map")) {
           onCollapsedChange(true);
@@ -208,7 +210,7 @@ function BusSearchPanel({
   // Debounced cross-operator stop search. Omits `operator=` so the backend
   // returns matches from all three fleets in one round-trip.
   useEffect(() => {
-    if (busSearchTab !== "stop") return;
+    if (selectedRoute || selectedStop) return;
     const q = stopQuery.trim();
     if (!q) { setStopResults([]); return; }
     let cancelled = false;
@@ -221,7 +223,7 @@ function BusSearchPanel({
         .catch(() => { if (!cancelled) setStopResults([]); });
     }, 120);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [stopQuery, busSearchTab]);
+  }, [stopQuery, selectedRoute, selectedStop]);
 
   // Abort controller for the in-flight arrivals fetch. Stop-switch + network
   // jitter can race: stop A's response arriving after stop B's would stamp A's
@@ -307,9 +309,35 @@ function BusSearchPanel({
   }, [busSearchTab, busStopId, busStopOperator]);
 
   const filtered = useMemo(() => filterBusRoutes(routes, query), [routes, query]);
+  const routeResults = useMemo(() => filtered.slice(0, 8), [filtered]);
+  const unifiedResults = useMemo<UnifiedResult[]>(
+    () => [
+      ...routeResults.map((route) => ({ kind: "route" as const, route })),
+      ...stopResults.map((stop) => ({ kind: "stop" as const, stop })),
+    ],
+    [routeResults, stopResults],
+  );
+
+  function handleUnifiedQueryChange(value: string) {
+    setQuery(value);
+    setStopQuery(value);
+    setHighlightIndex(-1);
+    if (!value) {
+      onSelectRoute(null);
+      onSelectDirection(null);
+      onStopIdChange(null, null);
+    }
+  }
 
   function selectRoute(r: RouteWithOperator) {
     setQuery(r.shortName);
+    setStopQuery(r.shortName);
+    setSelectedStop(null);
+    setArrivals(null);
+    setArrivalsFetchedAt(null);
+    setSelectedArrivalTripId(null);
+    onStopIdChange(null, null);
+    onTabChange("route");
     onSelectRoute(r.shortName, r.operator);
     setFocused(false);
   }
@@ -322,14 +350,15 @@ function BusSearchPanel({
     if (!focused) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlightIndex((i) => Math.min(i + 1, filtered.length - 1));
+      setHighlightIndex((i) => Math.min(i + 1, unifiedResults.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setHighlightIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const r = filtered[highlightIndex] ?? filtered[0];
-      if (r) selectRoute(r);
+      const result = unifiedResults[highlightIndex] ?? unifiedResults[0];
+      if (result?.kind === "route") selectRoute(result.route);
+      else if (result?.kind === "stop") selectStop(result.stop);
     } else if (e.key === "Escape") {
       setFocused(false);
     }
@@ -337,6 +366,12 @@ function BusSearchPanel({
 
   function handleClear() {
     setQuery("");
+    setStopQuery("");
+    setSelectedStop(null);
+    setArrivals(null);
+    setArrivalsFetchedAt(null);
+    setSelectedArrivalTripId(null);
+    onStopIdChange(null, null);
     onSelectRoute(null);
     onSelectDirection(null);
     setFocused(false);
@@ -349,26 +384,10 @@ function BusSearchPanel({
     setArrivalsError(null);
     setSelectedArrivalTripId(null);
     setStopQuery("");
-    setStopFocused(false);
+    setQuery("");
     setStopResults([]);
+    onTabChange("stop");
     onStopIdChange(s.id, s.operator);
-  }
-
-  function handleStopKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (!stopFocused) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setStopHighlightIndex((i) => Math.min(i + 1, stopResults.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setStopHighlightIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const s = stopResults[stopHighlightIndex] ?? stopResults[0];
-      if (s) selectStop(s);
-    } else if (e.key === "Escape") {
-      setStopFocused(false);
-    }
   }
 
   function clearStopSelection() {
@@ -377,6 +396,7 @@ function BusSearchPanel({
     setArrivalsFetchedAt(null);
     setSelectedArrivalTripId(null);
     setStopQuery("");
+    setQuery("");
     onStopIdChange(null, null);
   }
 
@@ -441,72 +461,83 @@ function BusSearchPanel({
         </button>
       ) : (
         <>
-          <div className="bus-search-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={busSearchTab === "route"}
-              className={`bus-search-tab${busSearchTab === "route" ? " active" : ""}`}
-              onClick={() => onTabChange("route")}
-            >
-              {t("bus.search.tab.route")}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={busSearchTab === "stop"}
-              className={`bus-search-tab${busSearchTab === "stop" ? " active" : ""}`}
-              onClick={() => onTabChange("stop")}
-            >
-              {t("bus.search.tab.stop")}
-            </button>
-          </div>
-          {busSearchTab === "route" ? (
-            <>
-              {!selectedRoute && (
-              <div className="search-field">
-                <input
-                  type="text"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellcheck={false}
-                  placeholder={t("bus.search.placeholder.route")}
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.currentTarget.value);
-                    setHighlightIndex(-1);
-                    if (!e.currentTarget.value) onSelectRoute(null);
-                  }}
-                  onFocus={() => { setFocused(true); setHighlightIndex(-1); }}
-                  onKeyDown={handleKeyDown}
-                  onSelect={collapseSelection}
-                />
-                {focused && (filtered.length > 0 || query.trim()) && (
-                  <ul className="station-dropdown route-results">
-                    {filtered.length > 0
-                      ? filtered.slice(0, 30).map((r, i) => (
-                        <li
-                          key={`${r.operator}:${r.id}`}
-                          className={`route-result route-result--${r.operator}${i === highlightIndex ? " highlighted" : ""}`}
-                          onMouseDown={() => selectRoute(r)}
-                          onMouseEnter={() => setHighlightIndex(i)}
-                        >
-                          <strong>{r.shortName}</strong> — {r.longName}
-                          <span
-                            className={`operator-badge operator-badge--${r.operator}`}
-                            title={BUS_OPERATOR_LABEL[r.operator]}
-                            aria-label={BUS_OPERATOR_LABEL[r.operator]}
+          {!selectedRoute && !selectedStop && !busStopId && (
+            <div className="search-field">
+              <input
+                type="text"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellcheck={false}
+                inputMode="search"
+                placeholder={t("bus.search.placeholder.any")}
+                value={query}
+                onChange={(e) => handleUnifiedQueryChange(e.currentTarget.value)}
+                onFocus={() => { setFocused(true); setHighlightIndex(-1); }}
+                onKeyDown={handleKeyDown}
+                onSelect={collapseSelection}
+              />
+              {focused && (unifiedResults.length > 0 || query.trim()) && (
+                <div className="station-dropdown bus-unified-results">
+                  {routeResults.length > 0 && (
+                    <div className="bus-result-group">
+                      <div className="bus-result-heading">{t("bus.search.group.routes")}</div>
+                      <ul>
+                        {routeResults.map((r, i) => (
+                          <li
+                            key={`route:${r.operator}:${r.id}`}
+                            className={`route-result route-result--${r.operator}${i === highlightIndex ? " highlighted" : ""}`}
+                            onMouseDown={() => selectRoute(r)}
+                            onMouseEnter={() => setHighlightIndex(i)}
                           >
-                            {BUS_OPERATOR_INITIALS[r.operator]}
-                          </span>
-                        </li>
-                      ))
-                      : <li className="search-empty">{t("bus.search.route.empty")}</li>
-                    }
-                  </ul>
-                )}
-              </div>
+                            <strong>{r.shortName}</strong> — {r.longName}
+                            <span
+                              className={`operator-badge operator-badge--${r.operator}`}
+                              title={BUS_OPERATOR_LABEL[r.operator]}
+                              aria-label={BUS_OPERATOR_LABEL[r.operator]}
+                            >
+                              {BUS_OPERATOR_INITIALS[r.operator]}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {stopResults.length > 0 && (
+                    <div className="bus-result-group">
+                      <div className="bus-result-heading">{t("bus.search.group.stops")}</div>
+                      <ul>
+                        {stopResults.map((s, i) => {
+                          const index = routeResults.length + i;
+                          return (
+                            <li
+                              key={`stop:${s.operator}:${s.id}`}
+                              className={`stop-result stop-result--${s.operator}${index === highlightIndex ? " highlighted" : ""}`}
+                              onMouseDown={() => selectStop(s)}
+                              onMouseEnter={() => setHighlightIndex(index)}
+                            >
+                              <strong>{s.code || s.id}</strong> — {s.name}
+                              <span
+                                className={`operator-badge operator-badge--${s.operator}`}
+                                title={BUS_OPERATOR_LABEL[s.operator]}
+                                aria-label={BUS_OPERATOR_LABEL[s.operator]}
+                              >
+                                {BUS_OPERATOR_INITIALS[s.operator]}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                  {unifiedResults.length === 0 && (
+                    <div className="search-empty">{t("bus.search.empty.any")}</div>
+                  )}
+                </div>
               )}
+            </div>
+          )}
+          {selectedRoute && (
+            <>
               {selectedRoute && !selectedDirection && (
                 <>
                 {Object.keys(directions).length > 0 && (
@@ -539,7 +570,8 @@ function BusSearchPanel({
                 </div>
               )}
             </>
-          ) : (
+          )}
+          {!selectedRoute && (
             <>
               {!selectedStop && busStopId ? (
                 // Rehydrating from session/favorite — keep the bar occupied
@@ -551,47 +583,7 @@ function BusSearchPanel({
                     <span>{t("bus.search.loading.stop")}</span>
                   </div>
                 </div>
-              ) : !selectedStop ? (
-                <div className="search-field">
-                  <input
-                    type="text"
-                    autoCorrect="off"
-                    autoCapitalize="none"
-                    spellcheck={false}
-                    inputMode="search"
-                    placeholder={t("bus.search.placeholder.stop")}
-                    value={stopQuery}
-                    onChange={(e) => { setStopQuery(e.currentTarget.value); setStopHighlightIndex(-1); }}
-                    onFocus={() => { setStopFocused(true); setStopHighlightIndex(-1); }}
-                    onKeyDown={handleStopKeyDown}
-                    onSelect={collapseSelection}
-                  />
-                  {stopFocused && (stopResults.length > 0 || stopQuery.trim()) && (
-                    <ul className="station-dropdown stop-results">
-                      {stopResults.length > 0
-                        ? stopResults.map((s, i) => (
-                          <li
-                            key={`${s.operator}:${s.id}`}
-                            className={`stop-result stop-result--${s.operator}${i === stopHighlightIndex ? " highlighted" : ""}`}
-                            onMouseDown={() => selectStop(s)}
-                            onMouseEnter={() => setStopHighlightIndex(i)}
-                          >
-                            <strong>{s.code || s.id}</strong> — {s.name}
-                            <span
-                              className={`operator-badge operator-badge--${s.operator}`}
-                              title={BUS_OPERATOR_LABEL[s.operator]}
-                              aria-label={BUS_OPERATOR_LABEL[s.operator]}
-                            >
-                              {BUS_OPERATOR_INITIALS[s.operator]}
-                            </span>
-                          </li>
-                        ))
-                        : <li className="search-empty">{t("bus.search.stop.empty")}</li>
-                      }
-                    </ul>
-                  )}
-                </div>
-              ) : (
+              ) : selectedStop ? (
                 <>
                   <div className={`stop-selected stop-selected--${selectedStop.operator}`}>
                     <div className="stop-selected__text">
@@ -653,7 +645,7 @@ function BusSearchPanel({
                     )}
                   </div>
                 </>
-              )}
+              ) : null}
             </>
           )}
         </>
