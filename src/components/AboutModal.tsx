@@ -298,6 +298,7 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
         <div className="about-divider" />
 
         <section className="about-block about-donate-block">
+          <p className="about-donate-note">{t("about.donate.note")}</p>
           <a
             href="https://buymeacoffee.com/bugisthegod"
             target="_blank"

@@ -751,6 +751,14 @@
   border-color: rgba(37, 168, 100, 0.7);
 }
 
+.about-donate-note {
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .about-donate-btn {
   display: flex;
   align-items: center;
@@ -786,6 +794,10 @@
 :root[data-theme="light"] .about-donate-btn:hover {
   background: linear-gradient(135deg, rgba(255, 123, 172, 0.22), rgba(255, 204, 92, 0.24));
   border-color: rgba(224, 77, 136, 0.46);
+}
+
+:root[data-theme="light"] .about-donate-note {
+  color: rgba(27, 31, 36, 0.58);
 }
 
 .about-theme-toggle {

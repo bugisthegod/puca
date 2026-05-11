@@ -64,6 +64,7 @@ const EN = {
   "about.tour.btn": "Take the tour",
 
   // AboutModal — donation button
+  "about.donate.note": "Púca is free. Support it with a small treat.",
   "about.donate.btn": "Buy Púca a treat",
 
   // AboutModal — Language setting
@@ -274,6 +275,7 @@ const ZH: Record<Key, string> = {
   "about.tour.btn": "查看引导",
 
   // AboutModal — donation button
+  "about.donate.note": "Púca 完全免费。喜欢的话，喂它颗糖吧。",
   "about.donate.btn": "请 Púca 吃颗糖",
 
   // AboutModal — Language setting
