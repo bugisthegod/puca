@@ -4,8 +4,8 @@ import "leaflet.markercluster";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
-import type { Train, BusVehicle, BusOperator, FocusContext } from "./types";
-import { isInServiceHours, SERVICE_RESUME_LABEL, type Filter } from "./utils";
+import type { BusOperator, FocusContext } from "./types";
+import { SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
 import { clearBusSearchSession, loadBusSearchSession, loadSession, saveSession, type BusSearchTab } from "./session";
 import InfoPanel from "./components/InfoPanel";
@@ -19,7 +19,10 @@ import PucaMark from "./components/PucaMark";
 import OfflineBanner from "./components/OfflineBanner";
 import { registerServiceWorker } from "./sw-register";
 import { useFavorites } from "./hooks/useFavorites";
+import { applyInitialAppearance, useFabSidePreference, useThemePreference } from "./hooks/useAppearance";
 import { hasBus, hasTrain, hasStop, totalFavorites, MAX_FAVORITES, type BusFavorite, type TrainFavorite, type BusStopFavorite } from "./favorites";
+import { useToast } from "./hooks/useToast";
+import { useVehiclePolling } from "./hooks/useVehiclePolling";
 import { useLocale } from "./i18n";
 import "./style.css";
 
@@ -27,37 +30,9 @@ const savedSession = loadSession();
 const savedBusSearch = loadBusSearchSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
-const THEME_KEY = "puca:theme";
-type ThemePref = "light" | "dark" | "system";
-const FAB_SIDE_KEY = "puca:fab-side";
-type FabSide = "left" | "right";
-
-function resolveTheme(pref: ThemePref): "light" | "dark" {
-  if (pref === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
-  return pref;
-}
-
-function readThemePref(): ThemePref {
-  try {
-    const v = localStorage.getItem(THEME_KEY);
-    if (v === "light" || v === "dark" || v === "system") return v;
-  } catch {}
-  return "system";
-}
-
-function readFabSide(): FabSide {
-  try {
-    const v = localStorage.getItem(FAB_SIDE_KEY);
-    if (v === "left" || v === "right") return v;
-  } catch {}
-  return "right";
-}
 
 // Apply saved theme + FAB side before React renders to avoid a flash/jump.
-document.documentElement.dataset.theme = resolveTheme(readThemePref());
-document.documentElement.dataset.fabSide = readFabSide();
+applyInitialAppearance();
 
 // iOS (Safari/WebKit) is the only platform that gates device orientation
 // behind a per-page-load permission prompt — Android just works. Use the
@@ -106,11 +81,10 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [locale]);
   const [mode, setMode] = useState<Mode>(savedSession.mode ?? "train");
-  const [trains, setTrains] = useState<Train[]>([]);
-  const [buses, setBuses] = useState<BusVehicle[]>([]);
   const [busOperator, setBusOperator] = useState<BusOperator>(savedSession.busOperator ?? "dublinbus");
   const [busRoute, setBusRoute] = useState<string | null>(savedBusSearch.busRoute ?? null);
   const [busDirection, setBusDirection] = useState<string | null>(savedBusSearch.busDirection ?? null);
+  const { trains, buses, setBuses, lastUpdated, inService } = useVehiclePolling(mode, busOperator, busRoute, busDirection);
   const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedBusSearch.busSearchTab ?? "route");
   const [busStopId, setBusStopId] = useState<string | null>(savedBusSearch.busStopId ?? null);
   const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedBusSearch.busStopOperator ?? null);
@@ -122,9 +96,7 @@ function App() {
   const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
   const [busShape, setBusShape] = useState<{ [dir: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null>(null);
   const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
-  const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
   const mapRef = useRef<HTMLDivElement>(null);
 
   // When a stop-arrival is focused, hide every other bus from the map so the
@@ -149,7 +121,7 @@ function App() {
     },
   });
   const [locating, setLocating] = useState(false);
-  const [toast, setToast] = useState<{ title: string; body?: string } | null>(null);
+  const { toast, showToast } = useToast();
   const [showAbout, setShowAbout] = useState(false);
   const [seenAbout, setSeenAbout] = useState<boolean>(() => {
     try { return localStorage.getItem(ABOUT_SEEN_KEY) === "1"; } catch { return true; }
@@ -157,28 +129,8 @@ function App() {
   const [showTour, setShowTour] = useState<boolean>(() => {
     try { return localStorage.getItem(TOUR_SEEN_KEY) !== "1"; } catch { return false; }
   });
-  const [theme, setTheme] = useState<ThemePref>(readThemePref);
-  useEffect(() => {
-    const apply = () => {
-      document.documentElement.dataset.theme = resolveTheme(theme);
-      // Notify useMapInstance to swap the base tile layer.
-      window.dispatchEvent(new Event("puca:themechange"));
-    };
-    apply();
-    try { localStorage.setItem(THEME_KEY, theme); } catch {}
-    // Only track OS preference changes while the user is on "system" —
-    // explicit light/dark choices should win regardless of OS.
-    if (theme === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      mq.addEventListener("change", apply);
-      return () => mq.removeEventListener("change", apply);
-    }
-  }, [theme]);
-  const [fabSide, setFabSide] = useState<FabSide>(readFabSide);
-  useEffect(() => {
-    document.documentElement.dataset.fabSide = fabSide;
-    try { localStorage.setItem(FAB_SIDE_KEY, fabSide); } catch {}
-  }, [fabSide]);
+  const { theme, setTheme } = useThemePreference();
+  const { fabSide, setFabSide } = useFabSidePreference();
   function closeTour() {
     setShowTour(false);
     try { localStorage.setItem(TOUR_SEEN_KEY, "1"); } catch {}
@@ -200,11 +152,6 @@ function App() {
   );
   const busIsFav = busFavKey ? hasBus(favs, busFavKey) : false;
   const stopIsFav = busStopId && busStopOperator ? hasStop(favs, { stopId: busStopId, operator: busStopOperator }) : false;
-  const showToast = useCallback((title: string, body?: string, ms = 3000) => {
-    const next = { title, body };
-    setToast(next);
-    setTimeout(() => setToast((t) => (t?.title === title ? null : t)), ms);
-  }, []);
   const showFavLimitToast = useCallback(() => {
     showToast(t("toast.fav.full", { max: MAX_FAVORITES }));
   }, [showToast, t]);
@@ -281,103 +228,11 @@ function App() {
         : code === 2 ? { title: t("toast.location.unavailable.title"), body: t("toast.location.unavailable.body") }
         : code === 3 ? { title: t("toast.location.timeout.title"), body: t("toast.location.timeout.body") }
         : { title: t("toast.location.unknown.title") };
-      setToast(next);
-      setTimeout(() => setToast((t) => (t?.title === next.title ? null : t)), 5000);
+      showToast(next.title, next.body, 5000);
     } finally {
       setLocating(false);
     }
   }
-
-  async function fetchTrains() {
-    try {
-      const res = await fetch("/api/trains");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: Train[] = await res.json();
-      setTrains(data);
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.error("Failed to fetch trains:", err);
-    }
-  }
-
-  async function fetchBuses(operator: BusOperator, route: string, direction: string) {
-    try {
-      const res = await fetch(
-        `/api/bus/vehicles?operator=${encodeURIComponent(operator)}&route=${encodeURIComponent(route)}&direction=${encodeURIComponent(direction)}`
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: BusVehicle[] = await res.json();
-      setBuses(data);
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.error("Failed to fetch buses:", err);
-    }
-  }
-
-  async function fetchAllBuses(operator: BusOperator) {
-    try {
-      const res = await fetch(`/api/bus/vehicles?operator=${encodeURIComponent(operator)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: BusVehicle[] = await res.json();
-      setBuses(data);
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.error("Failed to fetch all buses:", err);
-    }
-  }
-
-  useEffect(() => {
-    const update = () => setInService(isInServiceHours(mode));
-    update();
-    const id = setInterval(update, 60_000);
-    return () => clearInterval(id);
-  }, [mode]);
-
-  useEffect(() => {
-    if (!inService) {
-      setTrains([]);
-      setBuses([]);
-      return;
-    }
-
-    let poll: (() => void) | null = null;
-    let intervalMs = 0;
-    if (mode === "train") {
-      poll = fetchTrains;
-      intervalMs = 30_000;
-    } else if (busRoute && busDirection) {
-      const route = busRoute;
-      const dir = busDirection;
-      poll = () => fetchBuses(busOperator, route, dir);
-      intervalMs = 15_000;
-    } else if (!busRoute) {
-      poll = () => fetchAllBuses(busOperator);
-      intervalMs = 15_000;
-    } else {
-      setBuses([]);
-      return;
-    }
-
-    let interval: ReturnType<typeof setInterval> | null = null;
-    const start = () => {
-      if (interval || !poll) return;
-      poll();
-      interval = setInterval(poll, intervalMs);
-    };
-    const stop = () => {
-      if (!interval) return;
-      clearInterval(interval);
-      interval = null;
-    };
-
-    if (!document.hidden) start();
-    const onVisibility = () => (document.hidden ? stop() : start());
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      stop();
-    };
-  }, [mode, busOperator, busRoute, busDirection, inService]);
 
   useEffect(() => {
     if (!busRoute) {
