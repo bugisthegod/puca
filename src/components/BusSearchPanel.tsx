@@ -210,7 +210,7 @@ function BusSearchPanel({
   // Debounced cross-operator stop search. Omits `operator=` so the backend
   // returns matches from all three fleets in one round-trip.
   useEffect(() => {
-    if (selectedRoute || selectedStop) return;
+    if (selectedRoute || selectedStop || busStopId) return;
     const q = stopQuery.trim();
     if (!q) { setStopResults([]); return; }
     let cancelled = false;
@@ -223,7 +223,7 @@ function BusSearchPanel({
         .catch(() => { if (!cancelled) setStopResults([]); });
     }, 120);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [stopQuery, selectedRoute, selectedStop]);
+  }, [stopQuery, selectedRoute, selectedStop, busStopId]);
 
   // Abort controller for the in-flight arrivals fetch. Stop-switch + network
   // jitter can race: stop A's response arriving after stop B's would stamp A's
