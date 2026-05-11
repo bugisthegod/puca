@@ -8,7 +8,6 @@ export function useVehiclePolling(
   busOperator: BusOperator,
   busRoute: string | null,
   busDirection: string | null,
-  onEmptyTrains?: () => void,
 ) {
   const [trains, setTrains] = useState<Train[]>([]);
   const [buses, setBuses] = useState<BusVehicle[]>([]);
@@ -34,7 +33,6 @@ export function useVehiclePolling(
         if (cancelled) return;
         setTrains(data);
         setTrainsLoaded(true);
-        if (data.length === 0) onEmptyTrains?.();
         setLastUpdated(new Date().toLocaleTimeString());
       } catch (err) {
         if (cancelled) return;
@@ -118,7 +116,7 @@ export function useVehiclePolling(
       document.removeEventListener("visibilitychange", onVisibility);
       stop();
     };
-  }, [mode, busOperator, busRoute, busDirection, inService, onEmptyTrains]);
+  }, [mode, busOperator, busRoute, busDirection, inService]);
 
   return { trains, buses, setBuses, lastUpdated, inService, trainsLoaded };
 }

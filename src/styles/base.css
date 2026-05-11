@@ -217,6 +217,7 @@ body {
   color: #f0f0f0;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
   text-align: center;
+  pointer-events: none;
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   animation: map-empty-state-in 0.22s ease-out;

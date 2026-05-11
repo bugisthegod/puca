@@ -85,7 +85,10 @@ function App() {
   const [busRoute, setBusRoute] = useState<string | null>(savedBusSearch.busRoute ?? null);
   const [busDirection, setBusDirection] = useState<string | null>(savedBusSearch.busDirection ?? null);
   const [trainEmptyNoticeVisible, setTrainEmptyNoticeVisible] = useState(false);
+  const [trainEmptyNoticeRequest, setTrainEmptyNoticeRequest] = useState(0);
   const trainEmptyNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trainEmptyNoticeShownRef = useRef(false);
+  const trainEmptyNoticeHandledRequestRef = useRef(0);
   const showTrainEmptyNotice = useCallback(() => {
     if (trainEmptyNoticeTimerRef.current) clearTimeout(trainEmptyNoticeTimerRef.current);
     setTrainEmptyNoticeVisible(true);
@@ -94,7 +97,10 @@ function App() {
       trainEmptyNoticeTimerRef.current = null;
     }, 3000);
   }, []);
-  const { trains, buses, setBuses, lastUpdated, inService, trainsLoaded } = useVehiclePolling(mode, busOperator, busRoute, busDirection, showTrainEmptyNotice);
+  const requestTrainEmptyNotice = useCallback(() => {
+    setTrainEmptyNoticeRequest((n) => n + 1);
+  }, []);
+  const { trains, buses, setBuses, lastUpdated, inService, trainsLoaded } = useVehiclePolling(mode, busOperator, busRoute, busDirection);
   const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedBusSearch.busSearchTab ?? "route");
   const [busStopId, setBusStopId] = useState<string | null>(savedBusSearch.busStopId ?? null);
   const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedBusSearch.busStopOperator ?? null);
@@ -297,8 +303,8 @@ function App() {
     setMode((current) => (current === "train" ? current : "train"));
     setSearchResetKey((k) => k + 1);
     setPanelCollapsed(false);
-    if (inService && trainsLoaded && trains.length === 0) showTrainEmptyNotice();
-  }, [inService, showTrainEmptyNotice, trains.length, trainsLoaded]);
+    requestTrainEmptyNotice();
+  }, [requestTrainEmptyNotice]);
 
   const handleCloseFavorites = useCallback(() => setShowFavs(false), []);
 
@@ -402,8 +408,29 @@ function App() {
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
   const showNoTrainPositions = mode === "train" && trainEmptyNoticeVisible;
   const showTrainEmptyNoticeIfUnavailable = useCallback(() => {
-    if (inService && trainsLoaded && trains.length === 0) showTrainEmptyNotice();
-  }, [inService, showTrainEmptyNotice, trains.length, trainsLoaded]);
+    requestTrainEmptyNotice();
+  }, [requestTrainEmptyNotice]);
+
+  useEffect(() => {
+    const unavailable = mode === "train" && inService && trainsLoaded && trains.length === 0;
+    if (!unavailable) {
+      trainEmptyNoticeShownRef.current = false;
+      trainEmptyNoticeHandledRequestRef.current = trainEmptyNoticeRequest;
+      if (mode !== "train" || !inService || trains.length > 0) setTrainEmptyNoticeVisible(false);
+      return;
+    }
+
+    const hasNewRequest = trainEmptyNoticeRequest !== trainEmptyNoticeHandledRequestRef.current;
+    if (!trainEmptyNoticeShownRef.current || hasNewRequest) {
+      trainEmptyNoticeShownRef.current = true;
+      trainEmptyNoticeHandledRequestRef.current = trainEmptyNoticeRequest;
+      showTrainEmptyNotice();
+    }
+  }, [inService, mode, showTrainEmptyNotice, trainEmptyNoticeRequest, trains.length, trainsLoaded]);
+
+  useEffect(() => () => {
+    if (trainEmptyNoticeTimerRef.current) clearTimeout(trainEmptyNoticeTimerRef.current);
+  }, []);
 
   return (
     <>
