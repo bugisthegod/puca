@@ -22,14 +22,18 @@ export function useVehiclePolling(
   }, [mode]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchTrains() {
       try {
         const res = await fetch("/api/trains");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: Train[] = await res.json();
+        if (cancelled) return;
         setTrains(data);
         setLastUpdated(new Date().toLocaleTimeString());
       } catch (err) {
+        if (cancelled) return;
         console.error("Failed to fetch trains:", err);
       }
     }
@@ -41,9 +45,11 @@ export function useVehiclePolling(
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: BusVehicle[] = await res.json();
+        if (cancelled) return;
         setBuses(data);
         setLastUpdated(new Date().toLocaleTimeString());
       } catch (err) {
+        if (cancelled) return;
         console.error("Failed to fetch buses:", err);
       }
     }
@@ -53,9 +59,11 @@ export function useVehiclePolling(
         const res = await fetch(`/api/bus/vehicles?operator=${encodeURIComponent(operator)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: BusVehicle[] = await res.json();
+        if (cancelled) return;
         setBuses(data);
         setLastUpdated(new Date().toLocaleTimeString());
       } catch (err) {
+        if (cancelled) return;
         console.error("Failed to fetch all buses:", err);
       }
     }
@@ -100,6 +108,7 @@ export function useVehiclePolling(
     const onVisibility = () => (document.hidden ? stop() : start());
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      cancelled = true;
       document.removeEventListener("visibilitychange", onVisibility);
       stop();
     };
