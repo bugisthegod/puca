@@ -69,8 +69,11 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
     .toLowerCase();
   const progressCurrent = progress ? normalizeStation(progress.currentStation) : "";
   const progressNext = progress?.nextStation ? normalizeStation(progress.nextStation) : "";
-  const hasProgressMatch = progress
+  const hasProgressCurrentMatch = progress
     ? movements.some((m) => normalizeStation(m.stationName) === progressCurrent)
+    : false;
+  const hasProgressNextMatch = progressNext
+    ? movements.some((m) => normalizeStation(m.stationName) === progressNext)
     : false;
   const stopTypeLabel: Record<string, string> = {
     O: t("popup.train.stoptype.O"),
@@ -84,11 +87,13 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
   const rows = movements
     .map((m) => {
       const normalizedStation = normalizeStation(m.stationName);
-      const derivedStopType = hasProgressMatch && normalizedStation === progressCurrent
+      const derivedStopType = hasProgressCurrentMatch && normalizedStation === progressCurrent
         ? "C"
-        : hasProgressMatch && progressNext && normalizedStation === progressNext
+        : hasProgressNextMatch && normalizedStation === progressNext
           ? "N"
-          : hasProgressMatch && (m.stopType === "C" || m.stopType === "N")
+          : hasProgressCurrentMatch && m.stopType === "C"
+            ? "S"
+          : hasProgressNextMatch && m.stopType === "N"
             ? "S"
             : m.stopType;
       const isCurrent = derivedStopType === "C";
