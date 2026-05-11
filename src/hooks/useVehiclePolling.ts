@@ -8,11 +8,13 @@ export function useVehiclePolling(
   busOperator: BusOperator,
   busRoute: string | null,
   busDirection: string | null,
+  onEmptyTrains?: () => void,
 ) {
   const [trains, setTrains] = useState<Train[]>([]);
   const [buses, setBuses] = useState<BusVehicle[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [inService, setInService] = useState<boolean>(() => isInServiceHours(mode));
+  const [trainsLoaded, setTrainsLoaded] = useState(false);
 
   useEffect(() => {
     const update = () => setInService(isInServiceHours(mode));
@@ -31,6 +33,8 @@ export function useVehiclePolling(
         const data: Train[] = await res.json();
         if (cancelled) return;
         setTrains(data);
+        setTrainsLoaded(true);
+        if (data.length === 0) onEmptyTrains?.();
         setLastUpdated(new Date().toLocaleTimeString());
       } catch (err) {
         if (cancelled) return;
@@ -71,6 +75,7 @@ export function useVehiclePolling(
     if (!inService) {
       setTrains([]);
       setBuses([]);
+      setTrainsLoaded(false);
       return;
     }
 
@@ -104,6 +109,7 @@ export function useVehiclePolling(
       interval = null;
     };
 
+    if (mode === "train") setTrainsLoaded(false);
     if (!document.hidden) start();
     const onVisibility = () => (document.hidden ? stop() : start());
     document.addEventListener("visibilitychange", onVisibility);
@@ -112,7 +118,7 @@ export function useVehiclePolling(
       document.removeEventListener("visibilitychange", onVisibility);
       stop();
     };
-  }, [mode, busOperator, busRoute, busDirection, inService]);
+  }, [mode, busOperator, busRoute, busDirection, inService, onEmptyTrains]);
 
-  return { trains, buses, setBuses, lastUpdated, inService };
+  return { trains, buses, setBuses, lastUpdated, inService, trainsLoaded };
 }

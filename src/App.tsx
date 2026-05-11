@@ -84,7 +84,17 @@ function App() {
   const [busOperator, setBusOperator] = useState<BusOperator>(savedSession.busOperator ?? "dublinbus");
   const [busRoute, setBusRoute] = useState<string | null>(savedBusSearch.busRoute ?? null);
   const [busDirection, setBusDirection] = useState<string | null>(savedBusSearch.busDirection ?? null);
-  const { trains, buses, setBuses, lastUpdated, inService } = useVehiclePolling(mode, busOperator, busRoute, busDirection);
+  const [trainEmptyNoticeVisible, setTrainEmptyNoticeVisible] = useState(false);
+  const trainEmptyNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTrainEmptyNotice = useCallback(() => {
+    if (trainEmptyNoticeTimerRef.current) clearTimeout(trainEmptyNoticeTimerRef.current);
+    setTrainEmptyNoticeVisible(true);
+    trainEmptyNoticeTimerRef.current = setTimeout(() => {
+      setTrainEmptyNoticeVisible(false);
+      trainEmptyNoticeTimerRef.current = null;
+    }, 3000);
+  }, []);
+  const { trains, buses, setBuses, lastUpdated, inService, trainsLoaded } = useVehiclePolling(mode, busOperator, busRoute, busDirection, showTrainEmptyNotice);
   const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(savedBusSearch.busSearchTab ?? "route");
   const [busStopId, setBusStopId] = useState<string | null>(savedBusSearch.busStopId ?? null);
   const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedBusSearch.busStopOperator ?? null);
@@ -287,7 +297,8 @@ function App() {
     setMode((current) => (current === "train" ? current : "train"));
     setSearchResetKey((k) => k + 1);
     setPanelCollapsed(false);
-  }, []);
+    if (inService && trainsLoaded && trains.length === 0) showTrainEmptyNotice();
+  }, [inService, showTrainEmptyNotice, trains.length, trainsLoaded]);
 
   const handleCloseFavorites = useCallback(() => setShowFavs(false), []);
 
@@ -389,10 +400,20 @@ function App() {
   }, []);
 
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
+  const showNoTrainPositions = mode === "train" && trainEmptyNoticeVisible;
+  const showTrainEmptyNoticeIfUnavailable = useCallback(() => {
+    if (inService && trainsLoaded && trains.length === 0) showTrainEmptyNotice();
+  }, [inService, showTrainEmptyNotice, trains.length, trainsLoaded]);
 
   return (
     <>
       <div id="map" ref={mapRef} />
+      {showNoTrainPositions && (
+        <div className="map-empty-state" role="status" aria-live="polite">
+          <div className="map-empty-state__title">{t("map.empty.trains.title")}</div>
+          <div className="map-empty-state__body">{t("map.empty.trains.body")}</div>
+        </div>
+      )}
       <OfflineBanner />
       {toast && (
         <div className="app-toast" role="alert">
@@ -475,6 +496,7 @@ function App() {
           collapsed={panelCollapsed}
           onCollapsedChange={setPanelCollapsed}
           onShowToast={showToast}
+          onSearchIntent={showTrainEmptyNoticeIfUnavailable}
         />
       ) : (
         <BusSearchPanel
