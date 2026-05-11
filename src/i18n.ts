@@ -168,6 +168,7 @@ const EN = {
 
   // App — back-to-all-buses button
   "bus.back.all": "All buses",
+  "train.back.all": "All trains",
 
   // BusSearchPanel
   "bus.search.tab.route": "Route",
@@ -383,6 +384,7 @@ const ZH: Record<Key, string> = {
 
   // App — back-to-all-buses button
   "bus.back.all": "全部公交",
+  "train.back.all": "全部列车",
 
   // BusSearchPanel
   "bus.search.tab.route": "线路",

@@ -316,6 +316,12 @@ function App() {
     setSearchCodes(null);
   }, []);
 
+  const handleShowAllTrains = useCallback(() => {
+    setSearchCodes(null);
+    setSearchResetKey((k) => k + 1);
+    try { sessionStorage.removeItem("search"); } catch {}
+  }, []);
+
   const handlePickStopFavorite = useCallback((s: BusStopFavorite) => {
     setMode((current) => (current === "bus" ? current : "bus"));
     if (s.operator !== busOperatorRef.current) {
@@ -564,6 +570,14 @@ function App() {
           }}
         >
           &larr; {t("bus.back.all")}
+        </button>
+      )}
+      {mode === "train" && searchCodes !== null && (
+        <button
+          className="back-to-all-btn"
+          onClick={handleShowAllTrains}
+        >
+          &larr; {t("train.back.all")}
         </button>
       )}
       <InfoPanel
