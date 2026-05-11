@@ -146,7 +146,7 @@ const EN = {
 
   // Map overlays
   "map.empty.trains.title": "No live train positions",
-  "map.empty.trains.body": "The upstream feed has not returned any trains yet.",
+  "map.empty.trains.body": "Train position data is temporarily unavailable. Try again later.",
 
   // SearchPanel (train)
   "train.search.placeholder.from": "From station...",
@@ -356,7 +356,7 @@ const ZH: Record<Key, string> = {
 
   // Map overlays
   "map.empty.trains.title": "暂无实时列车位置",
-  "map.empty.trains.body": "上游暂未返回列车位置，地图仍可正常浏览。",
+  "map.empty.trains.body": "列车位置数据暂时不可用，请稍后再试。",
 
   // SearchPanel (train)
   "train.search.placeholder.from": "出发站...",
