@@ -115,7 +115,7 @@ describe("buildTrainPopupHTML", () => {
     expect(html).not.toContain("Bray ▶");
   });
 
-  test("keeps movement-provided next when PublicMessage next stop cannot be matched", () => {
+  test("clears movement-provided next when it is before the PublicMessage current station", () => {
     const html = buildTrainPopupWithMovements(
       train({ message: "E848\n22:42 - Bray to Malahide (1 mins late)\nDeparted Kilbarrack next stop Howth Jct" }),
       [
@@ -128,6 +128,22 @@ describe("buildTrainPopupHTML", () => {
 
     expect(html).toContain("Kilbarrack ▶");
     expect(html).toContain("Woodbrook");
+    expect(html).not.toContain("<td>Next</td>");
+    expect(html).not.toContain("Bray ▶");
+  });
+
+  test("keeps movement-provided next after PublicMessage current when next stop cannot be matched", () => {
+    const html = buildTrainPopupWithMovements(
+      train({ message: "E848\n22:42 - Bray to Malahide (1 mins late)\nDeparted Kilbarrack next stop Howth Jct" }),
+      [
+        movement({ stationName: "Bray", stopType: "C" }),
+        movement({ stationName: "Kilbarrack", stopType: "S" }),
+        movement({ stationName: "Howth Junction", stopType: "N" }),
+      ],
+    );
+
+    expect(html).toContain("Kilbarrack ▶");
+    expect(html).toContain("Howth Junction");
     expect(html).toContain("<td>Next</td>");
     expect(html).not.toContain("Bray ▶");
   });
