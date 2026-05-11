@@ -97,6 +97,24 @@ describe("buildTrainPopupHTML", () => {
     expect(html).toContain("08:11");
   });
 
+  test("uses PublicMessage progress when movement stop types are stale", () => {
+    const html = buildTrainPopupWithMovements(
+      train({ message: "E848\n22:42 - Bray to Malahide (1 mins late)\nDeparted Kilbarrack next stop Howth Junction" }),
+      [
+        movement({ stationName: "Bray", stopType: "C", expectedDepart: "22:42:00" }),
+        movement({ stationName: "Woodbrook", stopType: "N", expectedDepart: "22:45:00" }),
+        movement({ stationName: "Kilbarrack", stopType: "S", expectedDepart: "23:38:00" }),
+        movement({ stationName: "Howth Junction", stopType: "S", expectedDepart: "23:41:00" }),
+      ],
+    );
+
+    expect(html).toContain("Kilbarrack ▶");
+    expect(html).toContain("<td>Current</td>");
+    expect(html).toContain("Howth Junction");
+    expect(html).toContain("<td>Next</td>");
+    expect(html).not.toContain("Bray ▶");
+  });
+
   test("falls back to formatted train message when movements are empty", () => {
     const html = buildTrainPopupWithMovements(
       train({ message: "No route <yet>\\nCheck later" }),

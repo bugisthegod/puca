@@ -33,6 +33,30 @@ export function parseRoute(message: string): { origin: string; destination: stri
   return null;
 }
 
+export type TrainProgress = {
+  kind: "arrived" | "departed";
+  currentStation: string;
+  nextStation: string | null;
+};
+
+/** Parse current/next station progress from Irish Rail PublicMessage. */
+export function parseTrainProgress(message: string): TrainProgress | null {
+  const lines = message
+    .split(/\\r\\n|\\n|\r?\n/g)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const line = lines.find((l) => /^(arrived|departed)\s+/i.test(l));
+  if (!line) return null;
+
+  const match = line.match(/^(Arrived|Departed)\s+(.+?)(?:\s+next stop\s+(.+))?$/i);
+  if (!match?.[1] || !match[2]) return null;
+  return {
+    kind: match[1].toLowerCase() as TrainProgress["kind"],
+    currentStation: match[2].trim(),
+    nextStation: match[3]?.trim() || null,
+  };
+}
+
 /** Determine the color for a train marker based on status and lateness. */
 export function markerColor(train: Train): string {
   if (train.status === "N" || train.status === "T") return "#9e9e9e"; // gray

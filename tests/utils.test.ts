@@ -6,6 +6,7 @@ import {
   markerColor,
   parseLateMinutes,
   parseRoute,
+  parseTrainProgress,
   trainCategory,
 } from "../src/utils";
 import type { Train } from "../src/types";
@@ -63,6 +64,30 @@ describe("parseRoute", () => {
     expect(parseRoute("")).toBeNull();
     expect(parseRoute("just some text")).toBeNull();
     expect(parseRoute("Connolly to Howth")).toBeNull(); // missing HH:MM and the trailing "("
+  });
+});
+
+describe("parseTrainProgress", () => {
+  test("extracts departed/current and next stop from PublicMessage", () => {
+    const msg = "E848\\n22:42 - Bray to Malahide (1 mins late)\\nDeparted Kilbarrack next stop Howth Junction";
+    expect(parseTrainProgress(msg)).toEqual({
+      kind: "departed",
+      currentStation: "Kilbarrack",
+      nextStation: "Howth Junction",
+    });
+  });
+
+  test("extracts arrived/current and next stop from PublicMessage", () => {
+    const msg = "E703\n23:40 - Malahide to Dublin Connolly (0 mins late)\nArrived Portmarnock next stop Clongriffin";
+    expect(parseTrainProgress(msg)).toEqual({
+      kind: "arrived",
+      currentStation: "Portmarnock",
+      nextStation: "Clongriffin",
+    });
+  });
+
+  test("returns null when progress line is missing", () => {
+    expect(parseTrainProgress("E123\n08:30 - Connolly to Howth (DART)")).toBeNull();
   });
 });
 

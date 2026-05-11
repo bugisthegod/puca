@@ -1,5 +1,5 @@
 import type { Train, TrainMovement } from "../types";
-import { escapeHtml, fmtTime, parseLateMinutes, parseRoute } from "../utils";
+import { escapeHtml, fmtTime, parseLateMinutes, parseRoute, parseTrainProgress } from "../utils";
 import { t } from "../i18n";
 
 export function trainPopupStatusClass(status: string, late: number | null): string {
@@ -60,6 +60,18 @@ export function buildTrainPopupErrorHTML(train: Train): string {
 }
 
 export function buildTrainPopupWithMovements(train: Train, movements: TrainMovement[]): string {
+  const progress = parseTrainProgress(train.message);
+  const normalizeStation = (name: string) => name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\bstation\b/gi, "")
+    .replace(/[^a-z0-9]+/gi, "")
+    .toLowerCase();
+  const progressCurrent = progress ? normalizeStation(progress.currentStation) : "";
+  const progressNext = progress?.nextStation ? normalizeStation(progress.nextStation) : "";
+  const hasProgressMatch = progress
+    ? movements.some((m) => normalizeStation(m.stationName) === progressCurrent)
+    : false;
   const stopTypeLabel: Record<string, string> = {
     O: t("popup.train.stoptype.O"),
     T: t("popup.train.stoptype.T"),
@@ -71,7 +83,15 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
 
   const rows = movements
     .map((m) => {
-      const isCurrent = m.stopType === "C";
+      const normalizedStation = normalizeStation(m.stationName);
+      const derivedStopType = hasProgressMatch && normalizedStation === progressCurrent
+        ? "C"
+        : hasProgressMatch && progressNext && normalizedStation === progressNext
+          ? "N"
+          : hasProgressMatch && (m.stopType === "C" || m.stopType === "N")
+            ? "S"
+            : m.stopType;
+      const isCurrent = derivedStopType === "C";
       const rowClass = isCurrent ? "movement-current" : "";
       const schArr = fmtTime(m.scheduledArrival);
       const schDep = fmtTime(m.scheduledDepart);
@@ -87,7 +107,7 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
       return `
         <tr class="${rowClass}">
           <td>${escapeHtml(m.stationName)}${isCurrent ? " ▶" : ""}</td>
-          <td>${escapeHtml(stopTypeLabel[m.stopType] ?? m.stopType)}</td>
+          <td>${escapeHtml(stopTypeLabel[derivedStopType] ?? derivedStopType)}</td>
           <td>${showArr}</td>
           <td>${showDep}</td>
         </tr>
