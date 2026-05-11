@@ -24,9 +24,10 @@ interface SearchPanelProps {
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   onShowToast: (title: string, body?: string) => void;
+  onSearchIntent: () => void;
 }
 
-function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, collapsed, onCollapsedChange, onShowToast }: SearchPanelProps) {
+function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, collapsed, onCollapsedChange, onShowToast, onSearchIntent }: SearchPanelProps) {
   const { t } = useLocale();
   const saved = sessionStorage.getItem("search");
   const init = saved ? JSON.parse(saved) : null;
@@ -177,7 +178,7 @@ function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, co
   return (
     <div id="search-panel" ref={panelRef} className={collapsed ? "collapsed" : ""}>
       {collapsed ? (
-        <button className="fab search-fab" onClick={() => onCollapsedChange(false)} aria-label={t("train.search.fab.aria")} title={t("train.search.fab.aria")}>
+        <button className="fab search-fab" onClick={() => { onSearchIntent(); onCollapsedChange(false); }} aria-label={t("train.search.fab.aria")} title={t("train.search.fab.aria")}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" />
@@ -260,7 +261,7 @@ function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, co
         )}
       </div>
       <div className="search-actions">
-        <button className="search-btn" onClick={() => handleSearchWith(from, to)} disabled={!from || !to || loading}>
+        <button className="search-btn" onClick={() => { onSearchIntent(); handleSearchWith(from, to); }} disabled={!from || !to || loading}>
           {loading ? t("train.search.btn.searching") : t("train.search.btn.search")}
         </button>
         {(from || to || results !== null) && (

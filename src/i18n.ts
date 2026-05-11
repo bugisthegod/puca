@@ -144,6 +144,10 @@ const EN = {
   "info.updated.empty": "Updated: —",
   "info.stop.noarrivals": "No upcoming buses",
 
+  // Map overlays
+  "map.empty.trains.title": "No live train positions",
+  "map.empty.trains.body": "The upstream feed has not returned any trains yet.",
+
   // SearchPanel (train)
   "train.search.placeholder.from": "From station...",
   "train.search.placeholder.to": "To station...",
@@ -349,6 +353,10 @@ const ZH: Record<Key, string> = {
   "info.updated": "更新于 {time}",
   "info.updated.empty": "更新于 —",
   "info.stop.noarrivals": "暂无即将到站的公交",
+
+  // Map overlays
+  "map.empty.trains.title": "暂无实时列车位置",
+  "map.empty.trains.body": "上游暂未返回列车位置，地图仍可正常浏览。",
 
   // SearchPanel (train)
   "train.search.placeholder.from": "出发站...",
