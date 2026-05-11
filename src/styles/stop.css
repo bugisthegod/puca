@@ -188,6 +188,44 @@
   margin-left: 8px;
 }
 
+.bus-unified-results {
+  padding: 4px 0;
+}
+
+.bus-result-group + .bus-result-group {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.bus-result-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bus-result-heading {
+  padding: 5px 10px 3px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bus-unified-results .search-empty {
+  padding: 10px;
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.bus-unified-results .stop-result .operator-badge,
+.bus-unified-results .route-result .operator-badge {
+  float: right;
+  margin-left: 8px;
+}
+
 .stop-selected__text {
   display: flex;
   flex-direction: column;
