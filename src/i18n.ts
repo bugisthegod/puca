@@ -101,6 +101,10 @@ const EN = {
   "about.install.android.s2": "Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.",
   "about.install.note": "For a better experience, install to your home screen.",
 
+  // AboutModal — feedback
+  "about.feedback.note": "Found a bug or want something added?",
+  "about.feedback.btn": "Send feedback",
+
   // AboutModal — footer
   "about.footer.line1": "Data from Irish Rail and the National Transport Authority.",
   "about.footer.line2": "Not affiliated with either.",
@@ -318,6 +322,10 @@ const ZH: Record<Key, string> = {
   "about.install.android.s1": "点击菜单（⋮）。",
   "about.install.android.s2": "点击<strong>安装应用</strong>或<strong>添加到主屏幕</strong>。",
   "about.install.note": "为了更好的体验，建议添加到主屏幕。",
+
+  // AboutModal — feedback
+  "about.feedback.note": "发现问题，或想加点什么？",
+  "about.feedback.btn": "发送反馈",
 
   // AboutModal — footer
   "about.footer.line1": "数据来源：Irish Rail 与 National Transport Authority。",

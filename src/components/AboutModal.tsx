@@ -18,6 +18,8 @@ type AboutModalProps = {
   onSetFabSide?: (s: FabSide) => void;
 };
 
+const FEEDBACK_URL = "https://tally.so/r/lbKjNX";
+
 function SettingRow({
   label,
   info,
@@ -297,17 +299,31 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
 
         <div className="about-divider" />
 
-        <section className="about-block about-donate-block">
-          <p className="about-donate-note">{t("about.donate.note")}</p>
-          <a
-            href="https://buymeacoffee.com/bugisthegod"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="about-donate-btn"
-          >
-            <span aria-hidden="true">🍭</span>
-            {t("about.donate.btn")}
-          </a>
+        <section className="about-block about-actions">
+          <div className="about-action about-action--feedback">
+            <p className="about-feedback-note">{t("about.feedback.note")}</p>
+            <a
+              href={FEEDBACK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="about-feedback-btn"
+            >
+              {t("about.feedback.btn")}
+            </a>
+          </div>
+
+          <div className="about-action about-action--donate">
+            <p className="about-donate-note">{t("about.donate.note")}</p>
+            <a
+              href="https://buymeacoffee.com/bugisthegod"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="about-donate-btn"
+            >
+              <span aria-hidden="true">🍭</span>
+              {t("about.donate.btn")}
+            </a>
+          </div>
         </section>
 
         <div className="about-divider" />
