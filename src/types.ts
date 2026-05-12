@@ -44,6 +44,13 @@ export type SearchResult = {
   status: "running" | "ready" | "unmapped" | "scheduled"; // running/ready=可聚焦, unmapped=在跑但暂无有效坐标
 };
 
+export type TrainFocusSummary = {
+  trainCode: string;
+  directionName: string | null;
+  stopsAway: number | null;
+  etaMinutes: number | null;
+};
+
 export type BusOperator = "dublinbus" | "buseireann" | "goahead";
 
 export type BusRoute = {

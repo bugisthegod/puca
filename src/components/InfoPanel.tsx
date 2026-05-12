@@ -1,7 +1,7 @@
 import React from "react";
 import type { Filter } from "../utils";
 import type { Mode } from "../hooks/useTrainMap";
-import type { BusOperator } from "../types";
+import type { BusOperator, TrainFocusSummary } from "../types";
 import type { BusStopSummary } from "./BusSearchPanel";
 import SleepingPuca from "./SleepingPuca";
 import { useLocale } from "../i18n";
@@ -16,6 +16,7 @@ type InfoPanelProps = {
   resumeLabel: string;
   busOperator: BusOperator;
   busStopSummary: BusStopSummary | null;
+  trainFocusSummary: TrainFocusSummary | null;
   drilledIn: boolean;
   onDrilledInChange: (drilledIn: boolean) => void;
   onModeChange: (m: Mode) => void;
@@ -49,6 +50,7 @@ function InfoPanel({
   resumeLabel,
   busOperator,
   busStopSummary,
+  trainFocusSummary,
   drilledIn,
   onDrilledInChange,
   onModeChange,
@@ -61,6 +63,8 @@ function InfoPanel({
     : t("info.running.bus", { n: vehicleCount });
   const stopSummary = drilledIn && mode === "bus" && busSearchTab === "stop" ? busStopSummary : null;
   const showBusStopSummary = stopSummary !== null;
+  const trainSummary = drilledIn && mode === "train" ? trainFocusSummary : null;
+  const showTrainSummary = trainSummary !== null;
 
   const modes: { value: Mode; label: string }[] = [
     { value: "train", label: t("info.mode.train") },
@@ -76,7 +80,7 @@ function InfoPanel({
 
   const panelClassName = [
     drilledIn ? "" : "info-panel--compact",
-    showBusStopSummary ? "info-panel--stop-summary" : "",
+    (showBusStopSummary || showTrainSummary) ? "info-panel--stop-summary" : "",
   ].filter(Boolean).join(" ");
 
   return (
@@ -84,9 +88,33 @@ function InfoPanel({
       {drilledIn && (
         inService ? (
           <>
-            {!showBusStopSummary && (
+            {!showBusStopSummary && !showTrainSummary && (
               <div id="panel-header">
                 <span id="train-count">{showCount}</span>
+              </div>
+            )}
+            {showTrainSummary && (
+              <div className="info-stop-summary info-stop-summary--train">
+                <div className="info-stop-summary__stop">
+                  <strong>
+                    {trainSummary.directionName
+                      ? t("train.focus.direction", { station: trainSummary.directionName })
+                      : t("info.mode.train")}
+                  </strong>
+                </div>
+                <div className="info-stop-summary__arrival">
+                  <span className="info-stop-summary__route">{trainSummary.trainCode}</span>
+                  <span className="info-stop-summary__meta">
+                    {[
+                      trainSummary.stopsAway === null ? null : t("bus.search.stops.away", { n: trainSummary.stopsAway }),
+                      trainSummary.etaMinutes === null
+                        ? null
+                        : trainSummary.etaMinutes <= 0
+                          ? t("bus.search.eta.due")
+                          : t("bus.search.eta.min", { n: trainSummary.etaMinutes }),
+                    ].filter(Boolean).join(" · ")}
+                  </span>
+                </div>
               </div>
             )}
             {showBusStopSummary && (
@@ -142,7 +170,7 @@ function InfoPanel({
             {label}
           </button>
         ))}
-        {drilledIn && inService && !showBusStopSummary && (
+        {drilledIn && inService && !showBusStopSummary && !showTrainSummary && (
           <>
             <button
               type="button"

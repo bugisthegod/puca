@@ -19,7 +19,7 @@ function collapseSelection(e: { currentTarget: HTMLInputElement }): void {
 interface SearchPanelProps {
   onSearch: (codes: string[]) => void;
   onClear: () => void;
-  onTrainSelect: (code: string) => Promise<FocusTrainResult>;
+  onTrainSelect: (code: string, boardingStationCode?: string) => Promise<FocusTrainResult>;
   favs: Favorites;
   onToggleTrain: (f: TrainFavorite) => void;
   collapsed: boolean;
@@ -304,7 +304,7 @@ function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, co
                         onShowToast(t("train.toast.notonmap.title"));
                         return;
                       }
-                      const result = await onTrainSelect(r.code);
+                      const result = await onTrainSelect(r.code, from);
                       if (result === "unavailable") {
                         onShowToast(t("train.toast.notonmap.title"));
                         return;
