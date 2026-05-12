@@ -37,6 +37,7 @@ NTA 每次重新发布 GTFS 静态 zip 时，会给每条线路分配新的 `rou
 | 2026-05-02     | —              | —       | 跳过    | NTA 没补 5-2 zip——5-3 22:03 UTC 直接从 5-01 `3035A46D` 发到 `FA3F92F8`，5-2 `0839437A` 整个 zip 版本被跳过（lightweight 可以在没有对应 zip 的 UUID 上停整整一天） |
 | 2026-05-03     | 全部 agency     | —       | 不变    | zip 5-03 22:03 UTC 跟 lightweight 同步发 `FA3F92F8`（**未触发 mode D**）；route_id 集合 0 漂；bus trip 前缀分布 0 变化（`5579`+`5645` 各 28,027 仍并存——Dublin Bus 5-17 改时刻表的事还在）；rail `5636` -461 trip（仅 timetable 微调，不影响 bus） |
 | 2026-05-07     | 全部 agency     | —       | 不变    | zip 5-07 22:03 UTC 发布 `CE1ED411`；route_id 集合 0 漂；`trips.txt` 126,264 → 142,321（+16,057），`stop_times.txt` +1,229,658；Dublin Bus trip 数翻倍到 56,054，Bus Éireann/Go-Ahead/rail 仅时刻表调整 |
+| 2026-05-11     | 全部 agency     | —       | 不变    | zip 5-11 22:20 UTC 发布 `110F282B`；route_id 集合 0 漂；本地 `*-routes.json` / `train-routes.json` 与 zip 全量对齐，无需 regen；`trips.txt` 139,713（较 5-07 -2,608），`stop_times.txt` 5,494,119 |
 
 ### 2026-05-01：第四种故障模式——轻量端点比 zip 跑得快
 
@@ -85,6 +86,7 @@ realtime `Vehicles` / `TripUpdates` feed 同步切到了新编码——三个 op
 | 2026-05-02 | 20260502          | `0839437A-650C-4D86-B368-2AEBE0B60DBF` | 1 天   |
 | 2026-05-03 | 20260503          | `FA3F92F8-B7BE-44ED-AEEF-6712BE80E03B` | 1 天   |
 | 2026-05-07 | 20260507          | `CE1ED411-4C10-4C2A-864C-15248C162CB1` | 4 天   |
+| 2026-05-11 | 20260511          | `110F282B-11F2-40BE-ACF7-379FCA2A45F6` | 4 天   |
 
 > **注意**：5-1 / 5-2 / 5-3 都是从轻量 `feed_info.txt` 端点读的。`3035A46D` 5-01 22:02 UTC
 > 进了 zip（mode D 闭环、issue 自愈）；**`0839437A` 从未进 zip**——NTA 5-3 22:03 UTC 直接
