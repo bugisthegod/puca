@@ -12,7 +12,7 @@ import goAheadStops from "./data/goahead-stops.json" with { type: "json" };
 import trainShapes from "./data/train-shapes.json" with { type: "json" };
 import trainEndpoints from "./data/train-routes-by-endpoints.json" with { type: "json" };
 import { log, errToMeta } from "./logger";
-import { isInServiceHours } from "./utils";
+import { dublinSecondsSinceMidnight, isInServiceHours } from "./utils";
 import type { BusOperator as Operator, BusRoute, BusVehicle } from "./types";
 
 const NTA_VEHICLES_URL = "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json";
@@ -858,7 +858,7 @@ export async function getBusTripStops(operator: Operator, tripId: string): Promi
   const scheduledRows = getTripScheduledStops(operator, tripId);
   const shapeId = getTripShapeId(operator, tripId);
   const vehicle = getCachedVehicles().find((v) => v.tripId === tripId) ?? null;
-  const gpsInferredDelay = inferDelayFromVehiclePosition(scheduledRows, stops, vehicle, secondsIntoDublinDay());
+  const gpsInferredDelay = inferDelayFromVehiclePosition(scheduledRows, stops, vehicle, dublinSecondsSinceMidnight());
   return mergeTripStops(tripId, scheduledRows, liveTrip, stops, shapeId, gpsInferredDelay);
 }
 
@@ -871,22 +871,6 @@ export async function getBusTripStops(operator: Operator, tripId: string): Promi
 // is actually running. Genuinely late buses keep reporting growing delays
 // that push the effective end forward, so they stay non-stale until truly done.
 const ENDED_TRIP_BUFFER_SEC = 15 * 60;
-
-// Dublin-local seconds-since-midnight. The bus service-hours gate (05:00–00:00)
-// already prevents this check from running in the cross-midnight window, so
-// arrival_sec and nowSec stay comparable without wrap-around handling.
-function secondsIntoDublinDay(now: Date = new Date()): number {
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Dublin",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-    hourCycle: "h23",
-  });
-  const parts = fmt.formatToParts(now);
-  const h = Number(parts.find((p) => p.type === "hour")!.value);
-  const m = Number(parts.find((p) => p.type === "minute")!.value);
-  const s = Number(parts.find((p) => p.type === "second")!.value);
-  return h * 3600 + m * 60 + s;
-}
 
 function isTripEnded(
   operator: Operator,
@@ -925,7 +909,7 @@ export async function getBusVehiclesByRoute(operator: Operator, shortName: strin
   const all = getCachedVehicles({ refreshIfStale: true });
   const shapeMap = getTripShapeMap(operator);
   const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
-  const nowSec = secondsIntoDublinDay();
+  const nowSec = dublinSecondsSinceMidnight();
 
   const result: BusVehicle[] = [];
   for (const v of all) {
@@ -945,7 +929,7 @@ export async function getAllBusVehicles(operator: Operator): Promise<BusVehicle[
   const all = getCachedVehicles({ refreshIfStale: true });
   const shapeMap = getTripShapeMap(operator);
   const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
-  const nowSec = secondsIntoDublinDay();
+  const nowSec = dublinSecondsSinceMidnight();
 
   const result: BusVehicle[] = [];
   for (const v of all) {
@@ -1111,7 +1095,7 @@ export async function getBusStopArrivals(operator: Operator, stopId: string, lim
   }
 
   const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
-  const nowSec = secondsIntoDublinDay();
+  const nowSec = dublinSecondsSinceMidnight();
 
   // Map tripId → live GPS. Used as ground truth for "is the bus past my stop"
   // because NTA's stopTimeUpdates can drop earlier stops based on schedule

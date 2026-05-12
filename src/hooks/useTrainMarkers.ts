@@ -7,6 +7,7 @@ import {
   trainCategory,
   parseRoute,
   parseTrainProgress,
+  dublinMinutesSinceMidnight,
   type Filter,
 } from "../utils";
 import type { Mode } from "./useTrainMap";
@@ -156,10 +157,8 @@ function minutesUntil(time: string): number | null {
   const minutes = Number(match[2]);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
 
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(hours, minutes, 0, 0);
-  let diff = Math.round((target.getTime() - now.getTime()) / 60_000);
+  const targetMinutes = hours * 60 + minutes;
+  let diff = targetMinutes - dublinMinutesSinceMidnight();
   if (diff < -12 * 60) diff += 24 * 60;
   return Math.max(0, diff);
 }
@@ -637,7 +636,9 @@ export function useTrainMarkers({
         easeLinearity: 0.35,
       });
       void onMarkerClickRef.current(code, { preserveSummary: true });
-      onTrainFocusSummaryRef.current?.(await buildTrainFocusSummary(entry, station));
+      const summary = await buildTrainFocusSummary(entry, station);
+      if (requestId !== focusRequestIdRef.current || !leafletMap.current) return "cancelled";
+      onTrainFocusSummaryRef.current?.(summary);
       return "focused";
     }
 

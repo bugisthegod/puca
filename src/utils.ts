@@ -91,13 +91,26 @@ const DUBLIN_TIME_FMT = new Intl.DateTimeFormat("en-IE", {
   hourCycle: "h23",
   hour: "2-digit",
   minute: "2-digit",
+  second: "2-digit",
 });
 
-function dublinMinutes(now: Date): number {
+function dublinClockParts(now: Date): { hour: number; minute: number; second: number } {
   const parts = DUBLIN_TIME_FMT.formatToParts(now);
-  const hour = Number(parts.find((p) => p.type === "hour")!.value);
-  const minute = Number(parts.find((p) => p.type === "minute")!.value);
+  return {
+    hour: Number(parts.find((p) => p.type === "hour")?.value ?? "0"),
+    minute: Number(parts.find((p) => p.type === "minute")?.value ?? "0"),
+    second: Number(parts.find((p) => p.type === "second")?.value ?? "0"),
+  };
+}
+
+export function dublinMinutesSinceMidnight(now: Date = new Date()): number {
+  const { hour, minute } = dublinClockParts(now);
   return hour * 60 + minute;
+}
+
+export function dublinSecondsSinceMidnight(now: Date = new Date()): number {
+  const { hour, minute, second } = dublinClockParts(now);
+  return hour * 3600 + minute * 60 + second;
 }
 
 /** Whether the given transit mode is currently within its daily service window.
@@ -106,7 +119,7 @@ function dublinMinutes(now: Date): number {
  *  Both resume at 05:00 Europe/Dublin time.
  */
 export function isInServiceHours(mode: "train" | "bus", now: Date = new Date()): boolean {
-  const mins = dublinMinutes(now);
+  const mins = dublinMinutesSinceMidnight(now);
   if (mode === "train") return mins >= 300;
   return mins >= 300;
 }
