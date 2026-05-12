@@ -308,6 +308,7 @@ export default function AboutModal({ onClose, onShowTour, theme, onSetTheme, com
               rel="noopener noreferrer"
               className="about-feedback-btn"
             >
+              <span aria-hidden="true">🍀</span>
               {t("about.feedback.btn")}
             </a>
           </div>

@@ -779,6 +779,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   width: 100%;
   min-height: 42px;
   padding: 9px 14px;
