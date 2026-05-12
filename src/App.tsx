@@ -4,7 +4,7 @@ import "leaflet.markercluster";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
-import type { BusOperator, FocusContext } from "./types";
+import type { BusOperator, FocusContext, TrainFocusSummary } from "./types";
 import { SERVICE_RESUME_LABEL, type Filter } from "./utils";
 import { useTrainMap, type Mode } from "./hooks/useTrainMap";
 import { clearBusSearchSession, loadBusSearchSession, loadSession, saveSession, type BusSearchTab } from "./session";
@@ -105,6 +105,7 @@ function App() {
   const [busStopId, setBusStopId] = useState<string | null>(savedBusSearch.busStopId ?? null);
   const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(savedBusSearch.busStopOperator ?? null);
   const [busStopSummary, setBusStopSummary] = useState<BusStopSummary | null>(null);
+  const [trainFocusSummary, setTrainFocusSummary] = useState<TrainFocusSummary | null>(null);
   const [infoPanelDrilledIn, setInfoPanelDrilledIn] = useState(false);
   const [arrivalFocusResetSignal, setArrivalFocusResetSignal] = useState(0);
   const [arrivalFocusUnavailable, setArrivalFocusUnavailable] = useState(false);
@@ -122,7 +123,7 @@ function App() {
     ? buses.filter((b) => b.tripId === focusContext.tripId)
     : buses;
 
-  const { focusTrain, locateUser, getMapView, compassPref, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, visibleBuses, busShape, busDirection, busOperator, {
+  const { focusTrain, clearTrainFocus, locateUser, getMapView, compassPref, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, visibleBuses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);
@@ -134,6 +135,10 @@ function App() {
     focusContext,
     onFocusSegmentStatus: (status) => {
       setArrivalFocusUnavailable(status === "unavailable");
+    },
+    onTrainFocusSummary: (summary) => {
+      setTrainFocusSummary(summary);
+      if (summary) setInfoPanelDrilledIn(true);
     },
   });
   const [locating, setLocating] = useState(false);
@@ -310,17 +315,24 @@ function App() {
 
   const handleTrainSearch = useCallback((codes: string[]) => {
     setSearchCodes(codes.length > 0 ? codes : []);
-  }, []);
+    clearTrainFocus();
+  }, [clearTrainFocus]);
 
   const handleClearTrainSearch = useCallback(() => {
     setSearchCodes(null);
-  }, []);
+    clearTrainFocus();
+  }, [clearTrainFocus]);
+
+  const handleTrainSelect = useCallback(async (code: string, boardingStationCode?: string) => {
+    const result = await focusTrain(code, boardingStationCode);
+    if (result === "focused") setSearchCodes([code]);
+    return result;
+  }, [focusTrain]);
 
   const handleShowAllTrains = useCallback(() => {
     setSearchCodes(null);
-    setSearchResetKey((k) => k + 1);
-    try { sessionStorage.removeItem("search"); } catch {}
-  }, []);
+    clearTrainFocus();
+  }, [clearTrainFocus]);
 
   const handlePickStopFavorite = useCallback((s: BusStopFavorite) => {
     setMode((current) => (current === "bus" ? current : "bus"));
@@ -395,6 +407,7 @@ function App() {
   const handleModeChange = useCallback((m: Mode) => {
     setMode(m);
     setSearchCodes(null);
+    clearTrainFocus();
     setBusRoute(null);
     setBusDirection(null);
     setBusStopId(null);
@@ -409,7 +422,7 @@ function App() {
     // on mount, so App-state clearing alone isn't enough — clear the
     // persisted copy too or remounting restores the train search.
     try { sessionStorage.removeItem("search"); } catch {}
-  }, []);
+  }, [clearTrainFocus]);
 
   const vehicleCount = mode === "train" ? trains.filter((t) => t.status === "R").length : buses.length;
   const showNoTrainPositions = mode === "train" && trainEmptyNoticeVisible;
@@ -523,7 +536,7 @@ function App() {
           key={searchResetKey}
           onSearch={handleTrainSearch}
           onClear={handleClearTrainSearch}
-          onTrainSelect={focusTrain}
+          onTrainSelect={handleTrainSelect}
           favs={favs}
           onToggleTrain={tryToggleTrain}
           collapsed={panelCollapsed}
@@ -590,8 +603,12 @@ function App() {
         resumeLabel={SERVICE_RESUME_LABEL}
         busOperator={busOperator}
         busStopSummary={busStopSummary}
+        trainFocusSummary={trainFocusSummary}
         drilledIn={infoPanelDrilledIn}
-        onDrilledInChange={setInfoPanelDrilledIn}
+        onDrilledInChange={(next) => {
+          setInfoPanelDrilledIn(next);
+          if (!next && mode === "train") clearTrainFocus();
+        }}
         onModeChange={handleModeChange}
         onFilterChange={setFilter}
         onBusOperatorChange={handleBusOperatorChange}

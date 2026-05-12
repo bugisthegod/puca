@@ -1,11 +1,12 @@
 import { useRef, useEffect, useCallback } from "react";
-import type { Train, TrainMovement, Station } from "../types";
+import type { Train, TrainFocusSummary, TrainMovement, Station } from "../types";
 import type { Feature, LineString } from "geojson";
 import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProjection";
 import {
   markerColor,
   trainCategory,
   parseRoute,
+  parseTrainProgress,
   type Filter,
 } from "../utils";
 import type { Mode } from "./useTrainMap";
@@ -36,6 +37,7 @@ type AllShapesData = {
   shapes: Record<string, { coords?: [number, number][] }>;  // routeKey -> shape
 };
 let allTrainShapesPromise: Promise<AllShapesData> | null = null;
+let normalizedShapeEndpoints: Record<string, string> | null = null;
 function loadAllTrainShapes(): Promise<AllShapesData> {
   if (allTrainShapesPromise) return allTrainShapesPromise;
   const p = fetch("/api/train/shapes").then((res) => {
@@ -48,6 +50,41 @@ function loadAllTrainShapes(): Promise<AllShapesData> {
     if (allTrainShapesPromise === p) allTrainShapesPromise = null;
   });
   return p;
+}
+
+function normalizeEndpointName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, "")
+    .replace(/\b(casement|ceannt|colbert|kent|plunkett)\b/g, "")
+    .replace(/\bstation\b/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function endpointKey(origin: string, destination: string): string {
+  return `${origin.trim().toLowerCase()}|${destination.trim().toLowerCase()}`;
+}
+
+function normalizedEndpointKey(origin: string, destination: string): string {
+  return `${normalizeEndpointName(origin)}|${normalizeEndpointName(destination)}`;
+}
+
+function getShapeRouteKey(allShapes: AllShapesData, origin: string, destination: string): string | undefined {
+  const exact = allShapes.endpoints[endpointKey(origin, destination)];
+  if (exact) return exact;
+
+  if (!normalizedShapeEndpoints) {
+    const next: Record<string, string> = {};
+    for (const [pairKey, routeKey] of Object.entries(allShapes.endpoints)) {
+      const [from, to] = pairKey.split("|");
+      if (!from || !to) continue;
+      const normalized = normalizedEndpointKey(from, to);
+      if (!next[normalized]) next[normalized] = routeKey;
+    }
+    normalizedShapeEndpoints = next;
+  }
+
+  return normalizedShapeEndpoints[normalizedEndpointKey(origin, destination)];
 }
 
 // Insertion-order LRU cap: drop oldest entries once the cache exceeds the limit.
@@ -90,6 +127,43 @@ export interface TrainMarkerEntry {
 
 export type FocusTrainResult = "focused" | "unavailable" | "cancelled";
 
+function normalizeStationName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\bstation\b/gi, "")
+    .replace(/[^a-z0-9]+/gi, "")
+    .toLowerCase();
+}
+
+function pickProgressIndexes(train: Train, movements: TrainMovement[]): { currentIndex: number; nextIndex: number } {
+  const progress = parseTrainProgress(train.message);
+  const currentIndex = progress?.currentStation
+    ? movements.findIndex((m) => normalizeStationName(m.stationName) === normalizeStationName(progress.currentStation))
+    : movements.findIndex((m) => m.stopType === "C");
+  const nextIndex = progress?.nextStation
+    ? movements.findIndex((m) => normalizeStationName(m.stationName) === normalizeStationName(progress.nextStation!))
+    : movements.findIndex((m) => m.stopType === "N");
+
+  return { currentIndex, nextIndex };
+}
+
+function minutesUntil(time: string): number | null {
+  if (!time || time === "00:00") return null;
+  const match = time.match(/^(\d{1,2}):(\d{2})/);
+  if (!match?.[1] || !match[2]) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hours, minutes, 0, 0);
+  let diff = Math.round((target.getTime() - now.getTime()) / 60_000);
+  if (diff < -12 * 60) diff += 24 * 60;
+  return Math.max(0, diff);
+}
+
 // ---------------------------------------------------------------------------
 // Helper: poll a markers map until an entry appears (async retry loop).
 // Used by focusTrain to handle the gap between search-result click and the
@@ -127,6 +201,7 @@ interface UseTrainMarkersOptions {
   mode: Mode;
   leafletMap: React.RefObject<L.Map | null>;
   stationsRef: React.MutableRefObject<Map<string, Station>>;
+  onTrainFocusSummary?: (summary: TrainFocusSummary | null) => void;
 }
 
 export function useTrainMarkers({
@@ -136,14 +211,13 @@ export function useTrainMarkers({
   mode,
   leafletMap,
   stationsRef,
+  onTrainFocusSummary,
 }: UseTrainMarkersOptions): {
   markers: React.MutableRefObject<Map<string, TrainMarkerEntry>>;
-  routeLineRef: React.RefObject<L.Polyline | null>;
-  clearRouteLine: () => void;
-  focusTrain: (code: string) => Promise<FocusTrainResult>;
+  clearTrainFocus: () => void;
+  focusTrain: (code: string, boardingStationCode?: string) => Promise<FocusTrainResult>;
 } {
   const markers = useRef<Map<string, TrainMarkerEntry>>(new Map());
-  const routeLineRef = useRef<L.Polyline | null>(null);
 
   // Stable refs for values used in closures (avoids stale captures)
   const filterRef = useRef<Filter>(filter);
@@ -152,7 +226,9 @@ export function useTrainMarkers({
   modeRef.current = mode;
   const searchCodesRef = useRef<string[] | null>(searchCodes);
   searchCodesRef.current = searchCodes;
-  const onMarkerClickRef = useRef<(trainCode: string) => void>(() => {});
+  const onMarkerClickRef = useRef<(trainCode: string, options?: { preserveSummary?: boolean }) => void>(() => {});
+  const onTrainFocusSummaryRef = useRef(onTrainFocusSummary);
+  onTrainFocusSummaryRef.current = onTrainFocusSummary;
 
   // Monotonic counter so each focusTrain call invalidates any still-running
   // earlier call. Prevents stale retries from stealing focus after the user
@@ -173,12 +249,42 @@ export function useTrainMarkers({
     return trainCategory(train.code) === filterRef.current;
   }
 
-  function clearRouteLine() {
-    const map = leafletMap.current;
-    if (routeLineRef.current && map) {
-      map.removeLayer(routeLineRef.current);
-      routeLineRef.current = null;
+  function clearTrainFocus() {
+    focusRequestIdRef.current++;
+    leafletMap.current?.closePopup();
+    onTrainFocusSummaryRef.current?.(null);
+  }
+
+  async function buildTrainFocusSummary(entry: TrainMarkerEntry, targetStation: Station): Promise<TrainFocusSummary> {
+    let movements: TrainMovement[] = [];
+    try {
+      const res = await fetch(`/api/train/${encodeURIComponent(entry.train.code)}`);
+      if (res.ok) movements = await res.json();
+    } catch {
+      movements = [];
     }
+
+    const targetMovement = movements.find((m) => m.stationCode === targetStation.code);
+    const targetIndex = targetMovement ? movements.indexOf(targetMovement) : -1;
+    const { currentIndex, nextIndex } = pickProgressIndexes(entry.train, movements);
+    const baseIndex = nextIndex >= 0 ? nextIndex : currentIndex;
+    const route = parseRoute(entry.train.message);
+    const stopsAway = targetIndex >= 0 && baseIndex >= 0
+      ? Math.max(0, targetIndex - baseIndex + (nextIndex >= 0 ? 1 : 0))
+      : null;
+    const etaTime =
+      targetMovement?.expectedDepart ||
+      targetMovement?.expectedArrival ||
+      targetMovement?.scheduledDepart ||
+      targetMovement?.scheduledArrival ||
+      "";
+
+    return {
+      trainCode: entry.train.code,
+      directionName: route?.destination ?? (entry.train.direction.replace(/^to\s+/i, "") || null),
+      stopsAway,
+      etaMinutes: minutesUntil(etaTime),
+    };
   }
 
   function makeTrainMarker(train: Train): L.Marker {
@@ -209,7 +315,7 @@ export function useTrainMarkers({
     origin: string,
     destination: string,
   ): Promise<{ routeLine: Feature<LineString>; routeLookup: Float64Array | null; routeLengthMeters: number } | null> {
-    const key = `${origin.toLowerCase()}|${destination.toLowerCase()}`;
+    const key = normalizedEndpointKey(origin, destination);
     const cached = trainShapeCache.get(key);
     if (cached !== undefined) {
       return cached === "not-found" ? null : cached;
@@ -221,7 +327,7 @@ export function useTrainMarkers({
       // Transient: don't poison cache so next tick can retry once promise is reset
       return null;
     }
-    const routeKey = allShapes.endpoints[key];
+    const routeKey = getShapeRouteKey(allShapes, origin, destination);
     const data = routeKey ? allShapes.shapes[routeKey] : undefined;
     if (data?.coords && data.coords.length >= 2) {
       const built = buildRouteLine(data.coords);
@@ -235,13 +341,13 @@ export function useTrainMarkers({
     return null;
   }
 
-  async function onMarkerClick(trainCode: string) {
+  async function onMarkerClick(trainCode: string, options?: { preserveSummary?: boolean }) {
     const entry = markers.current.get(trainCode);
     if (!entry) return;
 
     const { marker, train } = entry;
 
-    clearRouteLine();
+    if (!options?.preserveSummary) onTrainFocusSummaryRef.current?.(null);
 
     marker.bindPopup(buildTrainPopupHTML(train), { maxWidth: 520, minWidth: 380, autoPan: false }).openPopup();
     leafletMap.current?.panTo(marker.getLatLng(), { animate: true, duration: 0.4 });
@@ -263,26 +369,6 @@ export function useTrainMarkers({
           }
         });
 
-        // Draw route polyline using station coordinates
-        const map = leafletMap.current;
-        if (map) {
-          const latlngs = movements
-            .map((m) => {
-              const station = stationsRef.current.get(m.stationCode);
-              return station ? [station.lat, station.lng] : null;
-            })
-            .filter((ll): ll is [number, number] => ll !== null);
-
-          if (latlngs.length >= 2) {
-            routeLineRef.current = L.polyline(latlngs, {
-              color: "#25a864",
-              weight: 3,
-              opacity: 0.7,
-              dashArray: "8, 8",
-              interactive: false,
-            }).addTo(map);
-          }
-        }
       }
     } catch {
       const e = markers.current.get(trainCode);
@@ -314,7 +400,7 @@ export function useTrainMarkers({
 
       const route = parseRoute(train.message);
       const newKey = route
-        ? `${route.origin.toLowerCase()}|${route.destination.toLowerCase()}`
+        ? normalizedEndpointKey(route.origin, route.destination)
         : null;
 
       // Look up shape from cache (synchronously)
@@ -528,7 +614,7 @@ export function useTrainMarkers({
   // Public API
   // -------------------------------------------------------------------------
 
-  const focusTrain = useCallback(async (code: string) => {
+  const focusTrain = useCallback(async (code: string, boardingStationCode?: string) => {
     const requestId = ++focusRequestIdRef.current;
     if (!leafletMap.current) return "unavailable";
 
@@ -542,10 +628,27 @@ export function useTrainMarkers({
 
     if (requestId !== focusRequestIdRef.current) return "cancelled";
     if (!entry || !leafletMap.current) return "unavailable";
-    leafletMap.current.setView(entry.marker.getLatLng(), 13, { animate: false });
+
+    if (boardingStationCode) {
+      const station = stationsRef.current.get(boardingStationCode);
+      if (!station) return "unavailable";
+      leafletMap.current.flyTo(entry.marker.getLatLng(), 13, {
+        duration: 0.7,
+        easeLinearity: 0.35,
+      });
+      void onMarkerClickRef.current(code, { preserveSummary: true });
+      onTrainFocusSummaryRef.current?.(await buildTrainFocusSummary(entry, station));
+      return "focused";
+    }
+
+    clearTrainFocus();
+    leafletMap.current.flyTo(entry.marker.getLatLng(), 13, {
+      duration: 0.7,
+      easeLinearity: 0.35,
+    });
     void onMarkerClickRef.current(code);
     return "focused";
   }, []);
 
-  return { markers, routeLineRef, clearRouteLine, focusTrain };
+  return { markers, clearTrainFocus, focusTrain };
 }

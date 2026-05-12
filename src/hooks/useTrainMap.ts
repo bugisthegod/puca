@@ -1,5 +1,5 @@
 import { useRef, useEffect, type RefObject } from "react";
-import type { Train, BusVehicle, BusOperator, FocusContext } from "../types";
+import type { Train, BusVehicle, BusOperator, FocusContext, TrainFocusSummary } from "../types";
 import { alongLookup } from "./routeProjection";
 import type { Filter } from "../utils";
 import type { MapView } from "../session";
@@ -25,6 +25,7 @@ interface UseTrainMapOptions {
   initialView?: MapView | null;
   focusContext?: FocusContext | null;
   onFocusSegmentStatus?: (status: "ok" | "unavailable") => void;
+  onTrainFocusSummary?: (summary: TrainFocusSummary | null) => void;
 }
 
 export function useTrainMap(
@@ -39,14 +40,15 @@ export function useTrainMap(
   busOperator: BusOperator = "dublinbus",
   options: UseTrainMapOptions = {},
 ): {
-  focusTrain: (code: string) => Promise<FocusTrainResult>;
+  focusTrain: (code: string, boardingStationCode?: string) => Promise<FocusTrainResult>;
+  clearTrainFocus: () => void;
   locateUser: () => Promise<void>;
   getMapView: () => MapView | null;
   compassPref: boolean;
   startCompass: () => Promise<boolean>;
   stopCompass: () => void;
 } {
-  const { currentBusRoute = null, onSelectBusRoute, initialView = null, focusContext = null, onFocusSegmentStatus } = options;
+  const { currentBusRoute = null, onSelectBusRoute, initialView = null, focusContext = null, onFocusSegmentStatus, onTrainFocusSummary } = options;
 
   const onSelectBusRouteRef = useRef(onSelectBusRoute);
   onSelectBusRouteRef.current = onSelectBusRoute;
@@ -72,13 +74,14 @@ export function useTrainMap(
     stopCompass,
   } = useMapInstance(mapRef, mode, initialView);
 
-  const { markers, clearRouteLine, focusTrain } = useTrainMarkers({
+  const { markers, clearTrainFocus, focusTrain } = useTrainMarkers({
     trains,
     filter,
     searchCodes,
     mode,
     leafletMap,
     stationsRef,
+    onTrainFocusSummary,
   });
 
   const { busMarkers } = useBusMarkers({
@@ -148,17 +151,6 @@ export function useTrainMap(
     }
     busClusterLayer.current.addTo(map);
   }, [mode, busOperator, singleRouteMode]);
-
-  // Clear the train route polyline whenever a popup closes.
-  useEffect(() => {
-    const map = leafletMap.current;
-    if (!map) return;
-    const handler = () => clearRouteLine();
-    map.on("popupclose", handler);
-    return () => {
-      map.off("popupclose", handler);
-    };
-  }, [clearRouteLine, leafletMap]);
 
   // RAF tick loop — shared across trains + buses, reads from refs only.
   useEffect(() => {
@@ -274,5 +266,5 @@ export function useTrainMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { focusTrain, locateUser, getMapView, compassPref, startCompass, stopCompass };
+  return { focusTrain, clearTrainFocus, locateUser, getMapView, compassPref, startCompass, stopCompass };
 }

@@ -98,6 +98,7 @@
 .info-stop-summary--dublinbus { border-left-color: var(--op-dublinbus); }
 .info-stop-summary--buseireann { border-left-color: var(--op-buseireann); }
 .info-stop-summary--goahead { border-left-color: var(--op-goahead); }
+.info-stop-summary--train { border-left-color: #25a864; }
 
 .info-stop-summary__stop,
 .info-stop-summary__arrival {
@@ -129,6 +130,10 @@
   border-radius: 5px;
   background: var(--brand-mid);
   font-size: 0.78rem;
+}
+
+.info-stop-summary--train .info-stop-summary__route {
+  background: #25a864;
 }
 
 .info-stop-summary__headsign {
