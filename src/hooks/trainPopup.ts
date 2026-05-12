@@ -1,6 +1,15 @@
 import type { Train, TrainMovement } from "../types";
-import { escapeHtml, fmtTime, parseLateMinutes, parseRoute } from "../utils";
+import { escapeHtml, fmtTime, parseLateMinutes, parseRoute, parseTrainProgress } from "../utils";
 import { t } from "../i18n";
+
+function normalizeStationName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\bstation\b/gi, "")
+    .replace(/[^a-z0-9]+/gi, "")
+    .toLowerCase();
+}
 
 export function trainPopupStatusClass(status: string, late: number | null): string {
   if (status === "N" || status === "T") return "";
@@ -60,6 +69,36 @@ export function buildTrainPopupErrorHTML(train: Train): string {
 }
 
 export function buildTrainPopupWithMovements(train: Train, movements: TrainMovement[]): string {
+  const progress = parseTrainProgress(train.message);
+  const progressCurrent = progress ? normalizeStationName(progress.currentStation) : "";
+  const progressNext = progress?.nextStation ? normalizeStationName(progress.nextStation) : "";
+  const progressCurrentIndex = progress
+    ? movements.findIndex((m) => normalizeStationName(m.stationName) === progressCurrent)
+    : -1;
+  const progressNextIndex = progressNext
+    ? movements.findIndex((m) => normalizeStationName(m.stationName) === progressNext)
+    : -1;
+  const hasProgressCurrentMatch = progressCurrentIndex >= 0;
+  const hasProgressNextMatch = progressNextIndex >= 0;
+  const deriveStopType = (movement: TrainMovement, normalizedStation: string, index: number): string => {
+    const isProgressCurrent = hasProgressCurrentMatch && normalizedStation === progressCurrent;
+    if (isProgressCurrent) return "C";
+
+    const isProgressNext = hasProgressNextMatch && normalizedStation === progressNext;
+    if (isProgressNext) return "N";
+
+    const isStaleCurrent = hasProgressCurrentMatch && movement.stopType === "C";
+    if (isStaleCurrent) return "S";
+
+    const isStaleNextReplaced = hasProgressNextMatch && movement.stopType === "N";
+    if (isStaleNextReplaced) return "S";
+
+    const isStaleNextBeforeCurrent =
+      hasProgressCurrentMatch && movement.stopType === "N" && index <= progressCurrentIndex;
+    if (isStaleNextBeforeCurrent) return "S";
+
+    return movement.stopType;
+  };
   const stopTypeLabel: Record<string, string> = {
     O: t("popup.train.stoptype.O"),
     T: t("popup.train.stoptype.T"),
@@ -70,8 +109,10 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
   };
 
   const rows = movements
-    .map((m) => {
-      const isCurrent = m.stopType === "C";
+    .map((m, index) => {
+      const normalizedStation = normalizeStationName(m.stationName);
+      const derivedStopType = deriveStopType(m, normalizedStation, index);
+      const isCurrent = derivedStopType === "C";
       const rowClass = isCurrent ? "movement-current" : "";
       const schArr = fmtTime(m.scheduledArrival);
       const schDep = fmtTime(m.scheduledDepart);
@@ -87,7 +128,7 @@ export function buildTrainPopupWithMovements(train: Train, movements: TrainMovem
       return `
         <tr class="${rowClass}">
           <td>${escapeHtml(m.stationName)}${isCurrent ? " ▶" : ""}</td>
-          <td>${escapeHtml(stopTypeLabel[m.stopType] ?? m.stopType)}</td>
+          <td>${escapeHtml(stopTypeLabel[derivedStopType] ?? derivedStopType)}</td>
           <td>${showArr}</td>
           <td>${showDep}</td>
         </tr>
