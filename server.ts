@@ -128,6 +128,10 @@ function memoryMb(): number {
   return Math.round(process.memoryUsage().rss / 1024 / 1024);
 }
 
+function hasUsableTrainPosition(train: { lat: number; lng: number } | undefined): boolean {
+  return !!train && !(train.lat === 0 && train.lng === 0);
+}
+
 async function detailedHealth() {
   return {
     ok: true,
@@ -169,17 +173,29 @@ Bun.serve({
       });
     },
     "/manifest.json": staticFile("./public/manifest.json", 86400),
+    "/public/manifest.json": staticFile("./public/manifest.json", 86400),
     "/og-image.png": staticFile("./public/og-image.png", 604800),
+    "/public/og-image.png": staticFile("./public/og-image.png", 604800),
     "/icon-192.png": staticFile("./public/icon-192.png", 604800),
+    "/public/icon-192.png": staticFile("./public/icon-192.png", 604800),
     "/icon-512.png": staticFile("./public/icon-512.png", 604800),
+    "/public/icon-512.png": staticFile("./public/icon-512.png", 604800),
     "/icon.svg": staticFile("./public/icon.svg", 604800),
+    "/public/icon.svg": staticFile("./public/icon.svg", 604800),
     "/splash/iphone-17-pro-max.png": staticFile("./public/splash/iphone-17-pro-max.png", 604800),
+    "/public/splash/iphone-17-pro-max.png": staticFile("./public/splash/iphone-17-pro-max.png", 604800),
     "/splash/iphone-17.png": staticFile("./public/splash/iphone-17.png", 604800),
+    "/public/splash/iphone-17.png": staticFile("./public/splash/iphone-17.png", 604800),
     "/splash/iphone-16-pro-max.png": staticFile("./public/splash/iphone-16-pro-max.png", 604800),
+    "/public/splash/iphone-16-pro-max.png": staticFile("./public/splash/iphone-16-pro-max.png", 604800),
     "/splash/iphone-plus.png": staticFile("./public/splash/iphone-plus.png", 604800),
+    "/public/splash/iphone-plus.png": staticFile("./public/splash/iphone-plus.png", 604800),
     "/splash/iphone-16-pro.png": staticFile("./public/splash/iphone-16-pro.png", 604800),
+    "/public/splash/iphone-16-pro.png": staticFile("./public/splash/iphone-16-pro.png", 604800),
     "/splash/iphone-base.png": staticFile("./public/splash/iphone-base.png", 604800),
+    "/public/splash/iphone-base.png": staticFile("./public/splash/iphone-base.png", 604800),
     "/splash/iphone-se.png": staticFile("./public/splash/iphone-se.png", 604800),
+    "/public/splash/iphone-se.png": staticFile("./public/splash/iphone-se.png", 604800),
     "/api/trains": rateLimit(async (_req) => {
       // Matches api.ts cache TTL; SWR lets browser use stale data while a refresh is in flight.
       const headers = { "Cache-Control": "public, max-age=15, stale-while-revalidate=15" };
@@ -240,9 +256,9 @@ Bun.serve({
             // Direction check: `from` must come before `to` on this train.
             if (f.dueIn >= t.dueIn) return null;
 
-            let status: "running" | "ready" | "scheduled";
-            if (current?.status === "R") status = "running";
-            else if (current?.status === "N") status = "ready";
+            let status: "running" | "ready" | "unmapped" | "scheduled";
+            if (current?.status === "R") status = hasUsableTrainPosition(current) ? "running" : "unmapped";
+            else if (current?.status === "N") status = hasUsableTrainPosition(current) ? "ready" : "scheduled";
             else status = "scheduled";
 
             return {

@@ -243,7 +243,8 @@
   color: #666;
 }
 
-.train-item--scheduled {
+.train-item--scheduled,
+.train-item--unmapped {
   opacity: 0.78;
   cursor: default;
 }
@@ -264,6 +265,11 @@
 .train-item-status--ready {
   background: rgba(158, 158, 158, 0.2);
   color: #9e9e9e;
+}
+
+.train-item-status--unmapped {
+  background: rgba(255, 152, 0, 0.18);
+  color: #ffb74d;
 }
 
 .train-item-status--scheduled {

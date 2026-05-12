@@ -163,6 +163,7 @@ const EN = {
   "train.search.station.empty": "No matching stations",
   "train.status.running": "Running",
   "train.status.ready": "Ready",
+  "train.status.unmapped": "No position",
   "train.status.scheduled": "Scheduled",
   "train.toast.notonmap.title": "Not mapped yet",
 
@@ -379,6 +380,7 @@ const ZH: Record<Key, string> = {
   "train.search.station.empty": "未找到匹配站点",
   "train.status.running": "运行中",
   "train.status.ready": "待发",
+  "train.status.unmapped": "暂无定位",
   "train.status.scheduled": "尚未运行",
   "train.toast.notonmap.title": "暂未上图",
 

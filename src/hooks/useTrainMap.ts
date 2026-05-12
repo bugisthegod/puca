@@ -5,6 +5,7 @@ import type { Filter } from "../utils";
 import type { MapView } from "../session";
 import { useMapInstance } from "./useMapInstance";
 import { useTrainMarkers } from "./useTrainMarkers";
+import type { FocusTrainResult } from "./useTrainMarkers";
 import { useBusMarkers, computeBusCurrentDistance } from "./useBusMarkers";
 import { useFocusSegment } from "./useFocusSegment";
 
@@ -38,7 +39,7 @@ export function useTrainMap(
   busOperator: BusOperator = "dublinbus",
   options: UseTrainMapOptions = {},
 ): {
-  focusTrain: (code: string) => Promise<void>;
+  focusTrain: (code: string) => Promise<FocusTrainResult>;
   locateUser: () => Promise<void>;
   getMapView: () => MapView | null;
   compassPref: boolean;
