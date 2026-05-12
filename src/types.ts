@@ -41,7 +41,7 @@ export type SearchResult = {
   destination: string;
   fromDep: string;
   toArr: string;
-  status: "running" | "ready" | "scheduled"; // running=在跑, ready=即将发车(灰点), scheduled=时刻表上有但没检测到
+  status: "running" | "ready" | "unmapped" | "scheduled"; // running/ready=可聚焦, unmapped=在跑但暂无有效坐标
 };
 
 export type BusOperator = "dublinbus" | "buseireann" | "goahead";

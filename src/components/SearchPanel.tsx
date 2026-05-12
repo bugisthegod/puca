@@ -4,6 +4,7 @@ import { getStationsOnce } from "../stationsClient";
 import FavStar from "./FavStar";
 import { hasTrain, type Favorites, type TrainFavorite } from "../favorites";
 import { useLocale } from "../i18n";
+import type { FocusTrainResult } from "../hooks/useTrainMarkers";
 
 // Collapse any text selection in the input to its end. Stops Android's
 // Smart Text Selection from scanning highlighted text and surfacing the
@@ -18,7 +19,7 @@ function collapseSelection(e: { currentTarget: HTMLInputElement }): void {
 interface SearchPanelProps {
   onSearch: (codes: string[]) => void;
   onClear: () => void;
-  onTrainSelect: (code: string) => void;
+  onTrainSelect: (code: string) => Promise<FocusTrainResult>;
   favs: Favorites;
   onToggleTrain: (f: TrainFavorite) => void;
   collapsed: boolean;
@@ -139,7 +140,7 @@ function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, co
       const res = await fetch(`/api/trains/search?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`);
       const data: SearchResult[] = await res.json();
       setResults(data);
-      const activeCodes = data.filter((r) => r.status !== "scheduled").map((r) => r.code);
+      const activeCodes = data.filter((r) => r.status === "running" || r.status === "ready").map((r) => r.code);
       onSearch(activeCodes);
       sessionStorage.setItem("search", JSON.stringify({ from: f, to: t, fromQuery, toQuery }));
     } catch {
@@ -293,24 +294,29 @@ function SearchPanel({ onSearch, onClear, onTrainSelect, favs, onToggleTrain, co
             </div>
             <ul className="train-list">
               {results.map((r) => {
-                const canFocus = r.status !== "scheduled";
+                const canFocus = r.status === "running" || r.status === "ready";
                 return (
                   <li
                     key={r.code}
                     className={`train-item train-item--${r.status}`}
-                    onClick={() => {
+                    onClick={async () => {
                       if (!canFocus) {
                         onShowToast(t("train.toast.notonmap.title"));
                         return;
                       }
-                      onTrainSelect(r.code);
+                      const result = await onTrainSelect(r.code);
+                      if (result === "unavailable") {
+                        onShowToast(t("train.toast.notonmap.title"));
+                        return;
+                      }
+                      if (result === "cancelled") return;
                       if (window.innerWidth <= 600) onCollapsedChange(true);
                     }}
                   >
                     <div className="train-item-header">
                       <span className="train-item-code">{r.code}</span>
                       <span className={`train-item-status train-item-status--${r.status}`}>
-                        {r.status === "running" ? t("train.status.running") : r.status === "ready" ? t("train.status.ready") : t("train.status.scheduled")}
+                        {r.status === "running" ? t("train.status.running") : r.status === "ready" ? t("train.status.ready") : r.status === "unmapped" ? t("train.status.unmapped") : t("train.status.scheduled")}
                       </span>
                     </div>
                     <div className="train-item-route">{r.origin} → {r.destination}</div>

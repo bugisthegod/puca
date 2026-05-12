@@ -88,6 +88,8 @@ export interface TrainMarkerEntry {
   originDestKey: string | null;            // "origin_lower|dest_lower" — used to dedupe shape fetches
 }
 
+export type FocusTrainResult = "focused" | "unavailable" | "cancelled";
+
 // ---------------------------------------------------------------------------
 // Helper: poll a markers map until an entry appears (async retry loop).
 // Used by focusTrain to handle the gap between search-result click and the
@@ -138,7 +140,7 @@ export function useTrainMarkers({
   markers: React.MutableRefObject<Map<string, TrainMarkerEntry>>;
   routeLineRef: React.RefObject<L.Polyline | null>;
   clearRouteLine: () => void;
-  focusTrain: (code: string) => Promise<void>;
+  focusTrain: (code: string) => Promise<FocusTrainResult>;
 } {
   const markers = useRef<Map<string, TrainMarkerEntry>>(new Map());
   const routeLineRef = useRef<L.Polyline | null>(null);
@@ -528,7 +530,7 @@ export function useTrainMarkers({
 
   const focusTrain = useCallback(async (code: string) => {
     const requestId = ++focusRequestIdRef.current;
-    if (!leafletMap.current) return;
+    if (!leafletMap.current) return "unavailable";
 
     const entry = await pollForMarker(
       markers.current,
@@ -538,9 +540,11 @@ export function useTrainMarkers({
       () => !!leafletMap.current && requestId === focusRequestIdRef.current,
     );
 
-    if (!entry || requestId !== focusRequestIdRef.current || !leafletMap.current) return;
+    if (requestId !== focusRequestIdRef.current) return "cancelled";
+    if (!entry || !leafletMap.current) return "unavailable";
     leafletMap.current.setView(entry.marker.getLatLng(), 13, { animate: false });
     void onMarkerClickRef.current(code);
+    return "focused";
   }, []);
 
   return { markers, routeLineRef, clearRouteLine, focusTrain };
