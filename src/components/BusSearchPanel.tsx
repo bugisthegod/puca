@@ -453,6 +453,10 @@ function BusSearchPanel({
 		setFocused(false);
 	}
 
+	function handleBackToDirections() {
+		onSelectDirection(null);
+	}
+
 	function selectStop(s: StopSearchResult) {
 		setSelectedStop(s);
 		setArrivals(null);
@@ -714,7 +718,7 @@ function BusSearchPanel({
 									<button
 										type="button"
 										className="search-btn clear-btn"
-										onClick={handleClear}
+										onClick={handleBackToDirections}
 									>
 										{t("bus.search.btn.change")}
 									</button>
