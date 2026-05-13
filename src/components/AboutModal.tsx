@@ -20,6 +20,27 @@ type AboutModalProps = {
 };
 
 const FEEDBACK_URL = "https://tally.so/r/lbKjNX";
+const SHARE_TEXT = {
+	en: "Found a little spirit that checks Irish trains and buses:\nhttps://puca.dev",
+	zh: "发现一只会查爱尔兰火车和公交的小精灵：\nhttps://puca.dev",
+};
+
+async function copyText(text: string) {
+	if (navigator.clipboard?.writeText) {
+		await navigator.clipboard.writeText(text);
+		return;
+	}
+
+	const textarea = document.createElement("textarea");
+	textarea.value = text;
+	textarea.setAttribute("readonly", "");
+	textarea.style.position = "fixed";
+	textarea.style.top = "-9999px";
+	document.body.append(textarea);
+	textarea.select();
+	document.execCommand("copy");
+	textarea.remove();
+}
 
 function SettingRow({
 	label,
@@ -109,6 +130,22 @@ export default function AboutModal({
 	useBackToClose(onClose);
 	const { canInstall, isInstalled, triggerInstall } = useInstallPrompt();
 	const [scrolled, setScrolled] = useState(false);
+	const [shareCopied, setShareCopied] = useState(false);
+	const shareResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (shareResetRef.current) clearTimeout(shareResetRef.current);
+		};
+	}, []);
+
+	async function handleShare() {
+		await copyText(SHARE_TEXT[locale]);
+		setShareCopied(true);
+		if (shareResetRef.current) clearTimeout(shareResetRef.current);
+		shareResetRef.current = setTimeout(() => setShareCopied(false), 1600);
+	}
+
 	useEffect(() => {
 		function onKey(e: KeyboardEvent) {
 			if (e.key === "Escape") onClose();
@@ -431,8 +468,18 @@ export default function AboutModal({
 					<div className="about-divider" />
 
 					<section className="about-block about-actions">
+						<div className="about-action about-action--share">
+							<button
+								type="button"
+								className={`about-share-btn${shareCopied ? " is-copied" : ""}`}
+								onClick={handleShare}
+							>
+								<span aria-hidden="true">🔗</span>
+								{shareCopied ? t("about.share.copied") : t("about.share.btn")}
+							</button>
+						</div>
+
 						<div className="about-action about-action--feedback">
-							<p className="about-feedback-note">{t("about.feedback.note")}</p>
 							<a
 								href={FEEDBACK_URL}
 								target="_blank"
@@ -445,7 +492,6 @@ export default function AboutModal({
 						</div>
 
 						<div className="about-action about-action--donate">
-							<p className="about-donate-note">{t("about.donate.note")}</p>
 							<a
 								href="https://buymeacoffee.com/bugisthegod"
 								target="_blank"

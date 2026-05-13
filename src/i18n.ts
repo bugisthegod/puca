@@ -67,8 +67,8 @@ const EN = {
 	// AboutModal — tour button
 	"about.tour.btn": "Take the tour",
 
-	// AboutModal — donation button
-	"about.donate.note": "Púca is free. Support it with a small treat.",
+	"about.share.btn": "Share Púca",
+	"about.share.copied": "Copied",
 	"about.donate.btn": "Buy Púca a treat",
 
 	// AboutModal — Language setting
@@ -109,8 +109,6 @@ const EN = {
 		"Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.",
 	"about.install.note": "For a better experience, install to your home screen.",
 
-	// AboutModal — feedback
-	"about.feedback.note": "Found a bug or want something added?",
 	"about.feedback.btn": "Send feedback",
 
 	// AboutModal — footer
@@ -303,8 +301,8 @@ const ZH: Record<Key, string> = {
 	// AboutModal — tour button
 	"about.tour.btn": "查看引导",
 
-	// AboutModal — donation button
-	"about.donate.note": "Púca 完全免费。喜欢的话，喂它颗糖吧。",
+	"about.share.btn": "分享 Púca",
+	"about.share.copied": "已复制",
 	"about.donate.btn": "请 Púca 吃颗糖",
 
 	// AboutModal — Language setting
@@ -344,8 +342,6 @@ const ZH: Record<Key, string> = {
 		"点击<strong>安装应用</strong>或<strong>添加到主屏幕</strong>。",
 	"about.install.note": "为了更好的体验，建议添加到主屏幕。",
 
-	// AboutModal — feedback
-	"about.feedback.note": "发现问题，或想加点什么？",
 	"about.feedback.btn": "发送反馈",
 
 	// AboutModal — footer

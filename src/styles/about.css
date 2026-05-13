@@ -651,7 +651,8 @@
 
 .about-actions {
 	display: grid;
-	gap: 20px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
 	padding-top: 24px;
 	padding-bottom: 26px;
 }
@@ -662,15 +663,53 @@
 }
 
 .about-action--donate {
-	padding-top: 2px;
+	grid-column: 1 / -1;
+	display: flex;
+	justify-content: center;
+	padding-top: 6px;
 }
 
-.about-feedback-note {
-	margin: 0;
-	color: rgba(255, 255, 255, 0.62);
-	font-size: 0.84rem;
-	line-height: 1.45;
-	text-align: center;
+.about-action > a,
+.about-action > button {
+	height: 100%;
+}
+
+.about-share-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: min(100%, 360px);
+	min-height: 42px;
+	padding: 9px 14px;
+	background: rgba(89, 141, 255, 0.09);
+	border: 1px solid rgba(89, 141, 255, 0.34);
+	color: #86a9ff;
+	border-radius: 12px;
+	font-size: 0.88rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		border-color 0.15s,
+		color 0.15s,
+		transform 0.1s;
+}
+
+.about-share-btn:hover {
+	background: rgba(89, 141, 255, 0.16);
+	border-color: rgba(89, 141, 255, 0.56);
+	color: #a4bdff;
+}
+
+.about-share-btn:active {
+	transform: scale(0.98);
+}
+
+.about-share-btn.is-copied {
+	background: rgba(37, 168, 100, 0.14);
+	border-color: rgba(37, 168, 100, 0.52);
+	color: #58ce8f;
 }
 
 .about-feedback-btn {
@@ -706,22 +745,14 @@
 	transform: scale(0.98);
 }
 
-.about-donate-note {
-	margin: 0;
-	color: rgba(255, 255, 255, 0.58);
-	font-size: 0.82rem;
-	line-height: 1.45;
-	text-align: center;
-}
-
 .about-donate-btn {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
 	width: 100%;
-	min-height: 48px;
-	padding: 12px 14px;
+	min-height: 42px;
+	padding: 9px 14px;
 	background: linear-gradient(
 		135deg,
 		rgba(255, 123, 172, 0.18),
@@ -771,10 +802,6 @@
 	border-color: rgba(224, 77, 136, 0.46);
 }
 
-:root[data-theme="light"] .about-feedback-note {
-	color: rgba(27, 31, 36, 0.62);
-}
-
 :root[data-theme="light"] .about-feedback-btn {
 	background: rgba(37, 168, 100, 0.07);
 	border-color: rgba(25, 135, 84, 0.26);
@@ -786,6 +813,19 @@
 	border-color: rgba(25, 135, 84, 0.44);
 }
 
-:root[data-theme="light"] .about-donate-note {
-	color: rgba(27, 31, 36, 0.58);
+:root[data-theme="light"] .about-share-btn {
+	background: rgba(89, 141, 255, 0.08);
+	border-color: rgba(58, 105, 205, 0.28);
+	color: #315fb8;
+}
+
+:root[data-theme="light"] .about-share-btn:hover {
+	background: rgba(89, 141, 255, 0.14);
+	border-color: rgba(58, 105, 205, 0.46);
+}
+
+:root[data-theme="light"] .about-share-btn.is-copied {
+	background: rgba(37, 168, 100, 0.12);
+	border-color: rgba(25, 135, 84, 0.4);
+	color: #198754;
 }
