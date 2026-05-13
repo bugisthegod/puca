@@ -6,7 +6,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { createRoot } from "react-dom/client";
 import type { BusOperator, FocusContext, TrainFocusSummary } from "./types";
 import { SERVICE_RESUME_LABEL, type Filter } from "./utils";
-import { useTrainMap, type Mode } from "./hooks/useTrainMap";
+import { useVehicleMap, type Mode } from "./hooks/useVehicleMap";
 import { clearBusSearchSession, loadBusSearchSession, loadSession, saveSession, type BusSearchTab } from "./session";
 import InfoPanel from "./components/InfoPanel";
 import SearchPanel from "./components/SearchPanel";
@@ -123,7 +123,7 @@ function App() {
     ? buses.filter((b) => b.tripId === focusContext.tripId)
     : buses;
 
-  const { focusTrain, clearTrainFocus, locateUser, getMapView, compassPref, startCompass, stopCompass } = useTrainMap(mapRef, trains, filter, searchCodes, mode, visibleBuses, busShape, busDirection, busOperator, {
+  const { focusTrain, clearTrainFocus, locateUser, getMapView, compassPref, startCompass, stopCompass } = useVehicleMap(mapRef, trains, filter, searchCodes, mode, visibleBuses, busShape, busDirection, busOperator, {
     currentBusRoute: busRoute,
     onSelectBusRoute: (route, direction) => {
       setBusRoute(route);

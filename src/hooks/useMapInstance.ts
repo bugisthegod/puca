@@ -6,7 +6,7 @@
 declare const L: typeof import("leaflet");
 import { useRef, useEffect, useState, useCallback, type RefObject } from "react";
 import type { Station } from "../types";
-import type { Mode } from "./useTrainMap";
+import type { Mode } from "./useVehicleMap";
 import type { MapView } from "../session";
 import { getStationsOnce } from "../stationsClient";
 

@@ -1,6 +1,6 @@
 import React from "react";
 import type { Filter } from "../utils";
-import type { Mode } from "../hooks/useTrainMap";
+import type { Mode } from "../hooks/useVehicleMap";
 import type { BusOperator, TrainFocusSummary } from "../types";
 import type { BusStopSummary } from "./BusSearchPanel";
 import SleepingPuca from "./SleepingPuca";

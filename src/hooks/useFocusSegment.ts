@@ -2,7 +2,7 @@ import { useEffect, useRef, type MutableRefObject, type RefObject } from "react"
 import lineSliceAlong from "@turf/line-slice-along";
 import type { BusVehicle, BusOperator, FocusContext } from "../types";
 import type { BusMarkerEntry } from "./useBusMarkers";
-import type { Mode } from "./useTrainMap";
+import type { Mode } from "./useVehicleMap";
 import { buildRouteLine, projectOntoRoute } from "./routeProjection";
 
 function operatorColor(op: BusOperator): string {

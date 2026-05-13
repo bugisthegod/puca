@@ -19,7 +19,7 @@ const EXTRAP_CAP = 35_000;
 // but avoids the per-frame setLatLng DOM cost of running at full 60 FPS.
 const TICK_INTERVAL_MS = 33;
 
-interface UseTrainMapOptions {
+interface UseVehicleMapOptions {
   currentBusRoute?: string | null;
   onSelectBusRoute?: (route: string, direction: string) => void;
   initialView?: MapView | null;
@@ -28,7 +28,7 @@ interface UseTrainMapOptions {
   onTrainFocusSummary?: (summary: TrainFocusSummary | null) => void;
 }
 
-export function useTrainMap(
+export function useVehicleMap(
   mapRef: RefObject<HTMLDivElement | null>,
   trains: Train[],
   filter: Filter,
@@ -38,7 +38,7 @@ export function useTrainMap(
   busShape: { [direction: string]: { headsign: string; coords: [number, number][]; stops: { id: string; name: string; lat: number; lng: number }[]; variants?: { shapeId: string; tripCount: number; branches: [number, number][][] }[] } } | null = null,
   busDirection: string | null = null,
   busOperator: BusOperator = "dublinbus",
-  options: UseTrainMapOptions = {},
+  options: UseVehicleMapOptions = {},
 ): {
   focusTrain: (code: string, boardingStationCode?: string) => Promise<FocusTrainResult>;
   clearTrainFocus: () => void;

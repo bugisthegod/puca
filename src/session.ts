@@ -4,7 +4,7 @@
 
 import type { BusOperator } from "./types";
 import type { Filter } from "./utils";
-import type { Mode } from "./hooks/useTrainMap";
+import type { Mode } from "./hooks/useVehicleMap";
 
 const KEY = "puca-session-v1";
 const BUS_SEARCH_KEY = "puca-bus-search-v1";

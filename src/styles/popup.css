@@ -99,6 +99,20 @@
   letter-spacing: 0.02em;
 }
 
+.popup-train-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+  padding-right: 22px;
+}
+
+.popup-train-title-row .popup-title,
+.popup-train-title-row .popup-meta {
+  margin-bottom: 0;
+}
+
 .popup-route {
   font-size: 0.82rem;
   color: var(--text-secondary);

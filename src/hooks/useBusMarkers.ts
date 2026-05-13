@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import type { BusVehicle, BusOperator } from "../types";
 import type { Feature, LineString } from "geojson";
 import { buildRouteLine, buildRouteLookup, projectOntoRoute } from "./routeProjection";
-import type { Mode } from "./useTrainMap";
+import type { Mode } from "./useVehicleMap";
 import { buildBusPopupHTML as buildBusPopupContentHTML, type BusTripPopupData } from "./busPopup";
 import { makeBusIcon as makeBusMarkerIcon } from "./busMarkerIcon";
 import { busRouteColor, reconcileSelectedVariant, variantStyleForShape } from "./busVariantStyle";

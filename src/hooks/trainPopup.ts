@@ -42,12 +42,14 @@ function trainPopupHeader(train: Train): string {
   const statusText = buildTrainStatusText(train.status, late);
 
   return `
-    <div class="popup-title">${escapeHtml(train.code)}</div>
-    ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
-    <div class="popup-meta">
-      <span class="popup-status ${trainPopupStatusClass(train.status, late)}">${statusText}</span>
-      ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
+    <div class="popup-train-title-row">
+      <div class="popup-title">${escapeHtml(train.code)}</div>
+      <div class="popup-meta">
+        <span class="popup-status ${trainPopupStatusClass(train.status, late)}">${statusText}</span>
+        ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
+      </div>
     </div>
+    ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
   `;
 }
 

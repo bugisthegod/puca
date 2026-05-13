@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { BusOperator, BusVehicle, Train } from "../types";
 import { isInServiceHours } from "../utils";
-import type { Mode } from "./useTrainMap";
+import type { Mode } from "./useVehicleMap";
 
 export function useVehiclePolling(
   mode: Mode,

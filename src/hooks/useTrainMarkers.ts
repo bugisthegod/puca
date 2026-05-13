@@ -10,7 +10,7 @@ import {
   dublinMinutesSinceMidnight,
   type Filter,
 } from "../utils";
-import type { Mode } from "./useTrainMap";
+import type { Mode } from "./useVehicleMap";
 import { buildTrainPopupErrorHTML, buildTrainPopupHTML, buildTrainPopupWithMovements } from "./trainPopup";
 import { makeTrainIcon } from "./trainMarkerIcon";
 
