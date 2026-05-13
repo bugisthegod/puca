@@ -3,21 +3,21 @@
    ============================================================ */
 
 .stop-tooltip.leaflet-tooltip {
-  background: rgba(22, 22, 28, 0.92);
-  color: #f0f0f0;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  white-space: nowrap;
+	background: rgba(22, 22, 28, 0.92);
+	color: #f0f0f0;
+	border: none;
+	border-radius: 6px;
+	padding: 4px 8px;
+	font-size: 0.72rem;
+	font-weight: 500;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	white-space: nowrap;
 }
 
 .stop-tooltip.leaflet-tooltip::before {
-  border-top-color: rgba(22, 22, 28, 0.92);
+	border-top-color: rgba(22, 22, 28, 0.92);
 }
 
 /* Terminus ring on the route polyline — a single "this end is the destination"
@@ -25,337 +25,376 @@
    default styles add a white background + border; null them out so only the
    inline SVG ring shows, and add a soft shadow so it lifts off the polyline. */
 .route-end-marker {
-  background: transparent !important;
-  border: none !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+	background: transparent;
+	border: none;
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 
 /* Intermediate-stop dots between bus and target. HTML divIcons rather than
    SVG CircleMarker so the rings don't inflate during flyToBounds zoom anim.
    Target uses .focus-pin (sign-on-pole) below. */
 .focus-stop {
-  border-radius: 50%;
-  background: #fff;
-  border-style: solid;
-  border-width: 2.5px;
-  box-sizing: border-box;
+	border-radius: 50%;
+	background: #fff;
+	border-style: solid;
+	border-width: 2.5px;
+	box-sizing: border-box;
 }
-.focus-stop--dublinbus { border-color: var(--op-dublinbus); }
-.focus-stop--buseireann { border-color: var(--op-buseireann); }
-.focus-stop--goahead { border-color: var(--op-goahead); }
+.focus-stop--dublinbus {
+	border-color: var(--op-dublinbus);
+}
+.focus-stop--buseireann {
+	border-color: var(--op-buseireann);
+}
+.focus-stop--goahead {
+	border-color: var(--op-goahead);
+}
 
 /* Target stop pin — bus-stop sign on a pole, anchored where the pole meets
    the ground. Sign panel carries the stop code; pole inherits the same
    operator color so the marker reads as one piece at a glance. */
 .focus-pin {
-  width: 32px;
-  height: 42px;
-  position: relative;
-  background: transparent !important;
-  border: none !important;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+	width: 32px;
+	height: 42px;
+	position: relative;
+	background: transparent;
+	border: none;
+	filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 }
-.focus-pin--dublinbus { --pin-color: var(--op-dublinbus); }
-.focus-pin--buseireann { --pin-color: var(--op-buseireann); }
-.focus-pin--goahead { --pin-color: var(--op-goahead); }
+.focus-pin--dublinbus {
+	--pin-color: var(--op-dublinbus);
+}
+.focus-pin--buseireann {
+	--pin-color: var(--op-buseireann);
+}
+.focus-pin--goahead {
+	--pin-color: var(--op-goahead);
+}
 .focus-pin__svg {
-  width: 100%;
-  height: 100%;
-  display: block;
+	width: 100%;
+	height: 100%;
+	display: block;
 }
 .focus-pin__svg .sign,
 .focus-pin__svg .pole {
-  fill: var(--pin-color);
+	fill: var(--pin-color);
 }
 .focus-pin__svg .sign {
-  stroke: #fff;
-  stroke-width: 1.5;
+	stroke: #fff;
+	stroke-width: 1.5;
 }
 .focus-pin__code {
-  position: absolute;
-  top: 1px;
-  left: 0;
-  width: 100%;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  pointer-events: none;
+	position: absolute;
+	top: 1px;
+	left: 0;
+	width: 100%;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	pointer-events: none;
 }
 /* Sign panel fits ~26px wide. Shrink type for 5+ char codes (some
    NTA/Bus Éireann codes hit 6) so digits don't spill past the panel. */
-.focus-pin__code[data-len="5"] { font-size: 0.62rem; letter-spacing: -0.04em; }
+.focus-pin__code[data-len="5"] {
+	font-size: 0.62rem;
+	letter-spacing: -0.04em;
+}
 .focus-pin__code[data-len="6"],
-.focus-pin__code[data-len="7"] { font-size: 0.54rem; letter-spacing: -0.06em; }
+.focus-pin__code[data-len="7"] {
+	font-size: 0.54rem;
+	letter-spacing: -0.06em;
+}
 
 /* ============================================================
    Bus search: route / stop tabs + stop arrivals list
    ============================================================ */
 
 .bus-search-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-  margin-bottom: 8px;
+	display: flex;
+	gap: 4px;
+	padding: 3px;
+	background: rgba(255, 255, 255, 0.06);
+	border-radius: 8px;
+	margin-bottom: 8px;
 }
 
 .bus-search-tab {
-  flex: 1;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: #bbb;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+	flex: 1;
+	padding: 6px 10px;
+	border-radius: 6px;
+	border: none;
+	background: transparent;
+	color: #bbb;
+	font-size: 0.78rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		color 0.15s;
 }
 
 .bus-search-tab:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f0f0f0;
+	background: rgba(255, 255, 255, 0.08);
+	color: #f0f0f0;
 }
 
 .bus-search-tab.active {
-  background: var(--brand-mid);
-  color: #fff;
+	background: var(--brand-mid);
+	color: #fff;
 }
 
 .stop-selected {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: rgba(37, 168, 100, 0.18);
-  border: 1px solid rgba(37, 168, 100, 0.35);
-  border-left-width: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 10px;
+	border-radius: 6px;
+	background: rgba(37, 168, 100, 0.18);
+	border: 1px solid rgba(37, 168, 100, 0.35);
+	border-left-width: 4px;
 }
 
 .stop-selected--loading {
-  opacity: 0.55;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
+	opacity: 0.55;
+	background: rgba(255, 255, 255, 0.05);
+	border-color: rgba(255, 255, 255, 0.12);
 }
 
-.stop-selected--dublinbus { border-left-color: var(--op-dublinbus); }
-.stop-selected--buseireann { border-left-color: var(--op-buseireann); }
-.stop-selected--goahead { border-left-color: var(--op-goahead); }
+.stop-selected--dublinbus {
+	border-left-color: var(--op-dublinbus);
+}
+.stop-selected--buseireann {
+	border-left-color: var(--op-buseireann);
+}
+.stop-selected--goahead {
+	border-left-color: var(--op-goahead);
+}
 
 .stop-result,
 .route-result {
-  border-left: 3px solid transparent;
-  padding-left: 9px !important;
+	border-left: 3px solid transparent;
+	padding-left: 9px;
 }
 
 .stop-result--dublinbus,
-.route-result--dublinbus { border-left-color: var(--op-dublinbus); }
+.route-result--dublinbus {
+	border-left-color: var(--op-dublinbus);
+}
 .stop-result--buseireann,
-.route-result--buseireann { border-left-color: var(--op-buseireann); }
+.route-result--buseireann {
+	border-left-color: var(--op-buseireann);
+}
 .stop-result--goahead,
-.route-result--goahead { border-left-color: var(--op-goahead); }
-
-.operator-badge {
-  flex-shrink: 0;
-  margin-left: auto;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ddd;
+.route-result--goahead {
+	border-left-color: var(--op-goahead);
 }
 
-.operator-badge--dublinbus { background: var(--op-dublinbus); color: var(--op-dublinbus-text); }
-.operator-badge--buseireann { background: var(--op-buseireann); color: #fff; }
-.operator-badge--goahead { background: var(--op-goahead); color: #fff; }
+.operator-badge {
+	flex-shrink: 0;
+	margin-left: auto;
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-size: 0.65rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	background: rgba(255, 255, 255, 0.08);
+	color: #ddd;
+}
+
+.operator-badge--dublinbus {
+	background: var(--op-dublinbus);
+	color: var(--op-dublinbus-text);
+}
+.operator-badge--buseireann {
+	background: var(--op-buseireann);
+	color: #fff;
+}
+.operator-badge--goahead {
+	background: var(--op-goahead);
+	color: #fff;
+}
 
 /* In the dropdown the row already wraps text with margin-left:auto needs
    the row to be flex-aligned; the existing .station-dropdown li uses
    default block layout, so float the badge in stop-result lists. */
 .stop-results .stop-result .operator-badge,
 .route-results .route-result .operator-badge {
-  float: right;
-  margin-left: 8px;
+	float: right;
+	margin-left: 8px;
 }
 
 .bus-unified-results {
-  padding: 4px 0;
+	padding: 4px 0;
 }
 
 .bus-result-group + .bus-result-group {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin-top: 4px;
-  padding-top: 4px;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+	margin-top: 4px;
+	padding-top: 4px;
 }
 
 .bus-result-group ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+	list-style: none;
+	margin: 0;
+	padding: 0;
 }
 
 .bus-result-heading {
-  padding: 5px 10px 3px;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+	padding: 5px 10px 3px;
+	color: rgba(255, 255, 255, 0.48);
+	font-size: 0.64rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 }
 
 .bus-unified-results .search-empty {
-  padding: 10px;
-  color: rgba(255, 255, 255, 0.34);
-  font-size: 0.78rem;
-  text-align: center;
+	padding: 10px;
+	color: rgba(255, 255, 255, 0.34);
+	font-size: 0.78rem;
+	text-align: center;
 }
 
 .bus-unified-results .stop-result .operator-badge,
 .bus-unified-results .route-result .operator-badge {
-  float: right;
-  margin-left: 8px;
+	float: right;
+	margin-left: 8px;
 }
 
 .stop-selected__text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	min-width: 0;
+	flex: 1;
 }
 
 .stop-selected__text strong {
-  font-size: 0.8rem;
-  color: #fff;
+	font-size: 0.8rem;
+	color: #fff;
 }
 
 .stop-selected__text span {
-  font-size: 0.72rem;
-  color: #ccc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+	font-size: 0.72rem;
+	color: #ccc;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
 }
 
 .stop-arrivals {
-  margin-top: 8px;
-  max-height: 260px;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+	margin-top: 8px;
+	max-height: 260px;
+	overflow-y: auto;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
 }
 
 .stop-arrivals::-webkit-scrollbar {
-  display: none;
+	display: none;
 }
 
 .stop-arrivals__empty {
-  padding: 14px 8px;
-  text-align: center;
-  font-size: 0.78rem;
-  color: #888;
+	padding: 14px 8px;
+	text-align: center;
+	font-size: 0.78rem;
+	color: #888;
 }
 
 .stop-arrivals__list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .stop-arrivals__list li {
-  padding: 0;
-  margin: 0;
+	padding: 0;
+	margin: 0;
 }
 
 .stop-arrival {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #f0f0f0;
-  cursor: pointer;
-  transition: background 0.12s;
-  text-align: left;
-  font-family: inherit;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 8px 10px;
+	border: none;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.05);
+	color: #f0f0f0;
+	cursor: pointer;
+	transition: background 0.12s;
+	text-align: left;
+	font-family: inherit;
 }
 
 .stop-arrival:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.12);
 }
 
 .stop-arrival--scheduled {
-  opacity: 0.55;
-  cursor: default;
+	opacity: 0.55;
+	cursor: default;
 }
 
 .stop-arrival__route {
-  flex: 0 0 auto;
-  min-width: 36px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: var(--brand-mid);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.78rem;
-  text-align: center;
+	flex: 0 0 auto;
+	min-width: 36px;
+	padding: 3px 8px;
+	border-radius: 4px;
+	background: var(--brand-mid);
+	color: #fff;
+	font-weight: 700;
+	font-size: 0.78rem;
+	text-align: center;
 }
 
 .stop-arrival__headsign {
-  flex: 1 1 auto;
-  font-size: 0.78rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #ccc;
+	flex: 1 1 auto;
+	font-size: 0.78rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: #ccc;
 }
 
 .stop-arrival__eta {
-  flex: 0 0 auto;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--brand-light);
+	flex: 0 0 auto;
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: var(--brand-light);
 }
 
 .stop-arrival__eta.late {
-  color: #ff9a6b;
+	color: #ff9a6b;
 }
 
-
 @media (max-width: 600px) {
-  .train-item {
-    padding: 6px 8px;
-  }
+	.train-item {
+		padding: 6px 8px;
+	}
 
-  .train-item-code {
-    font-size: 0.75rem;
-  }
+	.train-item-code {
+		font-size: 0.75rem;
+	}
 
-  .train-item-route,
-  .train-item-times {
-    font-size: 0.68rem;
-  }
+	.train-item-route,
+	.train-item-times {
+		font-size: 0.68rem;
+	}
 
-  .train-item-status {
-    font-size: 0.6rem;
-  }
-
+	.train-item-status {
+		font-size: 0.6rem;
+	}
 }
