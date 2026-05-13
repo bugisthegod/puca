@@ -137,6 +137,9 @@ interface UseBusMarkersOptions {
 	onSelectBusRoute: React.RefObject<
 		((route: string, direction: string) => void) | undefined
 	>;
+	onRouteJump: React.RefObject<
+		((route: string, direction: string) => void) | undefined
+	>;
 	leafletMap: React.RefObject<L.Map | null>;
 	busClusterLayer: React.RefObject<L.MarkerClusterGroup | L.LayerGroup | null>;
 }
@@ -149,6 +152,7 @@ export function useBusMarkers({
 	mode,
 	currentBusRoute,
 	onSelectBusRoute,
+	onRouteJump,
 	leafletMap,
 	busClusterLayer,
 }: UseBusMarkersOptions): {
@@ -247,7 +251,11 @@ export function useBusMarkers({
 			const dir = btn.getAttribute("data-dir") ?? "";
 			if (route && dir) {
 				leafletMap.current?.closePopup();
-				onSelectBusRouteRef.current?.(route, dir);
+				if (onRouteJump.current) {
+					onRouteJump.current(route, dir);
+				} else {
+					onSelectBusRouteRef.current?.(route, dir);
+				}
 			}
 		});
 	}

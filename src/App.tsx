@@ -205,6 +205,17 @@ function App() {
 				setFocusContext(null);
 				setArrivalFocusUnavailable(false);
 			},
+			onRouteJump: (route, direction) => {
+				setBusRoute(route);
+				setBusDirection(direction);
+				setFocusContext(null);
+				setArrivalFocusUnavailable(false);
+				if (
+					!hasBus(favs, { shortName: route, operator: busOperator, direction })
+				) {
+					setPanelCollapsed(false);
+				}
+			},
 			initialView: savedSession.mapView ?? null,
 			focusContext,
 			onFocusSegmentStatus: (status) => {
@@ -819,7 +830,6 @@ function App() {
 						setArrivalFocusResetSignal((n) => n + 1);
 						setInfoPanelDrilledIn(false);
 						setArrivalFocusUnavailable(false);
-						setPanelCollapsed(false);
 					}}
 				>
 					&larr; {t("bus.back.all")}
