@@ -66,11 +66,11 @@
 		rgba(18, 18, 24, 0.98) 100%
 	);
 	color: #f0f0f0;
-	border: 1px solid rgba(255, 255, 255, 0.08);
+	border: 1px solid var(--glass-border);
 	border-radius: 14px;
 	box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
-	backdrop-filter: blur(18px) saturate(140%);
-	-webkit-backdrop-filter: blur(18px) saturate(140%);
+	backdrop-filter: var(--glass-blur);
+	-webkit-backdrop-filter: var(--glass-blur);
 	pointer-events: auto;
 	animation: tour-fade-in 0.25s ease-out;
 }
@@ -136,8 +136,8 @@
 	cursor: pointer;
 	border: 1px solid transparent;
 	transition:
-		background 0.15s,
-		border-color 0.15s;
+		background var(--motion-fast),
+		border-color var(--motion-fast);
 }
 
 .tour__btn--ghost {

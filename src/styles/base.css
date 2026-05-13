@@ -50,6 +50,14 @@
 	/* Map backdrop — matches CARTO Voyager's empty-tile tone so in-flight
      tiles blend in instead of flashing gray. */
 	--map-bg: #ede7dd;
+
+	/* Shared dark overlay chrome used by floating map UI. */
+	--glass-bg: rgba(22, 22, 28, 0.78);
+	--glass-border: rgba(255, 255, 255, 0.08);
+	--glass-text: #f0f0f0;
+	--glass-blur: blur(18px) saturate(140%);
+	--shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.35);
+	--motion-fast: 0.15s;
 }
 
 :root[data-theme="dark"] {
@@ -213,13 +221,13 @@ body {
 	padding: 16px 22px;
 	border: 1px solid rgba(255, 255, 255, 0.1);
 	border-radius: 14px;
-	background: rgba(22, 22, 28, 0.78);
-	color: #f0f0f0;
+	background: var(--glass-bg);
+	color: var(--glass-text);
 	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
 	text-align: center;
 	pointer-events: none;
-	backdrop-filter: blur(18px) saturate(140%);
-	-webkit-backdrop-filter: blur(18px) saturate(140%);
+	backdrop-filter: var(--glass-blur);
+	-webkit-backdrop-filter: var(--glass-blur);
 	animation: map-empty-state-in 0.22s ease-out;
 }
 

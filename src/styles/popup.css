@@ -186,7 +186,7 @@
 	font-weight: 600;
 	cursor: pointer;
 	box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-	transition: background 0.15s;
+	transition: background var(--motion-fast);
 	backdrop-filter: blur(6px);
 	-webkit-backdrop-filter: blur(6px);
 }
@@ -231,7 +231,7 @@
 	font-weight: 600;
 	cursor: pointer;
 	white-space: nowrap;
-	transition: background 0.15s;
+	transition: background var(--motion-fast);
 	flex-shrink: 0;
 }
 

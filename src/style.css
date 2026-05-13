@@ -6,6 +6,8 @@
 @import "./styles/offline.css";
 @import "./styles/info-panel.css";
 @import "./styles/about.css";
+@import "./styles/favorites.css";
+@import "./styles/settings.css";
 @import "./styles/filter.css";
 @import "./styles/search.css";
 @import "./styles/popup.css";
