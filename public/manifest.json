@@ -1,27 +1,27 @@
 {
-  "id": "/",
-  "scope": "/",
-  "start_url": "/",
-  "name": "Púca",
-  "short_name": "Púca",
-  "description": "A shapeshifting spirit of Irish folklore — watching trains and buses flit across the island in real time.",
-  "lang": "en-IE",
-  "categories": ["travel", "navigation"],
-  "display": "standalone",
-  "background_color": "#16161c",
-  "theme_color": "#16161c",
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ]
+	"id": "/",
+	"scope": "/",
+	"start_url": "/",
+	"name": "Púca",
+	"short_name": "Púca",
+	"description": "A shapeshifting spirit of Irish folklore — watching trains and buses flit across the island in real time.",
+	"lang": "en-IE",
+	"categories": ["travel", "navigation"],
+	"display": "standalone",
+	"background_color": "#16161c",
+	"theme_color": "#16161c",
+	"icons": [
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		}
+	]
 }

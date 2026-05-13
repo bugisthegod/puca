@@ -6,151 +6,185 @@
 import type { BusOperator } from "./types";
 
 const KEY = "puca-favorites-v1";
-const OPERATORS: readonly BusOperator[] = ["dublinbus", "buseireann", "goahead"];
+const OPERATORS: readonly BusOperator[] = [
+	"dublinbus",
+	"buseireann",
+	"goahead",
+];
 
 // Single shared cap across buses + trains + stops. 15 total slots — the user
 // curates a small set, not a bookmark dump.
 export const MAX_FAVORITES = 15;
 
 export function totalFavorites(favs: Favorites): number {
-  return favs.buses.length + favs.trains.length + favs.stops.length;
+	return favs.buses.length + favs.trains.length + favs.stops.length;
 }
 
 export interface BusFavorite {
-  shortName: string;   // "39A"
-  operator: BusOperator;
-  direction: string;   // GTFS direction id ("0" / "1")
-  headsign: string;    // "Hansfield Road" — cached so list renders without re-fetching the shape
+	shortName: string; // "39A"
+	operator: BusOperator;
+	direction: string; // GTFS direction id ("0" / "1")
+	headsign: string; // "Hansfield Road" — cached so list renders without re-fetching the shape
 }
 
 export interface TrainFavorite {
-  from: string;        // station code
-  to: string;
-  fromName: string;    // display name
-  toName: string;
+	from: string; // station code
+	to: string;
+	fromName: string; // display name
+	toName: string;
 }
 
 export interface BusStopFavorite {
-  stopId: string;      // "8220DB000270"
-  operator: BusOperator;
-  stopCode: string;    // "270" — printed on the shelter, used as the display badge
-  stopName: string;    // "O'Connell Street Upper"
+	stopId: string; // "8220DB000270"
+	operator: BusOperator;
+	stopCode: string; // "270" — printed on the shelter, used as the display badge
+	stopName: string; // "O'Connell Street Upper"
 }
 
 export interface Favorites {
-  buses: BusFavorite[];
-  trains: TrainFavorite[];
-  stops: BusStopFavorite[];
+	buses: BusFavorite[];
+	trains: TrainFavorite[];
+	stops: BusStopFavorite[];
 }
 
 export function emptyFavorites(): Favorites {
-  return { buses: [], trains: [], stops: [] };
+	return { buses: [], trains: [], stops: [] };
 }
 
-export function busKey(f: Pick<BusFavorite, "shortName" | "operator" | "direction">): string {
-  return `${f.operator}:${f.shortName}:${f.direction}`;
+export function busKey(
+	f: Pick<BusFavorite, "shortName" | "operator" | "direction">,
+): string {
+	return `${f.operator}:${f.shortName}:${f.direction}`;
 }
 
 export function trainKey(f: Pick<TrainFavorite, "from" | "to">): string {
-  return `${f.from}→${f.to}`;
+	return `${f.from}→${f.to}`;
 }
 
-export function stopKey(f: Pick<BusStopFavorite, "stopId" | "operator">): string {
-  return `${f.operator}:${f.stopId}`;
+export function stopKey(
+	f: Pick<BusStopFavorite, "stopId" | "operator">,
+): string {
+	return `${f.operator}:${f.stopId}`;
 }
 
-export function hasBus(favs: Favorites, f: Pick<BusFavorite, "shortName" | "operator" | "direction">): boolean {
-  const k = busKey(f);
-  return favs.buses.some((b) => busKey(b) === k);
+export function hasBus(
+	favs: Favorites,
+	f: Pick<BusFavorite, "shortName" | "operator" | "direction">,
+): boolean {
+	const k = busKey(f);
+	return favs.buses.some((b) => busKey(b) === k);
 }
 
-export function hasTrain(favs: Favorites, f: Pick<TrainFavorite, "from" | "to">): boolean {
-  const k = trainKey(f);
-  return favs.trains.some((t) => trainKey(t) === k);
+export function hasTrain(
+	favs: Favorites,
+	f: Pick<TrainFavorite, "from" | "to">,
+): boolean {
+	const k = trainKey(f);
+	return favs.trains.some((t) => trainKey(t) === k);
 }
 
-export function hasStop(favs: Favorites, f: Pick<BusStopFavorite, "stopId" | "operator">): boolean {
-  const k = stopKey(f);
-  return favs.stops.some((s) => stopKey(s) === k);
+export function hasStop(
+	favs: Favorites,
+	f: Pick<BusStopFavorite, "stopId" | "operator">,
+): boolean {
+	const k = stopKey(f);
+	return favs.stops.some((s) => stopKey(s) === k);
 }
 
 export function toggleBus(favs: Favorites, f: BusFavorite): Favorites {
-  return hasBus(favs, f)
-    ? { ...favs, buses: favs.buses.filter((b) => busKey(b) !== busKey(f)) }
-    : { ...favs, buses: [...favs.buses, f] };
+	return hasBus(favs, f)
+		? { ...favs, buses: favs.buses.filter((b) => busKey(b) !== busKey(f)) }
+		: { ...favs, buses: [...favs.buses, f] };
 }
 
 export function toggleTrain(favs: Favorites, f: TrainFavorite): Favorites {
-  return hasTrain(favs, f)
-    ? { ...favs, trains: favs.trains.filter((t) => trainKey(t) !== trainKey(f)) }
-    : { ...favs, trains: [...favs.trains, f] };
+	return hasTrain(favs, f)
+		? {
+				...favs,
+				trains: favs.trains.filter((t) => trainKey(t) !== trainKey(f)),
+			}
+		: { ...favs, trains: [...favs.trains, f] };
 }
 
 export function toggleStop(favs: Favorites, f: BusStopFavorite): Favorites {
-  return hasStop(favs, f)
-    ? { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== stopKey(f)) }
-    : { ...favs, stops: [...favs.stops, f] };
+	return hasStop(favs, f)
+		? { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== stopKey(f)) }
+		: { ...favs, stops: [...favs.stops, f] };
 }
 
 export function removeBus(favs: Favorites, key: string): Favorites {
-  return { ...favs, buses: favs.buses.filter((b) => busKey(b) !== key) };
+	return { ...favs, buses: favs.buses.filter((b) => busKey(b) !== key) };
 }
 
 export function removeTrain(favs: Favorites, key: string): Favorites {
-  return { ...favs, trains: favs.trains.filter((t) => trainKey(t) !== key) };
+	return { ...favs, trains: favs.trains.filter((t) => trainKey(t) !== key) };
 }
 
 export function removeStop(favs: Favorites, key: string): Favorites {
-  return { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== key) };
+	return { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== key) };
 }
 
 function isBusFav(v: unknown): v is BusFavorite {
-  if (!v || typeof v !== "object") return false;
-  const b = v as Partial<BusFavorite>;
-  return typeof b.shortName === "string" && b.shortName.length > 0
-    && typeof b.operator === "string" && OPERATORS.includes(b.operator as BusOperator)
-    && typeof b.direction === "string" && b.direction.length > 0
-    && typeof b.headsign === "string";
+	if (!v || typeof v !== "object") return false;
+	const b = v as Partial<BusFavorite>;
+	return (
+		typeof b.shortName === "string" &&
+		b.shortName.length > 0 &&
+		typeof b.operator === "string" &&
+		OPERATORS.includes(b.operator as BusOperator) &&
+		typeof b.direction === "string" &&
+		b.direction.length > 0 &&
+		typeof b.headsign === "string"
+	);
 }
 
 function isTrainFav(v: unknown): v is TrainFavorite {
-  if (!v || typeof v !== "object") return false;
-  const t = v as Partial<TrainFavorite>;
-  return typeof t.from === "string" && t.from.length > 0
-    && typeof t.to === "string" && t.to.length > 0
-    && typeof t.fromName === "string"
-    && typeof t.toName === "string";
+	if (!v || typeof v !== "object") return false;
+	const t = v as Partial<TrainFavorite>;
+	return (
+		typeof t.from === "string" &&
+		t.from.length > 0 &&
+		typeof t.to === "string" &&
+		t.to.length > 0 &&
+		typeof t.fromName === "string" &&
+		typeof t.toName === "string"
+	);
 }
 
 function isStopFav(v: unknown): v is BusStopFavorite {
-  if (!v || typeof v !== "object") return false;
-  const s = v as Partial<BusStopFavorite>;
-  return typeof s.stopId === "string" && s.stopId.length > 0
-    && typeof s.operator === "string" && OPERATORS.includes(s.operator as BusOperator)
-    && typeof s.stopCode === "string"
-    && typeof s.stopName === "string" && s.stopName.length > 0;
+	if (!v || typeof v !== "object") return false;
+	const s = v as Partial<BusStopFavorite>;
+	return (
+		typeof s.stopId === "string" &&
+		s.stopId.length > 0 &&
+		typeof s.operator === "string" &&
+		OPERATORS.includes(s.operator as BusOperator) &&
+		typeof s.stopCode === "string" &&
+		typeof s.stopName === "string" &&
+		s.stopName.length > 0
+	);
 }
 
 export function loadFavorites(): Favorites {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return emptyFavorites();
-    const s = JSON.parse(raw) as Partial<Favorites>;
-    const buses = Array.isArray(s.buses) ? s.buses.filter(isBusFav) : [];
-    const trains = Array.isArray(s.trains) ? s.trains.filter(isTrainFav) : [];
-    // Pre-existing v1 records won't have `stops` — default to empty and keep
-    // sharing the same localStorage key, so no migration dance.
-    const stops = Array.isArray(s.stops) ? s.stops.filter(isStopFav) : [];
-    return { buses, trains, stops };
-  } catch {
-    return emptyFavorites();
-  }
+	try {
+		const raw = localStorage.getItem(KEY);
+		if (!raw) return emptyFavorites();
+		const s = JSON.parse(raw) as Partial<Favorites>;
+		const buses = Array.isArray(s.buses) ? s.buses.filter(isBusFav) : [];
+		const trains = Array.isArray(s.trains) ? s.trains.filter(isTrainFav) : [];
+		// Pre-existing v1 records won't have `stops` — default to empty and keep
+		// sharing the same localStorage key, so no migration dance.
+		const stops = Array.isArray(s.stops) ? s.stops.filter(isStopFav) : [];
+		return { buses, trains, stops };
+	} catch {
+		return emptyFavorites();
+	}
 }
 
 export function saveFavorites(favs: Favorites): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(favs));
-  } catch {
-    // quota or disabled — non-critical
-  }
+	try {
+		localStorage.setItem(KEY, JSON.stringify(favs));
+	} catch {
+		// quota or disabled — non-critical
+	}
 }
