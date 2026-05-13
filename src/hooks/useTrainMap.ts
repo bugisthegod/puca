@@ -131,8 +131,8 @@ export function useTrainMap(
 
       busClusterLayer.current = L.markerClusterGroup({
         showCoverageOnHover: false,
-        maxClusterRadius: 50,
-        disableClusteringAtZoom: 17,
+        maxClusterRadius: 60,
+        disableClusteringAtZoom: 18,
         spiderfyOnMaxZoom: false,
         chunkedLoading: true,
         animate: false,
