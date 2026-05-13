@@ -21,8 +21,8 @@ type AboutModalProps = {
 
 const FEEDBACK_URL = "https://tally.so/r/lbKjNX";
 const SHARE_TEXT = {
-	en: "Found a little spirit that checks Irish trains and buses:\nhttps://puca.dev",
-	zh: "发现一只会查爱尔兰火车和公交的小精灵：\nhttps://puca.dev",
+	en: "bus? train? púca!\nhttps://puca.dev",
+	zh: "公交？火车？púca！\nhttps://puca.dev",
 };
 
 async function copyText(text: string) {
