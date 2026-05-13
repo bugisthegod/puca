@@ -31,6 +31,15 @@ test("hello world", () => {
 });
 ```
 
+## Lint
+
+Use Biome for linting and formatting:
+
+- `bun run lint` — check only (CI)
+- `bun run lint:fix` — auto-fix (safe + unsafe)
+
+Run `bun run lint` before committing. If CI fails on lint, fix locally before pushing.
+
 ## Frontend
 
 Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.

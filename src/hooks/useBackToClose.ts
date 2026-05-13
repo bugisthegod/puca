@@ -10,16 +10,16 @@ import { useEffect, useRef } from "react";
 // arrow would re-run cleanup → history.back() (async popstate) → fires the
 // freshly-attached new listener → closes the modal unexpectedly.
 export function useBackToClose(onClose: () => void) {
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+	const onCloseRef = useRef(onClose);
+	onCloseRef.current = onClose;
 
-  useEffect(() => {
-    history.pushState({ puca: "modal" }, "");
-    const onPop = () => onCloseRef.current();
-    window.addEventListener("popstate", onPop);
-    return () => {
-      window.removeEventListener("popstate", onPop);
-      if (history.state?.puca === "modal") history.back();
-    };
-  }, []);
+	useEffect(() => {
+		history.pushState({ puca: "modal" }, "");
+		const onPop = () => onCloseRef.current();
+		window.addEventListener("popstate", onPop);
+		return () => {
+			window.removeEventListener("popstate", onPop);
+			if (history.state?.puca === "modal") history.back();
+		};
+	}, []);
 }

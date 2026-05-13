@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from "react";
 
 type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+	prompt: () => Promise<void>;
+	userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
 // Module-level capture. Chrome fires beforeinstallprompt as soon as engagement
@@ -14,25 +14,27 @@ let installed = false;
 const subscribers = new Set<() => void>();
 
 function notify() {
-  for (const s of subscribers) s();
+	for (const s of subscribers) s();
 }
 
 function subscribe(callback: () => void): () => void {
-  subscribers.add(callback);
-  return () => { subscribers.delete(callback); };
+	subscribers.add(callback);
+	return () => {
+		subscribers.delete(callback);
+	};
 }
 
 if (typeof window !== "undefined") {
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e as BeforeInstallPromptEvent;
-    notify();
-  });
-  window.addEventListener("appinstalled", () => {
-    installed = true;
-    deferredPrompt = null;
-    notify();
-  });
+	window.addEventListener("beforeinstallprompt", (e) => {
+		e.preventDefault();
+		deferredPrompt = e as BeforeInstallPromptEvent;
+		notify();
+	});
+	window.addEventListener("appinstalled", () => {
+		installed = true;
+		deferredPrompt = null;
+		notify();
+	});
 }
 
 const getCanInstall = () => deferredPrompt !== null;
@@ -43,29 +45,31 @@ const getInstalled = () => installed;
 // we're running as an installed PWA and shouldn't pitch install again.
 // Captured at module load — standalone-ness is fixed for the lifetime of
 // a window, so re-querying matchMedia on every render is wasted work.
-const isStandalone = typeof window !== "undefined" && (
-  window.matchMedia("(display-mode: standalone)").matches ||
-  (navigator as { standalone?: boolean }).standalone === true
-);
+const isStandalone =
+	typeof window !== "undefined" &&
+	(window.matchMedia("(display-mode: standalone)").matches ||
+		(navigator as { standalone?: boolean }).standalone === true);
 
-async function triggerInstall(): Promise<"accepted" | "dismissed" | "unavailable"> {
-  if (!deferredPrompt) return "unavailable";
-  await deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  // prompt() consumes the event — a second call would throw. Clear and notify
-  // so the button hides regardless of whether the user accepted or dismissed.
-  deferredPrompt = null;
-  notify();
-  return outcome;
+async function triggerInstall(): Promise<
+	"accepted" | "dismissed" | "unavailable"
+> {
+	if (!deferredPrompt) return "unavailable";
+	await deferredPrompt.prompt();
+	const { outcome } = await deferredPrompt.userChoice;
+	// prompt() consumes the event — a second call would throw. Clear and notify
+	// so the button hides regardless of whether the user accepted or dismissed.
+	deferredPrompt = null;
+	notify();
+	return outcome;
 }
 
 export function useInstallPrompt() {
-  const canInstall = useSyncExternalStore(subscribe, getCanInstall);
-  const installedFromEvent = useSyncExternalStore(subscribe, getInstalled);
+	const canInstall = useSyncExternalStore(subscribe, getCanInstall);
+	const installedFromEvent = useSyncExternalStore(subscribe, getInstalled);
 
-  return {
-    canInstall,
-    isInstalled: isStandalone || installedFromEvent,
-    triggerInstall,
-  };
+	return {
+		canInstall,
+		isInstalled: isStandalone || installedFromEvent,
+		triggerInstall,
+	};
 }

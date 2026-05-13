@@ -24,6 +24,13 @@ bun --hot ./server.ts
 
 Open http://localhost:3000.
 
+### Lint
+
+```bash
+bun run lint       # check only
+bun run lint:fix   # auto-fix
+```
+
 Schedule databases ([src/data/](src/data/)) are gitignored. Generate them from the raw GTFS feeds in [gtfs/](gtfs/) with the scripts in [scripts/](scripts/):
 
 ```bash

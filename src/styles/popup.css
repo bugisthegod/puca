@@ -3,30 +3,30 @@
    ============================================================ */
 
 .leaflet-popup-content-wrapper {
-  border-radius: 10px;
-  padding: 0;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  background: var(--bg-surface) !important;
+	border-radius: 10px;
+	padding: 0;
+	overflow: hidden;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	background: var(--bg-surface) !important;
 }
 
 .leaflet-popup-content {
-  margin: 0;
-  width: auto !important;
+	margin: 0;
+	width: auto !important;
 }
 
 .leaflet-popup-tip {
-  background: var(--bg-surface) !important;
+	background: var(--bg-surface) !important;
 }
 
 .leaflet-popup-close-button {
-  color: var(--text-secondary) !important;
-  font-size: 20px !important;
-  font-weight: 700 !important;
+	color: var(--text-secondary) !important;
+	font-size: 20px !important;
+	font-weight: 700 !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: var(--text-primary) !important;
+	color: var(--text-primary) !important;
 }
 
 /* ============================================================
@@ -34,137 +34,137 @@
    ============================================================ */
 
 .popup-content {
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 0.85rem;
-  min-width: 360px;
-  max-width: 500px;
-  padding: 12px 14px;
-  color: var(--text-primary);
-  background: var(--bg-surface);
+	font-family: system-ui, -apple-system, sans-serif;
+	font-size: 0.85rem;
+	min-width: 360px;
+	max-width: 500px;
+	padding: 12px 14px;
+	color: var(--text-primary);
+	background: var(--bg-surface);
 }
 
 .popup-stale-banner {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: #fff6d6;
-  border: 1px solid #e6d280;
-  border-radius: 6px;
-  padding: 3px;
-  margin-bottom: 3px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	background: #fff6d6;
+	border: 1px solid #e6d280;
+	border-radius: 6px;
+	padding: 3px;
+	margin-bottom: 3px;
 }
 
 .popup-stale-icon {
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
+	width: 56px;
+	height: 56px;
+	flex-shrink: 0;
 }
 
 .popup-stale-icon svg {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
 
 .popup-stale-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.3;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	line-height: 1.3;
 }
 
 .popup-stale-text strong {
-  font-size: 0.9rem;
-  color: #6b5200;
+	font-size: 0.9rem;
+	color: #6b5200;
 }
 
 .popup-stale-text span {
-  font-size: 0.76rem;
-  color: var(--text-secondary);
+	font-size: 0.76rem;
+	color: var(--text-secondary);
 }
 
 :root[data-theme="dark"] .popup-stale-banner {
-  background: #3a3010;
-  border-color: #5a4820;
+	background: #3a3010;
+	border-color: #5a4820;
 }
 
 :root[data-theme="dark"] .popup-stale-text strong {
-  color: #f0c060;
+	color: #f0c060;
 }
 
 .popup-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--brand-dark);
-  margin-bottom: 2px;
-  letter-spacing: 0.02em;
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: var(--brand-dark);
+	margin-bottom: 2px;
+	letter-spacing: 0.02em;
 }
 
 .popup-train-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 2px;
-  padding-right: 22px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin-bottom: 2px;
+	padding-right: 22px;
 }
 
 .popup-train-title-row .popup-title,
 .popup-train-title-row .popup-meta {
-  margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .popup-route {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
+	font-size: 0.82rem;
+	color: var(--text-secondary);
+	margin-bottom: 6px;
 }
 
 .popup-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+	flex-wrap: wrap;
 }
 
 .popup-status {
-  background: var(--status-ontime-bg);
-  color: var(--status-ontime-text);
-  border-radius: 4px;
-  padding: 2px 7px;
-  font-size: 0.75rem;
-  font-weight: 600;
+	background: var(--status-ontime-bg);
+	color: var(--status-ontime-text);
+	border-radius: 4px;
+	padding: 2px 7px;
+	font-size: 0.75rem;
+	font-weight: 600;
 }
 
 .popup-status--yellow {
-  background: var(--status-late-bg);
-  color: var(--status-late-text);
+	background: var(--status-late-bg);
+	color: var(--status-late-text);
 }
 
 .popup-status--red {
-  background: var(--status-early-bg);
-  color: var(--status-early-text);
+	background: var(--status-early-bg);
+	color: var(--status-early-text);
 }
 
 .popup-dir {
-  font-size: 0.75rem;
-  color: var(--popup-dir-text);
-  background: var(--popup-dir-bg);
-  border-radius: 4px;
-  padding: 2px 7px;
+	font-size: 0.75rem;
+	color: var(--popup-dir-text);
+	background: var(--popup-dir-bg);
+	border-radius: 4px;
+	padding: 2px 7px;
 }
 
 .popup-message {
-  font-size: 0.78rem;
-  color: var(--text-faint);
-  line-height: 1.5;
+	font-size: 0.78rem;
+	color: var(--text-faint);
+	line-height: 1.5;
 }
 
 .popup-loading {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-top: 6px;
-  font-style: italic;
+	font-size: 0.78rem;
+	color: var(--text-muted);
+	margin-top: 6px;
+	font-style: italic;
 }
 
 /* ============================================================
@@ -172,38 +172,38 @@
    ============================================================ */
 
 .back-to-all-btn {
-  position: fixed;
-  top: calc(12px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  background: var(--brand-dark);
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-  transition: background 0.15s;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+	position: fixed;
+	top: calc(12px + env(safe-area-inset-top));
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 1000;
+	background: var(--brand-dark);
+	color: #fff;
+	border: none;
+	border-radius: 20px;
+	padding: 8px 16px;
+	font-size: 0.82rem;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+	transition: background 0.15s;
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
 }
 
 .back-to-all-btn:hover {
-  background: var(--brand-light);
+	background: var(--brand-light);
 }
 
 @media (max-width: 600px) {
-  .back-to-all-btn {
-    top: auto;
-    bottom: calc(110px + env(safe-area-inset-bottom));
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    z-index: 1001;
-  }
+	.back-to-all-btn {
+		top: auto;
+		bottom: calc(110px + env(safe-area-inset-bottom));
+		left: 50%;
+		transform: translateX(-50%);
+		white-space: nowrap;
+		z-index: 1001;
+	}
 }
 
 /* ============================================================
@@ -211,32 +211,32 @@
    ============================================================ */
 
 .popup-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 2px;
-  /* Leave space on the right for Leaflet's absolutely-positioned close button
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 2px;
+	/* Leave space on the right for Leaflet's absolutely-positioned close button
      so "Show all <route>" doesn't sit under the X. */
-  padding-right: 22px;
+	padding-right: 22px;
 }
 
 .popup-route-jump {
-  background: var(--brand-mid);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 3px 10px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-  flex-shrink: 0;
+	background: var(--brand-mid);
+	color: #fff;
+	border: none;
+	border-radius: 12px;
+	padding: 3px 10px;
+	font-size: 0.72rem;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.15s;
+	flex-shrink: 0;
 }
 
 .popup-route-jump:hover {
-  background: var(--brand-light);
+	background: var(--brand-light);
 }
 
 /* ============================================================
@@ -244,67 +244,67 @@
    ============================================================ */
 
 .popup-table-wrap {
-  max-height: 260px;
-  overflow-y: auto;
-  overflow-x: auto;
-  margin-top: 6px;
-  border-radius: 6px;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-surface);
+	max-height: 260px;
+	overflow-y: auto;
+	overflow-x: auto;
+	margin-top: 6px;
+	border-radius: 6px;
+	border: 1px solid var(--border-strong);
+	background: var(--bg-surface);
 }
 
 .movements-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.76rem;
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.76rem;
 }
 
 .movements-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--brand-dark);
-  color: #fff;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: var(--brand-dark);
+	color: #fff;
 }
 
 .movements-table th {
-  padding: 5px 8px;
-  text-align: left;
-  font-weight: 600;
-  white-space: nowrap;
+	padding: 5px 8px;
+	text-align: left;
+	font-weight: 600;
+	white-space: nowrap;
 }
 
 .movements-table td {
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--border-subtle);
-  white-space: nowrap;
-  color: var(--text-primary);
+	padding: 4px 8px;
+	border-bottom: 1px solid var(--border-subtle);
+	white-space: nowrap;
+	color: var(--text-primary);
 }
 
 /* Stop-name column: cap width so outlier-long names wrap at spaces instead
    of pushing Sched/Exp off the popup. Normal names (under the cap) stay on
    one line. Other columns keep nowrap. */
 .movements-table td:nth-child(2) {
-  white-space: normal;
-  overflow-wrap: break-word;
-  max-width: 220px;
+	white-space: normal;
+	overflow-wrap: break-word;
+	max-width: 220px;
 }
 
 .movements-table tbody tr:nth-child(even) {
-  background: var(--bg-elevated);
+	background: var(--bg-elevated);
 }
 
 .movements-table tbody tr:hover {
-  background: var(--bg-row-hover);
+	background: var(--bg-row-hover);
 }
 
 .movements-table tbody tr.movement-current {
-  background: var(--bg-highlight);
-  font-weight: 600;
+	background: var(--bg-highlight);
+	font-weight: 600;
 }
 
 .movements-table tbody tr.movement-current:nth-child(even) {
-  background: var(--bg-highlight);
+	background: var(--bg-highlight);
 }
 
 /* ============================================================
@@ -312,59 +312,59 @@
    ============================================================ */
 
 .direction-buttons {
-  display: flex;
-  gap: 6px;
+	display: flex;
+	gap: 6px;
 }
 
 /* Direction buttons appear on the always-dark search panel — no theming needed */
 .direction-btn {
-  flex: 1;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(33, 150, 243, 0.5);
-  background: rgba(33, 150, 243, 0.15);
-  color: #90caf9;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  text-align: center;
+	flex: 1;
+	padding: 6px 10px;
+	border-radius: 6px;
+	border: 1px solid rgba(33, 150, 243, 0.5);
+	background: rgba(33, 150, 243, 0.15);
+	color: #90caf9;
+	font-size: 0.78rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		color 0.15s;
+	text-align: center;
 }
 
 .direction-btn:hover {
-  background: rgba(33, 150, 243, 0.3);
-  color: #fff;
+	background: rgba(33, 150, 243, 0.3);
+	color: #fff;
 }
 
 .direction-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.78rem;
-  color: #90caf9;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	font-size: 0.78rem;
+	color: #90caf9;
 }
 
-
 @media (max-width: 600px) {
+	.popup-content {
+		font-size: 0.78rem;
+		min-width: min(300px, calc(100vw - 20px));
+		max-width: calc(100vw - 20px);
+	}
 
-  .popup-content {
-    font-size: 0.78rem;
-    min-width: min(300px, calc(100vw - 20px));
-    max-width: calc(100vw - 20px);
-  }
+	.popup-table-wrap {
+		max-height: 180px;
+	}
 
-  .popup-table-wrap {
-    max-height: 180px;
-  }
+	.movements-table th,
+	.movements-table td {
+		padding: 3px 5px;
+		font-size: 0.7rem;
+	}
 
-  .movements-table th,
-  .movements-table td {
-    padding: 3px 5px;
-    font-size: 0.7rem;
-  }
-
-  .leaflet-popup-content-wrapper {
-    border-radius: 8px;
-  }
+	.leaflet-popup-content-wrapper {
+		border-radius: 8px;
+	}
 }

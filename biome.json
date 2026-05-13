@@ -1,0 +1,117 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"includes": ["**", "!!**/dist", "!!src/data/*.json"],
+		"maxSize": 2097152
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["src/hooks/routeProjection.ts"],
+			"linter": {
+				"rules": {
+					"style": { "noNonNullAssertion": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["src/gtfsr.ts"],
+			"linter": {
+				"rules": {
+					"style": { "noNonNullAssertion": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["src/components/AboutModal.tsx"],
+			"linter": {
+				"rules": {
+					"a11y": { "useSemanticElements": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["src/components/BusSearchPanel.tsx"],
+			"linter": {
+				"rules": {
+					"complexity": { "noUselessFragments": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["src/components/SearchPanel.tsx"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noNoninteractiveElementToInteractiveRole": "off",
+						"useSemanticElements": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/hooks/useTrainMarkers.ts"],
+			"linter": {
+				"rules": {
+					"style": { "noNonNullAssertion": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["src/styles/*.css", "src/styles/**/*.css"],
+			"linter": {
+				"rules": {
+					"style": { "noDescendingSpecificity": "off" },
+					"suspicious": { "noDuplicateProperties": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["src/styles/popup.css"],
+			"linter": {
+				"rules": {
+					"complexity": { "noImportantStyles": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["tests/**"],
+			"linter": {
+				"rules": {
+					"style": { "noNonNullAssertion": "off" },
+					"suspicious": {
+						"noExplicitAny": "off",
+						"useIterableCallbackReturn": "off"
+					}
+				}
+			}
+		}
+	],
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}

@@ -3,143 +3,150 @@
    ============================================================ */
 
 .offline-banner {
-  position: fixed;
-  top: calc(12px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2002;
-  padding: 6px 14px;
-  background: rgba(180, 35, 24, 0.95);
-  color: #fff;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  max-width: calc(100vw - 24px);
-  white-space: nowrap;
-  animation: offline-banner-in 0.2s ease-out;
-  pointer-events: none;
+	position: fixed;
+	top: calc(12px + env(safe-area-inset-top));
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 2002;
+	padding: 6px 14px;
+	background: rgba(180, 35, 24, 0.95);
+	color: #fff;
+	border-radius: 999px;
+	font-size: 0.8rem;
+	font-weight: 600;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+	max-width: calc(100vw - 24px);
+	white-space: nowrap;
+	animation: offline-banner-in 0.2s ease-out;
+	pointer-events: none;
 }
 
 @keyframes offline-banner-in {
-  from { opacity: 0; transform: translate(-50%, -8px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+	from {
+		opacity: 0;
+		transform: translate(-50%, -8px);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, 0);
+	}
 }
 
 /* On mobile the search panel fills the top centre — slide the banner below it. */
 @media (max-width: 600px) {
-  .offline-banner {
-    top: calc(170px + env(safe-area-inset-top));
-  }
+	.offline-banner {
+		top: calc(170px + env(safe-area-inset-top));
+	}
 }
 
 /* Floating action button base — shared chrome for all fixed map overlays
    (locate / favorites / about) and the mobile search handle. Compose with an
    anchor class (.locate-btn, .fav-fab, .about-fab) that sets position only. */
 .fab {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: rgba(22, 22, 28, 0.78);
-  color: #f0f0f0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-  transition: background 0.15s, transform 0.1s;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	background: rgba(22, 22, 28, 0.78);
+	color: #f0f0f0;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 10px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(14px) saturate(140%);
+	-webkit-backdrop-filter: blur(14px) saturate(140%);
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+	transition:
+		background 0.15s,
+		transform 0.1s;
 }
 
 .fab:hover {
-  background: rgba(40, 40, 48, 0.9);
+	background: rgba(40, 40, 48, 0.9);
 }
 
 .fab:active {
-  transform: scale(0.94);
+	transform: scale(0.94);
 }
 
 .fab:disabled {
-  cursor: wait;
-  opacity: 0.55;
+	cursor: wait;
+	opacity: 0.55;
 }
 
 /* Mobile: these three stack directly above the bottom info-panel, and the
    outer shadow smears onto the panel's translucent edge. */
 @media (max-width: 600px) {
-  .locate-btn,
-  .fav-fab,
-  .about-fab {
-    box-shadow: none;
-  }
+	.locate-btn,
+	.fav-fab,
+	.about-fab {
+		box-shadow: none;
+	}
 }
 
 /* Locate-me floating button (one-shot geolocation). Desktop: bottom-right
    above attribution. Mobile: top-right (info-panel moves to bottom there). */
 .locate-btn {
-  position: fixed;
-  bottom: calc(48px + env(safe-area-inset-bottom));
-  right: calc(12px + env(safe-area-inset-right));
-  z-index: 1000;
+	position: fixed;
+	bottom: calc(48px + env(safe-area-inset-bottom));
+	right: calc(12px + env(safe-area-inset-right));
+	z-index: 1000;
 }
 
 .locate-btn.loading svg {
-  animation: locate-spin 0.9s linear infinite;
+	animation: locate-spin 0.9s linear infinite;
 }
 
 @keyframes locate-spin {
-  to {
-    transform: rotate(360deg);
-  }
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 @media (max-width: 600px) {
-  .locate-btn {
-    top: auto;
-    bottom: calc(110px + env(safe-area-inset-bottom));
-    right: calc(12px + env(safe-area-inset-right));
-  }
+	.locate-btn {
+		top: auto;
+		bottom: calc(110px + env(safe-area-inset-bottom));
+		right: calc(12px + env(safe-area-inset-right));
+	}
 }
 
 /* User location marker — blue dot + compass cone (SVG) that rotates with heading. */
 .user-loc-marker {
-  background: transparent;
-  border: 0;
+	background: transparent;
+	border: 0;
 }
 .user-loc-icon {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  transform-origin: 40px 40px;
-  transition: transform 0.18s ease-out;
-  will-change: transform;
+	position: relative;
+	width: 80px;
+	height: 80px;
+	transform-origin: 40px 40px;
+	transition: transform 0.18s ease-out;
+	will-change: transform;
 }
 .user-loc-cone {
-  position: absolute;
-  inset: 0;
-  width: 80px;
-  height: 80px;
-  opacity: 0;
-  transition: opacity 0.25s;
-  pointer-events: none;
-  overflow: visible;
+	position: absolute;
+	inset: 0;
+	width: 80px;
+	height: 80px;
+	opacity: 0;
+	transition: opacity 0.25s;
+	pointer-events: none;
+	overflow: visible;
 }
 .user-loc-icon.has-heading .user-loc-cone {
-  opacity: 1;
+	opacity: 1;
 }
 .user-loc-dot {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 16px;
-  height: 16px;
-  background: #1e88e5;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 16px;
+	height: 16px;
+	background: #1e88e5;
+	border: 2px solid #fff;
+	border-radius: 50%;
+	transform: translate(-50%, -50%);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
-

@@ -3,46 +3,52 @@
    ============================================================ */
 
 .app-toast {
-  position: fixed;
-  top: calc(60px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2001;
-  padding: 12px 20px;
-  background: rgba(245, 185, 69, 0.96);
-  color: #1a1a1a;
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
-  max-width: calc(100vw - 24px);
-  animation: app-toast-in 0.25s ease-out;
-  text-align: left;
+	position: fixed;
+	top: calc(60px + env(safe-area-inset-top));
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 2001;
+	padding: 12px 20px;
+	background: rgba(245, 185, 69, 0.96);
+	color: #1a1a1a;
+	border-radius: 12px;
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+	max-width: calc(100vw - 24px);
+	animation: app-toast-in 0.25s ease-out;
+	text-align: left;
 }
 
 .app-toast__text {
-  line-height: 1.3;
-  min-width: 0;
+	line-height: 1.3;
+	min-width: 0;
 }
 
 .app-toast__title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  white-space: nowrap;
+	font-size: 0.95rem;
+	font-weight: 700;
+	white-space: nowrap;
 }
 
 .app-toast__body {
-  margin-top: 2px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  opacity: 0.72;
+	margin-top: 2px;
+	font-size: 0.78rem;
+	font-weight: 500;
+	opacity: 0.72;
 }
 
 @keyframes app-toast-in {
-  from { opacity: 0; transform: translate(-50%, -12px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+	from {
+		opacity: 0;
+		transform: translate(-50%, -12px);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, 0);
+	}
 }
 
 @media (max-width: 600px) {
-  .app-toast {
-    top: calc(220px + env(safe-area-inset-top));
-  }
+	.app-toast {
+		top: calc(220px + env(safe-area-inset-top));
+	}
 }

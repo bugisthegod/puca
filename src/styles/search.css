@@ -3,47 +3,47 @@
    ============================================================ */
 
 #search-panel {
-  position: fixed;
-  top: calc(12px + env(safe-area-inset-top));
-  left: calc(12px + env(safe-area-inset-left));
-  z-index: 1000;
-  background: rgba(22, 22, 28, 0.78);
-  color: #f0f0f0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-  width: 260px;
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+	position: fixed;
+	top: calc(12px + env(safe-area-inset-top));
+	left: calc(12px + env(safe-area-inset-left));
+	z-index: 1000;
+	background: rgba(22, 22, 28, 0.78);
+	color: #f0f0f0;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 12px;
+	padding: 12px 14px;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+	width: 260px;
+	backdrop-filter: blur(18px) saturate(140%);
+	-webkit-backdrop-filter: blur(18px) saturate(140%);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .search-field {
-  position: relative;
+	position: relative;
 }
 
 .search-field input {
-  width: 100%;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  color: #f0f0f0;
-  font-size: 0.82rem;
-  text-align: center;
-  outline: none;
-  transition: border-color 0.15s;
+	width: 100%;
+	padding: 6px 10px;
+	border-radius: 6px;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	background: rgba(255, 255, 255, 0.08);
+	color: #f0f0f0;
+	font-size: 0.82rem;
+	text-align: center;
+	outline: none;
+	transition: border-color 0.15s;
 }
 
 .search-field input::placeholder {
-  color: #888;
+	color: #888;
 }
 
 .search-field input:focus {
-  border-color: #25a864;
+	border-color: #25a864;
 }
 
 /* Block Android Smart Text Selection. When unfocused, the input text
@@ -51,238 +51,247 @@
    the "Tap to see search results" Google popup never triggers. On focus
    (user wants to edit), normal selection is restored. */
 .search-field input {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
 }
 .search-field input:focus {
-  -webkit-user-select: text;
-  user-select: text;
+	-webkit-user-select: text;
+	user-select: text;
 }
 
 .station-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-  background: rgba(30, 30, 36, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  max-height: 180px;
-  overflow-y: auto;
-  z-index: 1001;
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	margin: 4px 0 0;
+	padding: 0;
+	list-style: none;
+	background: rgba(30, 30, 36, 0.85);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 8px;
+	max-height: 180px;
+	overflow-y: auto;
+	z-index: 1001;
+	backdrop-filter: blur(18px) saturate(140%);
+	-webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 .station-dropdown li {
-  padding: 6px 10px;
-  font-size: 0.78rem;
-  cursor: pointer;
-  transition: background 0.1s;
+	padding: 6px 10px;
+	font-size: 0.78rem;
+	cursor: pointer;
+	transition: background 0.1s;
 }
 
 .station-dropdown li:hover,
 .station-dropdown li.highlighted {
-  background: rgba(37, 168, 100, 0.3);
+	background: rgba(37, 168, 100, 0.3);
 }
 
 .route-operator-badge {
-  float: right;
-  font-size: 0.68rem;
-  opacity: 0.65;
-  padding-left: 8px;
+	float: right;
+	font-size: 0.68rem;
+	opacity: 0.65;
+	padding-left: 8px;
 }
 
 .search-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .search-btn {
-  flex: 1;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: none;
-  background: var(--brand-mid);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
+	flex: 1;
+	padding: 6px 12px;
+	border-radius: 6px;
+	border: none;
+	background: var(--brand-mid);
+	color: #fff;
+	font-size: 0.78rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.15s;
 }
 
 .search-btn:hover:not(:disabled) {
-  background: var(--brand-light);
+	background: var(--brand-light);
 }
 
 .search-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .clear-btn {
-  background: rgba(255, 255, 255, 0.1);
+	background: rgba(255, 255, 255, 0.1);
 }
 
 .clear-btn:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
+	background: rgba(255, 255, 255, 0.2);
 }
 
 .swap-btn {
-  align-self: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  color: #ccc;
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  transition: background 0.15s, color 0.15s;
+	align-self: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	background: rgba(255, 255, 255, 0.08);
+	color: #ccc;
+	font-size: 0.9rem;
+	cursor: pointer;
+	padding: 0;
+	line-height: 1;
+	transition:
+		background 0.15s,
+		color 0.15s;
 }
 
 .swap-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
 }
 
 .search-result-msg {
-  font-size: 0.75rem;
-  text-align: center;
-  padding-top: 2px;
-  animation: search-results-in 0.18s ease-out;
+	font-size: 0.75rem;
+	text-align: center;
+	padding-top: 2px;
+	animation: search-results-in 0.18s ease-out;
 }
 
 .search-result-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 32px;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 32px;
 }
 
 .search-result-header .fav-star {
-  position: absolute;
-  right: -4px;
-  top: 50%;
-  transform: translateY(-50%);
+	position: absolute;
+	right: -4px;
+	top: 50%;
+	transform: translateY(-50%);
 }
 
 .search-results {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: search-results-in 0.18s ease-out;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	animation: search-results-in 0.18s ease-out;
 }
 
 @keyframes search-results-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .search-result-msg.has-results {
-  color: #25a864;
+	color: #25a864;
 }
 
 .search-result-msg.no-results {
-  color: #f44336;
+	color: #f44336;
 }
 
 .train-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .train-item {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	padding: 8px 10px;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		border-color 0.15s;
 }
 
 .train-item:hover {
-  background: rgba(37, 168, 100, 0.15);
-  border-color: rgba(37, 168, 100, 0.4);
+	background: rgba(37, 168, 100, 0.15);
+	border-color: rgba(37, 168, 100, 0.4);
 }
 
 .train-item-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 3px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 3px;
 }
 
 .train-item-code {
-  font-weight: 700;
-  font-size: 0.82rem;
-  color: #25a864;
+	font-weight: 700;
+	font-size: 0.82rem;
+	color: #25a864;
 }
 
 .train-item-times {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  color: #ccc;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.72rem;
+	color: #ccc;
 }
 
 .train-item-arrow {
-  color: #666;
+	color: #666;
 }
 
 .train-item--scheduled,
 .train-item--unmapped {
-  opacity: 0.78;
-  cursor: default;
+	opacity: 0.78;
+	cursor: default;
 }
 
 .train-item-status {
-  font-size: 0.65rem;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-weight: 600;
+	font-size: 0.65rem;
+	padding: 1px 6px;
+	border-radius: 3px;
+	font-weight: 600;
 }
 
 /* These live on the always-dark search panel — no theming needed */
 .train-item-status--running {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
+	background: rgba(76, 175, 80, 0.2);
+	color: #4caf50;
 }
 
 .train-item-status--ready {
-  background: rgba(158, 158, 158, 0.2);
-  color: #9e9e9e;
+	background: rgba(158, 158, 158, 0.2);
+	color: #9e9e9e;
 }
 
 .train-item-status--unmapped {
-  background: rgba(255, 152, 0, 0.18);
-  color: #ffb74d;
+	background: rgba(255, 152, 0, 0.18);
+	color: #ffb74d;
 }
 
 .train-item-status--scheduled {
-  background: rgba(255, 255, 255, 0.12);
-  color: #bbb;
+	background: rgba(255, 255, 255, 0.12);
+	color: #bbb;
 }
 
 .train-item-route {
-  font-size: 0.72rem;
-  color: #aaa;
-  margin-bottom: 2px;
+	font-size: 0.72rem;
+	color: #aaa;
+	margin-bottom: 2px;
 }
-
 
 /* ============================================================
    Search FAB — the collapsed state of #search-panel
@@ -293,8 +302,8 @@
    it by default — if it's in the DOM we want it shown. No border because
    the panel wrapper owns the surround. */
 .search-fab {
-  display: flex;
-  border: none;
+	display: flex;
+	border: none;
 }
 
 /* Collapsed wrapper — strip the base #search-panel chrome so only the
@@ -302,68 +311,65 @@
    (top-left on desktop) and is overridden by the mobile media query
    below to re-center. */
 #search-panel.collapsed {
-  display: block;
-  padding: 0;
-  background: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
-  border-radius: 0;
-  width: auto;
+	display: block;
+	padding: 0;
+	background: none;
+	box-shadow: none;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border: none;
+	border-radius: 0;
+	width: auto;
 }
 
-
 @media (max-width: 600px) {
-  #search-panel {
-    top: calc(8px + env(safe-area-inset-top));
-    left: 20%;
-    right: 20%;
-    width: auto;
-    padding: 8px 10px;
-    gap: 4px;
-    font-size: 0.75rem;
-    border-radius: 8px;
-  }
+	#search-panel {
+		top: calc(8px + env(safe-area-inset-top));
+		left: 20%;
+		right: 20%;
+		width: auto;
+		padding: 8px 10px;
+		gap: 4px;
+		font-size: 0.75rem;
+		border-radius: 8px;
+	}
 
-  /* Collapsed on mobile — center the magnifier at the top. Chrome-stripping
+	/* Collapsed on mobile — center the magnifier at the top. Chrome-stripping
      lives in the global #search-panel.collapsed rule above. */
-  #search-panel.collapsed {
-    top: calc(12px + env(safe-area-inset-top));
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-  }
+	#search-panel.collapsed {
+		top: calc(12px + env(safe-area-inset-top));
+		left: 50%;
+		right: auto;
+		transform: translateX(-50%);
+	}
 
-  .search-field input {
-    padding: 5px 8px;
-    /* Must be ≥16px or iOS Safari auto-zooms on focus, which leaves the
+	.search-field input {
+		padding: 5px 8px;
+		/* Must be ≥16px or iOS Safari auto-zooms on focus, which leaves the
        layout viewport stuck and strands fixed elements off-screen. */
-    font-size: 16px;
-  }
+		font-size: 16px;
+	}
 
-  .swap-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 0.75rem;
-  }
+	.swap-btn {
+		width: 24px;
+		height: 24px;
+		font-size: 0.75rem;
+	}
 
-  .search-btn {
-    padding: 5px 10px;
-    font-size: 0.75rem;
-  }
+	.search-btn {
+		padding: 5px 10px;
+		font-size: 0.75rem;
+	}
 
-
-  .search-result-msg {
-    font-size: 0.7rem;
-  }
-
+	.search-result-msg {
+		font-size: 0.7rem;
+	}
 }
 
 .station-dropdown li.search-empty,
 .station-dropdown li.search-empty:hover {
-  color: rgba(255, 255, 255, 0.3);
-  background: none;
-  cursor: default;
-  pointer-events: none;
+	color: rgba(255, 255, 255, 0.3);
+	background: none;
+	cursor: default;
+	pointer-events: none;
 }
