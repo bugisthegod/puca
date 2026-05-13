@@ -933,7 +933,7 @@ export function mergeTripStops(
 	}
 
 	// DB not available or trip not in DB — return live data with nulls for scheduled
-	const fallbackStops: StopTimeUpdate[] = liveTrip?.stopTimeUpdates.map(
+	const fallbackStops: StopTimeUpdate[] = liveTrip!.stopTimeUpdates.map(
 		(u, i) => ({
 			sequence: u.sequence,
 			stopId: u.stopId,
@@ -951,8 +951,8 @@ export function mergeTripStops(
 
 	return {
 		tripId,
-		routeId: liveTrip?.routeId,
-		directionId: liveTrip?.directionId,
+		routeId: liveTrip!.routeId,
+		directionId: liveTrip!.directionId,
 		shapeId,
 		stops: fallbackStops.sort((a, b) => a.sequence - b.sequence),
 	};
@@ -1255,7 +1255,8 @@ export function decideStopArrival(
 		if (vehicleSeq > row.stop_sequence) return { keep: false };
 	} else if (
 		sortedUpdates.length > 0 &&
-		sortedUpdates[0]?.sequence > row.stop_sequence
+		(sortedUpdates[0] as NonNullable<(typeof sortedUpdates)[number]>).sequence >
+			row.stop_sequence
 	) {
 		return { keep: false };
 	}

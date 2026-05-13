@@ -300,7 +300,7 @@ Bun.serve({
 			};
 			if (!isInServiceHours("train")) return Response.json([], { headers });
 			try {
-				const code = req.params.code;
+				const code = req.params.code as string;
 				const url = new URL(req.url);
 				const numMins = clampMins(url.searchParams.get("mins"), 90);
 				const data = await getStationData(code, numMins);
@@ -391,7 +391,7 @@ Bun.serve({
 			};
 			if (!isInServiceHours("train")) return Response.json([], { headers });
 			try {
-				const trainId = req.params.id;
+				const trainId = req.params.id as string;
 				const url = new URL(req.url);
 				const dateRaw = url.searchParams.get("date");
 				const trainDate =
@@ -466,7 +466,7 @@ Bun.serve({
 			);
 			if (!operator)
 				return Response.json({ error: "unknown operator" }, { status: 400 });
-			const shape = getBusRouteShape(operator, req.params.route);
+			const shape = getBusRouteShape(operator, req.params.route as string);
 			return Response.json(shape ?? {}, {
 				headers: { "Cache-Control": "public, max-age=86400" }, // 1 day; shapes are static
 			});
@@ -484,7 +484,10 @@ Bun.serve({
 				);
 				if (!operator)
 					return Response.json({ error: "unknown operator" }, { status: 400 });
-				const trip = await getBusTripStops(operator, req.params.tripId);
+				const trip = await getBusTripStops(
+					operator,
+					req.params.tripId as string,
+				);
 				return Response.json(trip ?? {}, { headers: tripHeaders });
 			} catch {
 				return Response.json({}, { status: 502 });
@@ -512,7 +515,7 @@ Bun.serve({
 			);
 			if (!operator)
 				return Response.json({ error: "unknown operator" }, { status: 400 });
-			const stopId = req.params.stopId;
+			const stopId = req.params.stopId as string;
 			if (!getOperatorStop(operator, stopId)) {
 				return Response.json({ error: "unknown stopId" }, { status: 404 });
 			}

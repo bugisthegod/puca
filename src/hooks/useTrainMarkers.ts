@@ -480,7 +480,7 @@ export function useTrainMarkers({
 				const cached = trainShapeCache.get(newKey);
 				if (cached === undefined) {
 					// Not yet fetched — kick off async fetch; cache populated on completion
-					void fetchTrainShape(route?.origin, route?.destination);
+					route && void fetchTrainShape(route.origin, route.destination);
 				} else if (cached !== "not-found") {
 					lineInfo = cached;
 				}

@@ -481,8 +481,8 @@ describe("decideStopArrival", () => {
 	test("the bug: NTA stops 4-9 dropped, GPS shows bus still upstream → keep with Due", () => {
 		// Vehicle GPS sits exactly on sequence 8 — closest match is the user's stop.
 		const vehicle = {
-			lat: tripStopCoords[7]?.lat,
-			lng: tripStopCoords[7]?.lng,
+			lat: tripStopCoords[7]!.lat,
+			lng: tripStopCoords[7]!.lng,
 		};
 		const result = decideStopArrival(
 			userRow,
@@ -500,8 +500,8 @@ describe("decideStopArrival", () => {
 
 	test("vehicle GPS confirms bus genuinely past user's stop → drop", () => {
 		const vehicle = {
-			lat: tripStopCoords[10]?.lat,
-			lng: tripStopCoords[10]?.lng,
+			lat: tripStopCoords[10]!.lat,
+			lng: tripStopCoords[10]!.lng,
 		};
 		const result = decideStopArrival(
 			userRow,
@@ -583,8 +583,8 @@ describe("decideStopArrival", () => {
 	test("GPS upstream + sched in future → keep with normal ETA, no clamp", () => {
 		const futureRow = { stop_sequence: 8, arrival_sec: 73_200 };
 		const vehicle = {
-			lat: tripStopCoords[5]?.lat,
-			lng: tripStopCoords[5]?.lng,
+			lat: tripStopCoords[5]!.lat,
+			lng: tripStopCoords[5]!.lng,
 		}; // at stop 6
 		const result = decideStopArrival(
 			futureRow,
@@ -621,8 +621,8 @@ describe("decideStopArrival", () => {
 			],
 		};
 		const vehicle = {
-			lat: tripStopCoords[5]?.lat,
-			lng: tripStopCoords[5]?.lng,
+			lat: tripStopCoords[5]!.lat,
+			lng: tripStopCoords[5]!.lng,
 		}; // at stop 6
 		const result = decideStopArrival(
 			userRow,
@@ -635,16 +635,16 @@ describe("decideStopArrival", () => {
 		if (!result.keep) return;
 		expect(result.vehicleSeq).toBe(6);
 		expect(result.etaSource).toBe("gps-inferred");
-		expect(result.delaySec).toBe(nowSec - tripStopCoords[5]?.arrivalSec);
+		expect(result.delaySec).toBe(nowSec - tripStopCoords[5]!.arrivalSec!);
 		expect(result.etaSec).toBe(
-			userRow.arrival_sec - tripStopCoords[5]?.arrivalSec,
+			userRow.arrival_sec - tripStopCoords[5]!.arrivalSec!,
 		);
 	});
 
 	test("GPS at user's stop (sequence equal) → keep, treats as upstream", () => {
 		const vehicle = {
-			lat: tripStopCoords[7]?.lat,
-			lng: tripStopCoords[7]?.lng,
+			lat: tripStopCoords[7]!.lat,
+			lng: tripStopCoords[7]!.lng,
 		};
 		const result = decideStopArrival(
 			userRow,

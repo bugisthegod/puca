@@ -121,7 +121,7 @@ export function buildBusPopupHTML(
 	const stops = trip?.stops ?? [];
 	const originDest =
 		stops.length >= 2
-			? `<div class="popup-route">${escapeHtml(stops[0]?.name)} → ${escapeHtml(stops[stops.length - 1]?.name)}</div>`
+			? `<div class="popup-route">${escapeHtml(stops[0]?.name ?? "")} → ${escapeHtml(stops[stops.length - 1]?.name ?? "")}</div>`
 			: "";
 	const currentStop = trip && currentIdx >= 0 ? trip.stops[currentIdx] : null;
 	const status = busPopupStatusFromDelay(currentStop?.arrivalDelaySec ?? null);

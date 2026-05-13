@@ -148,7 +148,6 @@ function BusSearchPanel({
 	busShape,
 	isFavorite,
 	onToggleFavorite,
-	_busOperator,
 	busSearchTab,
 	onTabChange,
 	busStopId,
