@@ -28,6 +28,7 @@ const TICK_INTERVAL_MS = 33;
 interface UseVehicleMapOptions {
 	currentBusRoute?: string | null;
 	onSelectBusRoute?: (route: string, direction: string) => void;
+	onRouteJump?: (route: string, direction: string) => void;
 	initialView?: MapView | null;
 	focusContext?: FocusContext | null;
 	onFocusSegmentStatus?: (status: "ok" | "unavailable") => void;
@@ -71,6 +72,7 @@ export function useVehicleMap(
 	const {
 		currentBusRoute = null,
 		onSelectBusRoute,
+		onRouteJump,
 		initialView = null,
 		focusContext = null,
 		onFocusSegmentStatus,
@@ -79,6 +81,8 @@ export function useVehicleMap(
 
 	const onSelectBusRouteRef = useRef(onSelectBusRoute);
 	onSelectBusRouteRef.current = onSelectBusRoute;
+	const onRouteJumpRef = useRef(onRouteJump);
+	onRouteJumpRef.current = onRouteJump;
 
 	const rafId = useRef<number>(0);
 	const lastTickTime = useRef<number>(0);
@@ -121,6 +125,7 @@ export function useVehicleMap(
 		mode,
 		currentBusRoute,
 		onSelectBusRoute: onSelectBusRouteRef,
+		onRouteJump: onRouteJumpRef,
 		leafletMap,
 		busClusterLayer,
 	});
