@@ -77,6 +77,8 @@ export type FocusContext = {
 	targetStopName: string;
 	targetStopLat: number;
 	targetStopLng: number;
+	targetStopSequence: number;
+	vehicleStopSequence: number | null;
 };
 
 export type BusVehicle = {

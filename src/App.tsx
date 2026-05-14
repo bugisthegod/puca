@@ -598,6 +598,11 @@ function App() {
 				targetStopName: stop.name,
 				targetStopLat: stop.lat,
 				targetStopLng: stop.lng,
+				targetStopSequence: arrival.stopSequence,
+				vehicleStopSequence:
+					arrival.stopsAway === null
+						? null
+						: arrival.stopSequence - arrival.stopsAway,
 			});
 		},
 		[],
