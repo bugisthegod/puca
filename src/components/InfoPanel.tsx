@@ -69,6 +69,30 @@ function InfoPanel({
 	const showBusStopSummary = stopSummary !== null;
 	const trainSummary = drilledIn && mode === "train" ? trainFocusSummary : null;
 	const showTrainSummary = trainSummary !== null;
+	const trainSummaryMeta = trainSummary?.isOriginStop
+		? trainSummary.etaMinutes === null
+			? null
+			: trainSummary.etaMinutes <= 0
+				? t("train.focus.departing")
+				: t("train.focus.departsIn", { n: trainSummary.etaMinutes })
+		: trainSummary
+			? [
+					trainSummary.stopsAway === null
+						? null
+						: t("bus.search.stops.away", {
+								n: trainSummary.stopsAway,
+							}),
+					trainSummary.etaMinutes === null
+						? null
+						: trainSummary.etaMinutes <= 0
+							? t("bus.search.eta.due")
+							: t("bus.search.eta.min", {
+									n: trainSummary.etaMinutes,
+								}),
+				]
+					.filter(Boolean)
+					.join(" · ")
+			: null;
 
 	const modes: { value: Mode; label: string }[] = [
 		{ value: "train", label: t("info.mode.train") },
@@ -117,22 +141,7 @@ function InfoPanel({
 										{trainSummary.trainCode}
 									</span>
 									<span className="info-stop-summary__meta">
-										{[
-											trainSummary.stopsAway === null
-												? null
-												: t("bus.search.stops.away", {
-														n: trainSummary.stopsAway,
-													}),
-											trainSummary.etaMinutes === null
-												? null
-												: trainSummary.etaMinutes <= 0
-													? t("bus.search.eta.due")
-													: t("bus.search.eta.min", {
-															n: trainSummary.etaMinutes,
-														}),
-										]
-											.filter(Boolean)
-											.join(" · ")}
+										{trainSummaryMeta}
 									</span>
 								</div>
 							</div>

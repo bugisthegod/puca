@@ -195,6 +195,18 @@ function minutesUntil(time: string): number | null {
 	return Math.max(0, diff);
 }
 
+function displayTrainDestination(
+	train: Train,
+	movements: TrainMovement[],
+): string | null {
+	const route = parseRoute(train.message);
+	const destination = route?.destination || movements.at(-1)?.stationName || "";
+	if (destination) return destination;
+	return /^(north|south|east|west)bound$/i.test(train.direction)
+		? null
+		: train.direction.replace(/^to\s+/i, "") || null;
+}
+
 // ---------------------------------------------------------------------------
 // Helper: poll a markers map until an entry appears (async retry loop).
 // Used by focusTrain to handle the gap between search-result click and the
@@ -314,7 +326,7 @@ export function useTrainMarkers({
 			movements,
 		);
 		const baseIndex = nextIndex >= 0 ? nextIndex : currentIndex;
-		const route = parseRoute(entry.train.message);
+		const destination = displayTrainDestination(entry.train, movements);
 		const stopsAway =
 			targetIndex >= 0 && baseIndex >= 0
 				? Math.max(0, targetIndex - baseIndex + (nextIndex >= 0 ? 1 : 0))
@@ -328,11 +340,10 @@ export function useTrainMarkers({
 
 		return {
 			trainCode: entry.train.code,
-			directionName:
-				route?.destination ??
-				(entry.train.direction.replace(/^to\s+/i, "") || null),
+			directionName: destination,
 			stopsAway,
 			etaMinutes: minutesUntil(etaTime),
+			isOriginStop: targetIndex === 0,
 		};
 	}
 

@@ -49,6 +49,7 @@ export type TrainFocusSummary = {
 	directionName: string | null;
 	stopsAway: number | null;
 	etaMinutes: number | null;
+	isOriginStop: boolean;
 };
 
 export type BusOperator = "dublinbus" | "buseireann" | "goahead";

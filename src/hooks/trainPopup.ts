@@ -52,27 +52,58 @@ export function buildTrainStatusText(
 		: t("popup.status.late.many", { n: late });
 }
 
-function trainPopupHeader(train: Train): string {
+function trainDirectionLabel(
+	train: Train,
+	movements: TrainMovement[] = [],
+): string {
 	const route = parseRoute(train.message);
+	const destination = route?.destination || movements.at(-1)?.stationName || "";
+	if (destination) return destination;
+	return /^(north|south|east|west)bound$/i.test(train.direction)
+		? ""
+		: train.direction;
+}
+
+function trainRouteLabel(
+	train: Train,
+	movements: TrainMovement[] = [],
+): string {
+	const route = parseRoute(train.message);
+	if (route) return `${route.origin} → ${route.destination}`;
+	const origin = movements.at(0)?.stationName || "";
+	const destination = movements.at(-1)?.stationName || "";
+	return origin && destination ? `${origin} → ${destination}` : "";
+}
+
+function trainPopupHeader(
+	train: Train,
+	movements: TrainMovement[] = [],
+): string {
 	const late = parseLateMinutes(train.message);
 	const statusText = buildTrainStatusText(train.status, late);
+	const directionLabel = trainDirectionLabel(train, movements);
+	const routeLabel = trainRouteLabel(train, movements);
 
 	return `
     <div class="popup-train-title-row">
       <div class="popup-title">${escapeHtml(train.code)}</div>
       <div class="popup-meta">
         <span class="popup-status ${trainPopupStatusClass(train.status, late)}">${statusText}</span>
-        ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
+        ${directionLabel ? `<span class="popup-dir">${escapeHtml(directionLabel)}</span>` : ""}
       </div>
     </div>
-    ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
+    ${routeLabel ? `<div class="popup-route">${escapeHtml(routeLabel)}</div>` : ""}
   `;
 }
 
-function buildTrainPopupShell(train: Train, bodyHtml: string): string {
+function buildTrainPopupShell(
+	train: Train,
+	bodyHtml: string,
+	movements: TrainMovement[] = [],
+): string {
 	return `
     <div class="popup-content">
-      ${trainPopupHeader(train)}
+      ${trainPopupHeader(train, movements)}
       ${bodyHtml}
     </div>
   `;
@@ -199,5 +230,5 @@ export function buildTrainPopupWithMovements(
              </div>`
 			: `<div class="popup-message">${formatTrainPopupMessage(train.message)}</div>`;
 
-	return buildTrainPopupShell(train, bodyHtml);
+	return buildTrainPopupShell(train, bodyHtml, movements);
 }
