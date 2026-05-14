@@ -1,3 +1,7 @@
 export function applyInitialAppearance(): void {
-	document.documentElement.dataset.theme = "light";
+	delete document.documentElement.dataset.theme;
+	try {
+		localStorage.removeItem("puca:theme");
+		localStorage.removeItem("puca:fab-side");
+	} catch {}
 }

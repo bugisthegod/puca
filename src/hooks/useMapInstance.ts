@@ -343,20 +343,6 @@ export function useMapInstance(
 			fadeAnimation: true,
 			zoomControl: false,
 		}).setView(center, zoom);
-		const popupPane = map.getPane("popupPane");
-		const mapPane = (map as L.Map & { _mapPane?: HTMLElement })._mapPane;
-		let syncPopupPane: (() => void) | null = null;
-		if (popupPane && mapPane) {
-			// Leaflet keeps popupPane inside the transformed mapPane, which prevents
-			// popups from stacking above our fixed UI. Move only the popup pane out,
-			// then mirror the mapPane transform so popup positioning stays correct.
-			map.getContainer().append(popupPane);
-			syncPopupPane = () => {
-				popupPane.style.transform = mapPane.style.transform;
-			};
-			syncPopupPane();
-			map.on("move zoom zoomanim viewreset resize", syncPopupPane);
-		}
 
 		const baseLayer = L.tileLayer(TILE_VOYAGER, {
 			...BASE_TILE_OPTIONS,
@@ -400,9 +386,6 @@ export function useMapInstance(
 		leafletMap.current = map;
 
 		return () => {
-			if (syncPopupPane) {
-				map.off("move zoom zoomanim viewreset resize", syncPopupPane);
-			}
 			teardownCompass();
 			map.remove();
 			leafletMap.current = null;

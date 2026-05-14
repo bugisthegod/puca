@@ -2,10 +2,6 @@
    Leaflet popup overrides
    ============================================================ */
 
-.leaflet-popup-pane {
-	z-index: 1500;
-}
-
 .leaflet-popup-content-wrapper {
 	border-radius: 10px;
 	padding: 0;
