@@ -37,7 +37,7 @@ export function buildRouteLine(
 
 // Equirectangular approximation — accurate to <0.1% for short segments,
 // orders of magnitude faster than Haversine for the precompute step.
-function segmentLengthM(
+export function segmentLengthM(
 	lat0: number,
 	lng0: number,
 	lat1: number,

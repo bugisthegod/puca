@@ -6,7 +6,11 @@ import {
 	useRef,
 } from "react";
 import type { BusOperator, BusVehicle, FocusContext } from "../types";
-import { buildRouteLine, projectOntoRoute } from "./routeProjection";
+import {
+	buildRouteLine,
+	projectOntoRoute,
+	segmentLengthM,
+} from "./routeProjection";
 import type { BusMarkerEntry } from "./useBusMarkers";
 import type { Mode } from "./useVehicleMap";
 
@@ -31,21 +35,6 @@ type OrderedProjection = {
 	segmentIndex: number;
 	distanceFromPathMeters: number;
 };
-
-function segmentLengthM(
-	lat0: number,
-	lng0: number,
-	lat1: number,
-	lng1: number,
-): number {
-	const R = 6_371_000;
-	const dLat = (lat1 - lat0) * (Math.PI / 180);
-	const dLng = (lng1 - lng0) * (Math.PI / 180);
-	const midLat = ((lat0 + lat1) / 2) * (Math.PI / 180);
-	const x = dLng * Math.cos(midLat) * R;
-	const y = dLat * R;
-	return Math.sqrt(x * x + y * y);
-}
 
 function buildCumulativeDistances(coords: [number, number][]): number[] {
 	const cumulative = [0];
