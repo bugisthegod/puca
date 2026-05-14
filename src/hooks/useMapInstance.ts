@@ -355,7 +355,8 @@ export function useMapInstance(
 			map.getContainer().append(popupPane);
 			syncPopupPane = () => {
 				popupPane.style.transform = mapPane.style.transform;
-				popupPane.style.transformOrigin = mapPane.style.transformOrigin;
+				popupPane.style.transformOrigin =
+					getComputedStyle(mapPane).transformOrigin;
 			};
 			syncPopupPane();
 			map.on(
