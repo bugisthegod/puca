@@ -225,6 +225,8 @@ const EN = {
 	"toast.location.timeout.title": "Timed out",
 	"toast.location.timeout.body": "Try again",
 	"toast.location.unknown.title": "Couldn't get your location",
+	"toast.location.lowAccuracy.title": "Location accuracy is low",
+	"toast.location.lowAccuracy.body": "Wait a moment or enable precise location.",
 	"toast.fav.full": "Favorites full ({max} max). Remove one first.",
 
 	// FAB buttons
@@ -440,6 +442,8 @@ const ZH: Record<Key, string> = {
 	"toast.location.timeout.title": "请求超时",
 	"toast.location.timeout.body": "请重试",
 	"toast.location.unknown.title": "无法获取你的位置",
+	"toast.location.lowAccuracy.title": "定位精度较低",
+	"toast.location.lowAccuracy.body": "请稍等片刻，或开启精确定位。",
 	"toast.fav.full": "收藏已满（最多 {max} 个）。请先移除一个。",
 
 	// FAB buttons

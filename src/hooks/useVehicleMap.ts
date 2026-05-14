@@ -63,7 +63,7 @@ export function useVehicleMap(
 		boardingStationCode?: string,
 	) => Promise<FocusTrainResult>;
 	clearTrainFocus: () => void;
-	locateUser: () => Promise<void>;
+	locateUser: () => Promise<{ accuracy: number }>;
 	getMapView: () => MapView | null;
 	closePopup: () => void;
 	compassPref: boolean;
