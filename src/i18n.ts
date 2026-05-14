@@ -126,7 +126,7 @@ const EN = {
 		"Tap any vehicle for live details, delays, stops, and route context.",
 	"tour.settings.title": "Settings & help",
 	"tour.settings.body":
-		"Change language, theme, compass, button side, install tips, or revisit this tour.",
+		"Change language, toggle compass, get install tips, or revisit this tour.",
 	"tour.favs.title": "Save favourites",
 	"tour.favs.body":
 		"Star bus routes, bus stops, or train searches, then open them from here.",
@@ -344,8 +344,7 @@ const ZH: Record<Key, string> = {
 	"tour.tap.title": "点击车辆",
 	"tour.tap.body": "点击任意车辆，查看实时详情、延误、停靠站与线路信息。",
 	"tour.settings.title": "设置与帮助",
-	"tour.settings.body":
-		"切换语言、主题、指南针、按钮位置，查看安装提示，或重温引导。",
+	"tour.settings.body": "切换语言、开关指南针，查看安装提示，或重温引导。",
 	"tour.favs.title": "保存收藏",
 	"tour.favs.body": "收藏公交线路、公交站或列车搜索，下次可从这里直接打开。",
 	"tour.locate.title": "定位我",

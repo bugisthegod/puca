@@ -26,7 +26,7 @@ import {
 	type TrainFavorite,
 	totalFavorites,
 } from "./favorites";
-import { applyInitialAppearance } from "./hooks/useAppearance";
+import { cleanupDeprecatedSettings } from "./hooks/useAppearance";
 import { useFavorites } from "./hooks/useFavorites";
 import { useToast } from "./hooks/useToast";
 import { type Mode, useVehicleMap } from "./hooks/useVehicleMap";
@@ -49,8 +49,8 @@ const savedBusSearch = loadBusSearchSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
 
-// Apply saved theme + FAB side before React renders to avoid a flash/jump.
-applyInitialAppearance();
+// Clean up deprecated localStorage keys from removed features.
+cleanupDeprecatedSettings();
 
 // iOS (Safari/WebKit) is the only platform that gates device orientation
 // behind a per-page-load permission prompt — Android just works. Use the
