@@ -65,6 +65,7 @@ export function useVehicleMap(
 	clearTrainFocus: () => void;
 	locateUser: () => Promise<void>;
 	getMapView: () => MapView | null;
+	closePopup: () => void;
 	compassPref: boolean;
 	startCompass: () => Promise<boolean>;
 	stopCompass: () => void;
@@ -116,6 +117,10 @@ export function useVehicleMap(
 		stationsRef,
 		onTrainFocusSummary,
 	});
+
+	function closePopup(): void {
+		leafletMap.current?.closePopup();
+	}
 
 	const { busMarkers } = useBusMarkers({
 		buses,
@@ -326,6 +331,7 @@ export function useVehicleMap(
 		clearTrainFocus,
 		locateUser,
 		getMapView,
+		closePopup,
 		compassPref,
 		startCompass,
 		stopCompass,

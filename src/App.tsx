@@ -178,6 +178,7 @@ function App() {
 	const {
 		focusTrain,
 		clearTrainFocus,
+		closePopup,
 		locateUser,
 		getMapView,
 		compassPref,
@@ -535,6 +536,14 @@ function App() {
 		[],
 	);
 
+	const handlePanelCollapsedChange = useCallback(
+		(collapsed: boolean) => {
+			if (!collapsed) closePopup();
+			setPanelCollapsed(collapsed);
+		},
+		[closePopup],
+	);
+
 	const handleBusTabChange = useCallback((tab: BusSearchTab) => {
 		setBusSearchTab(tab);
 		if (tab === "route") {
@@ -779,7 +788,7 @@ function App() {
 					favs={favs}
 					onToggleTrain={tryToggleTrain}
 					collapsed={panelCollapsed}
-					onCollapsedChange={setPanelCollapsed}
+					onCollapsedChange={handlePanelCollapsedChange}
 					onShowToast={showToast}
 					onSearchIntent={showTrainEmptyNoticeIfUnavailable}
 				/>
@@ -799,7 +808,7 @@ function App() {
 					busStopOperator={busStopOperator}
 					onStopIdChange={handleStopIdChange}
 					collapsed={panelCollapsed}
-					onCollapsedChange={setPanelCollapsed}
+					onCollapsedChange={handlePanelCollapsedChange}
 					onShowToast={showToast}
 					stopIsFavorite={stopIsFav}
 					onToggleStopFavorite={onToggleStopFav}
