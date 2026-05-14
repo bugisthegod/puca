@@ -8,6 +8,8 @@ import {
 	parseTrainProgress,
 } from "../utils";
 
+type TrainRoute = ReturnType<typeof parseRoute>;
+
 function normalizeStationName(name: string): string {
 	return name
 		.normalize("NFD")
@@ -52,27 +54,63 @@ export function buildTrainStatusText(
 		: t("popup.status.late.many", { n: late });
 }
 
-function trainPopupHeader(train: Train): string {
+function trainDirectionLabel(
+	train: Train,
+	route: TrainRoute,
+	movements: TrainMovement[] = [],
+): string {
+	const isCardinalDirection = /^(north|south|east|west)bound$/i.test(
+		train.direction,
+	);
+	if (train.direction && !isCardinalDirection) {
+		return train.direction.replace(/^to\s+/i, "");
+	}
+
+	const destination = route?.destination || movements.at(-1)?.stationName || "";
+	if (destination) return destination;
+	return "";
+}
+
+function trainRouteLabel(
+	route: TrainRoute,
+	movements: TrainMovement[] = [],
+): string {
+	if (route) return `${route.origin} → ${route.destination}`;
+	const origin = movements.at(0)?.stationName || "";
+	const destination = movements.at(-1)?.stationName || "";
+	return origin && destination ? `${origin} → ${destination}` : "";
+}
+
+function trainPopupHeader(
+	train: Train,
+	movements: TrainMovement[] = [],
+): string {
 	const route = parseRoute(train.message);
 	const late = parseLateMinutes(train.message);
 	const statusText = buildTrainStatusText(train.status, late);
+	const directionLabel = trainDirectionLabel(train, route, movements);
+	const routeLabel = trainRouteLabel(route, movements);
 
 	return `
     <div class="popup-train-title-row">
       <div class="popup-title">${escapeHtml(train.code)}</div>
       <div class="popup-meta">
         <span class="popup-status ${trainPopupStatusClass(train.status, late)}">${statusText}</span>
-        ${train.direction ? `<span class="popup-dir">${escapeHtml(train.direction)}</span>` : ""}
+        ${directionLabel ? `<span class="popup-dir">${escapeHtml(directionLabel)}</span>` : ""}
       </div>
     </div>
-    ${route ? `<div class="popup-route">${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</div>` : ""}
+    ${routeLabel ? `<div class="popup-route">${escapeHtml(routeLabel)}</div>` : ""}
   `;
 }
 
-function buildTrainPopupShell(train: Train, bodyHtml: string): string {
+function buildTrainPopupShell(
+	train: Train,
+	bodyHtml: string,
+	movements: TrainMovement[] = [],
+): string {
 	return `
     <div class="popup-content">
-      ${trainPopupHeader(train)}
+      ${trainPopupHeader(train, movements)}
       ${bodyHtml}
     </div>
   `;
@@ -199,5 +237,5 @@ export function buildTrainPopupWithMovements(
              </div>`
 			: `<div class="popup-message">${formatTrainPopupMessage(train.message)}</div>`;
 
-	return buildTrainPopupShell(train, bodyHtml);
+	return buildTrainPopupShell(train, bodyHtml, movements);
 }

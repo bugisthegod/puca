@@ -43,10 +43,10 @@ export function useFocusSegment({
 	onSegmentStatus,
 }: UseFocusSegmentOptions): void {
 	const layersRef = useRef<{
-		polyline: L.Polyline | null;
+		polylines: L.Polyline[];
 		intermediates: L.Marker[];
 		target: L.Marker | null;
-	}>({ polyline: null, intermediates: [], target: null });
+	}>({ polylines: [], intermediates: [], target: null });
 
 	// Cache shape responses by operator+route so rapid arrival switches don't refetch.
 	const shapeCacheRef = useRef<Map<string, ShapeResponse>>(new Map());
@@ -56,11 +56,11 @@ export function useFocusSegment({
 			const map = leafletMap.current;
 			const prev = layersRef.current;
 			if (map) {
-				if (prev.polyline) map.removeLayer(prev.polyline);
+				for (const polyline of prev.polylines) map.removeLayer(polyline);
 				for (const c of prev.intermediates) map.removeLayer(c);
 				if (prev.target) map.removeLayer(prev.target);
 			}
-			layersRef.current = { polyline: null, intermediates: [], target: null };
+			layersRef.current = { polylines: [], intermediates: [], target: null };
 		}
 
 		removeLayers();
@@ -208,8 +208,11 @@ export function useFocusSegment({
 			// opacity on zoom-end avoids the "stroke bleeds into a blob" look.
 			const polyline = L.polyline(slicedCoords, {
 				color,
-				weight: 4,
+				weight: 5,
 				opacity: 0,
+				lineCap: "round",
+				lineJoin: "round",
+				interactive: false,
 			}).addTo(map);
 
 			const intermediates: L.Marker[] = [];
@@ -234,8 +237,8 @@ export function useFocusSegment({
 					icon: L.divIcon({
 						className: `focus-stop focus-stop--${focusContext.operator}`,
 						html: "",
-						iconSize: [14, 14],
-						iconAnchor: [7, 7],
+						iconSize: [12, 12],
+						iconAnchor: [6, 6],
 					}),
 					pane: "focusPane",
 				});
@@ -276,7 +279,11 @@ export function useFocusSegment({
 			});
 			target.addTo(map);
 
-			layersRef.current = { polyline, intermediates, target };
+			layersRef.current = {
+				polylines: [polyline],
+				intermediates,
+				target,
+			};
 			onSegmentStatus?.("ok");
 
 			// Frame the whole segment (bus → target) so it fills the viewport —

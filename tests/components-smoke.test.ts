@@ -8,7 +8,12 @@ import {
 	getBusDirections,
 	type RouteWithOperator,
 } from "../src/components/BusSearchPanel";
-import { INFO_BUS_OPERATORS, INFO_FILTERS } from "../src/components/InfoPanel";
+import {
+	INFO_BUS_OPERATORS,
+	INFO_FILTERS,
+	trainFocusSummaryMeta,
+} from "../src/components/InfoPanel";
+import { t } from "../src/i18n";
 
 describe("BusSearchPanel smoke helpers", () => {
 	const routes: RouteWithOperator[] = [
@@ -112,5 +117,35 @@ describe("InfoPanel smoke constants", () => {
 			"Bus Éireann",
 			"Go-Ahead",
 		]);
+	});
+
+	test("uses departure copy for train summaries at the origin stop", () => {
+		expect(
+			trainFocusSummaryMeta(
+				{
+					trainCode: "P660",
+					directionName: "Grand Canal Dock",
+					stopsAway: 0,
+					etaMinutes: 5,
+					isOriginStop: true,
+				},
+				t,
+			),
+		).toBe("Departs in 5 min");
+	});
+
+	test("keeps stops-away copy for train summaries after the origin", () => {
+		expect(
+			trainFocusSummaryMeta(
+				{
+					trainCode: "P660",
+					directionName: "Grand Canal Dock",
+					stopsAway: 2,
+					etaMinutes: 10,
+					isOriginStop: false,
+				},
+				t,
+			),
+		).toBe("2 stops away · 10 min");
 	});
 });
