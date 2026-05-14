@@ -82,15 +82,6 @@
 	color: var(--text-secondary);
 }
 
-:root[data-theme="dark"] .popup-stale-banner {
-	background: #3a3010;
-	border-color: #5a4820;
-}
-
-:root[data-theme="dark"] .popup-stale-text strong {
-	color: #f0c060;
-}
-
 .popup-title {
 	font-size: 1.1rem;
 	font-weight: 700;

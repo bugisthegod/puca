@@ -74,27 +74,12 @@ const EN = {
 	// AboutModal — Language setting
 	"about.lang.label": "Language",
 
-	// AboutModal — Appearance setting
-	"about.appearance.label": "Appearance",
-	"about.appearance.info":
-		"Switch between light and dark theme. System follows your device setting.",
-	"about.theme.light": "Light",
-	"about.theme.dark": "Dark",
-	"about.theme.system": "System",
-
 	// AboutModal — Compass setting
 	"about.compass.label": "Compass",
 	"about.compass.info":
 		"Shows which way you're facing on the map. Off by default; if your device asks for permission every time, keeping it off is recommended.",
 	"about.compass.off": "Off",
 	"about.compass.on": "On",
-
-	// AboutModal — Button side setting
-	"about.fab.label": "Button side",
-	"about.fab.info":
-		"Moves the locate, favourites, and About buttons to your preferred side.",
-	"about.fab.left": "Left",
-	"about.fab.right": "Right",
 
 	// AboutModal — Install card
 	"about.install.heading": "Install as an app",
@@ -308,26 +293,12 @@ const ZH: Record<Key, string> = {
 	// AboutModal — Language setting
 	"about.lang.label": "语言",
 
-	// AboutModal — Appearance setting
-	"about.appearance.label": "外观",
-	"about.appearance.info":
-		"在浅色和深色主题之间切换。「跟随系统」会跟随你的设备设置。",
-	"about.theme.light": "浅色",
-	"about.theme.dark": "深色",
-	"about.theme.system": "跟随系统",
-
 	// AboutModal — Compass setting
 	"about.compass.label": "指南针",
 	"about.compass.info":
 		"在地图上显示你面朝的方向。默认关闭；如果设备每次都弹权限提醒，建议保持关闭。",
 	"about.compass.off": "关",
 	"about.compass.on": "开",
-
-	// AboutModal — Button side setting
-	"about.fab.label": "按钮位置",
-	"about.fab.info": "将定位、收藏和关于按钮移动到你偏好的一侧。",
-	"about.fab.left": "左",
-	"about.fab.right": "右",
 
 	// AboutModal — Install card
 	"about.install.heading": "安装为应用",

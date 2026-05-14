@@ -19,8 +19,6 @@ import type { Mode } from "./useVehicleMap";
 
 const TILE_VOYAGER =
 	"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const TILE_DARK =
-	"https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png";
 
 const DEFAULT_CENTER: L.LatLngExpression = [53.35, -6.26];
 const DEFAULT_ZOOM = 8;
@@ -124,8 +122,6 @@ export function useMapInstance(
 	const stationsRef = useRef<Map<string, Station>>(new Map());
 	const zoomingRef = useRef<boolean>(false);
 	const railwayLayerRef = useRef<L.TileLayer | null>(null);
-	// Holds current base tile layer so we can remove it on scheme change
-	const baseTileRef = useRef<L.TileLayer | null>(null);
 	const userMarkerRef = useRef<L.Marker | null>(null);
 	const userIconInnerRef = useRef<HTMLElement | null>(null);
 	const accuracyCircleRef = useRef<L.Circle | null>(null);
@@ -348,29 +344,13 @@ export function useMapInstance(
 			zoomControl: false,
 		}).setView(center, zoom);
 
-		function isDark(): boolean {
-			return document.documentElement.dataset.theme === "dark";
-		}
-
-		function addBaseTile(dark: boolean): void {
-			if (baseTileRef.current) {
-				map.removeLayer(baseTileRef.current);
-			}
-			const layer = L.tileLayer(dark ? TILE_DARK : TILE_VOYAGER, {
-				...BASE_TILE_OPTIONS,
-				className: dark ? "tile-dark" : "tile-voyager",
-			});
-			layer.addTo(map);
-			// Ensure base tile stays behind railway overlay
-			layer.bringToBack();
-			baseTileRef.current = layer;
-		}
-
-		addBaseTile(isDark());
-
-		// Swap base tile when the user toggles theme in the About modal.
-		const onSchemeChange = () => addBaseTile(isDark());
-		window.addEventListener("puca:themechange", onSchemeChange);
+		const baseLayer = L.tileLayer(TILE_VOYAGER, {
+			...BASE_TILE_OPTIONS,
+			className: "tile-voyager",
+		});
+		baseLayer.addTo(map);
+		// Ensure base tile stays behind railway overlay
+		baseLayer.bringToBack();
 
 		// Railway lines overlay (only in train mode)
 		railwayLayerRef.current = L.tileLayer(
@@ -407,11 +387,9 @@ export function useMapInstance(
 		leafletMap.current = map;
 
 		return () => {
-			window.removeEventListener("puca:themechange", onSchemeChange);
 			teardownCompass();
 			map.remove();
 			leafletMap.current = null;
-			baseTileRef.current = null;
 			userMarkerRef.current = null;
 			userIconInnerRef.current = null;
 			accuracyCircleRef.current = null;
