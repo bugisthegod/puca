@@ -343,6 +343,27 @@ export function useMapInstance(
 			fadeAnimation: true,
 			zoomControl: false,
 		}).setView(center, zoom);
+		const popupPane = map.getPane("popupPane");
+		const mapPane = map.getPanes().mapPane;
+		const originalPopupParent = popupPane?.parentElement ?? null;
+		const originalPopupNextSibling = popupPane?.nextSibling ?? null;
+		let syncPopupPane: (() => void) | null = null;
+		if (popupPane) {
+			// Leaflet nests popupPane inside the transformed mapPane, so app chrome with
+			// fixed z-index can still cover popups. Move only popupPane up to the map
+			// container and mirror mapPane's transform so coordinates stay aligned.
+			map.getContainer().append(popupPane);
+			syncPopupPane = () => {
+				popupPane.style.transform = mapPane.style.transform;
+				popupPane.style.transformOrigin =
+					getComputedStyle(mapPane).transformOrigin;
+			};
+			syncPopupPane();
+			map.on(
+				"move zoom zoomanim zoomstart zoomend viewreset resize",
+				syncPopupPane,
+			);
+		}
 
 		const baseLayer = L.tileLayer(TILE_VOYAGER, {
 			...BASE_TILE_OPTIONS,
@@ -386,6 +407,17 @@ export function useMapInstance(
 		leafletMap.current = map;
 
 		return () => {
+			if (popupPane && syncPopupPane) {
+				map.off(
+					"move zoom zoomanim zoomstart zoomend viewreset resize",
+					syncPopupPane,
+				);
+				popupPane.style.transform = "";
+				popupPane.style.transformOrigin = "";
+				if (originalPopupParent) {
+					originalPopupParent.insertBefore(popupPane, originalPopupNextSibling);
+				}
+			}
 			teardownCompass();
 			map.remove();
 			leafletMap.current = null;
