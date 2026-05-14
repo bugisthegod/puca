@@ -39,12 +39,15 @@ interface UseMapInstanceResult {
 	stationsRef: React.MutableRefObject<Map<string, Station>>;
 	zoomingRef: React.MutableRefObject<boolean>;
 	railwayLayerRef: React.RefObject<L.TileLayer | null>;
-	locateUser: () => Promise<void>;
+	locateUser: () => Promise<{ accuracy: number }>;
 	getMapView: () => MapView | null;
 	compassPref: boolean;
 	startCompass: () => Promise<boolean>;
 	stopCompass: () => void;
 }
+
+const LOCATION_REFINE_MS = 8_000;
+const GOOD_LOCATION_ACCURACY_M = 50;
 
 const COMPASS_PREF_KEY = "puca:compass";
 
@@ -125,6 +128,8 @@ export function useMapInstance(
 	const userMarkerRef = useRef<L.Marker | null>(null);
 	const userIconInnerRef = useRef<HTMLElement | null>(null);
 	const accuracyCircleRef = useRef<L.Circle | null>(null);
+	const locationWatchIdRef = useRef<number | null>(null);
+	const locationRefineTimerRef = useRef<number | null>(null);
 	const orientationHandlerRef = useRef<
 		((e: DeviceOrientationEvent) => void) | null
 	>(null);
@@ -236,7 +241,7 @@ export function useMapInstance(
 		}
 	}
 
-	const locateUser = (): Promise<void> =>
+	const locateUser = (): Promise<{ accuracy: number }> =>
 		new Promise((resolve, reject) => {
 			const map = leafletMap.current;
 			if (!map) {
@@ -256,7 +261,60 @@ export function useMapInstance(
 				void startCompass();
 			}
 
-			const applyFix = (lat: number, lng: number, accuracy: number): void => {
+			if (locationWatchIdRef.current !== null) {
+				navigator.geolocation.clearWatch(locationWatchIdRef.current);
+				locationWatchIdRef.current = null;
+			}
+			if (locationRefineTimerRef.current !== null) {
+				window.clearTimeout(locationRefineTimerRef.current);
+				locationRefineTimerRef.current = null;
+			}
+
+			let bestAccuracy = Number.POSITIVE_INFINITY;
+			let bestFix: { lat: number; lng: number; accuracy: number } | null = null;
+			let freshFixApplied = false;
+			let settled = false;
+
+			const finish = () => {
+				if (settled) return;
+				settled = true;
+				if (locationWatchIdRef.current !== null) {
+					navigator.geolocation.clearWatch(locationWatchIdRef.current);
+					locationWatchIdRef.current = null;
+				}
+				if (locationRefineTimerRef.current !== null) {
+					window.clearTimeout(locationRefineTimerRef.current);
+					locationRefineTimerRef.current = null;
+				}
+				if (bestFix) resolve({ accuracy: bestFix.accuracy });
+				else reject(new Error("Your location is unavailable"));
+			};
+			const fail = (err: GeolocationPositionError) => {
+				if (settled) return;
+				settled = true;
+				if (locationWatchIdRef.current !== null) {
+					navigator.geolocation.clearWatch(locationWatchIdRef.current);
+					locationWatchIdRef.current = null;
+				}
+				if (locationRefineTimerRef.current !== null) {
+					window.clearTimeout(locationRefineTimerRef.current);
+					locationRefineTimerRef.current = null;
+				}
+				reject(err);
+			};
+
+			const applyFix = (
+				lat: number,
+				lng: number,
+				accuracy: number,
+				options: { trackBest?: boolean; fly?: boolean } = {},
+			): void => {
+				const { trackBest = true, fly = true } = options;
+				if (trackBest) {
+					if (accuracy >= bestAccuracy) return;
+					bestAccuracy = accuracy;
+					bestFix = { lat, lng, accuracy };
+				}
 				const latlng: L.LatLngExpression = [lat, lng];
 				if (!userMarkerRef.current) {
 					const icon = L.divIcon({
@@ -298,10 +356,12 @@ export function useMapInstance(
 					userMarkerRef.current.setLatLng(latlng);
 					accuracyCircleRef.current?.setLatLng(latlng).setRadius(accuracy);
 				}
-				map.flyTo(latlng, 14, {
-					duration: 1.0,
-					easeLinearity: 0.3,
-				});
+				if (fly) {
+					map.flyTo(latlng, 14, {
+						duration: 1.0,
+						easeLinearity: 0.3,
+					});
+				}
 			};
 
 			// First-tap-of-session optimization for Android: paint the last-known
@@ -310,23 +370,38 @@ export function useMapInstance(
 			// OS maximumAge cache and don't need this.
 			if (!userMarkerRef.current) {
 				const cached = readCachedFix();
-				if (cached) applyFix(cached.lat, cached.lng, cached.accuracy);
+				if (cached) {
+					applyFix(cached.lat, cached.lng, cached.accuracy, {
+						trackBest: false,
+					});
+				}
 			}
 
-			navigator.geolocation.getCurrentPosition(
+			locationRefineTimerRef.current = window.setTimeout(
+				finish,
+				LOCATION_REFINE_MS,
+			);
+
+			locationWatchIdRef.current = navigator.geolocation.watchPosition(
 				(pos) => {
 					const { latitude, longitude, accuracy } = pos.coords;
-					applyFix(latitude, longitude, accuracy);
+					applyFix(latitude, longitude, accuracy, {
+						fly: !freshFixApplied,
+					});
+					if (accuracy <= bestAccuracy) freshFixApplied = true;
 					writeCachedFix({
 						lat: latitude,
 						lng: longitude,
 						accuracy,
 						ts: Date.now(),
 					});
-					resolve();
+					if (accuracy <= GOOD_LOCATION_ACCURACY_M) finish();
 				},
-				(err) => reject(err),
-				{ enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+				(err) => {
+					if (bestFix) finish();
+					else fail(err);
+				},
+				{ enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
 			);
 		});
 
@@ -419,6 +494,14 @@ export function useMapInstance(
 				}
 			}
 			teardownCompass();
+			if (locationWatchIdRef.current !== null) {
+				navigator.geolocation.clearWatch(locationWatchIdRef.current);
+				locationWatchIdRef.current = null;
+			}
+			if (locationRefineTimerRef.current !== null) {
+				window.clearTimeout(locationRefineTimerRef.current);
+				locationRefineTimerRef.current = null;
+			}
 			map.remove();
 			leafletMap.current = null;
 			userMarkerRef.current = null;
