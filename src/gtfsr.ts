@@ -1289,6 +1289,56 @@ export function decideStopArrival(
 	return { keep: true, etaSec, delaySec, vehicleSeq, etaSource: timing.source };
 }
 
+// SQLite default SQLITE_MAX_VARIABLE_NUMBER is 999. Chunk well below that
+// so a single hot stop won't blow past the parameter limit.
+const BATCH_TRIP_CHUNK = 500;
+
+function getBatchTripScheduledStops(
+	operator: Operator,
+	tripIds: string[],
+): Map<string, ScheduledRow[]> {
+	if (tripIds.length === 0) return new Map();
+	const db = getScheduleDb(operator);
+	if (!db) return new Map();
+	const map = new Map<string, ScheduledRow[]>();
+
+	for (let i = 0; i < tripIds.length; i += BATCH_TRIP_CHUNK) {
+		const chunk = tripIds.slice(i, i + BATCH_TRIP_CHUNK);
+		try {
+			const placeholders = chunk.map(() => "?").join(",");
+			const stmt = db.prepare(
+				`SELECT trip_id, stop_sequence, stop_id, arrival_sec FROM stop_times WHERE trip_id IN (${placeholders}) ORDER BY trip_id, stop_sequence`,
+			);
+			const rows = stmt.all(...chunk) as {
+				trip_id: string;
+				stop_sequence: number;
+				stop_id: string;
+				arrival_sec: number;
+			}[];
+			for (const r of rows) {
+				let arr = map.get(r.trip_id);
+				if (!arr) {
+					arr = [];
+					map.set(r.trip_id, arr);
+				}
+				arr.push({
+					sequence: r.stop_sequence,
+					stopId: r.stop_id,
+					arrivalSec: r.arrival_sec,
+				});
+			}
+		} catch {
+			// Chunk batch failed → fall back to individual queries so these
+			// trips still get GPS-aware arrival logic instead of NTA-only.
+			for (const tid of chunk) {
+				const stops = getTripScheduledStops(operator, tid);
+				if (stops.length > 0) map.set(tid, stops);
+			}
+		}
+	}
+	return map;
+}
+
 export type BusStopArrival = {
 	tripId: string;
 	routeShortName: string;
@@ -1352,19 +1402,34 @@ export async function getBusStopArrivals(
 	const routeIdToShortName = new Map<string, string>();
 	for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
 
-	const candidates: BusStopArrival[] = [];
-	for (const r of rows) {
-		// Hot-path: hottest stops hit ~6k rows from the static schedule but only
-		// ~hundreds have a live TripUpdate at any moment. Cheap Map lookup first
-		// so the bulk of non-live rows don't pay the SQLite cost of isTripEnded.
+	// Filter to live, non-ended trips first — only these are arrival candidates.
+	// This prunes the 6k-row set down to a few hundred before the batch query,
+	// keeping the batch result small and avoiding wasted work on ended trips.
+	const activeRows = rows.filter((r) => {
 		const live = tripUpdates.get(r.trip_id);
-		if (!live) continue;
+		if (!live) return false;
+		return !isTripEnded(operator, r.trip_id, nowSec, tripUpdates);
+	});
 
-		if (isTripEnded(operator, r.trip_id, nowSec, tripUpdates)) continue;
+	// Collect vehicle-equipped trip IDs (deduped) from the pruned set, then
+	// fetch all trip stops in one batched query instead of N individual calls.
+	const vehicleTripIds = new Set<string>();
+	for (const r of activeRows) {
+		if (vehicleByTripId.has(r.trip_id)) {
+			vehicleTripIds.add(r.trip_id);
+		}
+	}
+	const tripStopsMap = getBatchTripScheduledStops(operator, [
+		...vehicleTripIds,
+	]);
 
-		// Build trip stop coords on demand only when we have a vehicle to match —
-		// saves one SQLite query per non-running trip. Loop routes that revisit
-		// a stop can mismatch sequence, but those are rare for the operators we cover.
+	const candidates: BusStopArrival[] = [];
+	for (const r of activeRows) {
+		const live = tripUpdates.get(r.trip_id)!;
+
+		// Build trip stop coords from the pre-fetched batch lookup. Vehicles
+		// without cached stops (DB missing) fall back to empty coords — decision
+		// uses NTA stopTimeUpdates alone.
 		const vehicle = vehicleByTripId.get(r.trip_id);
 		let tripStopCoords: Array<{
 			sequence: number;
@@ -1373,20 +1438,22 @@ export async function getBusStopArrivals(
 			arrivalSec: number;
 		}> = [];
 		if (vehicle) {
-			const tripStops = getTripScheduledStops(operator, r.trip_id);
-			tripStopCoords = tripStops.flatMap((ts) => {
-				const s = stopsDict[ts.stopId];
-				return s
-					? [
-							{
-								sequence: ts.sequence,
-								lat: s.lat,
-								lng: s.lng,
-								arrivalSec: ts.arrivalSec,
-							},
-						]
-					: [];
-			});
+			const tripStops = tripStopsMap.get(r.trip_id);
+			if (tripStops) {
+				tripStopCoords = tripStops.flatMap((ts) => {
+					const s = stopsDict[ts.stopId];
+					return s
+						? [
+								{
+									sequence: ts.sequence,
+									lat: s.lat,
+									lng: s.lng,
+									arrivalSec: ts.arrivalSec,
+								},
+							]
+						: [];
+				});
+			}
 		}
 
 		const decision = decideStopArrival(
