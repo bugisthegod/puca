@@ -238,7 +238,7 @@ export function useFocusSegment({
 						className: `focus-stop focus-stop--${focusContext.operator}`,
 						html: "",
 						iconSize: [12, 12],
-						iconAnchor: [4.5, 4.5],
+						iconAnchor: [6, 6],
 					}),
 					pane: "focusPane",
 				});

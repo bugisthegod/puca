@@ -8,6 +8,8 @@ import {
 	parseTrainProgress,
 } from "../utils";
 
+type TrainRoute = ReturnType<typeof parseRoute>;
+
 function normalizeStationName(name: string): string {
 	return name
 		.normalize("NFD")
@@ -54,24 +56,25 @@ export function buildTrainStatusText(
 
 function trainDirectionLabel(
 	train: Train,
+	route: TrainRoute,
 	movements: TrainMovement[] = [],
 ): string {
 	const isCardinalDirection = /^(north|south|east|west)bound$/i.test(
 		train.direction,
 	);
-	if (train.direction && !isCardinalDirection) return train.direction;
+	if (train.direction && !isCardinalDirection) {
+		return train.direction.replace(/^to\s+/i, "");
+	}
 
-	const route = parseRoute(train.message);
 	const destination = route?.destination || movements.at(-1)?.stationName || "";
 	if (destination) return destination;
 	return "";
 }
 
 function trainRouteLabel(
-	train: Train,
+	route: TrainRoute,
 	movements: TrainMovement[] = [],
 ): string {
-	const route = parseRoute(train.message);
 	if (route) return `${route.origin} → ${route.destination}`;
 	const origin = movements.at(0)?.stationName || "";
 	const destination = movements.at(-1)?.stationName || "";
@@ -82,10 +85,11 @@ function trainPopupHeader(
 	train: Train,
 	movements: TrainMovement[] = [],
 ): string {
+	const route = parseRoute(train.message);
 	const late = parseLateMinutes(train.message);
 	const statusText = buildTrainStatusText(train.status, late);
-	const directionLabel = trainDirectionLabel(train, movements);
-	const routeLabel = trainRouteLabel(train, movements);
+	const directionLabel = trainDirectionLabel(train, route, movements);
+	const routeLabel = trainRouteLabel(route, movements);
 
 	return `
     <div class="popup-train-title-row">
