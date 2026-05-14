@@ -28,16 +28,6 @@
 	}
 }
 
-/* Mirror the three FABs to the left edge when the user picks that side.
-   Higher specificity than the base .locate-btn/.fav-fab/.about-fab rules,
-   so this also overrides the mobile media-query `right` restatements. */
-[data-fab-side="left"] .locate-btn,
-[data-fab-side="left"] .fav-fab,
-[data-fab-side="left"] .about-fab {
-	right: auto;
-	left: calc(12px + env(safe-area-inset-left));
-}
-
 /* ============================================================
    About modal — dark glassmorphism, Púca identity
    ============================================================ */
@@ -480,7 +470,7 @@
 
 /* --- Light-mode overrides: flip the modal's hardcoded dark palette to a
        light surface. Structure/borders/opacities kept, only hues swapped. --- */
-:root[data-theme="light"] .about-modal {
+.about-modal {
 	background: linear-gradient(
 		180deg,
 		rgba(255, 255, 255, 0.98) 0%,
@@ -489,39 +479,39 @@
 	color: #1a1a20;
 	border-color: rgba(0, 0, 0, 0.08);
 }
-:root[data-theme="light"] .about-modal__close {
+.about-modal__close {
 	background: rgba(0, 0, 0, 0.05);
 	border-color: rgba(0, 0, 0, 0.08);
 	color: rgba(0, 0, 0, 0.55);
 }
-:root[data-theme="light"] .about-modal__close:hover {
+.about-modal__close:hover {
 	background: rgba(0, 0, 0, 0.1);
 	color: #000;
 }
-:root[data-theme="light"] .about-modal__lang {
+.about-modal__lang {
 	background-color: rgba(0, 0, 0, 0.05);
 	border-color: rgba(0, 0, 0, 0.08);
 }
-:root[data-theme="light"] .about-modal__lang__btn {
+.about-modal__lang__btn {
 	color: rgba(0, 0, 0, 0.55);
 }
-:root[data-theme="light"] .about-modal__lang__btn:hover:not(.is-active) {
+.about-modal__lang__btn:hover:not(.is-active) {
 	color: #000;
 }
-:root[data-theme="light"] .about-modal__lang__btn.is-active {
+.about-modal__lang__btn.is-active {
 	background: rgba(37, 168, 100, 0.25);
 	color: #25a864;
 }
-:root[data-theme="light"] .about-hero__name {
+.about-hero__name {
 	color: #16161c;
 }
-:root[data-theme="light"] .about-hero__pron em {
+.about-hero__pron em {
 	color: rgba(0, 0, 0, 0.45);
 }
-:root[data-theme="light"] .about-hero__tag {
+.about-hero__tag {
 	color: rgba(0, 0, 0, 0.7);
 }
-:root[data-theme="light"] .about-divider {
+.about-divider {
 	background: linear-gradient(
 		90deg,
 		transparent,
@@ -529,40 +519,40 @@
 		transparent
 	);
 }
-:root[data-theme="light"] .about-block__label {
+.about-block__label {
 	color: rgba(0, 0, 0, 0.48);
 }
-:root[data-theme="light"] .about-block__note {
+.about-block__note {
 	color: rgba(0, 0, 0, 0.48);
 }
-:root[data-theme="light"] .about-install-callout {
+.about-install-callout {
 	background: rgba(48, 160, 99, 0.06);
 	border-color: rgba(48, 160, 99, 0.22);
 }
-:root[data-theme="light"] .about-install__heading {
+.about-install__heading {
 	color: #16161c;
 }
-:root[data-theme="light"] .about-install__heading svg {
+.about-install__heading svg {
 	color: var(--brand-dark);
 }
-:root[data-theme="light"] .about-install__note {
+.about-install__note {
 	color: rgba(0, 0, 0, 0.5);
 }
-:root[data-theme="light"] .about-install__card {
+.about-install__card {
 	background: #fff;
 	border-color: rgba(0, 0, 0, 0.06);
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
-:root[data-theme="light"] .about-install__platform {
+.about-install__platform {
 	color: rgba(0, 0, 0, 0.78);
 }
-:root[data-theme="light"] .about-install__steps {
+.about-install__steps {
 	color: rgba(0, 0, 0, 0.7);
 }
-:root[data-theme="light"] .about-install__steps strong {
+.about-install__steps strong {
 	color: #000;
 }
-:root[data-theme="light"] .about-footer {
+.about-footer {
 	color: rgba(0, 0, 0, 0.45);
 }
 /* --- Mobile: bottom sheet --- */
@@ -784,7 +774,7 @@
 	transform: scale(0.98);
 }
 
-:root[data-theme="light"] .about-donate-btn {
+.about-donate-btn {
 	background: linear-gradient(
 		135deg,
 		rgba(255, 123, 172, 0.14),
@@ -793,7 +783,7 @@
 	border-color: rgba(224, 77, 136, 0.28);
 	color: #c73f7c;
 }
-:root[data-theme="light"] .about-donate-btn:hover {
+.about-donate-btn:hover {
 	background: linear-gradient(
 		135deg,
 		rgba(255, 123, 172, 0.22),
@@ -802,29 +792,29 @@
 	border-color: rgba(224, 77, 136, 0.46);
 }
 
-:root[data-theme="light"] .about-feedback-btn {
+.about-feedback-btn {
 	background: rgba(37, 168, 100, 0.07);
 	border-color: rgba(25, 135, 84, 0.26);
 	color: #198754;
 }
 
-:root[data-theme="light"] .about-feedback-btn:hover {
+.about-feedback-btn:hover {
 	background: rgba(37, 168, 100, 0.13);
 	border-color: rgba(25, 135, 84, 0.44);
 }
 
-:root[data-theme="light"] .about-share-btn {
+.about-share-btn {
 	background: rgba(89, 141, 255, 0.08);
 	border-color: rgba(58, 105, 205, 0.28);
 	color: #315fb8;
 }
 
-:root[data-theme="light"] .about-share-btn:hover {
+.about-share-btn:hover {
 	background: rgba(89, 141, 255, 0.14);
 	border-color: rgba(58, 105, 205, 0.46);
 }
 
-:root[data-theme="light"] .about-share-btn.is-copied {
+.about-share-btn.is-copied {
 	background: rgba(37, 168, 100, 0.12);
 	border-color: rgba(25, 135, 84, 0.4);
 	color: #198754;

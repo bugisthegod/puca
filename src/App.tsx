@@ -26,11 +26,7 @@ import {
 	type TrainFavorite,
 	totalFavorites,
 } from "./favorites";
-import {
-	applyInitialAppearance,
-	useFabSidePreference,
-	useThemePreference,
-} from "./hooks/useAppearance";
+import { applyInitialAppearance } from "./hooks/useAppearance";
 import { useFavorites } from "./hooks/useFavorites";
 import { useToast } from "./hooks/useToast";
 import { type Mode, useVehicleMap } from "./hooks/useVehicleMap";
@@ -244,8 +240,6 @@ function App() {
 			return false;
 		}
 	});
-	const { theme, setTheme } = useThemePreference();
-	const { fabSide, setFabSide } = useFabSidePreference();
 	function closeTour() {
 		setShowTour(false);
 		try {
@@ -752,8 +746,6 @@ function App() {
 						setShowAbout(false);
 						openTour();
 					}}
-					theme={theme}
-					onSetTheme={setTheme}
 					compassPref={compassPref}
 					onToggleCompass={
 						needsCompassToggle
@@ -763,8 +755,6 @@ function App() {
 								}
 							: undefined
 					}
-					fabSide={fabSide}
-					onSetFabSide={setFabSide}
 				/>
 			)}
 			{showTour && <OnboardingTour steps={tourSteps} onClose={closeTour} />}

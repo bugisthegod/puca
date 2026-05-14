@@ -60,47 +60,6 @@
 	--motion-fast: 0.15s;
 }
 
-:root[data-theme="dark"] {
-	--bg-surface: #1f1f26;
-	--bg-elevated: #252530;
-	--bg-muted: #2a2a35;
-	--bg-highlight: #3a3210; /* dim amber for current-movement row */
-	--bg-row-hover: #1e2f28; /* dark greenish tint */
-
-	--text-primary: #e8e8ea;
-	--text-secondary: #b0b0b8;
-	--text-muted: #7a7a86;
-	--text-faint: #9a9aa6;
-
-	--border-subtle: #2f2f3a;
-	--border-strong: #45455a;
-
-	--brand-dark: #2d8859;
-	--brand-mid: #30a063;
-	--brand-light: #4dd6a0;
-
-	--status-ontime-bg: #1a3d2a;
-	--status-ontime-text: #7fd6a0;
-
-	--status-late-bg: #3a3010;
-	--status-late-text: #f0c060;
-
-	--status-early-bg: #3a1515;
-	--status-early-text: #f07070;
-
-	/* Operator colors — intentionally unchanged */
-	--op-dublinbus: #f9a825;
-	--op-buseireann: #d52b1e;
-	--op-goahead: #1e6bb8;
-	--op-dublinbus-text: #3d2800;
-
-	--popup-dir-bg: var(--bg-muted);
-	--popup-dir-text: #9090a0;
-
-	/* Map backdrop — matches CARTO dark_all's empty-tile tone. */
-	--map-bg: #1a1d21;
-}
-
 /* ============================================================
    Reset & base
    ============================================================ */
@@ -182,8 +141,7 @@ body {
 	background: var(--map-bg);
 }
 
-/* Leaflet attribution — strip white background (ugly on dark tiles) but
-   keep the text visible for OSM/Carto attribution compliance. */
+/* Leaflet attribution — keep the text visible for OSM/Carto attribution compliance. */
 .leaflet-control-attribution.leaflet-control {
 	background: transparent;
 	color: rgba(0, 0, 0, 0.55);
@@ -196,19 +154,6 @@ body {
 	pointer-events: none;
 	text-decoration: none;
 	cursor: default;
-}
-
-:root[data-theme="dark"] .leaflet-control-attribution.leaflet-control {
-	color: rgba(255, 255, 255, 0.45);
-}
-:root[data-theme="dark"] .leaflet-control-attribution a {
-	color: rgba(255, 255, 255, 0.65);
-}
-
-/* Soften CARTO dark_all — default is near-black, which reads too harsh at night.
-   Brighten + slight desaturate gives a muted dark-gray that still feels "dark mode". */
-.leaflet-layer.tile-dark {
-	filter: brightness(1.75) contrast(0.85) saturate(0.95);
 }
 
 .map-empty-state {

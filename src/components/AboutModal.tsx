@@ -5,18 +5,11 @@ import { useInstallPrompt } from "../hooks/useInstallPrompt";
 import { useLocale } from "../i18n";
 import PucaMark from "./PucaMark";
 
-export type ThemePref = "light" | "dark" | "system";
-export type FabSide = "left" | "right";
-
 type AboutModalProps = {
 	onClose: () => void;
 	onShowTour?: () => void;
-	theme?: ThemePref;
-	onSetTheme?: (t: ThemePref) => void;
 	compassPref?: boolean;
 	onToggleCompass?: (next: boolean) => void;
-	fabSide?: FabSide;
-	onSetFabSide?: (s: FabSide) => void;
 };
 
 const FEEDBACK_URL = "https://tally.so/r/lbKjNX";
@@ -119,12 +112,8 @@ function SettingRow({
 export default function AboutModal({
 	onClose,
 	onShowTour,
-	theme,
-	onSetTheme,
 	compassPref,
 	onToggleCompass,
-	fabSide,
-	onSetFabSide,
 }: AboutModalProps) {
 	const { locale, setLocale, t } = useLocale();
 	useBackToClose(onClose);
@@ -250,42 +239,10 @@ export default function AboutModal({
 						</section>
 					)}
 
-					{(onSetTheme || onToggleCompass || onSetFabSide) && (
+					{onToggleCompass && (
 						<>
 							<div className="about-divider" />
 							<section className="about-block about-settings">
-								{onSetTheme && theme && (
-									<SettingRow
-										label={t("about.appearance.label")}
-										info={t("about.appearance.info")}
-									>
-										<div
-											className="about-theme-toggle"
-											role="radiogroup"
-											aria-label={t("about.appearance.label")}
-										>
-											{(["light", "dark", "system"] as const).map((tp) => (
-												<button
-													key={tp}
-													type="button"
-													role="radio"
-													aria-checked={theme === tp}
-													className={`about-theme-btn${theme === tp ? " is-active" : ""}`}
-													onClick={() => {
-														if (theme !== tp) onSetTheme(tp);
-													}}
-												>
-													{tp === "light"
-														? t("about.theme.light")
-														: tp === "dark"
-															? t("about.theme.dark")
-															: t("about.theme.system")}
-												</button>
-											))}
-										</div>
-									</SettingRow>
-								)}
-
 								{onToggleCompass && (
 									<SettingRow
 										label={t("about.compass.label")}
@@ -313,42 +270,6 @@ export default function AboutModal({
 												onClick={() => onToggleCompass(true)}
 											>
 												{t("about.compass.on")}
-											</button>
-										</div>
-									</SettingRow>
-								)}
-
-								{onSetFabSide && fabSide && (
-									<SettingRow
-										label={t("about.fab.label")}
-										info={t("about.fab.info")}
-									>
-										<div
-											className="about-theme-toggle"
-											role="radiogroup"
-											aria-label={t("about.fab.label")}
-										>
-											<button
-												type="button"
-												role="radio"
-												aria-checked={fabSide === "left"}
-												className={`about-theme-btn${fabSide === "left" ? " is-active" : ""}`}
-												onClick={() => {
-													if (fabSide !== "left") onSetFabSide("left");
-												}}
-											>
-												{t("about.fab.left")}
-											</button>
-											<button
-												type="button"
-												role="radio"
-												aria-checked={fabSide === "right"}
-												className={`about-theme-btn${fabSide === "right" ? " is-active" : ""}`}
-												onClick={() => {
-													if (fabSide !== "right") onSetFabSide("right");
-												}}
-											>
-												{t("about.fab.right")}
 											</button>
 										</div>
 									</SettingRow>

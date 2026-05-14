@@ -143,42 +143,42 @@
 	align-self: center;
 }
 
-:root[data-theme="light"] .about-theme-toggle {
+.about-theme-toggle {
 	background: rgba(0, 0, 0, 0.05);
 }
 
-:root[data-theme="light"] .about-theme-btn {
+.about-theme-btn {
 	color: rgba(0, 0, 0, 0.55);
 }
 
-:root[data-theme="light"] .about-theme-btn:hover:not(.is-active) {
+.about-theme-btn:hover:not(.is-active) {
 	color: #000;
 }
 
-:root[data-theme="light"] .about-setting-row__label {
+.about-setting-row__label {
 	color: rgba(0, 0, 0, 0.78);
 }
 
-:root[data-theme="light"] .about-setting-row__info {
+.about-setting-row__info {
 	color: rgba(0, 0, 0, 0.4);
 }
 
-:root[data-theme="light"] .about-setting-row__info:hover {
+.about-setting-row__info:hover {
 	color: rgba(0, 0, 0, 0.7);
 	background: rgba(0, 0, 0, 0.06);
 }
 
-:root[data-theme="light"] .about-setting-row__info.is-open {
+.about-setting-row__info.is-open {
 	color: var(--brand-dark);
 	background: rgba(48, 160, 99, 0.12);
 }
 
-:root[data-theme="light"] .about-setting-row__tip {
+.about-setting-row__tip {
 	color: rgba(255, 255, 255, 0.95);
 	background: rgba(28, 28, 34, 0.96);
 	border-color: rgba(255, 255, 255, 0.06);
 }
 
-:root[data-theme="light"] .about-setting-row__tip::before {
+.about-setting-row__tip::before {
 	border-bottom-color: rgba(28, 28, 34, 0.96);
 }
