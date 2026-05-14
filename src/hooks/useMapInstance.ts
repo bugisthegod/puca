@@ -39,7 +39,9 @@ interface UseMapInstanceResult {
 	stationsRef: React.MutableRefObject<Map<string, Station>>;
 	zoomingRef: React.MutableRefObject<boolean>;
 	railwayLayerRef: React.RefObject<L.TileLayer | null>;
-	locateUser: () => Promise<{ accuracy: number }>;
+	locateUser: (options?: {
+		onFinalAccuracy?: (accuracy: number) => void;
+	}) => Promise<{ accuracy: number }>;
 	getMapView: () => MapView | null;
 	compassPref: boolean;
 	startCompass: () => Promise<boolean>;
@@ -241,7 +243,9 @@ export function useMapInstance(
 		}
 	}
 
-	const locateUser = (): Promise<{ accuracy: number }> =>
+	const locateUser = (
+		options: { onFinalAccuracy?: (accuracy: number) => void } = {},
+	): Promise<{ accuracy: number }> =>
 		new Promise((resolve, reject) => {
 			const map = leafletMap.current;
 			if (!map) {
@@ -273,11 +277,10 @@ export function useMapInstance(
 			let bestAccuracy = Number.POSITIVE_INFINITY;
 			let bestFix: { lat: number; lng: number; accuracy: number } | null = null;
 			let freshFixApplied = false;
-			let settled = false;
+			let promiseSettled = false;
+			let finalAccuracyReported = false;
 
-			const finish = () => {
-				if (settled) return;
-				settled = true;
+			const cleanupLocationWatch = () => {
 				if (locationWatchIdRef.current !== null) {
 					navigator.geolocation.clearWatch(locationWatchIdRef.current);
 					locationWatchIdRef.current = null;
@@ -286,21 +289,33 @@ export function useMapInstance(
 					window.clearTimeout(locationRefineTimerRef.current);
 					locationRefineTimerRef.current = null;
 				}
+			};
+			const resolveLocate = () => {
+				if (promiseSettled || !bestFix) return;
+				promiseSettled = true;
 				if (bestFix) resolve({ accuracy: bestFix.accuracy });
-				else reject(new Error("Your location is unavailable"));
+			};
+			const reportFinalAccuracy = () => {
+				if (finalAccuracyReported || !bestFix) return;
+				finalAccuracyReported = true;
+				options.onFinalAccuracy?.(bestFix.accuracy);
+			};
+			const finish = () => {
+				cleanupLocationWatch();
+				if (bestFix) {
+					resolveLocate();
+					reportFinalAccuracy();
+				} else if (!promiseSettled) {
+					promiseSettled = true;
+					reject(new Error("Your location is unavailable"));
+				}
 			};
 			const fail = (err: GeolocationPositionError) => {
-				if (settled) return;
-				settled = true;
-				if (locationWatchIdRef.current !== null) {
-					navigator.geolocation.clearWatch(locationWatchIdRef.current);
-					locationWatchIdRef.current = null;
+				cleanupLocationWatch();
+				if (!promiseSettled) {
+					promiseSettled = true;
+					reject(err);
 				}
-				if (locationRefineTimerRef.current !== null) {
-					window.clearTimeout(locationRefineTimerRef.current);
-					locationRefineTimerRef.current = null;
-				}
-				reject(err);
 			};
 
 			const applyFix = (
@@ -308,10 +323,10 @@ export function useMapInstance(
 				lng: number,
 				accuracy: number,
 				options: { trackBest?: boolean; fly?: boolean } = {},
-			): void => {
+			): boolean => {
 				const { trackBest = true, fly = true } = options;
 				if (trackBest) {
-					if (accuracy >= bestAccuracy) return;
+					if (accuracy >= bestAccuracy) return false;
 					bestAccuracy = accuracy;
 					bestFix = { lat, lng, accuracy };
 				}
@@ -362,6 +377,7 @@ export function useMapInstance(
 						easeLinearity: 0.3,
 					});
 				}
+				return true;
 			};
 
 			// First-tap-of-session optimization for Android: paint the last-known
@@ -385,10 +401,13 @@ export function useMapInstance(
 			locationWatchIdRef.current = navigator.geolocation.watchPosition(
 				(pos) => {
 					const { latitude, longitude, accuracy } = pos.coords;
-					applyFix(latitude, longitude, accuracy, {
+					const accepted = applyFix(latitude, longitude, accuracy, {
 						fly: !freshFixApplied,
 					});
-					if (accuracy <= bestAccuracy) freshFixApplied = true;
+					if (accepted) {
+						freshFixApplied = true;
+						resolveLocate();
+					}
 					writeCachedFix({
 						lat: latitude,
 						lng: longitude,
