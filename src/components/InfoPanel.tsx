@@ -124,6 +124,8 @@ function InfoPanel({
 	]
 		.filter(Boolean)
 		.join(" ");
+	const showFilterBar =
+		!drilledIn || (inService && !showBusStopSummary && !showTrainSummary);
 
 	return (
 		<div id="info-panel" className={panelClassName}>
@@ -211,54 +213,56 @@ function InfoPanel({
 						</div>
 					</div>
 				))}
-			<div id="filter-bar" className={drilledIn ? "" : "filter-bar--root"}>
-				{!drilledIn &&
-					modes.map(({ value, label }) => (
-						<button
-							key={value}
-							type="button"
-							className="filter-btn"
-							onClick={() => handleModeClick(value)}
-						>
-							{label}
-						</button>
-					))}
-				{drilledIn && inService && !showBusStopSummary && !showTrainSummary && (
-					<>
-						<button
-							type="button"
-							className="filter-btn filter-back"
-							onClick={() => onDrilledInChange(false)}
-							aria-label={t("info.back.aria")}
-						>
-							←
-						</button>
-						<span className="filter-sep" />
-						{mode === "train" &&
-							filters.map(({ value, label }) => (
-								<button
-									key={value}
-									type="button"
-									className={`filter-btn${filter === value ? " active" : ""}`}
-									onClick={() => onFilterChange(value)}
-								>
-									{label}
-								</button>
-							))}
-						{mode === "bus" &&
-							INFO_BUS_OPERATORS.map(({ value, label }) => (
-								<button
-									key={value}
-									type="button"
-									className={`filter-btn${busOperator === value ? " active" : ""}`}
-									onClick={() => onBusOperatorChange(value)}
-								>
-									{label}
-								</button>
-							))}
-					</>
-				)}
-			</div>
+			{showFilterBar && (
+				<div id="filter-bar" className={drilledIn ? "" : "filter-bar--root"}>
+					{!drilledIn &&
+						modes.map(({ value, label }) => (
+							<button
+								key={value}
+								type="button"
+								className="filter-btn"
+								onClick={() => handleModeClick(value)}
+							>
+								{label}
+							</button>
+						))}
+					{drilledIn && (
+						<>
+							<button
+								type="button"
+								className="filter-btn filter-back"
+								onClick={() => onDrilledInChange(false)}
+								aria-label={t("info.back.aria")}
+							>
+								←
+							</button>
+							<span className="filter-sep" />
+							{mode === "train" &&
+								filters.map(({ value, label }) => (
+									<button
+										key={value}
+										type="button"
+										className={`filter-btn${filter === value ? " active" : ""}`}
+										onClick={() => onFilterChange(value)}
+									>
+										{label}
+									</button>
+								))}
+							{mode === "bus" &&
+								INFO_BUS_OPERATORS.map(({ value, label }) => (
+									<button
+										key={value}
+										type="button"
+										className={`filter-btn${busOperator === value ? " active" : ""}`}
+										onClick={() => onBusOperatorChange(value)}
+									>
+										{label}
+									</button>
+								))}
+						</>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
