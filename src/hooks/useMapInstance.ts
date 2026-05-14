@@ -15,6 +15,11 @@ import {
 import type { MapView } from "../session";
 import { getStationsOnce } from "../stationsClient";
 import type { Station } from "../types";
+import {
+	type CachedFix,
+	decideLocationFix,
+	parseCachedFix,
+} from "./locationLogic";
 import type { Mode } from "./useVehicleMap";
 
 const TILE_VOYAGER =
@@ -49,7 +54,6 @@ interface UseMapInstanceResult {
 }
 
 const LOCATION_REFINE_MS = 8_000;
-const GOOD_LOCATION_ACCURACY_M = 50;
 
 const COMPASS_PREF_KEY = "puca:compass";
 
@@ -71,40 +75,9 @@ function readCompassPref(): boolean {
 // the position is stale enough that a brief blank wait is preferable to
 // flashing an outdated marker.
 const LAST_FIX_KEY = "puca:lastFix";
-const LAST_FIX_TTL_MS = 2 * 60 * 60 * 1000;
-
-interface CachedFix {
-	lat: number;
-	lng: number;
-	accuracy: number;
-	ts: number;
-}
-
 function readCachedFix(): CachedFix | null {
 	try {
-		const raw = localStorage.getItem(LAST_FIX_KEY);
-		if (!raw) return null;
-		const parsed: unknown = JSON.parse(raw);
-		if (!parsed || typeof parsed !== "object") return null;
-		const { lat, lng, accuracy, ts } = parsed as Record<string, unknown>;
-		if (
-			typeof lat !== "number" ||
-			!Number.isFinite(lat) ||
-			lat < -90 ||
-			lat > 90 ||
-			typeof lng !== "number" ||
-			!Number.isFinite(lng) ||
-			lng < -180 ||
-			lng > 180 ||
-			typeof accuracy !== "number" ||
-			!Number.isFinite(accuracy) ||
-			accuracy < 0 ||
-			typeof ts !== "number" ||
-			!Number.isFinite(ts)
-		)
-			return null;
-		if (Date.now() - ts > LAST_FIX_TTL_MS) return null;
-		return { lat, lng, accuracy, ts };
+		return parseCachedFix(localStorage.getItem(LAST_FIX_KEY));
 	} catch {
 		return null;
 	}
@@ -322,14 +295,9 @@ export function useMapInstance(
 				lat: number,
 				lng: number,
 				accuracy: number,
-				options: { trackBest?: boolean; fly?: boolean } = {},
-			): boolean => {
-				const { trackBest = true, fly = true } = options;
-				if (trackBest) {
-					if (accuracy >= bestAccuracy) return false;
-					bestAccuracy = accuracy;
-					bestFix = { lat, lng, accuracy };
-				}
+				options: { fly?: boolean } = {},
+			): void => {
+				const { fly = true } = options;
 				const latlng: L.LatLngExpression = [lat, lng];
 				if (!userMarkerRef.current) {
 					const icon = L.divIcon({
@@ -377,7 +345,6 @@ export function useMapInstance(
 						easeLinearity: 0.3,
 					});
 				}
-				return true;
 			};
 
 			// First-tap-of-session optimization for Android: paint the last-known
@@ -387,9 +354,7 @@ export function useMapInstance(
 			if (!userMarkerRef.current) {
 				const cached = readCachedFix();
 				if (cached) {
-					applyFix(cached.lat, cached.lng, cached.accuracy, {
-						trackBest: false,
-					});
+					applyFix(cached.lat, cached.lng, cached.accuracy);
 				}
 			}
 
@@ -401,11 +366,17 @@ export function useMapInstance(
 			locationWatchIdRef.current = navigator.geolocation.watchPosition(
 				(pos) => {
 					const { latitude, longitude, accuracy } = pos.coords;
-					const accepted = applyFix(latitude, longitude, accuracy, {
-						fly: !freshFixApplied,
-					});
-					if (accepted) {
-						freshFixApplied = true;
+					const decision = decideLocationFix(
+						{ bestAccuracy, freshFixApplied },
+						accuracy,
+					);
+					if (decision.accepted) {
+						bestAccuracy = decision.nextState.bestAccuracy;
+						bestFix = { lat: latitude, lng: longitude, accuracy };
+						applyFix(latitude, longitude, accuracy, {
+							fly: decision.fly,
+						});
+						freshFixApplied = decision.nextState.freshFixApplied;
 						resolveLocate();
 					}
 					writeCachedFix({
@@ -414,7 +385,7 @@ export function useMapInstance(
 						accuracy,
 						ts: Date.now(),
 					});
-					if (accuracy <= GOOD_LOCATION_ACCURACY_M) finish();
+					if (decision.shouldFinish) finish();
 				},
 				(err) => {
 					if (bestFix) finish();
