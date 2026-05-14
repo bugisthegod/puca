@@ -1,5 +1,6 @@
 import React from "react";
 import type { Mode } from "../hooks/useVehicleMap";
+import type { t as translate } from "../i18n";
 import { useLocale } from "../i18n";
 import type { BusOperator, TrainFocusSummary } from "../types";
 import type { Filter } from "../utils";
@@ -40,6 +41,38 @@ export const INFO_BUS_OPERATORS: { value: BusOperator; label: string }[] = [
 	{ value: "goahead", label: "Go-Ahead" },
 ];
 
+type Translate = typeof translate;
+
+export function trainFocusSummaryMeta(
+	trainSummary: TrainFocusSummary | null,
+	t: Translate,
+): string | null {
+	if (!trainSummary) return null;
+	if (trainSummary.isOriginStop) {
+		if (trainSummary.etaMinutes === null) return null;
+		return trainSummary.etaMinutes <= 0
+			? t("train.focus.departing")
+			: t("train.focus.departsIn", { n: trainSummary.etaMinutes });
+	}
+
+	return [
+		trainSummary.stopsAway === null
+			? null
+			: t("bus.search.stops.away", {
+					n: trainSummary.stopsAway,
+				}),
+		trainSummary.etaMinutes === null
+			? null
+			: trainSummary.etaMinutes <= 0
+				? t("bus.search.eta.due")
+				: t("bus.search.eta.min", {
+						n: trainSummary.etaMinutes,
+					}),
+	]
+		.filter(Boolean)
+		.join(" · ");
+}
+
 function InfoPanel({
 	vehicleCount,
 	lastUpdated,
@@ -69,30 +102,7 @@ function InfoPanel({
 	const showBusStopSummary = stopSummary !== null;
 	const trainSummary = drilledIn && mode === "train" ? trainFocusSummary : null;
 	const showTrainSummary = trainSummary !== null;
-	const trainSummaryMeta = trainSummary?.isOriginStop
-		? trainSummary.etaMinutes === null
-			? null
-			: trainSummary.etaMinutes <= 0
-				? t("train.focus.departing")
-				: t("train.focus.departsIn", { n: trainSummary.etaMinutes })
-		: trainSummary
-			? [
-					trainSummary.stopsAway === null
-						? null
-						: t("bus.search.stops.away", {
-								n: trainSummary.stopsAway,
-							}),
-					trainSummary.etaMinutes === null
-						? null
-						: trainSummary.etaMinutes <= 0
-							? t("bus.search.eta.due")
-							: t("bus.search.eta.min", {
-									n: trainSummary.etaMinutes,
-								}),
-				]
-					.filter(Boolean)
-					.join(" · ")
-			: null;
+	const trainSummaryMeta = trainFocusSummaryMeta(trainSummary, t);
 
 	const modes: { value: Mode; label: string }[] = [
 		{ value: "train", label: t("info.mode.train") },

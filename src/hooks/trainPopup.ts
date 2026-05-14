@@ -56,12 +56,15 @@ function trainDirectionLabel(
 	train: Train,
 	movements: TrainMovement[] = [],
 ): string {
+	const isCardinalDirection = /^(north|south|east|west)bound$/i.test(
+		train.direction,
+	);
+	if (train.direction && !isCardinalDirection) return train.direction;
+
 	const route = parseRoute(train.message);
 	const destination = route?.destination || movements.at(-1)?.stationName || "";
 	if (destination) return destination;
-	return /^(north|south|east|west)bound$/i.test(train.direction)
-		? ""
-		: train.direction;
+	return "";
 }
 
 function trainRouteLabel(

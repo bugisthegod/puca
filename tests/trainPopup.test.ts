@@ -107,6 +107,19 @@ describe("buildTrainPopupHTML", () => {
 		expect(html).toContain("08:11");
 	});
 
+	test("replaces cardinal direction chips with the destination", () => {
+		const html = buildTrainPopupWithMovements(
+			train({ direction: "Southbound" }),
+			[
+				movement({ stationName: "Maynooth", stopType: "O" }),
+				movement({ stationName: "Grand Canal Dock", stopType: "D" }),
+			],
+		);
+
+		expect(html).toContain("Grand Canal Dock");
+		expect(html).not.toContain("Southbound");
+	});
+
 	test("uses PublicMessage progress when movement stop types are stale", () => {
 		const html = buildTrainPopupWithMovements(
 			train({
