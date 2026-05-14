@@ -382,14 +382,16 @@ function App() {
 		if (locating) return;
 		setLocating(true);
 		try {
-			const result = await locateUser();
-			if (result.accuracy > LOW_LOCATION_ACCURACY_M) {
-				showToast(
-					t("toast.location.lowAccuracy.title"),
-					t("toast.location.lowAccuracy.body"),
-					5000,
-				);
-			}
+			await locateUser({
+				onFinalAccuracy: (accuracy) => {
+					if (accuracy <= LOW_LOCATION_ACCURACY_M) return;
+					showToast(
+						t("toast.location.lowAccuracy.title"),
+						t("toast.location.lowAccuracy.body"),
+						5000,
+					);
+				},
+			});
 		} catch (err) {
 			// GeolocationPositionError codes: 1=denied, 2=unavailable, 3=timeout.
 			// Surface each as a scannable toast with a hint the user can act on —
