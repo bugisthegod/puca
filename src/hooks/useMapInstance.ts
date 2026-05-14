@@ -272,6 +272,7 @@ export function useMapInstance(
 
 			let bestAccuracy = Number.POSITIVE_INFINITY;
 			let bestFix: { lat: number; lng: number; accuracy: number } | null = null;
+			let freshFixApplied = false;
 			let settled = false;
 
 			const finish = () => {
@@ -306,8 +307,9 @@ export function useMapInstance(
 				lat: number,
 				lng: number,
 				accuracy: number,
-				trackBest = true,
+				options: { trackBest?: boolean; fly?: boolean } = {},
 			): void => {
+				const { trackBest = true, fly = true } = options;
 				if (trackBest) {
 					if (accuracy >= bestAccuracy) return;
 					bestAccuracy = accuracy;
@@ -354,10 +356,12 @@ export function useMapInstance(
 					userMarkerRef.current.setLatLng(latlng);
 					accuracyCircleRef.current?.setLatLng(latlng).setRadius(accuracy);
 				}
-				map.flyTo(latlng, 14, {
-					duration: 1.0,
-					easeLinearity: 0.3,
-				});
+				if (fly) {
+					map.flyTo(latlng, 14, {
+						duration: 1.0,
+						easeLinearity: 0.3,
+					});
+				}
 			};
 
 			// First-tap-of-session optimization for Android: paint the last-known
@@ -366,7 +370,11 @@ export function useMapInstance(
 			// OS maximumAge cache and don't need this.
 			if (!userMarkerRef.current) {
 				const cached = readCachedFix();
-				if (cached) applyFix(cached.lat, cached.lng, cached.accuracy, false);
+				if (cached) {
+					applyFix(cached.lat, cached.lng, cached.accuracy, {
+						trackBest: false,
+					});
+				}
 			}
 
 			locationRefineTimerRef.current = window.setTimeout(
@@ -377,7 +385,10 @@ export function useMapInstance(
 			locationWatchIdRef.current = navigator.geolocation.watchPosition(
 				(pos) => {
 					const { latitude, longitude, accuracy } = pos.coords;
-					applyFix(latitude, longitude, accuracy);
+					applyFix(latitude, longitude, accuracy, {
+						fly: !freshFixApplied,
+					});
+					if (accuracy <= bestAccuracy) freshFixApplied = true;
 					writeCachedFix({
 						lat: latitude,
 						lng: longitude,

@@ -226,7 +226,8 @@ const EN = {
 	"toast.location.timeout.body": "Try again",
 	"toast.location.unknown.title": "Couldn't get your location",
 	"toast.location.lowAccuracy.title": "Location accuracy is low",
-	"toast.location.lowAccuracy.body": "Wait a moment or enable precise location.",
+	"toast.location.lowAccuracy.body":
+		"Wait a moment or enable precise location.",
 	"toast.fav.full": "Favorites full ({max} max). Remove one first.",
 
 	// FAB buttons
