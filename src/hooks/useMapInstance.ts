@@ -54,6 +54,9 @@ interface UseMapInstanceResult {
 }
 
 const LOCATION_REFINE_MS = 8_000;
+const LOCATION_COLOR = "#1e88e5";
+const LOCATION_ACCURACY_FILL_OPACITY = 0.12;
+const LOCATION_ACCURACY_OPACITY = 1;
 
 const COMPASS_PREF_KEY = "puca:compass";
 
@@ -299,6 +302,12 @@ export function useMapInstance(
 			): void => {
 				const { fly = true } = options;
 				const latlng: L.LatLngExpression = [lat, lng];
+				const showAccuracyCircle = () => {
+					accuracyCircleRef.current?.setStyle({
+						opacity: LOCATION_ACCURACY_OPACITY,
+						fillOpacity: LOCATION_ACCURACY_FILL_OPACITY,
+					});
+				};
 				if (!userMarkerRef.current) {
 					const icon = L.divIcon({
 						className: "user-loc-marker",
@@ -329,9 +338,10 @@ export function useMapInstance(
 						el?.querySelector<HTMLElement>(".user-loc-icon") ?? null;
 					accuracyCircleRef.current = L.circle(latlng, {
 						radius: accuracy,
-						color: "#1e88e5",
-						fillColor: "#1e88e5",
-						fillOpacity: 0.12,
+						color: LOCATION_COLOR,
+						fillColor: LOCATION_COLOR,
+						fillOpacity: LOCATION_ACCURACY_FILL_OPACITY,
+						opacity: LOCATION_ACCURACY_OPACITY,
 						weight: 1,
 						interactive: false,
 					}).addTo(map);
@@ -340,10 +350,14 @@ export function useMapInstance(
 					accuracyCircleRef.current?.setLatLng(latlng).setRadius(accuracy);
 				}
 				if (fly) {
+					accuracyCircleRef.current?.setStyle({ opacity: 0, fillOpacity: 0 });
+					map.once("moveend", showAccuracyCircle);
 					map.flyTo(latlng, 14, {
 						duration: 1.0,
 						easeLinearity: 0.3,
 					});
+				} else {
+					showAccuracyCircle();
 				}
 			};
 
