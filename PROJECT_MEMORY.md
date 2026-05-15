@@ -44,6 +44,8 @@ project memory. Treat it as durable working context for future agents.
 
 ## Local Testing Hygiene
 
+- Before committing code changes, run `bun run typecheck`, `bun run lint`, and
+  `bun test`; commit only after all three pass.
 - If starting a dev server on port 3000, first check whether something is already
   listening. If it is the user's server, do not kill it.
 - If starting a server for testing, track and kill that specific process before

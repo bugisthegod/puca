@@ -6,7 +6,11 @@ import {
 	useRef,
 } from "react";
 import type { BusOperator, BusVehicle, FocusContext } from "../types";
-import { buildRouteLine, projectOntoRoute } from "./routeProjection";
+import {
+	buildRouteLine,
+	projectOntoRoute,
+	segmentLengthM,
+} from "./routeProjection";
 import type { BusMarkerEntry } from "./useBusMarkers";
 import type { Mode } from "./useVehicleMap";
 
@@ -25,6 +29,72 @@ type ShapeResponse = {
 		stops: { id: string; name: string; lat: number; lng: number }[];
 	};
 };
+
+type OrderedProjection = {
+	distanceMeters: number;
+	segmentIndex: number;
+	distanceFromPathMeters: number;
+};
+
+function buildCumulativeDistances(coords: [number, number][]): number[] {
+	const cumulative = [0];
+	for (let i = 1; i < coords.length; i++) {
+		const prev = coords[i - 1];
+		const cur = coords[i];
+		const prevDistance = cumulative[i - 1];
+		if (!prev || !cur || prevDistance === undefined) continue;
+		cumulative.push(
+			prevDistance + segmentLengthM(prev[0], prev[1], cur[0], cur[1]),
+		);
+	}
+	return cumulative;
+}
+
+function projectOntoOrderedCoords(
+	coords: [number, number][],
+	cumulative: number[],
+	lat: number,
+	lng: number,
+	startSegment = 0,
+	endSegment = coords.length - 2,
+): OrderedProjection | null {
+	if (coords.length < 2) return null;
+	const start = Math.max(0, Math.min(startSegment, coords.length - 2));
+	const end = Math.max(start, Math.min(endSegment, coords.length - 2));
+	const R = 6_371_000;
+	const latRad = lat * (Math.PI / 180);
+	let best: OrderedProjection | null = null;
+
+	for (let i = start; i <= end; i++) {
+		const a = coords[i];
+		const b = coords[i + 1];
+		const segStart = cumulative[i];
+		const segEnd = cumulative[i + 1];
+		if (!a || !b || segStart === undefined || segEnd === undefined) continue;
+		const ax = (a[1] - lng) * (Math.PI / 180) * Math.cos(latRad) * R;
+		const ay = (a[0] - lat) * (Math.PI / 180) * R;
+		const bx = (b[1] - lng) * (Math.PI / 180) * Math.cos(latRad) * R;
+		const by = (b[0] - lat) * (Math.PI / 180) * R;
+		const vx = bx - ax;
+		const vy = by - ay;
+		const lenSq = vx * vx + vy * vy;
+		const t =
+			lenSq > 0 ? Math.max(0, Math.min(1, -(ax * vx + ay * vy) / lenSq)) : 0;
+		const px = ax + vx * t;
+		const py = ay + vy * t;
+		const dist = Math.sqrt(px * px + py * py);
+		if (!best || dist < best.distanceFromPathMeters) {
+			const segLen = segEnd - segStart;
+			best = {
+				distanceMeters: segStart + segLen * t,
+				segmentIndex: i,
+				distanceFromPathMeters: dist,
+			};
+		}
+	}
+
+	return best;
+}
 
 interface UseFocusSegmentOptions {
 	focusContext: FocusContext | null;
@@ -137,38 +207,94 @@ export function useFocusSegment({
 				return;
 			}
 
-			const busProj = projectOntoRoute(
-				busLatLng.lat,
-				busLatLng.lng,
-				lineInfo.routeLine,
-				lineInfo.routeLengthMeters,
-				null,
-				null,
-				0,
-			);
-			const targetProj = projectOntoRoute(
-				focusContext.targetStopLat,
-				focusContext.targetStopLng,
-				lineInfo.routeLine,
-				lineInfo.routeLengthMeters,
-				null,
-				null,
-				0,
-			);
-			// Buses parked at a terminus / depot commonly sit > 150m from the route
-			// polyline (layby, holding bay), so projectOntoRoute returns offRoute even
-			// though the trip hasn't started yet. Treating that as "no segment to draw"
-			// makes clicks feel like the app is broken. Fudge the bus to the route
-			// start (busD = 0); the bus icon stays at its real GPS, but the line still
-			// appears from route-start → target stop. Target offRoute is fatal — means
-			// the user's stop genuinely isn't on this route.
-			if (targetProj.offRoute) {
-				onSegmentStatus?.("unavailable");
-				focusBusOnly(map, busLatLng);
-				return;
+			const cumulative = buildCumulativeDistances(dirData.coords);
+			const stopProjections: Array<OrderedProjection | null> = [];
+			let minStopSegment = 0;
+			for (const stop of dirData.stops) {
+				const projected = projectOntoOrderedCoords(
+					dirData.coords,
+					cumulative,
+					stop.lat,
+					stop.lng,
+					minStopSegment,
+				);
+				stopProjections.push(projected);
+				if (projected) minStopSegment = projected.segmentIndex;
 			}
-			const busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
-			const targetD = targetProj.targetDistanceAlongRoute;
+
+			let busD: number | null = null;
+			let targetD: number | null = null;
+			const targetStopIndex = dirData.stops.findIndex(
+				(stop) => stop.id === focusContext.targetStopId,
+			);
+			if (
+				targetStopIndex >= 0 &&
+				focusContext.vehicleStopSequence !== null &&
+				focusContext.vehicleStopSequence <= focusContext.targetStopSequence
+			) {
+				const stopsAwayBySequence =
+					focusContext.targetStopSequence - focusContext.vehicleStopSequence;
+				const currentStopIndex = targetStopIndex - stopsAwayBySequence;
+				const currentStop = stopProjections[currentStopIndex];
+				const targetStop = stopProjections[targetStopIndex];
+				if (
+					currentStop &&
+					targetStop &&
+					currentStop.distanceMeters < targetStop.distanceMeters
+				) {
+					const busProj = projectOntoOrderedCoords(
+						dirData.coords,
+						cumulative,
+						busLatLng.lat,
+						busLatLng.lng,
+						currentStop.segmentIndex,
+						targetStop.segmentIndex,
+					);
+					busD = Math.max(
+						currentStop.distanceMeters,
+						Math.min(
+							busProj?.distanceMeters ?? currentStop.distanceMeters,
+							targetStop.distanceMeters,
+						),
+					);
+					targetD = targetStop.distanceMeters;
+				}
+			}
+
+			if (busD === null || targetD === null) {
+				const busProj = projectOntoRoute(
+					busLatLng.lat,
+					busLatLng.lng,
+					lineInfo.routeLine,
+					lineInfo.routeLengthMeters,
+					null,
+					null,
+					0,
+				);
+				const targetProj = projectOntoRoute(
+					focusContext.targetStopLat,
+					focusContext.targetStopLng,
+					lineInfo.routeLine,
+					lineInfo.routeLengthMeters,
+					null,
+					null,
+					0,
+				);
+				// Buses parked at a terminus / depot commonly sit > 150m from the route
+				// polyline (layby, holding bay), so projectOntoRoute returns offRoute even
+				// though the trip hasn't started yet. Treating that as "no segment to draw"
+				// makes clicks feel like the app is broken. Fudge the bus to the route
+				// start (busD = 0); the bus icon stays at its real GPS, but the line still
+				// appears from route-start → target stop. Target offRoute is fatal — means
+				// the user's stop genuinely isn't on this route.
+				if (targetProj.offRoute) {
+					onSegmentStatus?.("unavailable");
+					focusBusOnly(map, busLatLng);
+					return;
+				}
+				busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
+				targetD = targetProj.targetDistanceAlongRoute;
+			}
 			if (busD >= targetD) {
 				onSegmentStatus?.("unavailable");
 				focusBusOnly(map, busLatLng);
@@ -216,23 +342,11 @@ export function useFocusSegment({
 			}).addTo(map);
 
 			const intermediates: L.Marker[] = [];
-			for (const stop of dirData.stops) {
+			for (const [idx, stop] of dirData.stops.entries()) {
 				if (stop.id === focusContext.targetStopId) continue;
-				const sp = projectOntoRoute(
-					stop.lat,
-					stop.lng,
-					lineInfo.routeLine,
-					lineInfo.routeLengthMeters,
-					null,
-					null,
-					0,
-				);
-				if (sp.offRoute) continue;
-				if (
-					sp.targetDistanceAlongRoute <= busD ||
-					sp.targetDistanceAlongRoute >= targetD
-				)
-					continue;
+				const sp = stopProjections[idx];
+				if (!sp) continue;
+				if (sp.distanceMeters <= busD || sp.distanceMeters >= targetD) continue;
 				const m = L.marker([stop.lat, stop.lng], {
 					icon: L.divIcon({
 						className: `focus-stop focus-stop--${focusContext.operator}`,
