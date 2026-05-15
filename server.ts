@@ -83,7 +83,7 @@ function todayFormatted(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Rate limit: 10 requests per minute per IP on /api/* endpoints.
+// Rate limit: 60 requests per minute per IP on /api/* endpoints.
 // Localhost (dev + Fly-internal health checks) bypass.
 // ---------------------------------------------------------------------------
 
@@ -118,11 +118,7 @@ function rateLimit<T extends (req: Request) => Response | Promise<Response>>(
 ): T {
 	return (async (req: Request) => {
 		const ip = getClientIp(req);
-		if (
-			ORIGIN_SECRET &&
-			!isLocalIp(ip) &&
-			req.headers.get("x-origin-secret") !== ORIGIN_SECRET
-		) {
+		if (ORIGIN_SECRET && !hasOriginAccess(req)) {
 			return new Response("Forbidden", { status: 403 });
 		}
 		if (!isLocalIp(ip)) {

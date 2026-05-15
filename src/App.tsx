@@ -133,7 +133,7 @@ function App() {
 	const requestTrainEmptyNotice = useCallback(() => {
 		setTrainEmptyNoticeRequest((n) => n + 1);
 	}, []);
-	const { trains, buses, setBuses, lastUpdated, inService, trainsLoaded } =
+	const { trains, buses, lastUpdated, inService, trainsLoaded } =
 		useVehiclePolling(mode, busOperator, busRoute, busDirection);
 	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
 		savedBusSearch.busSearchTab ?? "route",
@@ -449,7 +449,6 @@ function App() {
 		setBusDirection(null);
 		setBusStopId(null);
 		setBusStopOperator(null);
-		setBuses([]);
 		setFocusContext(null);
 		setArrivalFocusUnavailable(false);
 		setPanelCollapsed(true);
@@ -460,7 +459,6 @@ function App() {
 		setBusOperator(f.operator);
 		setBusRoute(f.shortName);
 		setBusDirection(f.direction);
-		setBuses([]);
 		// Symmetric to onPickStop: clear any stop selection + focus so the
 		// panel doesn't stay stuck on the stop tab while the map shows the
 		// route.
@@ -523,7 +521,6 @@ function App() {
 		setMode((current) => (current === "bus" ? current : "bus"));
 		if (s.operator !== busOperatorRef.current) {
 			setBusOperator(s.operator);
-			setBuses([]);
 		}
 		setBusRoute(null);
 		setBusDirection(null);
@@ -539,7 +536,6 @@ function App() {
 		(r: string | null, op?: BusOperator) => {
 			if (op && op !== busOperatorRef.current) {
 				setBusOperator(op);
-				setBuses([]);
 			}
 			setBusRoute(r);
 			setBusDirection(null);
@@ -576,7 +572,6 @@ function App() {
 			// chosen stop.
 			if (op && op !== busOperatorRef.current) {
 				setBusOperator(op);
-				setBuses([]);
 			}
 		},
 		[],

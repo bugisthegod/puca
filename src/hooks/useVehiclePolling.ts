@@ -85,6 +85,8 @@ export function useVehiclePolling(
 			return;
 		}
 
+		setBuses([]);
+
 		let poll: (() => void) | null = null;
 		let intervalMs = 0;
 		if (mode === "train") {
@@ -126,5 +128,5 @@ export function useVehiclePolling(
 		};
 	}, [mode, busOperator, busRoute, busDirection, inService]);
 
-	return { trains, buses, setBuses, lastUpdated, inService, trainsLoaded };
+	return { trains, buses, lastUpdated, inService, trainsLoaded };
 }

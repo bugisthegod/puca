@@ -4,6 +4,13 @@ import type { Station, StationTrain, Train, TrainMovement } from "./types.ts";
 
 const BASE_URL = "https://api.irishrail.ie/realtime/realtime.asmx";
 
+const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE", {
+	timeZone: "Europe/Dublin",
+	day: "numeric",
+	month: "short",
+	year: "numeric",
+});
+
 // --- Cache layer ---
 const cache = new Map<string, { data: unknown; expires: number }>();
 // Concurrent misses on the same key share one in-flight fetch, so a thundering
@@ -50,10 +57,10 @@ const parser = new XMLParser({
 });
 
 function todayFormatted(): string {
-	const d = new Date();
-	const day = d.getDate();
-	const month = d.toLocaleString("en-IE", { month: "short" }).toLowerCase();
-	const year = d.getFullYear();
+	const parts = DUBLIN_DATE_FMT.formatToParts(new Date());
+	const day = parts.find((p) => p.type === "day")?.value;
+	const month = parts.find((p) => p.type === "month")?.value.toLowerCase();
+	const year = parts.find((p) => p.type === "year")?.value;
 	return `${day} ${month} ${year}`;
 }
 
