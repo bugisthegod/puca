@@ -44,6 +44,8 @@ const STOP_MIN_ZOOM = 13;
 const DEFAULT_ANIM_DURATION_MS = 30_000;
 const MIN_ANIM_DURATION_MS = 5_000;
 const MAX_ANIM_DURATION_MS = 60_000;
+const ROUTE_FLY_DURATION_MS = 1500;
+const ROUTE_DETAIL_FALLBACK_MS = ROUTE_FLY_DURATION_MS + 700;
 
 // Returns the marker's currently rendered distance along its route, lerped
 // between prevDistance and currentDistance per the active animation window.
@@ -602,33 +604,42 @@ export function useBusMarkers({
 	useEffect(() => {
 		const map = leafletMap.current;
 		if (!map) return;
+		const activeMap = map;
 
-		if (busShapeLayerRef.current) {
-			map.removeLayer(busShapeLayerRef.current);
-			busShapeLayerRef.current = null;
+		function clearRouteLayers() {
+			if (busShapeLayerRef.current) {
+				activeMap.removeLayer(busShapeLayerRef.current);
+				busShapeLayerRef.current = null;
+			}
+
+			if (routeEndMarkerRef.current) {
+				activeMap.removeLayer(routeEndMarkerRef.current);
+				routeEndMarkerRef.current = null;
+			}
+
+			for (const m of busStopMarkersRef.current) activeMap.removeLayer(m);
+			busStopMarkersRef.current = [];
+
+			// Tear down variant branch polylines from the previous route+direction.
+			for (const polylines of Object.values(variantLayersRef.current)) {
+				for (const pl of polylines) activeMap.removeLayer(pl);
+			}
+			variantLayersRef.current = {};
+			selectedShapeIdRef.current = null;
 		}
 
-		if (routeEndMarkerRef.current) {
-			map.removeLayer(routeEndMarkerRef.current);
-			routeEndMarkerRef.current = null;
-		}
-
-		for (const m of busStopMarkersRef.current) map.removeLayer(m);
-		busStopMarkersRef.current = [];
-
-		// Tear down variant branch polylines from the previous route+direction.
-		for (const polylines of Object.values(variantLayersRef.current)) {
-			for (const pl of polylines) map.removeLayer(pl);
-		}
-		variantLayersRef.current = {};
-		selectedShapeIdRef.current = null;
+		clearRouteLayers();
 
 		if (mode !== "bus" || !busShape || !busDirection) return;
 
 		const dirData = busShape[busDirection];
 		if (!dirData || dirData.coords.length < 2) return;
+		const activeDirData = dirData;
 
 		const routeColor = busRouteColor(busOperator);
+		let cancelled = false;
+		let detailTimer: ReturnType<typeof setTimeout> | null = null;
+		let detailsRendered = false;
 
 		busShapeLayerRef.current = L.polyline(dirData.coords, {
 			color: routeColor,
@@ -636,87 +647,105 @@ export function useBusMarkers({
 			opacity: 0.85,
 		}).addTo(map);
 
-		// Terminus ring marker — single visual cue for "this end is the destination".
-		// Coords come from the GTFS shape (road points), not stop locations, so
-		// anchor on the last stop in dirData.stops if available, otherwise fall
-		// back to the polyline's last vertex.
-		const lastStop = dirData.stops?.[dirData.stops.length - 1];
-		const endLatLng: [number, number] | null = lastStop
-			? [lastStop.lat, lastStop.lng]
-			: (dirData.coords[dirData.coords.length - 1] ?? null);
-		if (endLatLng) {
-			const ringSvg = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="#fff" stroke="${routeColor}" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="${routeColor}"/></svg>`;
-			routeEndMarkerRef.current = L.marker(endLatLng, {
-				icon: L.divIcon({
-					className: "route-end-marker",
-					html: ringSvg,
-					iconSize: [24, 24],
-					iconAnchor: [12, 12],
-				}),
-				zIndexOffset: 800,
-			})
-				.bindTooltip(dirData.headsign, {
+		function renderRouteDetails() {
+			if (cancelled || detailsRendered) return;
+			detailsRendered = true;
+
+			// Terminus ring marker — single visual cue for "this end is the destination".
+			// Coords come from the GTFS shape (road points), not stop locations, so
+			// anchor on the last stop in dirData.stops if available, otherwise fall
+			// back to the polyline's last vertex.
+			const lastStop = activeDirData.stops?.[activeDirData.stops.length - 1];
+			const endLatLng: [number, number] | null = lastStop
+				? [lastStop.lat, lastStop.lng]
+				: (activeDirData.coords[activeDirData.coords.length - 1] ?? null);
+			if (endLatLng) {
+				const ringSvg = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="#fff" stroke="${routeColor}" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="${routeColor}"/></svg>`;
+				routeEndMarkerRef.current = L.marker(endLatLng, {
+					icon: L.divIcon({
+						className: "route-end-marker",
+						html: ringSvg,
+						iconSize: [24, 24],
+						iconAnchor: [12, 12],
+					}),
+					zIndexOffset: 800,
+				})
+					.bindTooltip(activeDirData.headsign, {
+						direction: "top",
+						offset: [0, -10],
+						className: "stop-tooltip",
+						opacity: 1,
+					})
+					.addTo(activeMap);
+			}
+
+			// Variant branches: drawn once here as faint overlays above the main line
+			// but below the stop markers. interactive:false so clicks pass through to
+			// the map.click handler that clears the highlight.
+			const variants = activeDirData.variants ?? [];
+			const newVariantLayers: Record<string, L.Polyline[]> = {};
+			for (const v of variants) {
+				const polylines: L.Polyline[] = [];
+				for (const branch of v.branches) {
+					if (branch.length < 2) continue;
+					const pl = L.polyline(branch, {
+						color: routeColor,
+						weight: 3,
+						opacity: 0.35,
+						interactive: false,
+					}).addTo(activeMap);
+					polylines.push(pl);
+				}
+				if (polylines.length > 0) newVariantLayers[v.shapeId] = polylines;
+			}
+			variantLayersRef.current = newVariantLayers;
+			// Immediately reconcile opacity with the currently-running shape set —
+			// otherwise new variants display at the default 0.35 until the next
+			// buses update fires applyVariantStyles.
+			applyVariantStyles();
+
+			const stopsVisible = activeMap.getZoom() >= STOP_MIN_ZOOM;
+			for (const stop of activeDirData.stops ?? []) {
+				const m = L.circleMarker([stop.lat, stop.lng], {
+					radius: 6,
+					color: routeColor,
+					weight: 2.5,
+					fillColor: "#fff",
+					fillOpacity: 1,
+				});
+				m.bindTooltip(stop.name, {
 					direction: "top",
-					offset: [0, -10],
+					offset: [0, -8],
 					className: "stop-tooltip",
 					opacity: 1,
-				})
-				.addTo(map);
-		}
-
-		// Variant branches: drawn once here as faint overlays above the main line
-		// but below the stop markers. interactive:false so clicks pass through to
-		// the map.click handler that clears the highlight.
-		const variants = dirData.variants ?? [];
-		const newVariantLayers: Record<string, L.Polyline[]> = {};
-		for (const v of variants) {
-			const polylines: L.Polyline[] = [];
-			for (const branch of v.branches) {
-				if (branch.length < 2) continue;
-				const pl = L.polyline(branch, {
-					color: routeColor,
-					weight: 3,
-					opacity: 0.35,
-					interactive: false,
-				}).addTo(map);
-				polylines.push(pl);
+				});
+				if (stopsVisible) m.addTo(activeMap);
+				busStopMarkersRef.current.push(m);
 			}
-			if (polylines.length > 0) newVariantLayers[v.shapeId] = polylines;
 		}
-		variantLayersRef.current = newVariantLayers;
-		// Immediately reconcile opacity with the currently-running shape set —
-		// otherwise new variants display at the default 0.35 until the next
-		// buses update fires applyVariantStyles.
-		applyVariantStyles();
 
 		// Frame the route so a search or popup "Show all" from off-route gives
 		// the user immediate context — otherwise the polyline draws somewhere
 		// they can't see and they don't know anything happened.
-		map.flyToBounds(busShapeLayerRef.current.getBounds(), {
+		const routeBounds = L.latLngBounds(activeDirData.coords);
+		activeMap.flyToBounds(routeBounds, {
 			paddingTopLeft: [20, 40],
 			paddingBottomRight: [20, 60],
-			duration: 1.5,
+			duration: ROUTE_FLY_DURATION_MS / 1000,
 			easeLinearity: 0.3,
 		});
 
-		const stopsVisible = map.getZoom() >= STOP_MIN_ZOOM;
-		for (const stop of dirData.stops ?? []) {
-			const m = L.circleMarker([stop.lat, stop.lng], {
-				radius: 6,
-				color: routeColor,
-				weight: 2.5,
-				fillColor: "#fff",
-				fillOpacity: 1,
-			});
-			m.bindTooltip(stop.name, {
-				direction: "top",
-				offset: [0, -8],
-				className: "stop-tooltip",
-				opacity: 1,
-			});
-			if (stopsVisible) m.addTo(map);
-			busStopMarkersRef.current.push(m);
-		}
+		activeMap.once("moveend", renderRouteDetails);
+		// If Leaflet decides there is effectively no move, moveend may not fire.
+		// Keep the details from disappearing in that already-in-view case.
+		detailTimer = setTimeout(renderRouteDetails, ROUTE_DETAIL_FALLBACK_MS);
+
+		return () => {
+			cancelled = true;
+			activeMap.off("moveend", renderRouteDetails);
+			if (detailTimer) clearTimeout(detailTimer);
+			clearRouteLayers();
+		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [busShape, busDirection, mode]);
 
