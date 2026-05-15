@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { type Favorites, hasTrain, type TrainFavorite } from "../favorites";
 import type { FocusTrainResult } from "../hooks/useTrainMarkers";
 import { useLocale } from "../i18n";
@@ -97,13 +97,10 @@ function SearchPanel({
 		return stations.filter((s) => s.name.toLowerCase().includes(q));
 	};
 
-	const currentList = useMemo(
-		() =>
-			focusedField === "from"
-				? filteredStations(fromQuery)
-				: filteredStations(toQuery),
-		[focusedField, fromQuery, toQuery, stations],
-	);
+	const currentList =
+		focusedField === "from"
+			? filteredStations(fromQuery)
+			: filteredStations(toQuery);
 
 	function selectStation(field: "from" | "to", station: Station) {
 		if (field === "from") {

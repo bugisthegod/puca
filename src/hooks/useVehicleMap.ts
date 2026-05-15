@@ -141,7 +141,6 @@ export function useVehicleMap(
 		focusContext,
 		leafletMap,
 		busMarkers,
-		buses,
 		mode,
 		onSegmentStatus: onFocusSegmentStatus,
 	});

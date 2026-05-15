@@ -5,7 +5,7 @@ import {
 	useEffect,
 	useRef,
 } from "react";
-import type { BusOperator, BusVehicle, FocusContext } from "../types";
+import type { BusOperator, FocusContext } from "../types";
 import {
 	buildRouteLine,
 	projectOntoRoute,
@@ -100,7 +100,6 @@ interface UseFocusSegmentOptions {
 	focusContext: FocusContext | null;
 	leafletMap: RefObject<L.Map | null>;
 	busMarkers: MutableRefObject<Map<string, BusMarkerEntry>>;
-	buses: BusVehicle[];
 	mode: Mode;
 	onSegmentStatus?: (status: "ok" | "unavailable") => void;
 }
@@ -222,43 +221,38 @@ export function useFocusSegment({
 				if (projected) minStopSegment = projected.segmentIndex;
 			}
 
-			let busD: number | null = null;
-			let targetD: number | null = null;
-
-			if (busD === null || targetD === null) {
-				const busProj = projectOntoRoute(
-					busLatLng.lat,
-					busLatLng.lng,
-					lineInfo.routeLine,
-					lineInfo.routeLengthMeters,
-					null,
-					null,
-					0,
-				);
-				const targetProj = projectOntoRoute(
-					focusContext.targetStopLat,
-					focusContext.targetStopLng,
-					lineInfo.routeLine,
-					lineInfo.routeLengthMeters,
-					null,
-					null,
-					0,
-				);
-				// Buses parked at a terminus / depot commonly sit > 150m from the route
-				// polyline (layby, holding bay), so projectOntoRoute returns offRoute even
-				// though the trip hasn't started yet. Treating that as "no segment to draw"
-				// makes clicks feel like the app is broken. Fudge the bus to the route
-				// start (busD = 0); the bus icon stays at its real GPS, but the line still
-				// appears from route-start → target stop. Target offRoute is fatal — means
-				// the user's stop genuinely isn't on this route.
-				if (targetProj.offRoute) {
-					onSegmentStatus?.("unavailable");
-					focusBusOnly(map, busLatLng);
-					return;
-				}
-				busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
-				targetD = targetProj.targetDistanceAlongRoute;
+			const busProj = projectOntoRoute(
+				busLatLng.lat,
+				busLatLng.lng,
+				lineInfo.routeLine,
+				lineInfo.routeLengthMeters,
+				null,
+				null,
+				0,
+			);
+			const targetProj = projectOntoRoute(
+				focusContext.targetStopLat,
+				focusContext.targetStopLng,
+				lineInfo.routeLine,
+				lineInfo.routeLengthMeters,
+				null,
+				null,
+				0,
+			);
+			// Buses parked at a terminus / depot commonly sit > 150m from the route
+			// polyline (layby, holding bay), so projectOntoRoute returns offRoute even
+			// though the trip hasn't started yet. Treating that as "no segment to draw"
+			// makes clicks feel like the app is broken. Fudge the bus to the route
+			// start (busD = 0); the bus icon stays at its real GPS, but the line still
+			// appears from route-start → target stop. Target offRoute is fatal — means
+			// the user's stop genuinely isn't on this route.
+			if (targetProj.offRoute) {
+				onSegmentStatus?.("unavailable");
+				focusBusOnly(map, busLatLng);
+				return;
 			}
+			const busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
+			const targetD = targetProj.targetDistanceAlongRoute;
 			if (busD >= targetD) {
 				onSegmentStatus?.("unavailable");
 				focusBusOnly(map, busLatLng);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocale } from "../i18n";
 import {
 	type BusSearchTab,
@@ -242,7 +242,7 @@ function BusSearchPanel({
 		stopQuery,
 	]);
 
-	const directions = useMemo(() => getBusDirections(busShape), [busShape]);
+	const directions = getBusDirections(busShape);
 
 	useEffect(() => {
 		function handleClick(e: MouseEvent) {
@@ -381,18 +381,12 @@ function BusSearchPanel({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [busSearchTab, busStopId, busStopOperator]);
 
-	const filtered = useMemo(
-		() => filterBusRoutes(routes, query),
-		[routes, query],
-	);
-	const routeResults = useMemo(() => filtered.slice(0, 8), [filtered]);
-	const unifiedResults = useMemo<UnifiedResult[]>(
-		() => [
-			...routeResults.map((route) => ({ kind: "route" as const, route })),
-			...stopResults.map((stop) => ({ kind: "stop" as const, stop })),
-		],
-		[routeResults, stopResults],
-	);
+	const filtered = filterBusRoutes(routes, query);
+	const routeResults = filtered.slice(0, 8);
+	const unifiedResults: UnifiedResult[] = [
+		...routeResults.map((route) => ({ kind: "route" as const, route })),
+		...stopResults.map((stop) => ({ kind: "stop" as const, stop })),
+	];
 
 	function handleUnifiedQueryChange(value: string) {
 		setQuery(value);

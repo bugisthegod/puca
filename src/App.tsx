@@ -64,46 +64,42 @@ const needsCompassToggle =
 		.requestPermission === "function";
 
 function App() {
-	const { locale, t } = useLocale();
-	const tourSteps: TourStep[] = useMemo(
-		() => [
-			{
-				title: t("tour.welcome.title"),
-				body: t("tour.welcome.body"),
-			},
-			{
-				target: "#info-panel",
-				title: t("tour.mode.title"),
-				body: t("tour.mode.body"),
-			},
-			{
-				target: "#search-panel",
-				title: t("tour.search.title"),
-				body: t("tour.search.body"),
-			},
-			{
-				title: t("tour.tap.title"),
-				body: t("tour.tap.body"),
-			},
-			{
-				target: ".about-fab",
-				title: t("tour.settings.title"),
-				body: t("tour.settings.body"),
-			},
-			{
-				target: ".fav-fab",
-				title: t("tour.favs.title"),
-				body: t("tour.favs.body"),
-			},
-			{
-				target: ".locate-btn",
-				title: t("tour.locate.title"),
-				body: t("tour.locate.body"),
-			},
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		],
-		[locale],
-	);
+	const { t } = useLocale();
+	const tourSteps: TourStep[] = [
+		{
+			title: t("tour.welcome.title"),
+			body: t("tour.welcome.body"),
+		},
+		{
+			target: "#info-panel",
+			title: t("tour.mode.title"),
+			body: t("tour.mode.body"),
+		},
+		{
+			target: "#search-panel",
+			title: t("tour.search.title"),
+			body: t("tour.search.body"),
+		},
+		{
+			title: t("tour.tap.title"),
+			body: t("tour.tap.body"),
+		},
+		{
+			target: ".about-fab",
+			title: t("tour.settings.title"),
+			body: t("tour.settings.body"),
+		},
+		{
+			target: ".fav-fab",
+			title: t("tour.favs.title"),
+			body: t("tour.favs.body"),
+		},
+		{
+			target: ".locate-btn",
+			title: t("tour.locate.title"),
+			body: t("tour.locate.body"),
+		},
+	];
 	const [mode, setMode] = useState<Mode>(savedSession.mode ?? "train");
 	const [busOperator, setBusOperator] = useState<BusOperator>(
 		savedSession.busOperator ?? "dublinbus",
