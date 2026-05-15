@@ -22,6 +22,8 @@ function operatorColor(op: BusOperator): string {
 			: "#f9a825";
 }
 
+const FOCUS_LOOSE_PROJECT_MAX_METERS = 800;
+
 type ShapeResponse = {
 	[direction: string]: {
 		headsign: string;
@@ -224,15 +226,6 @@ export function useFocusSegment({
 				if (projected) minStopSegment = projected.segmentIndex;
 			}
 
-			const busProj = projectOntoRoute(
-				busLatLng.lat,
-				busLatLng.lng,
-				lineInfo.routeLine,
-				lineInfo.routeLengthMeters,
-				null,
-				null,
-				0,
-			);
 			const targetProj = projectOntoRoute(
 				focusContext.targetStopLat,
 				focusContext.targetStopLng,
@@ -242,21 +235,43 @@ export function useFocusSegment({
 				null,
 				0,
 			);
-			// Buses parked at a terminus / depot commonly sit > 150m from the route
-			// polyline (layby, holding bay), so projectOntoRoute returns offRoute even
-			// though the trip hasn't started yet. Treating that as "no segment to draw"
-			// makes clicks feel like the app is broken. Fudge the bus to the route
-			// start (busD = 0); the bus icon stays at its real GPS, but the line still
-			// appears from route-start → target stop. Target offRoute is fatal — means
-			// the user's stop genuinely isn't on this route.
 			if (targetProj.offRoute) {
 				onSegmentStatus?.("unavailable");
 				focusBusOnly(map, busLatLng);
 				return;
 			}
-			const busD = busProj.offRoute ? 0 : busProj.targetDistanceAlongRoute;
-			const targetD = targetProj.targetDistanceAlongRoute;
-			if (busD >= targetD) {
+			const targetStopIndex = dirData.stops.findIndex(
+				(stop) => stop.id === focusContext.targetStopId,
+			);
+			const targetStopProjection =
+				targetStopIndex >= 0 ? stopProjections[targetStopIndex] : null;
+			const targetD =
+				targetStopProjection?.distanceMeters ??
+				targetProj.targetDistanceAlongRoute;
+			const targetSegment =
+				targetStopProjection?.segmentIndex ?? dirData.coords.length - 2;
+			const projectBusDistance = (lat: number, lng: number): number | null => {
+				const projected = projectOntoOrderedCoords(
+					dirData.coords,
+					cumulative,
+					lat,
+					lng,
+					0,
+					targetSegment,
+				);
+				if (
+					!projected ||
+					projected.distanceFromPathMeters > FOCUS_LOOSE_PROJECT_MAX_METERS
+				) {
+					return null;
+				}
+				return Math.max(
+					0,
+					Math.min(projected.distanceMeters, lineInfo.routeLengthMeters),
+				);
+			};
+			const busD = projectBusDistance(busLatLng.lat, busLatLng.lng);
+			if (busD === null || busD >= targetD) {
 				onSegmentStatus?.("unavailable");
 				onStopsAwayChange?.(null);
 				focusBusOnly(map, busLatLng);
@@ -274,18 +289,7 @@ export function useFocusSegment({
 					return;
 				}
 				const latest = latestEntry.marker.getLatLng();
-				const latestProj = projectOntoRoute(
-					latest.lat,
-					latest.lng,
-					lineInfo.routeLine,
-					lineInfo.routeLengthMeters,
-					null,
-					null,
-					0,
-				);
-				const latestD = latestProj.offRoute
-					? null
-					: latestProj.targetDistanceAlongRoute;
+				const latestD = projectBusDistance(latest.lat, latest.lng);
 				if (latestD === null) return;
 				const remaining =
 					latestD >= targetD
