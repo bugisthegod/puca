@@ -12,51 +12,24 @@ import {
 	getBusStopArrivals,
 	getBusTripStops,
 	getBusVehiclesByRoute,
-	getGtfsrHealthSnapshot,
 	getGtfsrVehiclePositions,
 	getOperatorStop,
 	getTrainRouteShape,
-	type Operator,
 	searchAllBusStops,
 	searchBusStops,
 	startBackgroundPolling,
 } from "./src/gtfsr.ts";
+import {
+	clampMins,
+	detailedHealth,
+	hasUsableTrainPosition,
+	isValidTrainDate,
+	parseOperator,
+	staticFile,
+	todayFormatted,
+} from "./src/server/helpers.ts";
+import { hasOriginAccess, rateLimit } from "./src/server/rateLimit.ts";
 import { isInServiceHours } from "./src/utils.ts";
-
-const VALID_OPERATORS = new Set<Operator>([
-	"dublinbus",
-	"buseireann",
-	"goahead",
-]);
-
-function parseOperator(raw: string | null): Operator | null {
-	if (!raw) return null;
-	return VALID_OPERATORS.has(raw as Operator) ? (raw as Operator) : null;
-}
-
-// Clamp ?mins= for Irish Rail station endpoint: NaN/huge values would still
-// hit the upstream API and pollute cache keys.
-function clampMins(raw: string | null, fallback: number): number {
-	if (!raw) return fallback;
-	const n = parseInt(raw, 10);
-	if (!Number.isFinite(n)) return fallback;
-	return Math.min(120, Math.max(1, n));
-}
-
-// Irish Rail TrainDate format: "6 may 2026" / "06 may 2026" (lowercase short month).
-// Day 1-31, month must be a real short name, year within ±1 of today — keeps
-// cache keys bounded so an attacker can't blow up the cache by varying ?date=.
-// Frontend doesn't send ?date= at all (server defaults to today), so failing
-// validation simply falls back to today is fine.
-const TRAIN_DATE_RE =
-	/^(0?[1-9]|[12]\d|3[01]) (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec) \d{4}$/;
-
-function isValidTrainDate(raw: string): boolean {
-	if (!TRAIN_DATE_RE.test(raw)) return false;
-	const year = parseInt(raw.slice(-4), 10);
-	const thisYear = new Date().getFullYear();
-	return year >= thisYear - 1 && year <= thisYear + 1;
-}
 
 // Service worker cache version: bumped automatically per Fly deploy so PWA
 // clients re-precache after each release. Local dev gets a stable "dev" name
@@ -64,116 +37,6 @@ function isValidTrainDate(raw: string): boolean {
 const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
 const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
-
-// Irish Rail's "today" is Dublin's today — not fly's UTC today, which can be
-// yesterday during summer-evening / early-morning windows.
-const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE", {
-	timeZone: "Europe/Dublin",
-	day: "numeric",
-	month: "short",
-	year: "numeric",
-});
-
-function todayFormatted(): string {
-	const parts = DUBLIN_DATE_FMT.formatToParts(new Date());
-	const day = parts.find((p) => p.type === "day")?.value;
-	const month = parts.find((p) => p.type === "month")?.value.toLowerCase();
-	const year = parts.find((p) => p.type === "year")?.value;
-	return `${day} ${month} ${year}`;
-}
-
-// ---------------------------------------------------------------------------
-// Rate limit: 60 requests per minute per IP on /api/* endpoints.
-// Localhost (dev + Fly-internal health checks) bypass.
-// ---------------------------------------------------------------------------
-
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 60;
-const rateLimitMap = new Map<string, number[]>();
-const ORIGIN_SECRET = process.env.ORIGIN_SECRET;
-
-function getClientIp(req: Request): string {
-	return (
-		req.headers.get("cf-connecting-ip") ??
-		req.headers.get("fly-client-ip") ??
-		req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-		"local"
-	);
-}
-
-function isLocalIp(ip: string): boolean {
-	return ip === "local" || ip === "127.0.0.1" || ip === "::1";
-}
-
-function hasOriginAccess(req: Request): boolean {
-	const ip = getClientIp(req);
-	if (isLocalIp(ip)) return true;
-	return Boolean(
-		ORIGIN_SECRET && req.headers.get("x-origin-secret") === ORIGIN_SECRET,
-	);
-}
-
-function rateLimit<T extends (req: Request) => Response | Promise<Response>>(
-	handler: T,
-): T {
-	return (async (req: Request) => {
-		const ip = getClientIp(req);
-		if (ORIGIN_SECRET && !hasOriginAccess(req)) {
-			return new Response("Forbidden", { status: 403 });
-		}
-		if (!isLocalIp(ip)) {
-			const now = Date.now();
-			const timestamps = (rateLimitMap.get(ip) ?? []).filter(
-				(t) => now - t < RATE_LIMIT_WINDOW_MS,
-			);
-			if (timestamps.length >= RATE_LIMIT_MAX) {
-				return new Response("Rate limit exceeded", {
-					status: 429,
-					headers: { "Retry-After": "60", "Content-Type": "text/plain" },
-				});
-			}
-			timestamps.push(now);
-			rateLimitMap.set(ip, timestamps);
-		}
-		return handler(req);
-	}) as T;
-}
-
-// Periodic cleanup: drop entries with no recent activity (prevents Map growth under unique-IP traffic)
-setInterval(() => {
-	const cutoff = Date.now() - RATE_LIMIT_WINDOW_MS;
-	for (const [ip, timestamps] of rateLimitMap) {
-		const live = timestamps.filter((t) => t >= cutoff);
-		if (live.length === 0) rateLimitMap.delete(ip);
-		else rateLimitMap.set(ip, live);
-	}
-}, 5 * 60_000);
-
-function staticFile(path: string, ttlSec: number) {
-	return () =>
-		new Response(Bun.file(path), {
-			headers: { "Cache-Control": `public, max-age=${ttlSec}` },
-		});
-}
-
-function memoryMb(): number {
-	return Math.round(process.memoryUsage().rss / 1024 / 1024);
-}
-
-function hasUsableTrainPosition(
-	train: { lat: number; lng: number } | undefined,
-): boolean {
-	return !!train && !(train.lat === 0 && train.lng === 0);
-}
-
-async function detailedHealth() {
-	return {
-		ok: true,
-		uptimeSec: Math.round(process.uptime()),
-		memoryMb: memoryMb(),
-		gtfsr: await getGtfsrHealthSnapshot(),
-	};
-}
 
 startBackgroundPolling();
 
