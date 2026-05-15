@@ -224,42 +224,6 @@ export function useFocusSegment({
 
 			let busD: number | null = null;
 			let targetD: number | null = null;
-			const targetStopIndex = dirData.stops.findIndex(
-				(stop) => stop.id === focusContext.targetStopId,
-			);
-			if (
-				targetStopIndex >= 0 &&
-				focusContext.vehicleStopSequence !== null &&
-				focusContext.vehicleStopSequence <= focusContext.targetStopSequence
-			) {
-				const stopsAwayBySequence =
-					focusContext.targetStopSequence - focusContext.vehicleStopSequence;
-				const currentStopIndex = targetStopIndex - stopsAwayBySequence;
-				const currentStop = stopProjections[currentStopIndex];
-				const targetStop = stopProjections[targetStopIndex];
-				if (
-					currentStop &&
-					targetStop &&
-					currentStop.distanceMeters < targetStop.distanceMeters
-				) {
-					const busProj = projectOntoOrderedCoords(
-						dirData.coords,
-						cumulative,
-						busLatLng.lat,
-						busLatLng.lng,
-						currentStop.segmentIndex,
-						targetStop.segmentIndex,
-					);
-					busD = Math.max(
-						currentStop.distanceMeters,
-						Math.min(
-							busProj?.distanceMeters ?? currentStop.distanceMeters,
-							targetStop.distanceMeters,
-						),
-					);
-					targetD = targetStop.distanceMeters;
-				}
-			}
 
 			if (busD === null || targetD === null) {
 				const busProj = projectOntoRoute(
