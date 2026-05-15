@@ -11,6 +11,7 @@ import {
 	reconcileSelectedVariant,
 	variantStyleForShape,
 } from "./busVariantStyle";
+import { getMapFitPadding } from "./mapFitPadding";
 import {
 	buildRouteLine,
 	buildRouteLookup,
@@ -729,8 +730,7 @@ export function useBusMarkers({
 		// they can't see and they don't know anything happened.
 		const routeBounds = L.latLngBounds(activeDirData.coords);
 		activeMap.flyToBounds(routeBounds, {
-			paddingTopLeft: [20, 40],
-			paddingBottomRight: [20, 60],
+			...getMapFitPadding(activeMap, routeBounds, "routeOverview"),
 			duration: ROUTE_FLY_DURATION_MS / 1000,
 			easeLinearity: 0.3,
 		});

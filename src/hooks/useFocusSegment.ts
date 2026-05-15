@@ -6,6 +6,7 @@ import {
 	useRef,
 } from "react";
 import type { BusOperator, FocusContext } from "../types";
+import { getMapFitPadding } from "./mapFitPadding";
 import {
 	buildRouteLine,
 	projectOntoRoute,
@@ -410,9 +411,9 @@ export function useFocusSegment({
 			// Frame the whole segment (bus → target) so it fills the viewport —
 			// matches the flyToBounds behaviour when a user picks a route from the
 			// Route tab. User can then tap the bus themselves if they want the popup.
-			map.flyToBounds(polyline.getBounds(), {
-				paddingTopLeft: [20, 60],
-				paddingBottomRight: [20, 80],
+			const focusBounds = polyline.getBounds();
+			map.flyToBounds(focusBounds, {
+				...getMapFitPadding(map, focusBounds, "focusSegment"),
 				maxZoom: 16,
 				duration: 1.35,
 				easeLinearity: 0.3,
