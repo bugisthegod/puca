@@ -32,6 +32,7 @@ interface UseVehicleMapOptions {
 	initialView?: MapView | null;
 	focusContext?: FocusContext | null;
 	onFocusSegmentStatus?: (status: "ok" | "unavailable") => void;
+	onBusFocusStopsAway?: (stopsAway: number | null) => void;
 	onTrainFocusSummary?: (summary: TrainFocusSummary | null) => void;
 }
 
@@ -79,6 +80,7 @@ export function useVehicleMap(
 		initialView = null,
 		focusContext = null,
 		onFocusSegmentStatus,
+		onBusFocusStopsAway,
 		onTrainFocusSummary,
 	} = options;
 
@@ -143,6 +145,7 @@ export function useVehicleMap(
 		busMarkers,
 		mode,
 		onSegmentStatus: onFocusSegmentStatus,
+		onStopsAwayChange: onBusFocusStopsAway,
 	});
 
 	// Bus container lifecycle — recreated on mode/operator/single-route change.

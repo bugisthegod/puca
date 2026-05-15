@@ -150,6 +150,10 @@ function App() {
 	const [arrivalFocusUnavailable, setArrivalFocusUnavailable] = useState(false);
 	const [panelCollapsed, setPanelCollapsed] = useState(true);
 	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
+	const [busFocusStopsAway, setBusFocusStopsAway] = useState<{
+		tripId: string;
+		stopsAway: number | null;
+	} | null>(null);
 	const [busShape, setBusShape] = useState<{
 		[dir: string]: {
 			headsign: string;
@@ -215,6 +219,11 @@ function App() {
 			focusContext,
 			onFocusSegmentStatus: (status) => {
 				setArrivalFocusUnavailable(status === "unavailable");
+			},
+			onBusFocusStopsAway: (stopsAway) => {
+				setBusFocusStopsAway(
+					focusContext ? { tripId: focusContext.tripId, stopsAway } : null,
+				);
 			},
 			onTrainFocusSummary: (summary) => {
 				setTrainFocusSummary(summary);
@@ -373,6 +382,10 @@ function App() {
 			window.removeEventListener("pagehide", save);
 		};
 	}, [mode, filter, busOperator, getMapView]);
+
+	useEffect(() => {
+		if (!focusContext) setBusFocusStopsAway(null);
+	}, [focusContext]);
 
 	async function handleLocate() {
 		if (locating) return;
@@ -590,6 +603,10 @@ function App() {
 			setBusDirection(null);
 			setInfoPanelDrilledIn(true);
 			setArrivalFocusUnavailable(false);
+			setBusFocusStopsAway({
+				tripId: arrival.tripId,
+				stopsAway: arrival.stopsAway,
+			});
 			setFocusContext({
 				tripId: arrival.tripId,
 				operator: op,
@@ -820,6 +837,7 @@ function App() {
 					stopIsFavorite={stopIsFav}
 					onToggleStopFavorite={onToggleStopFav}
 					onStopSummaryChange={setBusStopSummary}
+					focusedStopsAwayOverride={busFocusStopsAway}
 					arrivalFocusResetSignal={arrivalFocusResetSignal}
 					arrivalFocusUnavailable={arrivalFocusUnavailable}
 					onPickArrival={handlePickArrival}

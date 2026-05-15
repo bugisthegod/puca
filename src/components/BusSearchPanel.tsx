@@ -133,6 +133,10 @@ type BusSearchPanelProps = {
 	stopIsFavorite: boolean;
 	onToggleStopFavorite: (stop: StopSearchResult) => void;
 	onStopSummaryChange: (summary: BusStopSummary | null) => void;
+	focusedStopsAwayOverride: {
+		tripId: string;
+		stopsAway: number | null;
+	} | null;
 	arrivalFocusResetSignal: number;
 	arrivalFocusUnavailable: boolean;
 	collapsed: boolean;
@@ -157,6 +161,7 @@ function BusSearchPanel({
 	stopIsFavorite,
 	onToggleStopFavorite,
 	onStopSummaryChange,
+	focusedStopsAwayOverride,
 	arrivalFocusResetSignal,
 	arrivalFocusUnavailable,
 	collapsed,
@@ -507,13 +512,19 @@ function BusSearchPanel({
 			: selectedArrivalTripId
 				? selectedArrival
 				: (arrivals?.[0] ?? null);
+		const stopsAway =
+			next &&
+			selectedArrivalTripId &&
+			focusedStopsAwayOverride?.tripId === next.tripId
+				? focusedStopsAwayOverride.stopsAway
+				: next?.stopsAway;
 		const etaSeconds = next
 			? displayEtaSeconds(next.etaSeconds, arrivalsFetchedAt, arrivalClockNow)
 			: null;
 		const etaText =
-			next?.stopsAway === 0
+			stopsAway === 0
 				? t("bus.search.eta.due")
-				: next?.stopsAway !== null && next?.stopsAway !== undefined
+				: stopsAway !== null && stopsAway !== undefined
 					? etaSeconds !== null && etaSeconds >= 60
 						? etaLabel(etaSeconds)
 						: ""
@@ -539,7 +550,7 @@ function BusSearchPanel({
 						routeShortName: next.routeShortName,
 						headsign: next.headsign,
 						etaText,
-						stopsAwayText: stopsAwayLabel(next.stopsAway),
+						stopsAwayText: stopsAwayLabel(stopsAway),
 					}
 				: null,
 		});
@@ -552,6 +563,7 @@ function BusSearchPanel({
 		arrivalsLoading,
 		arrivalClockNow,
 		arrivalFocusUnavailable,
+		focusedStopsAwayOverride,
 		selectedArrivalTripId,
 		locale,
 		onStopSummaryChange,

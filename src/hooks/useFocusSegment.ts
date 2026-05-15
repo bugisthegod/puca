@@ -102,6 +102,7 @@ interface UseFocusSegmentOptions {
 	busMarkers: MutableRefObject<Map<string, BusMarkerEntry>>;
 	mode: Mode;
 	onSegmentStatus?: (status: "ok" | "unavailable") => void;
+	onStopsAwayChange?: (stopsAway: number | null) => void;
 }
 
 export function useFocusSegment({
@@ -110,6 +111,7 @@ export function useFocusSegment({
 	busMarkers,
 	mode,
 	onSegmentStatus,
+	onStopsAwayChange,
 }: UseFocusSegmentOptions): void {
 	const layersRef = useRef<{
 		polylines: L.Polyline[];
@@ -158,6 +160,7 @@ export function useFocusSegment({
 		}
 
 		let cancelled = false;
+		let stopsAwayTimer: ReturnType<typeof setInterval> | null = null;
 
 		(async () => {
 			const cacheKey = `${focusContext.operator}:${focusContext.routeShortName}`;
@@ -255,9 +258,49 @@ export function useFocusSegment({
 			const targetD = targetProj.targetDistanceAlongRoute;
 			if (busD >= targetD) {
 				onSegmentStatus?.("unavailable");
+				onStopsAwayChange?.(null);
 				focusBusOnly(map, busLatLng);
 				return;
 			}
+
+			let lastStopsAway: number | null = null;
+			const reportStopsAway = () => {
+				const latestEntry = busMarkers.current.get(focusContext.tripId);
+				if (!latestEntry) {
+					if (lastStopsAway !== null) {
+						lastStopsAway = null;
+						onStopsAwayChange?.(null);
+					}
+					return;
+				}
+				const latest = latestEntry.marker.getLatLng();
+				const latestProj = projectOntoRoute(
+					latest.lat,
+					latest.lng,
+					lineInfo.routeLine,
+					lineInfo.routeLengthMeters,
+					null,
+					null,
+					0,
+				);
+				const latestD = latestProj.offRoute
+					? null
+					: latestProj.targetDistanceAlongRoute;
+				if (latestD === null) return;
+				const remaining =
+					latestD >= targetD
+						? 0
+						: stopProjections.filter(
+								(sp) =>
+									sp &&
+									sp.distanceMeters > latestD &&
+									sp.distanceMeters <= targetD,
+							).length;
+				if (remaining !== lastStopsAway) {
+					lastStopsAway = remaining;
+					onStopsAwayChange?.(remaining);
+				}
+			};
 
 			let slicedCoords: [number, number][];
 			try {
@@ -357,6 +400,8 @@ export function useFocusSegment({
 				target,
 			};
 			onSegmentStatus?.("ok");
+			reportStopsAway();
+			stopsAwayTimer = setInterval(reportStopsAway, 1000);
 
 			// Frame the whole segment (bus → target) so it fills the viewport —
 			// matches the flyToBounds behaviour when a user picks a route from the
@@ -381,6 +426,7 @@ export function useFocusSegment({
 
 		return () => {
 			cancelled = true;
+			if (stopsAwayTimer) clearInterval(stopsAwayTimer);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [focusContext, mode]);
