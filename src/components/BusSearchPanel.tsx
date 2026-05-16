@@ -138,7 +138,7 @@ type BusSearchPanelProps = {
 		stopsAway: number | null;
 	} | null;
 	arrivalFocusResetSignal: number;
-	arrivalFocusUnavailable: boolean;
+	arrivalFocusStatus: "idle" | "pending" | "ok" | "unavailable";
 	collapsed: boolean;
 	onCollapsedChange: (collapsed: boolean) => void;
 	onShowToast: (title: string, body?: string) => void;
@@ -163,7 +163,7 @@ function BusSearchPanel({
 	onStopSummaryChange,
 	focusedStopsAwayOverride,
 	arrivalFocusResetSignal,
-	arrivalFocusUnavailable,
+	arrivalFocusStatus,
 	collapsed,
 	onCollapsedChange,
 	onShowToast,
@@ -506,12 +506,16 @@ function BusSearchPanel({
 		const selectedArrivalMissing =
 			selectedArrivalTripId !== null && arrivals !== null && !selectedArrival;
 		const selectedArrivalUnavailable =
-			selectedArrivalTripId !== null && arrivalFocusUnavailable;
+			selectedArrivalTripId !== null && arrivalFocusStatus === "unavailable";
+		const selectedArrivalPending =
+			selectedArrivalTripId !== null && arrivalFocusStatus === "pending";
 		const next = selectedArrivalUnavailable
 			? null
-			: selectedArrivalTripId
-				? selectedArrival
-				: (arrivals?.[0] ?? null);
+			: selectedArrivalPending
+				? null
+				: selectedArrivalTripId
+					? selectedArrival
+					: (arrivals?.[0] ?? null);
 		const stopsAway =
 			next &&
 			selectedArrivalTripId &&
@@ -541,10 +545,12 @@ function BusSearchPanel({
 			emptyText:
 				selectedArrivalUnavailable || selectedArrivalMissing
 					? t("bus.search.arrivals.maybePassed")
-					: (arrivalsError ??
-						(arrivalsLoading || arrivals === null
-							? t("bus.search.arrivals.loading")
-							: t("info.stop.noarrivals"))),
+					: selectedArrivalPending
+						? t("bus.search.arrivals.checking")
+						: (arrivalsError ??
+							(arrivalsLoading || arrivals === null
+								? t("bus.search.arrivals.loading")
+								: t("info.stop.noarrivals"))),
 			nextArrival: next
 				? {
 						routeShortName: next.routeShortName,
@@ -562,7 +568,7 @@ function BusSearchPanel({
 		arrivalsFetchedAt,
 		arrivalsLoading,
 		arrivalClockNow,
-		arrivalFocusUnavailable,
+		arrivalFocusStatus,
 		focusedStopsAwayOverride,
 		selectedArrivalTripId,
 		locale,
