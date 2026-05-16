@@ -145,6 +145,8 @@ const EN = {
 	"info.next.bus": "Next bus at {time}",
 	"info.back.aria": "Back",
 	"info.updated": "Updated: {time}",
+	"info.updated.justnow": "just now",
+	"info.updated.seconds": "{n}s ago",
 	"info.updated.empty": "Updated: —",
 	"info.stop.noarrivals": "No upcoming buses",
 
@@ -365,6 +367,8 @@ const ZH: Record<Key, string> = {
 	"info.next.bus": "下一班公交 {time}",
 	"info.back.aria": "返回",
 	"info.updated": "更新于 {time}",
+	"info.updated.justnow": "刚刚",
+	"info.updated.seconds": "{n} 秒前",
 	"info.updated.empty": "更新于 —",
 	"info.stop.noarrivals": "暂无即将到站的公交",
 

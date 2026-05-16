@@ -102,6 +102,7 @@ function InfoPanel({
 	const showBusStopSummary = stopSummary !== null;
 	const trainSummary = drilledIn && mode === "train" ? trainFocusSummary : null;
 	const showTrainSummary = trainSummary !== null;
+	const showMainSummary = !showBusStopSummary && !showTrainSummary;
 	const trainSummaryMeta = trainFocusSummaryMeta(trainSummary, t);
 
 	const modes: { value: Mode; label: string }[] = [
@@ -132,13 +133,17 @@ function InfoPanel({
 			{drilledIn &&
 				(inService ? (
 					<>
-						{!showBusStopSummary && !showTrainSummary && (
+						{showMainSummary && (
 							<div id="panel-header">
 								<span id="train-count">{showCount}</span>
+								<span className="info-panel__updated-inline">
+									{lastUpdated}
+								</span>
 							</div>
 						)}
 						{showTrainSummary && (
 							<div className="info-stop-summary info-stop-summary--train">
+								<div className="info-stop-summary__updated">{lastUpdated}</div>
 								<div className="info-stop-summary__stop">
 									<strong>
 										{trainSummary.directionName
@@ -162,6 +167,7 @@ function InfoPanel({
 							<div
 								className={`info-stop-summary info-stop-summary--${stopSummary.operator}`}
 							>
+								<div className="info-stop-summary__updated">{lastUpdated}</div>
 								<div className="info-stop-summary__stop">
 									<strong>{stopSummary.stopCode}</strong>
 									<span>{stopSummary.stopName}</span>
@@ -190,7 +196,7 @@ function InfoPanel({
 								)}
 							</div>
 						)}
-						<div id="last-updated">{lastUpdated}</div>
+						{!showMainSummary && <div id="last-updated">{lastUpdated}</div>}
 					</>
 				) : (
 					<div id="panel-header" className="panel-header--closed">

@@ -3,6 +3,37 @@ import type { BusOperator, BusVehicle, Train } from "../types";
 import { isInServiceHours } from "../utils";
 import type { Mode } from "./useVehicleMap";
 
+export function trainSignature(train: Train): string {
+	return [
+		train.code,
+		train.status,
+		train.lat.toFixed(5),
+		train.lng.toFixed(5),
+		train.message,
+		train.date,
+	].join("|");
+}
+
+export function busVehicleSignature(vehicle: BusVehicle): string {
+	return [
+		vehicle.tripId || vehicle.label,
+		vehicle.routeId,
+		vehicle.directionId,
+		vehicle.lat.toFixed(5),
+		vehicle.lng.toFixed(5),
+		Math.round(vehicle.bearing ?? -1),
+		Math.round(vehicle.speed ?? -1),
+		vehicle.stale ? 1 : 0,
+	].join("|");
+}
+
+export function snapshotSignature<T>(
+	items: T[],
+	itemSignature: (item: T) => string,
+): string {
+	return items.map(itemSignature).sort().join("\n");
+}
+
 export function useVehiclePolling(
 	mode: Mode,
 	busOperator: BusOperator,
@@ -11,11 +42,17 @@ export function useVehiclePolling(
 ) {
 	const [trains, setTrains] = useState<Train[]>([]);
 	const [buses, setBuses] = useState<BusVehicle[]>([]);
-	const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+	const [dataChangedAt, setDataChangedAt] = useState<number | null>(null);
+	const [clockNow, setClockNow] = useState(() => Date.now());
 	const [inService, setInService] = useState<boolean>(() =>
 		isInServiceHours(mode),
 	);
 	const [trainsLoaded, setTrainsLoaded] = useState(false);
+
+	useEffect(() => {
+		const id = setInterval(() => setClockNow(Date.now()), 1000);
+		return () => clearInterval(id);
+	}, []);
 
 	useEffect(() => {
 		const update = () => setInService(isInServiceHours(mode));
@@ -26,6 +63,13 @@ export function useVehiclePolling(
 
 	useEffect(() => {
 		let cancelled = false;
+		let lastSignature: string | null = null;
+
+		function markChangedIfNeeded(nextSignature: string) {
+			if (nextSignature === lastSignature) return;
+			lastSignature = nextSignature;
+			setDataChangedAt(Date.now());
+		}
 
 		async function fetchTrains() {
 			try {
@@ -35,7 +79,7 @@ export function useVehiclePolling(
 				if (cancelled) return;
 				setTrains(data);
 				setTrainsLoaded(true);
-				setLastUpdated(new Date().toLocaleTimeString());
+				markChangedIfNeeded(snapshotSignature(data, trainSignature));
 			} catch (err) {
 				if (cancelled) return;
 				console.error("Failed to fetch trains:", err);
@@ -55,7 +99,7 @@ export function useVehiclePolling(
 				const data: BusVehicle[] = await res.json();
 				if (cancelled) return;
 				setBuses(data);
-				setLastUpdated(new Date().toLocaleTimeString());
+				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
 				console.error("Failed to fetch buses:", err);
@@ -71,7 +115,7 @@ export function useVehiclePolling(
 				const data: BusVehicle[] = await res.json();
 				if (cancelled) return;
 				setBuses(data);
-				setLastUpdated(new Date().toLocaleTimeString());
+				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
 				console.error("Failed to fetch all buses:", err);
@@ -82,10 +126,12 @@ export function useVehiclePolling(
 			setTrains([]);
 			setBuses([]);
 			setTrainsLoaded(false);
+			setDataChangedAt(null);
 			return;
 		}
 
 		setBuses([]);
+		setDataChangedAt(null);
 
 		let poll: (() => void) | null = null;
 		let intervalMs = 0;
@@ -102,6 +148,7 @@ export function useVehiclePolling(
 			intervalMs = 15_000;
 		} else {
 			setBuses([]);
+			setDataChangedAt(null);
 			return;
 		}
 
@@ -128,5 +175,10 @@ export function useVehiclePolling(
 		};
 	}, [mode, busOperator, busRoute, busDirection, inService]);
 
-	return { trains, buses, lastUpdated, inService, trainsLoaded };
+	const lastUpdatedAgeSec =
+		dataChangedAt === null
+			? null
+			: Math.max(0, Math.floor((clockNow - dataChangedAt) / 1000));
+
+	return { trains, buses, lastUpdatedAgeSec, inService, trainsLoaded };
 }

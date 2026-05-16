@@ -64,7 +64,7 @@ const needsCompassToggle =
 		.requestPermission === "function";
 
 function App() {
-	const { t } = useLocale();
+	const { locale, t } = useLocale();
 	const tourSteps: TourStep[] = [
 		{
 			title: t("tour.welcome.title"),
@@ -129,7 +129,7 @@ function App() {
 	const requestTrainEmptyNotice = useCallback(() => {
 		setTrainEmptyNoticeRequest((n) => n + 1);
 	}, []);
-	const { trains, buses, lastUpdated, inService, trainsLoaded } =
+	const { trains, buses, lastUpdatedAgeSec, inService, trainsLoaded } =
 		useVehiclePolling(mode, busOperator, busRoute, busDirection);
 	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
 		savedBusSearch.busSearchTab ?? "route",
@@ -678,6 +678,14 @@ function App() {
 		mode === "train"
 			? trains.filter((t) => t.status === "R").length
 			: buses.length;
+	const lastUpdatedLabel = useMemo(() => {
+		if (lastUpdatedAgeSec === null) return t("info.updated.empty");
+		const time =
+			lastUpdatedAgeSec === 0
+				? t("info.updated.justnow")
+				: t("info.updated.seconds", { n: lastUpdatedAgeSec });
+		return t("info.updated", { time });
+	}, [lastUpdatedAgeSec, locale, t]);
 	const showNoTrainPositions = mode === "train" && trainEmptyNoticeVisible;
 	const showTrainEmptyNoticeIfUnavailable = useCallback(() => {
 		requestTrainEmptyNotice();
@@ -892,11 +900,7 @@ function App() {
 			)}
 			<InfoPanel
 				vehicleCount={vehicleCount}
-				lastUpdated={
-					lastUpdated
-						? t("info.updated", { time: lastUpdated })
-						: t("info.updated.empty")
-				}
+				lastUpdated={lastUpdatedLabel}
 				mode={mode}
 				busSearchTab={busSearchTab}
 				filter={filter}
