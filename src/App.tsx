@@ -177,6 +177,29 @@ function App() {
 		? buses.filter((b) => b.tripId === focusContext.tripId)
 		: buses;
 
+	const clearBusFocusState = useCallback(() => {
+		setBusStopId(null);
+		setBusStopOperator(null);
+		setBusStopSummary(null);
+		setFocusContext(null);
+		setBusFocusStopsAway(null);
+		setArrivalFocusResetSignal((n) => n + 1);
+		setArrivalFocusUnavailable(false);
+	}, []);
+
+	const showBusRouteOverview = useCallback(
+		(route: string, direction: string, operator?: BusOperator) => {
+			if (operator) setBusOperator(operator);
+			setBusRoute(route);
+			setBusDirection(direction);
+			setBusSearchTab("route");
+			clearBusFocusState();
+			setInfoPanelDrilledIn(true);
+			setPanelCollapsed(false);
+		},
+		[clearBusFocusState],
+	);
+
 	const {
 		focusTrain,
 		clearTrainFocus,
@@ -199,21 +222,10 @@ function App() {
 		{
 			currentBusRoute: busRoute,
 			onSelectBusRoute: (route, direction) => {
-				setBusRoute(route);
-				setBusDirection(direction);
-				setFocusContext(null);
-				setArrivalFocusUnavailable(false);
+				showBusRouteOverview(route, direction);
 			},
 			onRouteJump: (route, direction) => {
-				setBusRoute(route);
-				setBusDirection(direction);
-				setFocusContext(null);
-				setArrivalFocusUnavailable(false);
-				if (
-					!hasBus(favs, { shortName: route, operator: busOperator, direction })
-				) {
-					setPanelCollapsed(false);
-				}
+				showBusRouteOverview(route, direction);
 			},
 			initialView: savedSession.mapView ?? null,
 			focusContext,
@@ -451,32 +463,25 @@ function App() {
 		};
 	}, [busRoute, busOperator]);
 
-	const handleBusOperatorChange = useCallback((op: BusOperator) => {
-		if (op === busOperatorRef.current) return;
-		setBusOperator(op);
-		setBusRoute(null);
-		setBusDirection(null);
-		setBusStopId(null);
-		setBusStopOperator(null);
-		setFocusContext(null);
-		setArrivalFocusUnavailable(false);
-		setPanelCollapsed(true);
-	}, []);
+	const handleBusOperatorChange = useCallback(
+		(op: BusOperator) => {
+			if (op === busOperatorRef.current) return;
+			setBusOperator(op);
+			setBusRoute(null);
+			setBusDirection(null);
+			clearBusFocusState();
+			setPanelCollapsed(true);
+		},
+		[clearBusFocusState],
+	);
 
-	const handlePickBusFavorite = useCallback((f: BusFavorite) => {
-		setMode("bus");
-		setBusOperator(f.operator);
-		setBusRoute(f.shortName);
-		setBusDirection(f.direction);
-		// Symmetric to onPickStop: clear any stop selection + focus so the
-		// panel doesn't stay stuck on the stop tab while the map shows the
-		// route.
-		setBusSearchTab("route");
-		setBusStopId(null);
-		setFocusContext(null);
-		setArrivalFocusUnavailable(false);
-		setPanelCollapsed(true);
-	}, []);
+	const handlePickBusFavorite = useCallback(
+		(f: BusFavorite) => {
+			setMode("bus");
+			showBusRouteOverview(f.shortName, f.direction, f.operator);
+		},
+		[showBusRouteOverview],
+	);
 
 	const handlePickTrainFavorite = useCallback(
 		(f: TrainFavorite) => {
@@ -548,8 +553,25 @@ function App() {
 			}
 			setBusRoute(r);
 			setBusDirection(null);
+			setBusSearchTab("route");
+			clearBusFocusState();
+			if (r !== null) {
+				setInfoPanelDrilledIn(true);
+				setPanelCollapsed(false);
+			}
 		},
-		[],
+		[clearBusFocusState],
+	);
+
+	const handleSelectBusDirection = useCallback(
+		(direction: string | null) => {
+			if (direction && busRoute) {
+				showBusRouteOverview(busRoute, direction);
+			} else {
+				setBusDirection(direction);
+			}
+		},
+		[busRoute, showBusRouteOverview],
 	);
 
 	const handlePanelCollapsedChange = useCallback(
@@ -820,7 +842,7 @@ function App() {
 				<BusSearchPanel
 					onSelectRoute={handleSelectBusRoute}
 					selectedRoute={busRoute}
-					onSelectDirection={setBusDirection}
+					onSelectDirection={handleSelectBusDirection}
 					selectedDirection={busDirection}
 					busShape={busShape}
 					isFavorite={busIsFav}
