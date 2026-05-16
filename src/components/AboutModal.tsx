@@ -14,8 +14,8 @@ type AboutModalProps = {
 
 const FEEDBACK_URL = "https://tally.so/r/lbKjNX";
 const SHARE_TEXT = {
-	en: "bus? train? púca!\nhttps://puca.dev",
-	zh: "公交？火车？púca！\nhttps://puca.dev",
+	en: "Share Puca with a friend, and catch the next one together\nhttps://puca.dev",
+	zh: "嘿👋，快把 Puca 分享给朋友，一起赶上下一班车\nhttps://puca.dev",
 };
 
 async function copyText(text: string) {
