@@ -287,22 +287,25 @@ function App() {
 	const busOperatorRef = useRef(busOperator);
 	busOperatorRef.current = busOperator;
 
-	const busFavKey = useMemo(
-		() =>
-			busRoute && busDirection
-				? {
-						shortName: busRoute,
-						operator: busOperator,
-						direction: busDirection,
-					}
-				: null,
-		[busDirection, busOperator, busRoute],
-	);
+	const busFavKey = useMemo(() => {
+		if (!busRoute || !busDirection) return null;
+		return {
+			shortName: busRoute,
+			operator: busOperator,
+			direction: busDirection,
+			headsign: busShape?.[busDirection]?.headsign ?? "",
+		};
+	}, [busDirection, busOperator, busRoute, busShape]);
 	const busIsFav = busFavKey ? hasBus(favs, busFavKey) : false;
-	const stopIsFav =
-		busStopId && busStopOperator
-			? hasStop(favs, { stopId: busStopId, operator: busStopOperator })
-			: false;
+	const isStopFav = useCallback(
+		(stop: { id: string; operator: BusOperator; code?: string }) =>
+			hasStop(favs, {
+				stopId: stop.id,
+				operator: stop.operator,
+				stopCode: stop.code,
+			}),
+		[favs],
+	);
 	const showFavLimitToast = useCallback(() => {
 		showToast(t("toast.fav.full", { max: MAX_FAVORITES }));
 	}, [showToast, t]);
@@ -313,17 +316,9 @@ function App() {
 			showFavLimitToast();
 			return;
 		}
-		const headsign =
-			busShape?.[busDirection ?? ""]?.headsign ?? busDirection ?? "";
+		const headsign = busFavKey.headsign || busDirection || "";
 		toggleBus({ ...busFavKey, headsign });
-	}, [
-		busDirection,
-		busFavKey,
-		busIsFav,
-		busShape,
-		showFavLimitToast,
-		toggleBus,
-	]);
+	}, [busDirection, busFavKey, busIsFav, showFavLimitToast, toggleBus]);
 	const tryToggleTrain = useCallback(
 		(f: TrainFavorite) => {
 			const latestFavs = favsRef.current;
@@ -866,7 +861,7 @@ function App() {
 					collapsed={panelCollapsed}
 					onCollapsedChange={handlePanelCollapsedChange}
 					onShowToast={showToast}
-					stopIsFavorite={stopIsFav}
+					isStopFavorite={isStopFav}
 					onToggleStopFavorite={onToggleStopFav}
 					onStopSummaryChange={setBusStopSummary}
 					focusedStopsAwayOverride={busFocusStopsAway}

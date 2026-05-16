@@ -130,7 +130,7 @@ type BusSearchPanelProps = {
 		operator: BusOperator,
 		stop: StopSearchResult,
 	) => void;
-	stopIsFavorite: boolean;
+	isStopFavorite: (stop: StopSearchResult) => boolean;
 	onToggleStopFavorite: (stop: StopSearchResult) => void;
 	onStopSummaryChange: (summary: BusStopSummary | null) => void;
 	focusedStopsAwayOverride: {
@@ -158,7 +158,7 @@ function BusSearchPanel({
 	busStopOperator,
 	onStopIdChange,
 	onPickArrival,
-	stopIsFavorite,
+	isStopFavorite,
 	onToggleStopFavorite,
 	onStopSummaryChange,
 	focusedStopsAwayOverride,
@@ -766,7 +766,7 @@ function BusSearchPanel({
 											{BUS_OPERATOR_INITIALS[selectedStop.operator]}
 										</span>
 										<FavStar
-											active={stopIsFavorite}
+											active={isStopFavorite(selectedStop)}
 											onToggle={() => onToggleStopFavorite(selectedStop)}
 										/>
 										<button

@@ -67,12 +67,55 @@ export function stopKey(
 	return `${f.operator}:${f.stopId}`;
 }
 
+function cleanKeyPart(v: string | undefined): string {
+	return (v ?? "").trim().toLowerCase();
+}
+
+function busStableKey(
+	f: Pick<BusFavorite, "shortName" | "operator"> & { headsign?: string },
+): string | null {
+	const headsign = cleanKeyPart(f.headsign);
+	if (!headsign) return null;
+	return `${f.operator}:${cleanKeyPart(f.shortName)}:${headsign}`;
+}
+
+function stopStableKey(
+	f: Pick<BusStopFavorite, "operator"> & { stopCode?: string },
+): string | null {
+	const stopCode = cleanKeyPart(f.stopCode);
+	if (!stopCode) return null;
+	return `${f.operator}:${stopCode}`;
+}
+
+function busMatches(
+	saved: BusFavorite,
+	current: Pick<BusFavorite, "shortName" | "operator" | "direction"> & {
+		headsign?: string;
+	},
+): boolean {
+	if (busKey(saved) === busKey(current)) return true;
+	const savedStable = busStableKey(saved);
+	return savedStable !== null && savedStable === busStableKey(current);
+}
+
+function stopMatches(
+	saved: BusStopFavorite,
+	current: Pick<BusStopFavorite, "stopId" | "operator"> & {
+		stopCode?: string;
+	},
+): boolean {
+	if (stopKey(saved) === stopKey(current)) return true;
+	const savedStable = stopStableKey(saved);
+	return savedStable !== null && savedStable === stopStableKey(current);
+}
+
 export function hasBus(
 	favs: Favorites,
-	f: Pick<BusFavorite, "shortName" | "operator" | "direction">,
+	f: Pick<BusFavorite, "shortName" | "operator" | "direction"> & {
+		headsign?: string;
+	},
 ): boolean {
-	const k = busKey(f);
-	return favs.buses.some((b) => busKey(b) === k);
+	return favs.buses.some((b) => busMatches(b, f));
 }
 
 export function hasTrain(
@@ -85,15 +128,14 @@ export function hasTrain(
 
 export function hasStop(
 	favs: Favorites,
-	f: Pick<BusStopFavorite, "stopId" | "operator">,
+	f: Pick<BusStopFavorite, "stopId" | "operator"> & { stopCode?: string },
 ): boolean {
-	const k = stopKey(f);
-	return favs.stops.some((s) => stopKey(s) === k);
+	return favs.stops.some((s) => stopMatches(s, f));
 }
 
 export function toggleBus(favs: Favorites, f: BusFavorite): Favorites {
 	return hasBus(favs, f)
-		? { ...favs, buses: favs.buses.filter((b) => busKey(b) !== busKey(f)) }
+		? { ...favs, buses: favs.buses.filter((b) => !busMatches(b, f)) }
 		: { ...favs, buses: [...favs.buses, f] };
 }
 
@@ -108,7 +150,7 @@ export function toggleTrain(favs: Favorites, f: TrainFavorite): Favorites {
 
 export function toggleStop(favs: Favorites, f: BusStopFavorite): Favorites {
 	return hasStop(favs, f)
-		? { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== stopKey(f)) }
+		? { ...favs, stops: favs.stops.filter((s) => !stopMatches(s, f)) }
 		: { ...favs, stops: [...favs.stops, f] };
 }
 

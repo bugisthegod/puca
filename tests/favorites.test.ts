@@ -104,6 +104,18 @@ describe("has*", () => {
 		expect(hasBus(favs, bus39AReverse)).toBe(false);
 	});
 
+	test("hasBus can match a saved route after direction ids change", () => {
+		const favs: Favorites = { buses: [bus39A], trains: [], stops: [] };
+		expect(
+			hasBus(favs, {
+				shortName: "39A",
+				operator: "dublinbus",
+				direction: "1",
+				headsign: "Hansfield Road",
+			}),
+		).toBe(true);
+	});
+
 	test("hasTrain / hasStop behave the same way", () => {
 		const favs: Favorites = {
 			buses: [],
@@ -118,6 +130,21 @@ describe("has*", () => {
 				stopId: stopOConn.stopId,
 				operator: stopOConn.operator,
 			} as BusStopFavorite),
+		).toBe(true);
+	});
+
+	test("hasStop can match a saved stop after stop ids change", () => {
+		const favs: Favorites = {
+			buses: [],
+			trains: [],
+			stops: [stopOConn],
+		};
+		expect(
+			hasStop(favs, {
+				stopId: "8220DB999270",
+				operator: "dublinbus",
+				stopCode: "270",
+			}),
 		).toBe(true);
 	});
 });
@@ -157,6 +184,28 @@ describe("toggle*", () => {
 		favs = toggleStop(favs, stopOConn);
 		expect(favs.trains).toHaveLength(0);
 		expect(favs.stops).toHaveLength(0);
+	});
+
+	test("toggleBus removes an existing favorite matched by route headsign", () => {
+		const favs: Favorites = { buses: [bus39A], trains: [], stops: [] };
+		const after = toggleBus(favs, {
+			shortName: "39A",
+			operator: "dublinbus",
+			direction: "1",
+			headsign: "Hansfield Road",
+		});
+		expect(after.buses).toHaveLength(0);
+	});
+
+	test("toggleStop removes an existing favorite matched by public stop code", () => {
+		const favs: Favorites = { buses: [], trains: [], stops: [stopOConn] };
+		const after = toggleStop(favs, {
+			stopId: "8220DB999270",
+			operator: "dublinbus",
+			stopCode: "270",
+			stopName: "O'Connell Street Upper",
+		});
+		expect(after.stops).toHaveLength(0);
 	});
 });
 
