@@ -2,7 +2,7 @@ import React from "react";
 import type { Mode } from "../hooks/useVehicleMap";
 import type { t as translate } from "../i18n";
 import { useLocale } from "../i18n";
-import type { BusOperator, TrainFocusSummary } from "../types";
+import { type BusOperator, OPERATORS, type TrainFocusSummary } from "../types";
 import type { Filter } from "../utils";
 import type { BusStopSummary } from "./BusSearchPanel";
 import SleepingPuca from "./SleepingPuca";
@@ -35,11 +35,14 @@ export const INFO_FILTERS: { value: Filter; label: string }[] = [
 	{ value: "intercity", label: "Intercity" },
 ];
 
-export const INFO_BUS_OPERATORS: { value: BusOperator; label: string }[] = [
-	{ value: "dublinbus", label: "Dublin Bus" },
-	{ value: "buseireann", label: "Bus Éireann" },
-	{ value: "goahead", label: "Go-Ahead" },
-];
+const BUS_OPERATOR_LABEL: Record<BusOperator, string> = {
+	dublinbus: "Dublin Bus",
+	buseireann: "Bus Éireann",
+	goahead: "Go-Ahead",
+};
+
+export const INFO_BUS_OPERATORS: { value: BusOperator; label: string }[] =
+	OPERATORS.map((value) => ({ value, label: BUS_OPERATOR_LABEL[value] }));
 
 type Translate = typeof translate;
 

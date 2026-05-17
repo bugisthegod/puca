@@ -1,10 +1,7 @@
 import { getGtfsrHealthSnapshot, type Operator } from "../gtfsr.ts";
+import { OPERATORS } from "../types.ts";
 
-export const VALID_OPERATORS = new Set<Operator>([
-	"dublinbus",
-	"buseireann",
-	"goahead",
-]);
+export const VALID_OPERATORS = new Set<Operator>(OPERATORS);
 
 export function parseOperator(raw: string | null): Operator | null {
 	if (!raw) return null;
