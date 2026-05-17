@@ -3,9 +3,14 @@
 // favorites are explicit bookmarks the user curates. Persisted to localStorage
 // under its own versioned key.
 
-import { type BusOperator, OPERATORS } from "./types";
+import type { BusOperator } from "./types";
 
 const KEY = "puca-favorites-v1";
+const OPERATORS: readonly BusOperator[] = [
+	"dublinbus",
+	"buseireann",
+	"goahead",
+];
 
 // Single shared cap across buses + trains + stops. 15 total slots — the user
 // curates a small set, not a bookmark dump.

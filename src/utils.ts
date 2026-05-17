@@ -152,13 +152,3 @@ export function escapeHtml(s: string): string {
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&#39;");
 }
-
-/** Collapse the text selection in an input to the end of the selection. */
-export function collapseSelection(e: {
-	currentTarget: HTMLInputElement;
-}): void {
-	const input = e.currentTarget;
-	if (input.selectionStart !== input.selectionEnd) {
-		input.setSelectionRange(input.selectionEnd, input.selectionEnd);
-	}
-}

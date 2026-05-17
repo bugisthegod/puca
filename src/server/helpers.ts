@@ -1,4 +1,4 @@
-import { getGtfsrHealthSnapshot, type Operator } from "../gtfsr";
+import { getGtfsrHealthSnapshot, type Operator } from "../gtfsr.ts";
 
 export const VALID_OPERATORS = new Set<Operator>([
 	"dublinbus",

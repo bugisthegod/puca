@@ -54,13 +54,6 @@ export type TrainFocusSummary = {
 
 export type BusOperator = "dublinbus" | "buseireann" | "goahead";
 
-/** Shared bus operator list — single source of truth. */
-export const OPERATORS: readonly BusOperator[] = [
-	"dublinbus",
-	"buseireann",
-	"goahead",
-];
-
 export type BusRoute = {
 	id: string;
 	shortName: string;
@@ -73,19 +66,6 @@ export type BusStop = {
 	lat: number;
 	lng: number;
 };
-
-export type BusDirectionShape = {
-	headsign: string;
-	coords: [number, number][];
-	stops: { id: string; name: string; lat: number; lng: number }[];
-	variants?: {
-		shapeId: string;
-		tripCount: number;
-		branches: [number, number][][];
-	}[];
-};
-
-export type BusShape = { [dir: string]: BusDirectionShape } | null;
 
 export type FocusContext = {
 	tripId: string;

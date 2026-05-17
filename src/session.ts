@@ -3,7 +3,7 @@
 // left off. Search state that should die with the tab lives in sessionStorage.
 
 import type { Mode } from "./hooks/useVehicleMap";
-import { type BusOperator, OPERATORS } from "./types";
+import type { BusOperator } from "./types";
 import type { Filter } from "./utils";
 
 const KEY = "puca-session-v1";
@@ -40,6 +40,11 @@ export interface BusSearchSession {
 
 const MODES: readonly Mode[] = ["train", "bus"];
 const FILTERS: readonly Filter[] = ["all", "dart", "commuter", "intercity"];
+const OPERATORS: readonly BusOperator[] = [
+	"dublinbus",
+	"buseireann",
+	"goahead",
+];
 
 function validMapView(v: unknown): MapView | null {
 	if (!v || typeof v !== "object") return null;

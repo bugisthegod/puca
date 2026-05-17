@@ -5,11 +5,22 @@ import {
 	loadBusSearchSession,
 	saveBusSearchSession,
 } from "../session";
-import type { BusOperator, BusRoute, BusShape } from "../types";
-import { collapseSelection } from "../utils";
+import type { BusOperator, BusRoute } from "../types";
 import FavStar from "./FavStar";
 
+// Collapse any text selection in the input to its end. Stops Android's
+// Smart Text Selection from scanning highlighted text and surfacing the
+// "Tap to see search results" Google popup over the UI.
+function collapseSelection(e: { currentTarget: HTMLInputElement }): void {
+	const input = e.currentTarget;
+	if (input.selectionStart !== input.selectionEnd) {
+		input.setSelectionRange(input.selectionEnd, input.selectionEnd);
+	}
+}
+
 export type RouteWithOperator = BusRoute & { operator: BusOperator };
+
+export type BusShape = { [dir: string]: { headsign: string } } | null;
 
 export type StopSearchResult = {
 	id: string;
