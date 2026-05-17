@@ -77,8 +77,8 @@ describe("BusSearchPanel smoke helpers", () => {
 		expect(getBusDirections(null)).toEqual({});
 		expect(
 			getBusDirections({
-				"0": { headsign: "Maynooth" },
-				"1": { headsign: "" },
+				"0": { headsign: "Maynooth", coords: [], stops: [] },
+				"1": { headsign: "", coords: [], stops: [] },
 			}),
 		).toEqual({
 			"0": "Maynooth",
