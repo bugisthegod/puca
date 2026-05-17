@@ -41,7 +41,12 @@ import {
 	saveSession,
 } from "./session";
 import { registerServiceWorker } from "./sw-register";
-import type { BusOperator, FocusContext, TrainFocusSummary } from "./types";
+import type {
+	BusOperator,
+	BusShape,
+	FocusContext,
+	TrainFocusSummary,
+} from "./types";
 import { type Filter, SERVICE_RESUME_LABEL } from "./utils";
 import "./style.css";
 
@@ -163,18 +168,7 @@ function App() {
 		tripId: string;
 		stopsAway: number | null;
 	} | null>(null);
-	const [busShape, setBusShape] = useState<{
-		[dir: string]: {
-			headsign: string;
-			coords: [number, number][];
-			stops: { id: string; name: string; lat: number; lng: number }[];
-			variants?: {
-				shapeId: string;
-				tripCount: number;
-				branches: [number, number][][];
-			}[];
-		};
-	} | null>(null);
+	const [busShape, setBusShape] = useState<BusShape>(null);
 	const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
 	const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
 	const mapRef = useRef<HTMLDivElement>(null);

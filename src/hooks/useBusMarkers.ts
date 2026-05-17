@@ -1,6 +1,6 @@
 import type { Feature, LineString } from "geojson";
 import { useEffect, useRef } from "react";
-import type { BusOperator, BusVehicle } from "../types";
+import type { BusOperator, BusShape, BusVehicle } from "../types";
 import { makeBusIcon as makeBusMarkerIcon } from "./busMarkerIcon";
 import {
 	type BusTripPopupData,
@@ -74,19 +74,6 @@ export function computeBusCurrentDistance(
 // Interpolation entry type
 // ---------------------------------------------------------------------------
 
-export type BusVariant = {
-	shapeId: string;
-	tripCount: number;
-	branches: [number, number][][];
-};
-
-export type BusDirectionShape = {
-	headsign: string;
-	coords: [number, number][];
-	stops: { id: string; name: string; lat: number; lng: number }[];
-	variants?: BusVariant[];
-};
-
 export interface BusMarkerEntry {
 	marker: L.Marker;
 	bus: BusVehicle;
@@ -132,7 +119,7 @@ export interface BusMarkerEntry {
 
 interface UseBusMarkersOptions {
 	buses: BusVehicle[];
-	busShape: { [direction: string]: BusDirectionShape } | null;
+	busShape: BusShape;
 	busDirection: string | null;
 	busOperator: BusOperator;
 	mode: Mode;
