@@ -197,6 +197,8 @@ const EN = {
 	"bus.search.arrivals.loading": "Loading…",
 	"bus.search.arrivals.error": "Could not load arrivals",
 	"bus.search.arrivals.empty": "No upcoming buses.",
+	"bus.search.arrivals.unavailable":
+		"Live arrival data is temporarily unavailable. Please check again shortly.",
 	"bus.search.arrivals.checking": "Checking location…",
 	"bus.search.arrivals.maybePassed": "May have passed",
 	"bus.search.route.empty": "No matching routes",
@@ -276,6 +278,9 @@ const EN = {
 
 	// Offline
 	"offline.banner": "Offline — showing cached data",
+	"bus.realtime.stale": "Live bus data is delayed. Last update {time} ago.",
+	"bus.realtime.unavailable":
+		"Live bus data is temporarily unavailable. Please check again shortly.",
 } as const;
 
 type Key = keyof typeof EN;
@@ -419,6 +424,7 @@ const ZH: Record<Key, string> = {
 	"bus.search.arrivals.loading": "加载中…",
 	"bus.search.arrivals.error": "无法加载到站信息",
 	"bus.search.arrivals.empty": "暂无即将到站的公交。",
+	"bus.search.arrivals.unavailable": "实时到站信息暂时不可用，请稍后再来查看。",
 	"bus.search.arrivals.checking": "正在确认位置…",
 	"bus.search.arrivals.maybePassed": "可能已过站",
 	"bus.search.route.empty": "未找到匹配线路",
@@ -496,6 +502,8 @@ const ZH: Record<Key, string> = {
 
 	// Offline
 	"offline.banner": "离线 — 显示缓存数据",
+	"bus.realtime.stale": "实时公交数据延迟。最后更新于 {time} 前。",
+	"bus.realtime.unavailable": "实时公交数据暂时不可用，请稍后再来查看。",
 };
 
 const STRINGS: Record<Locale, Record<Key, string>> = { en: EN, zh: ZH };

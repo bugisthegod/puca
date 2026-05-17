@@ -15,6 +15,7 @@ import InfoPanel from "./components/InfoPanel";
 import OfflineBanner from "./components/OfflineBanner";
 import OnboardingTour, { type TourStep } from "./components/OnboardingTour";
 import PucaMark from "./components/PucaMark";
+import RealtimeBanner from "./components/RealtimeBanner";
 import SearchPanel from "./components/SearchPanel";
 import {
 	type BusFavorite,
@@ -134,8 +135,14 @@ function App() {
 	const requestTrainEmptyNotice = useCallback(() => {
 		setTrainEmptyNoticeRequest((n) => n + 1);
 	}, []);
-	const { trains, buses, lastUpdatedAgeSec, inService, trainsLoaded } =
-		useVehiclePolling(mode, busOperator, busRoute, busDirection);
+	const {
+		trains,
+		buses,
+		busRealtimeHealth,
+		lastUpdatedAgeSec,
+		inService,
+		trainsLoaded,
+	} = useVehiclePolling(mode, busOperator, busRoute, busDirection);
 	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
 		savedBusSearch.busSearchTab ?? "route",
 	);
@@ -742,6 +749,7 @@ function App() {
 				</div>
 			)}
 			<OfflineBanner />
+			{mode === "bus" && <RealtimeBanner health={busRealtimeHealth} />}
 			{toast && (
 				<div className="app-toast" role="alert">
 					<div className="app-toast__text">

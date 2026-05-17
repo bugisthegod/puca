@@ -26,7 +26,14 @@ import trainEndpoints from "./data/train-routes-by-endpoints.json" with {
 };
 import trainShapes from "./data/train-shapes.json" with { type: "json" };
 import { errToMeta, log } from "./logger";
-import type { BusRoute, BusVehicle, BusOperator as Operator } from "./types";
+import { REALTIME_AGE_HEADER, REALTIME_STATUS_HEADER } from "./realtime";
+import type {
+	BusRoute,
+	BusVehicle,
+	BusOperator as Operator,
+	RealtimeHealth,
+	RealtimeStatus,
+} from "./types";
 import { dublinSecondsSinceMidnight, isInServiceHours } from "./utils";
 
 const NTA_VEHICLES_URL =
@@ -319,6 +326,8 @@ const NTA_TRIP_UPDATES_INTERVAL_MS = 75_000;
 // the polling cadence and connection pool from getting dragged around by a
 // single slow upstream response.
 const NTA_FETCH_TIMEOUT_MS = 5_000;
+const NTA_VEHICLES_STALE_AFTER_SEC = 150;
+const NTA_TRIP_UPDATES_STALE_AFTER_SEC = 300;
 
 type RawTripUpdateMap = Map<
 	string,
@@ -361,19 +370,23 @@ function seedRealtimeStateForTest({
 	tripUpdates,
 	lastVehicleCallMs = 0,
 	lastTripUpdateCallMs = 0,
+	vehicleUpdatedAtMs,
+	tripUpdateUpdatedAtMs,
 }: {
 	vehicles?: GtfsVehiclePosition[];
 	tripUpdates?: RawTripUpdateMap;
 	lastVehicleCallMs?: number;
 	lastTripUpdateCallMs?: number;
+	vehicleUpdatedAtMs?: number;
+	tripUpdateUpdatedAtMs?: number;
 }): void {
 	if (vehicles !== undefined) {
 		vehicleCache = vehicles;
-		vehicleCacheUpdatedAt = Date.now();
+		vehicleCacheUpdatedAt = vehicleUpdatedAtMs ?? Date.now();
 	}
 	if (tripUpdates !== undefined) {
 		tripUpdateCache = tripUpdates;
-		tripUpdateCacheUpdatedAt = Date.now();
+		tripUpdateCacheUpdatedAt = tripUpdateUpdatedAtMs ?? Date.now();
 	}
 	lastVehicleCall = lastVehicleCallMs;
 	lastTripUpdateCall = lastTripUpdateCallMs;
@@ -666,6 +679,68 @@ export type GtfsrHealthSnapshot = {
 function ageSec(timestampMs: number, now: number): number | null {
 	if (timestampMs <= 0) return null;
 	return Math.max(0, Math.round((now - timestampMs) / 1000));
+}
+
+function statusFromAge(
+	age: number | null,
+	staleAfterSec: number,
+): RealtimeStatus {
+	if (age === null) return "unavailable";
+	if (age > staleAfterSec) return "stale";
+	return "ok";
+}
+
+function worstRealtimeStatus(...statuses: RealtimeStatus[]): RealtimeStatus {
+	if (statuses.includes("unavailable")) return "unavailable";
+	if (statuses.includes("stale")) return "stale";
+	return "ok";
+}
+
+function realtimeHeaders(health: RealtimeHealth): Record<string, string> {
+	const headers: Record<string, string> = {
+		[REALTIME_STATUS_HEADER]: health.status,
+	};
+	if (health.ageSec !== null) {
+		headers[REALTIME_AGE_HEADER] = String(health.ageSec);
+	}
+	return headers;
+}
+
+export function getBusVehicleRealtimeHealth(now = Date.now()): RealtimeHealth {
+	const vehicleAge = ageSec(vehicleCacheUpdatedAt, now);
+	const tripUpdateAge = ageSec(tripUpdateCacheUpdatedAt, now);
+	const vehicleStatus = statusFromAge(vehicleAge, NTA_VEHICLES_STALE_AFTER_SEC);
+	const tripUpdateStatus =
+		tripUpdateAge === null
+			? "stale"
+			: statusFromAge(tripUpdateAge, NTA_TRIP_UPDATES_STALE_AFTER_SEC);
+
+	return {
+		status: worstRealtimeStatus(vehicleStatus, tripUpdateStatus),
+		ageSec: vehicleAge,
+	};
+}
+
+export function getBusTripUpdateRealtimeHealth(
+	now = Date.now(),
+): RealtimeHealth {
+	const tripUpdateAge = ageSec(tripUpdateCacheUpdatedAt, now);
+	return {
+		status: statusFromAge(tripUpdateAge, NTA_TRIP_UPDATES_STALE_AFTER_SEC),
+		ageSec: tripUpdateAge,
+	};
+}
+
+export function getBusVehicleRealtimeHeaders(
+	now = Date.now(),
+): Record<string, string> {
+	return realtimeHeaders(getBusVehicleRealtimeHealth(now));
+}
+
+export function getBusTripUpdateRealtimeHeaders(
+	now = Date.now(),
+): Record<string, string> {
+	return realtimeHeaders(getBusTripUpdateRealtimeHealth(now));
 }
 
 async function getDbHealth(

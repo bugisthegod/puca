@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { BusOperator, BusVehicle, Train } from "../types";
+import { readRealtimeHealth } from "../realtime";
+import type { BusOperator, BusVehicle, RealtimeHealth, Train } from "../types";
 import { isInServiceHours } from "../utils";
 import type { Mode } from "./useVehicleMap";
 
@@ -42,6 +43,8 @@ export function useVehiclePolling(
 ) {
 	const [trains, setTrains] = useState<Train[]>([]);
 	const [buses, setBuses] = useState<BusVehicle[]>([]);
+	const [busRealtimeHealth, setBusRealtimeHealth] =
+		useState<RealtimeHealth | null>(null);
 	const [dataChangedAt, setDataChangedAt] = useState<number | null>(null);
 	const [clockNow, setClockNow] = useState(() => Date.now());
 	const [inService, setInService] = useState<boolean>(() =>
@@ -95,10 +98,15 @@ export function useVehiclePolling(
 				const res = await fetch(
 					`/api/bus/vehicles?operator=${encodeURIComponent(operator)}&route=${encodeURIComponent(route)}&direction=${encodeURIComponent(direction)}`,
 				);
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const realtimeHealth = readRealtimeHealth(res);
+				if (!res.ok) {
+					if (!cancelled) setBusRealtimeHealth(realtimeHealth);
+					throw new Error(`HTTP ${res.status}`);
+				}
 				const data: BusVehicle[] = await res.json();
 				if (cancelled) return;
 				setBuses(data);
+				setBusRealtimeHealth(realtimeHealth);
 				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
@@ -111,10 +119,15 @@ export function useVehiclePolling(
 				const res = await fetch(
 					`/api/bus/vehicles?operator=${encodeURIComponent(operator)}`,
 				);
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const realtimeHealth = readRealtimeHealth(res);
+				if (!res.ok) {
+					if (!cancelled) setBusRealtimeHealth(realtimeHealth);
+					throw new Error(`HTTP ${res.status}`);
+				}
 				const data: BusVehicle[] = await res.json();
 				if (cancelled) return;
 				setBuses(data);
+				setBusRealtimeHealth(realtimeHealth);
 				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
@@ -125,12 +138,14 @@ export function useVehiclePolling(
 		if (!inService) {
 			setTrains([]);
 			setBuses([]);
+			setBusRealtimeHealth(null);
 			setTrainsLoaded(false);
 			setDataChangedAt(null);
 			return;
 		}
 
 		setBuses([]);
+		setBusRealtimeHealth(null);
 		setDataChangedAt(null);
 
 		let poll: (() => void) | null = null;
@@ -148,6 +163,7 @@ export function useVehiclePolling(
 			intervalMs = 15_000;
 		} else {
 			setBuses([]);
+			setBusRealtimeHealth(null);
 			setDataChangedAt(null);
 			return;
 		}
@@ -180,5 +196,12 @@ export function useVehiclePolling(
 			? null
 			: Math.max(0, Math.floor((clockNow - dataChangedAt) / 1000));
 
-	return { trains, buses, lastUpdatedAgeSec, inService, trainsLoaded };
+	return {
+		trains,
+		buses,
+		busRealtimeHealth,
+		lastUpdatedAgeSec,
+		inService,
+		trainsLoaded,
+	};
 }

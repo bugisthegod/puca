@@ -60,6 +60,13 @@ export const OPERATORS: readonly BusOperator[] = [
 	"goahead",
 ];
 
+export type RealtimeStatus = "ok" | "stale" | "unavailable";
+
+export type RealtimeHealth = {
+	status: RealtimeStatus;
+	ageSec: number | null;
+};
+
 export type BusRoute = {
 	id: string;
 	shortName: string;

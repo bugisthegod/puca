@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocale } from "../i18n";
+import { readRealtimeHealth } from "../realtime";
 import {
 	type BusSearchTab,
 	loadBusSearchSession,
 	saveBusSearchSession,
 } from "../session";
-import type { BusOperator, BusRoute, BusShape } from "../types";
+import type { BusOperator, BusRoute, BusShape, RealtimeHealth } from "../types";
 import { collapseSelection } from "../utils";
 import FavStar from "./FavStar";
 
@@ -183,6 +184,8 @@ function BusSearchPanel({
 	const [arrivals, setArrivals] = useState<StopArrival[] | null>(null);
 	const [arrivalsLoading, setArrivalsLoading] = useState(false);
 	const [arrivalsError, setArrivalsError] = useState<string | null>(null);
+	const [arrivalsRealtimeHealth, setArrivalsRealtimeHealth] =
+		useState<RealtimeHealth | null>(null);
 	const [arrivalsFetchedAt, setArrivalsFetchedAt] = useState<number | null>(
 		null,
 	);
@@ -291,22 +294,35 @@ function BusSearchPanel({
 			arrivalsAbortRef.current = ac;
 			setArrivalsLoading(true);
 			setArrivalsError(null);
+			setArrivalsRealtimeHealth(null);
 			try {
 				const res = await fetch(
 					`/api/bus/stop/${encodeURIComponent(stopId)}/arrivals?operator=${encodeURIComponent(operator)}`,
 					{ signal: ac.signal },
 				);
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const realtimeHealth = readRealtimeHealth(res);
+				if (!res.ok) {
+					if (!ac.signal.aborted) {
+						const now = Date.now();
+						setArrivals([]);
+						setArrivalsRealtimeHealth(realtimeHealth);
+						setArrivalsFetchedAt(now);
+						setArrivalClockNow(now);
+					}
+					return;
+				}
 				const data: StopArrival[] = await res.json();
 				if (!ac.signal.aborted) {
 					const now = Date.now();
 					setArrivals(data);
+					setArrivalsRealtimeHealth(realtimeHealth);
 					setArrivalsFetchedAt(now);
 					setArrivalClockNow(now);
 				}
 			} catch (err) {
 				if ((err as Error).name === "AbortError") return;
 				setArrivals(null);
+				setArrivalsRealtimeHealth(null);
 				setArrivalsFetchedAt(null);
 				setArrivalsError(t("bus.search.arrivals.error"));
 			} finally {
@@ -483,6 +499,10 @@ function BusSearchPanel({
 	useEffect(() => {
 		setSelectedArrivalTripId(null);
 	}, [arrivalFocusResetSignal]);
+
+	const arrivalsUnavailable =
+		arrivalsRealtimeHealth?.status === "unavailable" &&
+		(arrivals === null || arrivals.length === 0);
 
 	useEffect(() => {
 		if (busSearchTab !== "stop" || !selectedStop) {
@@ -777,11 +797,18 @@ function BusSearchPanel({
 												{arrivalsError}
 											</div>
 										)}
-										{arrivals && arrivals.length === 0 && (
+										{arrivalsUnavailable && (
 											<div className="stop-arrivals__empty">
-												{t("bus.search.arrivals.empty")}
+												{t("bus.search.arrivals.unavailable")}
 											</div>
 										)}
+										{!arrivalsUnavailable &&
+											arrivals &&
+											arrivals.length === 0 && (
+												<div className="stop-arrivals__empty">
+													{t("bus.search.arrivals.empty")}
+												</div>
+											)}
 										{arrivals && arrivals.length > 0 && (
 											<ul className="stop-arrivals__list">
 												{arrivals.map((a) => (
