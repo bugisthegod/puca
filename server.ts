@@ -11,6 +11,8 @@ import {
 	getBusRoutes,
 	getBusStopArrivals,
 	getBusTripStops,
+	getBusTripUpdateRealtimeHeaders,
+	getBusVehicleRealtimeHeaders,
 	getBusVehiclesByRoute,
 	getGtfsrVehiclePositions,
 	getOperatorStop,
@@ -278,12 +280,18 @@ Bun.serve({
 			// the CDN return data within ~5s of the latest server snapshot.
 			const vehicleHeaders = {
 				"Cache-Control": "public, max-age=5, stale-while-revalidate=15",
+				...getBusVehicleRealtimeHeaders(),
 			};
 			// Off-hours short-circuit: don't pay an NTA round-trip when no buses run.
 			// Frontend stops polling too, but stale tabs / other clients can still hit us.
 			// Short TTL so CF flushes the empty payload quickly once service resumes.
-			if (!isInServiceHours("bus"))
-				return Response.json([], { headers: vehicleHeaders });
+			if (!isInServiceHours("bus")) {
+				return Response.json([], {
+					headers: {
+						"Cache-Control": vehicleHeaders["Cache-Control"],
+					},
+				});
+			}
 			try {
 				const url = new URL(req.url);
 				const operator = parseOperator(
@@ -315,7 +323,10 @@ Bun.serve({
 				);
 				return Response.json(vehicles, { headers: vehicleHeaders });
 			} catch {
-				return Response.json([], { status: 502 });
+				return Response.json([], {
+					status: 502,
+					headers: getBusVehicleRealtimeHeaders(),
+				});
 			}
 		}),
 		"/api/bus/shape/:route": rateLimit(async (req) => {
@@ -380,14 +391,23 @@ Bun.serve({
 			}
 			const arrivalsHeaders = {
 				"Cache-Control": "public, max-age=30, stale-while-revalidate=60",
+				...getBusTripUpdateRealtimeHeaders(),
 			};
-			if (!isInServiceHours("bus"))
-				return Response.json([], { headers: arrivalsHeaders });
+			if (!isInServiceHours("bus")) {
+				return Response.json([], {
+					headers: {
+						"Cache-Control": arrivalsHeaders["Cache-Control"],
+					},
+				});
+			}
 			try {
 				const arrivals = await getBusStopArrivals(operator, stopId);
 				return Response.json(arrivals, { headers: arrivalsHeaders });
 			} catch {
-				return Response.json([], { status: 502 });
+				return Response.json([], {
+					status: 502,
+					headers: getBusTripUpdateRealtimeHeaders(),
+				});
 			}
 		}),
 		"/api/train/shapes": rateLimit(() => {

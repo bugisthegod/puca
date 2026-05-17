@@ -21,6 +21,32 @@
 	pointer-events: none;
 }
 
+.realtime-banner {
+	position: fixed;
+	top: calc(48px + env(safe-area-inset-top));
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 2001;
+	padding: 7px 14px;
+	background: rgba(146, 83, 0, 0.94);
+	color: #fff8df;
+	border: 1px solid rgba(255, 209, 102, 0.5);
+	border-radius: 999px;
+	font-size: 0.8rem;
+	font-weight: 650;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+	max-width: calc(100vw - 24px);
+	white-space: nowrap;
+	animation: offline-banner-in 0.2s ease-out;
+	pointer-events: none;
+}
+
+.realtime-banner--unavailable {
+	background: rgba(128, 49, 30, 0.95);
+	border-color: rgba(255, 151, 112, 0.48);
+	color: #fff1eb;
+}
+
 @keyframes offline-banner-in {
 	from {
 		opacity: 0;
@@ -36,6 +62,13 @@
 @media (max-width: 600px) {
 	.offline-banner {
 		top: calc(170px + env(safe-area-inset-top));
+	}
+
+	.realtime-banner {
+		top: calc(210px + env(safe-area-inset-top));
+		max-width: calc(100vw - 20px);
+		white-space: normal;
+		text-align: center;
 	}
 }
 

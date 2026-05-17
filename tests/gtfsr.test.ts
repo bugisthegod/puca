@@ -6,6 +6,8 @@ import {
 	getAllBusVehicles,
 	getBusRouteShape,
 	getBusTripStops,
+	getBusTripUpdateRealtimeHealth,
+	getBusVehicleRealtimeHealth,
 	getGtfsrHealthSnapshot,
 	getGtfsrVehiclePositions,
 	getTrainRouteShape,
@@ -439,6 +441,32 @@ describe("realtime cache request path", () => {
 		});
 
 		await expect(getBusTripStops("dublinbus", "T1")).resolves.toBeNull();
+	});
+
+	test("reports vehicle realtime health as stale when the vehicle cache ages out", () => {
+		mockServiceHourClock();
+		const now = Date.now();
+		__testing.seedRealtimeState({
+			vehicles: [],
+			tripUpdates: new Map(),
+			vehicleUpdatedAtMs: now - 151_000,
+			tripUpdateUpdatedAtMs: now - 30_000,
+		});
+
+		expect(getBusVehicleRealtimeHealth(now)).toEqual({
+			status: "stale",
+			ageSec: 151,
+		});
+	});
+
+	test("reports trip update realtime health as unavailable on cold cache", () => {
+		mockServiceHourClock();
+		__testing.resetRealtimeState();
+
+		expect(getBusTripUpdateRealtimeHealth(Date.now())).toEqual({
+			status: "unavailable",
+			ageSec: null,
+		});
 	});
 });
 
