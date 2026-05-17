@@ -18,7 +18,7 @@ import {
 	searchAllBusStops,
 	searchBusStops,
 	startBackgroundPolling,
-} from "./src/gtfsr.ts";
+} from "./src/gtfsr";
 import {
 	clampMins,
 	detailedHealth,

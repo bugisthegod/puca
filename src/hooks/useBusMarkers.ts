@@ -1,6 +1,6 @@
 import type { Feature, LineString } from "geojson";
 import { useEffect, useRef } from "react";
-import type { BusOperator, BusVehicle } from "../types";
+import type { BusOperator, BusShape, BusVehicle } from "../types";
 import { makeBusIcon as makeBusMarkerIcon } from "./busMarkerIcon";
 import {
 	type BusTripPopupData,
@@ -132,7 +132,7 @@ export interface BusMarkerEntry {
 
 interface UseBusMarkersOptions {
 	buses: BusVehicle[];
-	busShape: { [direction: string]: BusDirectionShape } | null;
+	busShape: BusShape;
 	busDirection: string | null;
 	busOperator: BusOperator;
 	mode: Mode;

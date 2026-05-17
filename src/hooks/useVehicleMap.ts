@@ -2,6 +2,7 @@ import { type RefObject, useEffect, useRef } from "react";
 import type { MapView } from "../session";
 import type {
 	BusOperator,
+	BusShape,
 	BusVehicle,
 	FocusContext,
 	Train,
@@ -43,18 +44,7 @@ export function useVehicleMap(
 	searchCodes: string[] | null = null,
 	mode: Mode = "train",
 	buses: BusVehicle[] = [],
-	busShape: {
-		[direction: string]: {
-			headsign: string;
-			coords: [number, number][];
-			stops: { id: string; name: string; lat: number; lng: number }[];
-			variants?: {
-				shapeId: string;
-				tripCount: number;
-				branches: [number, number][][];
-			}[];
-		};
-	} | null = null,
+	busShape: BusShape = null,
 	busDirection: string | null = null,
 	busOperator: BusOperator = "dublinbus",
 	options: UseVehicleMapOptions = {},
