@@ -4,17 +4,8 @@ import type { FocusTrainResult } from "../hooks/useTrainMarkers";
 import { useLocale } from "../i18n";
 import { getStationsOnce } from "../stationsClient";
 import type { SearchResult, Station } from "../types";
+import { collapseSelection, fmtTime } from "../utils";
 import FavStar from "./FavStar";
-
-// Collapse any text selection in the input to its end. Stops Android's
-// Smart Text Selection from scanning highlighted text and surfacing the
-// "Tap to see search results" Google popup over the UI.
-function collapseSelection(e: { currentTarget: HTMLInputElement }): void {
-	const input = e.currentTarget;
-	if (input.selectionStart !== input.selectionEnd) {
-		input.setSelectionRange(input.selectionEnd, input.selectionEnd);
-	}
-}
 
 interface SearchPanelProps {
 	onSearch: (codes: string[]) => void;
@@ -199,11 +190,6 @@ function SearchPanel({
 		setToQuery(fromQuery);
 		setResults(null);
 		setSearchedNames(null);
-	}
-
-	function fmtTime(t: string): string {
-		if (!t) return "—";
-		return t.length > 5 ? t.slice(0, 5) : t;
 	}
 
 	return (
