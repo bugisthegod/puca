@@ -646,6 +646,17 @@ function App() {
 		[],
 	);
 
+	const handleStopSummaryChange = useCallback(
+		(summary: BusStopSummary | null) => {
+			setBusStopSummary(summary);
+			if (summary) {
+				setBusSearchTab("stop");
+				setInfoPanelDrilledIn(true);
+			}
+		},
+		[],
+	);
+
 	const handleModeChange = useCallback(
 		(m: Mode) => {
 			setMode(m);
@@ -863,7 +874,7 @@ function App() {
 					onShowToast={showToast}
 					isStopFavorite={isStopFav}
 					onToggleStopFavorite={onToggleStopFav}
-					onStopSummaryChange={setBusStopSummary}
+					onStopSummaryChange={handleStopSummaryChange}
 					focusedStopsAwayOverride={busFocusStopsAway}
 					arrivalFocusResetSignal={arrivalFocusResetSignal}
 					arrivalFocusStatus={arrivalFocusStatus}

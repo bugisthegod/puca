@@ -809,6 +809,11 @@ function BusSearchPanel({
 																}
 																setSelectedArrivalTripId(a.tripId);
 																if (!selectedStop) return;
+																onStopIdChange(
+																	selectedStop.id,
+																	selectedStop.operator,
+																);
+																onTabChange("stop");
 																if (window.innerWidth <= 600)
 																	onCollapsedChange(true);
 																onPickArrival(
