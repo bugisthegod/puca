@@ -2,6 +2,7 @@
 import argparse
 import csv
 import json
+import shutil
 import sqlite3
 import sys
 import tempfile
@@ -174,7 +175,22 @@ def count_local_db(path: Path) -> dict[str, int]:
         con.close()
 
 
-def print_route_report(gtfs_dir: Path) -> bool:
+def refresh_default_gtfs(source_dir: Path) -> None:
+    if source_dir.resolve() == DEFAULT_GTFS_DIR.resolve():
+        print(f"GTFS directory already current: {DEFAULT_GTFS_DIR}")
+        return
+
+    DEFAULT_GTFS_DIR.mkdir(parents=True, exist_ok=True)
+    for name in REQUIRED_GTFS_FILES:
+        source = source_dir / name
+        target = DEFAULT_GTFS_DIR / name
+        tmp_target = target.with_suffix(f"{target.suffix}.new")
+        shutil.copy2(source, tmp_target)
+        tmp_target.replace(target)
+    print(f"Refreshed project GTFS files: {DEFAULT_GTFS_DIR}")
+
+
+def print_route_report(gtfs_dir: Path) -> tuple[bool, bool]:
     static_routes, route_to_operator = read_static_routes(gtfs_dir)
     json_changed = False
 
@@ -222,7 +238,7 @@ def print_route_report(gtfs_dir: Path) -> bool:
     else:
         print("  JSON and schedule DB counts are unchanged. No data update needed.")
 
-    return json_changed or db_changed
+    return json_changed, db_changed
 
 
 def main() -> int:
@@ -239,7 +255,10 @@ def main() -> int:
                 f"version={feed.get('feed_version', '?')}"
             )
         print()
-        print_route_report(gtfs_dir)
+        json_changed, db_changed = print_route_report(gtfs_dir)
+        if json_changed or db_changed:
+            print()
+            refresh_default_gtfs(gtfs_dir)
     return 0
 
 

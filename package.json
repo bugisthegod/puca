@@ -8,7 +8,9 @@
 		"typecheck": "tsc --noEmit",
 		"build": "bun build ./index.html --outdir=dist",
 		"db:check": "python3 scripts/check_nta_feed.py --download-latest",
+		"db:generate": "python3 scripts/gen_bus_schedule_sqlite.py && python3 scripts/gen_buseireann_schedule.py && python3 scripts/gen_goahead_schedule.py",
 		"db:upload": "bash scripts/upload_schedule_dbs_to_fly.sh",
+		"json:generate": "python3 scripts/gen_bus_shapes.py && python3 scripts/gen_bus_stops.py && python3 scripts/gen_buseireann_shapes.py && python3 scripts/gen_buseireann_stops.py && python3 scripts/gen_goahead_shapes.py && python3 scripts/gen_goahead_stops.py && python3 scripts/gen_train_shapes.py",
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write --unsafe"
 	},

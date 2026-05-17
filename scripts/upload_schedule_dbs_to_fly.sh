@@ -41,7 +41,7 @@ log "Checking Fly app access"
 fly status -a "$APP" >/dev/null
 
 log "Remote /data free space"
-fly ssh console -a "$APP" --command "df -h '$DATA_DIR' && ls -lh '$DATA_DIR'"
+fly ssh console -a "$APP" --command "sh -c 'df -h \"$DATA_DIR\" && ls -lh \"$DATA_DIR\"'"
 
 for db in "${DBS[@]}"; do
 	local_path="src/data/$db"
@@ -55,7 +55,7 @@ for db in "${DBS[@]}"; do
 	elapsed=$(( $(date +%s) - start_sec ))
 
 	log "Uploaded $db in ${elapsed}s, replacing $remote_path"
-	fly ssh console -a "$APP" --command "mv '$remote_tmp' '$remote_path'"
+	fly ssh console -a "$APP" --command "sh -c 'mv \"$remote_tmp\" \"$remote_path\"'"
 	log "Replaced $remote_path"
 done
 
