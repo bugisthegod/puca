@@ -278,7 +278,6 @@ const EN = {
 
 	// Offline
 	"offline.banner": "Offline — showing cached data",
-	"bus.realtime.stale": "Live bus data is delayed. Last update {time} ago.",
 	"bus.realtime.unavailable":
 		"Live bus data is temporarily unavailable. Please check again shortly.",
 } as const;
@@ -502,7 +501,6 @@ const ZH: Record<Key, string> = {
 
 	// Offline
 	"offline.banner": "离线 — 显示缓存数据",
-	"bus.realtime.stale": "实时公交数据延迟。最后更新于 {time} 前。",
 	"bus.realtime.unavailable": "实时公交数据暂时不可用，请稍后再来查看。",
 };
 

@@ -544,6 +544,20 @@ describe("realtime cache request path", () => {
 		});
 	});
 
+	test("keeps vehicle realtime health ok when vehicles are fresh but TripUpdates are cold", () => {
+		mockServiceHourClock();
+		const now = Date.now();
+		__testing.seedRealtimeState({
+			vehicles: [],
+			vehicleUpdatedAtMs: now - 20_000,
+		});
+
+		expect(getBusVehicleRealtimeHealth(now)).toEqual({
+			status: "ok",
+			ageSec: 20,
+		});
+	});
+
 	test("reports trip update realtime health as unavailable on cold cache", () => {
 		mockServiceHourClock();
 		__testing.resetRealtimeState();

@@ -375,12 +375,6 @@ function statusFromAge(
 	return "ok";
 }
 
-function worstRealtimeStatus(...statuses: RealtimeStatus[]): RealtimeStatus {
-	if (statuses.includes("unavailable")) return "unavailable";
-	if (statuses.includes("stale")) return "stale";
-	return "ok";
-}
-
 function realtimeHeaders(health: RealtimeHealth): Record<string, string> {
 	const headers: Record<string, string> = {
 		[REALTIME_STATUS_HEADER]: health.status,
@@ -394,14 +388,9 @@ function realtimeHeaders(health: RealtimeHealth): Record<string, string> {
 export function getBusVehicleRealtimeHealth(now = Date.now()): RealtimeHealth {
 	const vehicleAge = ageSec(vehicleCacheUpdatedAt, now);
 	const vehicleStatus = statusFromAge(vehicleAge, NTA_VEHICLES_STALE_AFTER_SEC);
-	const tripUpdateHealth = getBusTripUpdateRealtimeHealth(now);
-	const tripUpdateStatus =
-		tripUpdateHealth.status === "unavailable"
-			? "stale"
-			: tripUpdateHealth.status;
 
 	return {
-		status: worstRealtimeStatus(vehicleStatus, tripUpdateStatus),
+		status: vehicleStatus,
 		ageSec: vehicleAge,
 	};
 }
