@@ -15,24 +15,20 @@ import {
 	getBusRoutes,
 	getDbHealth,
 	getOperatorStop,
-	getTripScheduledStops,
-	getTripShapeId,
 	getTripShapeMap,
 	operatorRoutes,
-	operatorStops,
 	type ScheduledRow,
 	type StopSearchResult,
-	type StopsDict,
 	searchAllBusStops,
 	searchBusStops,
 } from "./gtfsr/schedules";
+import type { LiveTripData } from "./gtfsr/timing";
 import {
-	computeArrivalTiming,
-	findClosestTripStop,
-	type GpsInferredDelay,
-	type LiveTripData,
-	type TripStopPoint,
-} from "./gtfsr/timing";
+	getBusTripStopsFromCache,
+	mergeTripStops,
+	type StopTimeUpdate,
+	type TripUpdate,
+} from "./gtfsr/trips";
 import {
 	getBusTripUpdateRealtimeHealth,
 	getCachedTripUpdates,
@@ -71,6 +67,8 @@ export type {
 	ScheduledRow,
 	StopArrivalDecision,
 	StopSearchResult,
+	StopTimeUpdate,
+	TripUpdate,
 };
 export {
 	decideStopArrival,
@@ -78,30 +76,9 @@ export {
 	getBusRoutes,
 	getBusTripUpdateRealtimeHealth,
 	getOperatorStop,
+	mergeTripStops,
 	searchAllBusStops,
 	searchBusStops,
-};
-
-export type StopTimeUpdate = {
-	sequence: number;
-	stopId: string;
-	name: string;
-	lat: number;
-	lng: number;
-	scheduledArrivalSec: number | null;
-	expectedArrivalSec: number | null;
-	arrivalDelaySec: number | null;
-	departureDelaySec: number | null;
-	scheduleRelationship: string;
-	isCurrent: boolean;
-};
-
-export type TripUpdate = {
-	tripId: string;
-	routeId: string;
-	directionId: number;
-	shapeId: string | null;
-	stops: StopTimeUpdate[];
 };
 
 // ---------------------------------------------------------------------------
@@ -292,145 +269,17 @@ export async function getGtfsrHealthSnapshot(
 
 export type { LiveTripData };
 
-export function mergeTripStops(
-	tripId: string,
-	scheduledRows: ScheduledRow[],
-	liveTrip: LiveTripData | undefined,
-	stops: StopsDict,
-	shapeId: string | null = null,
-	gpsInferredDelay: GpsInferredDelay | null = null,
-): TripUpdate | null {
-	if (scheduledRows.length === 0 && !liveTrip) return null;
-
-	const liveBySeq = new Map<number, LiveTripData["stopTimeUpdates"][number]>();
-	if (liveTrip) {
-		for (const u of liveTrip.stopTimeUpdates) {
-			liveBySeq.set(u.sequence, u);
-		}
-	}
-
-	if (scheduledRows.length > 0) {
-		// GTFS-R delay propagation: stops without a specific update inherit
-		// the delay from the most recent prior stop that had one.
-		// isCurrent marks the first stop with an explicit live update (bus is at or approaching).
-		let currentAssigned = false;
-		const mergedStops: StopTimeUpdate[] = scheduledRows.map((row) => {
-			const live = liveBySeq.get(row.sequence);
-			const stopName = stops[row.stopId]?.name ?? live?.stopId ?? row.stopId;
-			const hasExplicitDelay =
-				live?.arrivalDelaySec !== undefined && live.arrivalDelaySec !== null;
-			const timing = computeArrivalTiming({
-				arrivalSec: row.arrivalSec,
-				sequence: row.sequence,
-				live: liveTrip,
-				gpsInferredDelay,
-				nowSec: null,
-				delayFallbackMode: "prior-only",
-			});
-			const isCurrent = hasExplicitDelay && !currentAssigned;
-			if (isCurrent) currentAssigned = true;
-			return {
-				sequence: row.sequence,
-				stopId: row.stopId,
-				name: stopName,
-				lat: stops[row.stopId]?.lat ?? 0,
-				lng: stops[row.stopId]?.lng ?? 0,
-				scheduledArrivalSec: row.arrivalSec,
-				expectedArrivalSec: timing.expectedArrivalSec,
-				arrivalDelaySec: timing.delaySec,
-				departureDelaySec: live?.departureDelaySec ?? null,
-				scheduleRelationship: live?.scheduleRelationship ?? "SCHEDULED",
-				isCurrent,
-			};
-		});
-
-		return {
-			tripId,
-			routeId: liveTrip?.routeId ?? "",
-			directionId: liveTrip?.directionId ?? 0,
-			shapeId,
-			stops: mergedStops,
-		};
-	}
-
-	// DB not available or trip not in DB — return live data with nulls for scheduled
-	const fallbackStops: StopTimeUpdate[] = liveTrip!.stopTimeUpdates.map(
-		(u, i) => ({
-			sequence: u.sequence,
-			stopId: u.stopId,
-			name: stops[u.stopId]?.name ?? u.stopId,
-			lat: stops[u.stopId]?.lat ?? 0,
-			lng: stops[u.stopId]?.lng ?? 0,
-			scheduledArrivalSec: null,
-			expectedArrivalSec: null,
-			arrivalDelaySec: u.arrivalDelaySec,
-			departureDelaySec: u.departureDelaySec,
-			scheduleRelationship: u.scheduleRelationship,
-			isCurrent: i === 0,
-		}),
-	);
-
-	return {
-		tripId,
-		routeId: liveTrip!.routeId,
-		directionId: liveTrip!.directionId,
-		shapeId,
-		stops: fallbackStops.sort((a, b) => a.sequence - b.sequence),
-	};
-}
-
-function inferDelayFromVehiclePosition(
-	scheduledRows: ScheduledRow[],
-	stops: StopsDict,
-	vehicle: { lat: number; lng: number } | null,
-	nowSec: number,
-): GpsInferredDelay | null {
-	if (!vehicle || scheduledRows.length === 0) return null;
-	const tripStopCoords = scheduledRows.flatMap((row): TripStopPoint[] => {
-		const stop = stops[row.stopId];
-		return stop
-			? [
-					{
-						sequence: row.sequence,
-						lat: stop.lat,
-						lng: stop.lng,
-						arrivalSec: row.arrivalSec,
-					},
-				]
-			: [];
-	});
-	const best = findClosestTripStop(vehicle, tripStopCoords);
-	if (!best || best.arrivalSec === undefined) return null;
-	return {
-		fromSequence: best.sequence,
-		delaySec: Math.max(0, nowSec - best.arrivalSec),
-	};
-}
-
 export async function getBusTripStops(
 	operator: Operator,
 	tripId: string,
 ): Promise<TripUpdate | null> {
-	const stops = operatorStops[operator];
-	const updates = getCachedTripUpdates({ refreshIfStale: true });
-	const liveTrip = updates.get(tripId);
-	const scheduledRows = getTripScheduledStops(operator, tripId);
-	const shapeId = getTripShapeId(operator, tripId);
-	const vehicle = getCachedVehicles().find((v) => v.tripId === tripId) ?? null;
-	const gpsInferredDelay = inferDelayFromVehiclePosition(
-		scheduledRows,
-		stops,
-		vehicle,
-		dublinSecondsSinceMidnight(),
-	);
-	return mergeTripStops(
+	return getBusTripStopsFromCache({
+		operator,
 		tripId,
-		scheduledRows,
-		liveTrip,
-		stops,
-		shapeId,
-		gpsInferredDelay,
-	);
+		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
+		vehicles: getCachedVehicles(),
+		nowSec: dublinSecondsSinceMidnight(),
+	});
 }
 
 export async function getBusVehiclesByRoute(
