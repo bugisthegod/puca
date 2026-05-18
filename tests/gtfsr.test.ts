@@ -302,10 +302,25 @@ describe("realtime cache request path", () => {
 		return {
 			calls,
 			fetch,
-			resolveAll: () =>
-				resolvers
-					.splice(0)
-					.forEach((resolve) => resolve(Response.json({ entity: [] }))),
+			resolveAll: (responseFactory = () => Response.json({ entity: [] })) =>
+				resolvers.splice(0).forEach((resolve) => resolve(responseFactory())),
+		};
+	}
+
+	function tripUpdateForTest(): LiveTripData & { tripId: string } {
+		return {
+			tripId: "T1",
+			routeId: "1 38A c a",
+			directionId: 0,
+			stopTimeUpdates: [
+				{
+					sequence: 1,
+					stopId: "S1",
+					arrivalDelaySec: 60,
+					departureDelaySec: null,
+					scheduleRelationship: "SCHEDULED",
+				},
+			],
 		};
 	}
 
@@ -393,6 +408,76 @@ describe("realtime cache request path", () => {
 
 		expect(vehicles).toEqual([]);
 		expect(slowFetch.calls).toHaveLength(2);
+	});
+
+	test("returns null quickly on cold TripUpdates cache instead of waiting for NTA", async () => {
+		mockServiceHourClock();
+		process.env.NTA_API_KEY = "test-key";
+		const slowFetch = pendingFetch();
+		globalThis.fetch = slowFetch.fetch;
+		__testing.resetRealtimeState();
+
+		const trip = await expectSettlesQuickly(getBusTripStops("dublinbus", "T1"));
+		slowFetch.resolveAll();
+
+		expect(trip).toBeNull();
+		expect(slowFetch.calls).toHaveLength(1);
+		expect(slowFetch.calls[0]).toContain("/TripUpdates");
+	});
+
+	test("returns stale TripUpdates cache without awaiting a slow refresh", async () => {
+		mockServiceHourClock();
+		process.env.NTA_API_KEY = "test-key";
+		const slowFetch = pendingFetch();
+		globalThis.fetch = slowFetch.fetch;
+		__testing.seedRealtimeState({
+			tripUpdates: new Map([["T1", tripUpdateForTest()]]),
+			tripUpdateUpdatedAtMs: Date.now() - 301_000,
+			lastTripUpdateCallMs: 0,
+		});
+
+		const trip = await expectSettlesQuickly(getBusTripStops("dublinbus", "T1"));
+		slowFetch.resolveAll();
+
+		expect(trip?.tripId).toBe("T1");
+		expect(trip?.stops).toHaveLength(1);
+		expect(slowFetch.calls).toHaveLength(1);
+		expect(slowFetch.calls[0]).toContain("/TripUpdates");
+	});
+
+	test("keeps serving stale TripUpdates when the background refresh later gets 429", async () => {
+		mockServiceHourClock();
+		process.env.NTA_API_KEY = "test-key";
+		const slowFetch = pendingFetch();
+		globalThis.fetch = slowFetch.fetch;
+		__testing.seedRealtimeState({
+			tripUpdates: new Map([["T1", tripUpdateForTest()]]),
+			tripUpdateUpdatedAtMs: Date.now() - 301_000,
+			lastTripUpdateCallMs: 0,
+		});
+
+		const trip = await expectSettlesQuickly(getBusTripStops("dublinbus", "T1"));
+		slowFetch.resolveAll(
+			() => new Response("Too Many Requests", { status: 429 }),
+		);
+
+		expect(trip?.tripId).toBe("T1");
+		expect(slowFetch.calls).toHaveLength(1);
+		expect(slowFetch.calls[0]).toContain("/TripUpdates");
+	});
+
+	test("does not block cold TripUpdates requests when upstream hangs until timeout", async () => {
+		mockServiceHourClock();
+		process.env.NTA_API_KEY = "test-key";
+		const hangingFetch = pendingFetch();
+		globalThis.fetch = hangingFetch.fetch;
+		__testing.resetRealtimeState();
+
+		const trip = await expectSettlesQuickly(getBusTripStops("dublinbus", "T1"));
+
+		expect(trip).toBeNull();
+		expect(hangingFetch.calls).toHaveLength(1);
+		expect(hangingFetch.calls[0]).toContain("/TripUpdates");
 	});
 
 	test("does not serve stale vehicles outside bus service hours", () => {

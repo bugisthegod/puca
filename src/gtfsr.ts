@@ -33,6 +33,16 @@ import {
 	type LiveTripData,
 	type TripStopPoint,
 } from "./gtfsr/timing";
+import {
+	getBusTripUpdateRealtimeHealth,
+	getCachedTripUpdates,
+	getTripUpdateCacheMeta,
+	NTA_TRIP_UPDATES_INTERVAL_MS,
+	type RawTripUpdateMap,
+	refreshTripUpdatesIfDue,
+	resetTripUpdateCacheForTest,
+	seedTripUpdateCacheForTest,
+} from "./gtfsr/tripUpdates";
 import { errToMeta, log } from "./logger";
 import { REALTIME_AGE_HEADER, REALTIME_STATUS_HEADER } from "./realtime";
 import type {
@@ -46,8 +56,6 @@ import { dublinSecondsSinceMidnight, isInServiceHours } from "./utils";
 
 const NTA_VEHICLES_URL =
 	"https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json";
-const NTA_TRIP_UPDATES_URL =
-	"https://api.nationaltransport.ie/gtfsr/v2/TripUpdates?format=json";
 
 export type { BusOperator as Operator, BusRoute, BusVehicle } from "./types";
 export type {
@@ -61,6 +69,7 @@ export {
 	decideStopArrival,
 	getBusRouteShape,
 	getBusRoutes,
+	getBusTripUpdateRealtimeHealth,
 	getOperatorStop,
 	searchAllBusStops,
 	searchBusStops,
@@ -107,19 +116,6 @@ type GtfsEntity = {
 	};
 };
 
-type GtfsTripUpdateEntity = {
-	trip_update?: {
-		trip?: { trip_id?: string; route_id?: string; direction_id?: number };
-		stop_time_update?: Array<{
-			stop_sequence?: number;
-			stop_id?: string;
-			arrival?: { delay?: number; time?: number | string };
-			departure?: { delay?: number; time?: number | string };
-			schedule_relationship?: string;
-		}>;
-	};
-};
-
 // ---------------------------------------------------------------------------
 // Cache + NTA rate gate
 // ---------------------------------------------------------------------------
@@ -133,52 +129,24 @@ type GtfsTripUpdateEntity = {
 // appears to be ~3 calls/60s sliding window across V + TU). 35s drops the
 // V rate to 1.7/min while staying close to the "every 30s" target.
 const NTA_MIN_INTERVAL_MS = 35_000;
-// Trip updates (schedule + delays per stop) change much slower than GPS positions.
-// 75s lands in the 60-90s ideal range while staying out of phase with the 35s
-// vehicles cycle.
-const NTA_TRIP_UPDATES_INTERVAL_MS = 75_000;
 // NTA occasionally accepts the connection but takes many seconds to respond.
 // User requests never await these fetches, but bounding background work keeps
 // the polling cadence and connection pool from getting dragged around by a
 // single slow upstream response.
 const NTA_FETCH_TIMEOUT_MS = 5_000;
 const NTA_VEHICLES_STALE_AFTER_SEC = 150;
-const NTA_TRIP_UPDATES_STALE_AFTER_SEC = 300;
-
-type RawTripUpdateMap = Map<
-	string,
-	{
-		tripId: string;
-		routeId: string;
-		directionId: number;
-		stopTimeUpdates: Array<{
-			sequence: number;
-			stopId: string;
-			arrivalDelaySec: number | null;
-			departureDelaySec: number | null;
-			scheduleRelationship: string;
-		}>;
-	}
->;
 
 let vehicleCache: GtfsVehiclePosition[] | null = null;
-let tripUpdateCache: RawTripUpdateMap | null = null;
 let lastVehicleCall = 0;
-let lastTripUpdateCall = 0;
 let vehicleCacheUpdatedAt = 0;
-let tripUpdateCacheUpdatedAt = 0;
 let vehicleRefreshPromise: Promise<void> | null = null;
-let tripUpdateRefreshPromise: Promise<void> | null = null;
 
 function resetRealtimeStateForTest(): void {
 	vehicleCache = null;
-	tripUpdateCache = null;
 	lastVehicleCall = 0;
-	lastTripUpdateCall = 0;
 	vehicleCacheUpdatedAt = 0;
-	tripUpdateCacheUpdatedAt = 0;
 	vehicleRefreshPromise = null;
-	tripUpdateRefreshPromise = null;
+	resetTripUpdateCacheForTest();
 }
 
 function seedRealtimeStateForTest({
@@ -200,12 +168,12 @@ function seedRealtimeStateForTest({
 		vehicleCache = vehicles;
 		vehicleCacheUpdatedAt = vehicleUpdatedAtMs ?? Date.now();
 	}
-	if (tripUpdates !== undefined) {
-		tripUpdateCache = tripUpdates;
-		tripUpdateCacheUpdatedAt = tripUpdateUpdatedAtMs ?? Date.now();
-	}
 	lastVehicleCall = lastVehicleCallMs;
-	lastTripUpdateCall = lastTripUpdateCallMs;
+	seedTripUpdateCacheForTest({
+		tripUpdates,
+		lastTripUpdateCallMs,
+		tripUpdateUpdatedAtMs,
+	});
 }
 
 export const __testing = {
@@ -308,105 +276,6 @@ function getCachedVehicles({
 	}
 	if (refreshIfStale) triggerVehicleRefreshIfStale();
 	return vehicleCache ?? [];
-}
-
-// ---------------------------------------------------------------------------
-// Trip updates
-// ---------------------------------------------------------------------------
-
-async function fetchTripUpdates(): Promise<void> {
-	const apiKey = process.env.NTA_API_KEY;
-	if (!apiKey) {
-		log.error("nta.trip_updates.no_api_key");
-		return;
-	}
-
-	const start = Date.now();
-	try {
-		const res = await fetch(NTA_TRIP_UPDATES_URL, {
-			headers: { "x-api-key": apiKey, "Cache-Control": "no-cache" },
-			signal: AbortSignal.timeout(NTA_FETCH_TIMEOUT_MS),
-		});
-		const duration_ms = Date.now() - start;
-
-		if (!res.ok) {
-			log.warn("nta.trip_updates.http_error", {
-				http_status: res.status,
-				duration_ms,
-				stale_cache_size: tripUpdateCache?.size ?? 0,
-			});
-			return;
-		}
-
-		const data = await res.json();
-		const entities: GtfsTripUpdateEntity[] = data.entity ?? [];
-		const map: RawTripUpdateMap = new Map();
-
-		for (const entity of entities) {
-			const tu = entity.trip_update;
-			const tripId = tu?.trip?.trip_id;
-			if (!tripId) continue;
-
-			// Store raw stop IDs only — name resolution is operator-aware and done at read time
-			const stopTimeUpdates = (tu.stop_time_update ?? []).map((s) => ({
-				sequence: s.stop_sequence ?? 0,
-				stopId: s.stop_id ?? "",
-				arrivalDelaySec: s.arrival?.delay ?? null,
-				departureDelaySec: s.departure?.delay ?? null,
-				scheduleRelationship: s.schedule_relationship ?? "SCHEDULED",
-			}));
-
-			map.set(tripId, {
-				tripId,
-				routeId: tu.trip?.route_id ?? "",
-				directionId: tu.trip?.direction_id ?? 0,
-				stopTimeUpdates,
-			});
-		}
-
-		tripUpdateCache = map;
-		tripUpdateCacheUpdatedAt = Date.now();
-		log.info("nta.trip_updates.ok", { trip_count: map.size, duration_ms });
-	} catch (err) {
-		log.error("nta.trip_updates.exception", {
-			...errToMeta(err),
-			duration_ms: Date.now() - start,
-			stale_cache_size: tripUpdateCache?.size ?? 0,
-		});
-	}
-}
-
-async function refreshTripUpdatesIfDue(): Promise<void> {
-	if (!isInServiceHours("bus")) return;
-	if (Date.now() - lastTripUpdateCall < NTA_TRIP_UPDATES_INTERVAL_MS) {
-		return;
-	}
-	if (tripUpdateRefreshPromise) return tripUpdateRefreshPromise;
-	lastTripUpdateCall = Date.now();
-	tripUpdateRefreshPromise = fetchTripUpdates().finally(() => {
-		tripUpdateRefreshPromise = null;
-	});
-	return tripUpdateRefreshPromise;
-}
-
-function triggerTripUpdatesRefreshIfStale(): void {
-	void refreshTripUpdatesIfDue().catch((err) =>
-		log.error("nta.trip_updates.refresh_failed", errToMeta(err)),
-	);
-}
-
-function getCachedTripUpdates({
-	refreshIfStale = false,
-}: {
-	refreshIfStale?: boolean;
-} = {}): RawTripUpdateMap {
-	if (!isInServiceHours("bus")) {
-		tripUpdateCache = null;
-		tripUpdateCacheUpdatedAt = 0;
-		return new Map();
-	}
-	if (refreshIfStale) triggerTripUpdatesRefreshIfStale();
-	return tripUpdateCache ?? new Map();
 }
 
 // ---------------------------------------------------------------------------
@@ -524,26 +393,16 @@ function realtimeHeaders(health: RealtimeHealth): Record<string, string> {
 
 export function getBusVehicleRealtimeHealth(now = Date.now()): RealtimeHealth {
 	const vehicleAge = ageSec(vehicleCacheUpdatedAt, now);
-	const tripUpdateAge = ageSec(tripUpdateCacheUpdatedAt, now);
 	const vehicleStatus = statusFromAge(vehicleAge, NTA_VEHICLES_STALE_AFTER_SEC);
+	const tripUpdateHealth = getBusTripUpdateRealtimeHealth(now);
 	const tripUpdateStatus =
-		tripUpdateAge === null
+		tripUpdateHealth.status === "unavailable"
 			? "stale"
-			: statusFromAge(tripUpdateAge, NTA_TRIP_UPDATES_STALE_AFTER_SEC);
+			: tripUpdateHealth.status;
 
 	return {
 		status: worstRealtimeStatus(vehicleStatus, tripUpdateStatus),
 		ageSec: vehicleAge,
-	};
-}
-
-export function getBusTripUpdateRealtimeHealth(
-	now = Date.now(),
-): RealtimeHealth {
-	const tripUpdateAge = ageSec(tripUpdateCacheUpdatedAt, now);
-	return {
-		status: statusFromAge(tripUpdateAge, NTA_TRIP_UPDATES_STALE_AFTER_SEC),
-		ageSec: tripUpdateAge,
 	};
 }
 
@@ -562,6 +421,7 @@ export function getBusTripUpdateRealtimeHeaders(
 export async function getGtfsrHealthSnapshot(
 	now = Date.now(),
 ): Promise<GtfsrHealthSnapshot> {
+	const tripUpdateMeta = getTripUpdateCacheMeta(now);
 	const dbEntries = await Promise.all(
 		OPERATORS.map(
 			async (operator) => [operator, await getDbHealth(operator)] as const,
@@ -578,10 +438,10 @@ export async function getGtfsrHealthSnapshot(
 				intervalMs: NTA_MIN_INTERVAL_MS,
 			},
 			tripUpdates: {
-				count: tripUpdateCache?.size ?? 0,
-				ageSec: ageSec(tripUpdateCacheUpdatedAt, now),
-				lastAttemptAgeSec: ageSec(lastTripUpdateCall, now),
-				intervalMs: NTA_TRIP_UPDATES_INTERVAL_MS,
+				count: tripUpdateMeta.count,
+				ageSec: tripUpdateMeta.ageSec,
+				lastAttemptAgeSec: tripUpdateMeta.lastAttemptAgeSec,
+				intervalMs: tripUpdateMeta.intervalMs,
 			},
 		},
 		db: Object.fromEntries(dbEntries) as GtfsrHealthSnapshot["db"],
