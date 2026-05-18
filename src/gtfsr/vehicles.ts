@@ -1,6 +1,7 @@
 import { errToMeta, log } from "../logger";
 import type { BusVehicle, RealtimeHealth } from "../types";
 import { isInServiceHours } from "../utils";
+import { ageSec, statusFromAge } from "./realtimeHealth";
 
 const NTA_VEHICLES_URL =
 	"https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json";
@@ -39,20 +40,6 @@ let vehicleCache: GtfsVehiclePosition[] | null = null;
 let lastVehicleCall = 0;
 let vehicleCacheUpdatedAt = 0;
 let vehicleRefreshPromise: Promise<void> | null = null;
-
-function ageSec(timestampMs: number, now: number): number | null {
-	if (timestampMs <= 0) return null;
-	return Math.max(0, Math.round((now - timestampMs) / 1000));
-}
-
-function statusFromAge(
-	age: number | null,
-	staleAfterSec: number,
-): RealtimeHealth["status"] {
-	if (age === null) return "unavailable";
-	if (age > staleAfterSec) return "stale";
-	return "ok";
-}
 
 export function resetVehicleCacheForTest(): void {
 	vehicleCache = null;

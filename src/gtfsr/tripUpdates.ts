@@ -1,6 +1,7 @@
 import { errToMeta, log } from "../logger";
 import type { RealtimeHealth } from "../types";
 import { isInServiceHours } from "../utils";
+import { ageSec, statusFromAge } from "./realtimeHealth";
 import type { LiveTripData } from "./timing";
 
 const NTA_TRIP_UPDATES_URL =
@@ -40,20 +41,6 @@ let tripUpdateCache: RawTripUpdateMap | null = null;
 let lastTripUpdateCall = 0;
 let tripUpdateCacheUpdatedAt = 0;
 let tripUpdateRefreshPromise: Promise<void> | null = null;
-
-function ageSec(timestampMs: number, now: number): number | null {
-	if (timestampMs <= 0) return null;
-	return Math.max(0, Math.round((now - timestampMs) / 1000));
-}
-
-function statusFromAge(
-	age: number | null,
-	staleAfterSec: number,
-): RealtimeHealth["status"] {
-	if (age === null) return "unavailable";
-	if (age > staleAfterSec) return "stale";
-	return "ok";
-}
 
 export function resetTripUpdateCacheForTest(): void {
 	tripUpdateCache = null;
