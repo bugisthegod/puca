@@ -73,8 +73,12 @@ def extract_zip(zip_path: Path, temp_dir: Path) -> Path:
     gtfs_dir = temp_dir / "gtfs"
     gtfs_dir.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path) as zf:
-        for name in REQUIRED_GTFS_FILES:
-            zf.extract(name, gtfs_dir)
+        for info in zf.infolist():
+            name = Path(info.filename).name
+            if not name or not name.endswith(".txt"):
+                continue
+            with zf.open(info) as source, (gtfs_dir / name).open("wb") as target:
+                shutil.copyfileobj(source, target)
     return gtfs_dir
 
 
@@ -181,13 +185,13 @@ def refresh_default_gtfs(source_dir: Path) -> None:
         return
 
     DEFAULT_GTFS_DIR.mkdir(parents=True, exist_ok=True)
-    for name in REQUIRED_GTFS_FILES:
-        source = source_dir / name
-        target = DEFAULT_GTFS_DIR / name
+    files = sorted(path for path in source_dir.iterdir() if path.is_file())
+    for source in files:
+        target = DEFAULT_GTFS_DIR / source.name
         tmp_target = target.with_suffix(f"{target.suffix}.new")
         shutil.copy2(source, tmp_target)
         tmp_target.replace(target)
-    print(f"Refreshed project GTFS files: {DEFAULT_GTFS_DIR}")
+    print(f"Refreshed project GTFS files: {DEFAULT_GTFS_DIR} ({len(files)} files)")
 
 
 def print_route_report(gtfs_dir: Path) -> tuple[bool, bool]:
