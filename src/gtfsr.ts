@@ -1,7 +1,3 @@
-import trainEndpoints from "./data/train-routes-by-endpoints.json" with {
-	type: "json",
-};
-import trainShapes from "./data/train-shapes.json" with { type: "json" };
 import {
 	type BusStopArrival,
 	decideStopArrival,
@@ -32,6 +28,7 @@ import {
 	searchBusStops,
 } from "./gtfsr/schedules";
 import type { LiveTripData } from "./gtfsr/timing";
+import { getAllTrainShapes, getTrainRouteShape } from "./gtfsr/trainShapes";
 import {
 	getBusTripStopsFromCache,
 	mergeTripStops,
@@ -67,6 +64,7 @@ export type {
 };
 export {
 	decideStopArrival,
+	getAllTrainShapes,
 	getBusRouteShape,
 	getBusRoutes,
 	getBusTripUpdateRealtimeHeaders,
@@ -75,6 +73,7 @@ export {
 	getBusVehicleRealtimeHealth,
 	getGtfsrHealthSnapshot,
 	getOperatorStop,
+	getTrainRouteShape,
 	mergeTripStops,
 	searchAllBusStops,
 	searchBusStops,
@@ -190,76 +189,4 @@ export async function getBusStopArrivals(
 		vehicles: getCachedVehicles(),
 		nowSec: dublinSecondsSinceMidnight(),
 	});
-}
-
-export function getTrainRouteShape(
-	origin: string,
-	destination: string,
-): {
-	headsign: string;
-	coords: [number, number][];
-	stops: { id: string; name: string; lat: number; lng: number }[];
-} | null {
-	const key = `${origin.trim().toLowerCase()}|${destination.trim().toLowerCase()}`;
-	const endpoints = trainEndpoints as unknown as Record<
-		string,
-		{ routeId: string; directionId: number }
-	>;
-	const match = endpoints[key];
-	if (!match) return null;
-
-	const shapes = trainShapes as unknown as Record<
-		string,
-		Record<
-			string,
-			{
-				headsign: string;
-				shapeId: string;
-				coords: [number, number][];
-				stops: { id: string; name: string; lat: number; lng: number }[];
-			}
-		>
-	>;
-
-	const routeShapes = shapes[match.routeId];
-	if (!routeShapes) return null;
-	const shape = routeShapes[String(match.directionId)];
-	if (!shape) return null;
-
-	return { headsign: shape.headsign, coords: shape.coords, stops: shape.stops };
-}
-
-// Two-level shape map for the bulk client endpoint:
-//   endpoints: 156 endpoint pair keys -> routeKey (deduped reference)
-//   shapes:    36 unique shapes by routeKey, only `coords` (the only field the client uses)
-// Avoids the 4× duplication that would happen if every endpoint pair carried its own coords.
-// Pre-computed at module load — zero cost per request.
-const allTrainShapesPayload: {
-	endpoints: Record<string, string>;
-	shapes: Record<string, { coords: [number, number][] }>;
-} = (() => {
-	const endpointsOut: Record<string, string> = {};
-	const shapesOut: Record<string, { coords: [number, number][] }> = {};
-	const endpoints = trainEndpoints as unknown as Record<
-		string,
-		{ routeId: string; directionId: number }
-	>;
-	const shapes = trainShapes as unknown as Record<
-		string,
-		Record<string, { coords: [number, number][] }>
-	>;
-	for (const [pairKey, { routeId, directionId }] of Object.entries(endpoints)) {
-		const shape = shapes[routeId]?.[String(directionId)];
-		if (!shape) continue;
-		const routeKey = `${routeId}|${directionId}`;
-		endpointsOut[pairKey] = routeKey;
-		if (!shapesOut[routeKey]) {
-			shapesOut[routeKey] = { coords: shape.coords };
-		}
-	}
-	return { endpoints: endpointsOut, shapes: shapesOut };
-})();
-
-export function getAllTrainShapes() {
-	return allTrainShapesPayload;
 }
