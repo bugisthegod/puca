@@ -6,17 +6,18 @@ import {
 	type BusStopArrival,
 	decideStopArrival,
 	getBusStopArrivals as getBusStopArrivalsFromCache,
-	isTripEnded,
 	type StopArrivalDecision,
 } from "./gtfsr/arrivals";
+import {
+	getAllBusVehiclesFromCache,
+	getBusVehiclesByRouteFromCache,
+} from "./gtfsr/busVehicles";
 import {
 	type BusRouteDirectionShape,
 	getBusRouteShape,
 	getBusRoutes,
 	getDbHealth,
 	getOperatorStop,
-	getTripShapeMap,
-	operatorRoutes,
 	type ScheduledRow,
 	type StopSearchResult,
 	searchAllBusStops,
@@ -287,57 +288,25 @@ export async function getBusVehiclesByRoute(
 	shortName: string,
 	direction?: number,
 ): Promise<BusVehicle[]> {
-	const routes = operatorRoutes[operator];
-	const route = routes.find(
-		(r) => r.shortName.toLowerCase() === shortName.toLowerCase(),
-	);
-	if (!route) return [];
-
-	const all = getCachedVehicles({ refreshIfStale: true });
-	const shapeMap = getTripShapeMap(operator);
-	const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
-	const nowSec = dublinSecondsSinceMidnight();
-
-	const result: BusVehicle[] = [];
-	for (const v of all) {
-		if (v.routeId !== route.id) continue;
-		if (direction !== undefined && v.directionId !== direction) continue;
-		const stale = isTripEnded(operator, v.tripId, nowSec, tripUpdates);
-		result.push({
-			...v,
-			routeShortName: route.shortName,
-			shapeId: shapeMap.get(v.tripId) ?? null,
-			stale,
-		});
-	}
-	return result;
+	return getBusVehiclesByRouteFromCache({
+		operator,
+		shortName,
+		direction,
+		vehicles: getCachedVehicles({ refreshIfStale: true }),
+		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
+		nowSec: dublinSecondsSinceMidnight(),
+	});
 }
 
 export async function getAllBusVehicles(
 	operator: Operator,
 ): Promise<BusVehicle[]> {
-	const routes = operatorRoutes[operator];
-	const routeIdToShortName = new Map<string, string>();
-	for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
-
-	const all = getCachedVehicles({ refreshIfStale: true });
-	const shapeMap = getTripShapeMap(operator);
-	const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
-	const nowSec = dublinSecondsSinceMidnight();
-
-	const result: BusVehicle[] = [];
-	for (const v of all) {
-		const shortName = routeIdToShortName.get(v.routeId);
-		if (!shortName) continue;
-		const stale = isTripEnded(operator, v.tripId, nowSec, tripUpdates);
-		result.push({
-			...v,
-			routeShortName: shortName,
-			shapeId: shapeMap.get(v.tripId) ?? null,
-			stale,
-		});
-	}
-	return result;
+	return getAllBusVehiclesFromCache({
+		operator,
+		vehicles: getCachedVehicles({ refreshIfStale: true }),
+		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
+		nowSec: dublinSecondsSinceMidnight(),
+	});
 }
 
 export async function getBusStopArrivals(
