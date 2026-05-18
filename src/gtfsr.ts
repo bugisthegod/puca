@@ -43,24 +43,31 @@ import {
 	resetTripUpdateCacheForTest,
 	seedTripUpdateCacheForTest,
 } from "./gtfsr/tripUpdates";
+import {
+	type GtfsVehiclePosition,
+	getBusVehicleCacheHealth,
+	getCachedVehicles,
+	getVehicleCacheMeta,
+	NTA_VEHICLES_INTERVAL_MS,
+	refreshVehiclesIfDue,
+	resetVehicleCacheForTest,
+	seedVehicleCacheForTest,
+} from "./gtfsr/vehicles";
 import { errToMeta, log } from "./logger";
 import { REALTIME_AGE_HEADER, REALTIME_STATUS_HEADER } from "./realtime";
 import type {
 	BusVehicle,
 	BusOperator as Operator,
 	RealtimeHealth,
-	RealtimeStatus,
 } from "./types";
 import { OPERATORS } from "./types";
 import { dublinSecondsSinceMidnight, isInServiceHours } from "./utils";
-
-const NTA_VEHICLES_URL =
-	"https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json";
 
 export type { BusOperator as Operator, BusRoute, BusVehicle } from "./types";
 export type {
 	BusRouteDirectionShape,
 	BusStopArrival,
+	GtfsVehiclePosition,
 	ScheduledRow,
 	StopArrivalDecision,
 	StopSearchResult,
@@ -74,11 +81,6 @@ export {
 	searchAllBusStops,
 	searchBusStops,
 };
-
-export type GtfsVehiclePosition = Omit<
-	BusVehicle,
-	"routeShortName" | "shapeId" | "stale"
->;
 
 export type StopTimeUpdate = {
 	sequence: number;
@@ -102,20 +104,6 @@ export type TripUpdate = {
 	stops: StopTimeUpdate[];
 };
 
-type GtfsEntity = {
-	vehicle?: {
-		trip?: { trip_id?: string; route_id?: string; direction_id?: number };
-		position?: {
-			latitude?: number;
-			longitude?: number;
-			bearing?: number;
-			speed?: number;
-		};
-		vehicle?: { id?: string; label?: string };
-		timestamp?: number | string;
-	};
-};
-
 // ---------------------------------------------------------------------------
 // Cache + NTA rate gate
 // ---------------------------------------------------------------------------
@@ -125,27 +113,8 @@ type GtfsEntity = {
 // user requests read stale cache, while background refreshes are the only code path
 // that waits for NTA.
 
-// Vehicles at strict 30s started getting NTA 429s ~25% of the time (quota
-// appears to be ~3 calls/60s sliding window across V + TU). 35s drops the
-// V rate to 1.7/min while staying close to the "every 30s" target.
-const NTA_MIN_INTERVAL_MS = 35_000;
-// NTA occasionally accepts the connection but takes many seconds to respond.
-// User requests never await these fetches, but bounding background work keeps
-// the polling cadence and connection pool from getting dragged around by a
-// single slow upstream response.
-const NTA_FETCH_TIMEOUT_MS = 5_000;
-const NTA_VEHICLES_STALE_AFTER_SEC = 150;
-
-let vehicleCache: GtfsVehiclePosition[] | null = null;
-let lastVehicleCall = 0;
-let vehicleCacheUpdatedAt = 0;
-let vehicleRefreshPromise: Promise<void> | null = null;
-
 function resetRealtimeStateForTest(): void {
-	vehicleCache = null;
-	lastVehicleCall = 0;
-	vehicleCacheUpdatedAt = 0;
-	vehicleRefreshPromise = null;
+	resetVehicleCacheForTest();
 	resetTripUpdateCacheForTest();
 }
 
@@ -164,11 +133,11 @@ function seedRealtimeStateForTest({
 	vehicleUpdatedAtMs?: number;
 	tripUpdateUpdatedAtMs?: number;
 }): void {
-	if (vehicles !== undefined) {
-		vehicleCache = vehicles;
-		vehicleCacheUpdatedAt = vehicleUpdatedAtMs ?? Date.now();
-	}
-	lastVehicleCall = lastVehicleCallMs;
+	seedVehicleCacheForTest({
+		vehicles,
+		lastVehicleCallMs,
+		vehicleUpdatedAtMs,
+	});
 	seedTripUpdateCacheForTest({
 		tripUpdates,
 		lastTripUpdateCallMs,
@@ -180,103 +149,6 @@ export const __testing = {
 	resetRealtimeState: resetRealtimeStateForTest,
 	seedRealtimeState: seedRealtimeStateForTest,
 };
-
-// ---------------------------------------------------------------------------
-// Vehicles
-// ---------------------------------------------------------------------------
-
-async function fetchVehicles(): Promise<void> {
-	const apiKey = process.env.NTA_API_KEY;
-	if (!apiKey) {
-		log.error("nta.vehicles.no_api_key");
-		return;
-	}
-
-	const start = Date.now();
-	try {
-		const res = await fetch(NTA_VEHICLES_URL, {
-			headers: { "x-api-key": apiKey, "Cache-Control": "no-cache" },
-			signal: AbortSignal.timeout(NTA_FETCH_TIMEOUT_MS),
-		});
-		const duration_ms = Date.now() - start;
-
-		if (!res.ok) {
-			log.warn("nta.vehicles.http_error", {
-				http_status: res.status,
-				duration_ms,
-				stale_cache_size: vehicleCache?.length ?? 0,
-			});
-			return;
-		}
-
-		const data = await res.json();
-		const entities: GtfsEntity[] = data.entity ?? [];
-		const vehicles: GtfsVehiclePosition[] = [];
-
-		for (const entity of entities) {
-			const vp = entity.vehicle;
-			if (!vp?.position?.latitude || !vp?.position?.longitude) continue;
-
-			vehicles.push({
-				tripId: vp.trip?.trip_id ?? "",
-				routeId: vp.trip?.route_id ?? "",
-				lat: vp.position.latitude,
-				lng: vp.position.longitude,
-				bearing: vp.position.bearing ?? null,
-				speed: vp.position.speed ?? null,
-				timestamp: Number(vp.timestamp ?? 0),
-				label: vp.vehicle?.label ?? vp.vehicle?.id ?? "",
-				directionId: vp.trip?.direction_id ?? 0,
-			});
-		}
-
-		vehicleCache = vehicles;
-		vehicleCacheUpdatedAt = Date.now();
-		log.info("nta.vehicles.ok", {
-			vehicle_count: vehicles.length,
-			duration_ms,
-		});
-	} catch (err) {
-		log.error("nta.vehicles.exception", {
-			...errToMeta(err),
-			duration_ms: Date.now() - start,
-			stale_cache_size: vehicleCache?.length ?? 0,
-		});
-	}
-}
-
-async function refreshVehiclesIfDue(): Promise<void> {
-	if (!isInServiceHours("bus")) return;
-	if (Date.now() - lastVehicleCall < NTA_MIN_INTERVAL_MS) {
-		return;
-	}
-	if (vehicleRefreshPromise) return vehicleRefreshPromise;
-	lastVehicleCall = Date.now();
-	vehicleRefreshPromise = fetchVehicles().finally(() => {
-		vehicleRefreshPromise = null;
-	});
-	return vehicleRefreshPromise;
-}
-
-function triggerVehicleRefreshIfStale(): void {
-	void refreshVehiclesIfDue().catch((err) =>
-		log.error("nta.vehicles.refresh_failed", errToMeta(err)),
-	);
-}
-
-function getCachedVehicles({
-	refreshIfStale = false,
-}: {
-	refreshIfStale?: boolean;
-} = {}): GtfsVehiclePosition[] {
-	if (!isInServiceHours("bus")) {
-		vehicleCache = null;
-		vehicleCacheUpdatedAt = 0;
-		return [];
-	}
-	if (refreshIfStale) triggerVehicleRefreshIfStale();
-	return vehicleCache ?? [];
-}
 
 // ---------------------------------------------------------------------------
 // Background polling
@@ -313,7 +185,7 @@ export function startBackgroundPolling(): void {
 	setTimeout(tickTripUpdates, 5_000);
 
 	// Vehicles is the higher-priority stream (live GPS positions) → 35s cadence.
-	setInterval(tickVehicles, NTA_MIN_INTERVAL_MS);
+	setInterval(tickVehicles, NTA_VEHICLES_INTERVAL_MS);
 	// TripUpdates offset by 7s. With V=35s and TU=75s, gcd=5 so TU drifts through
 	// 7 positions relative to V over ~4min. Phase doesn't really matter for NTA
 	// rate limits (it's per-minute count, not spacing) — this offset just keeps
@@ -324,7 +196,7 @@ export function startBackgroundPolling(): void {
 	);
 
 	log.info("nta.background_polling.started", {
-		vehicles_interval_ms: NTA_MIN_INTERVAL_MS,
+		vehicles_interval_ms: NTA_VEHICLES_INTERVAL_MS,
 		trip_updates_interval_ms: NTA_TRIP_UPDATES_INTERVAL_MS,
 	});
 }
@@ -361,20 +233,6 @@ export type GtfsrHealthSnapshot = {
 	>;
 };
 
-function ageSec(timestampMs: number, now: number): number | null {
-	if (timestampMs <= 0) return null;
-	return Math.max(0, Math.round((now - timestampMs) / 1000));
-}
-
-function statusFromAge(
-	age: number | null,
-	staleAfterSec: number,
-): RealtimeStatus {
-	if (age === null) return "unavailable";
-	if (age > staleAfterSec) return "stale";
-	return "ok";
-}
-
 function realtimeHeaders(health: RealtimeHealth): Record<string, string> {
 	const headers: Record<string, string> = {
 		[REALTIME_STATUS_HEADER]: health.status,
@@ -386,13 +244,7 @@ function realtimeHeaders(health: RealtimeHealth): Record<string, string> {
 }
 
 export function getBusVehicleRealtimeHealth(now = Date.now()): RealtimeHealth {
-	const vehicleAge = ageSec(vehicleCacheUpdatedAt, now);
-	const vehicleStatus = statusFromAge(vehicleAge, NTA_VEHICLES_STALE_AFTER_SEC);
-
-	return {
-		status: vehicleStatus,
-		ageSec: vehicleAge,
-	};
+	return getBusVehicleCacheHealth(now);
 }
 
 export function getBusVehicleRealtimeHeaders(
@@ -410,6 +262,7 @@ export function getBusTripUpdateRealtimeHeaders(
 export async function getGtfsrHealthSnapshot(
 	now = Date.now(),
 ): Promise<GtfsrHealthSnapshot> {
+	const vehicleMeta = getVehicleCacheMeta(now);
 	const tripUpdateMeta = getTripUpdateCacheMeta(now);
 	const dbEntries = await Promise.all(
 		OPERATORS.map(
@@ -421,10 +274,10 @@ export async function getGtfsrHealthSnapshot(
 		backgroundPollingStarted,
 		nta: {
 			vehicles: {
-				count: vehicleCache?.length ?? 0,
-				ageSec: ageSec(vehicleCacheUpdatedAt, now),
-				lastAttemptAgeSec: ageSec(lastVehicleCall, now),
-				intervalMs: NTA_MIN_INTERVAL_MS,
+				count: vehicleMeta.count,
+				ageSec: vehicleMeta.ageSec,
+				lastAttemptAgeSec: vehicleMeta.lastAttemptAgeSec,
+				intervalMs: vehicleMeta.intervalMs,
 			},
 			tripUpdates: {
 				count: tripUpdateMeta.count,
