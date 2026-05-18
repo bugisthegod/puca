@@ -12,7 +12,7 @@ A vehicle-centric PWA. Live positions of Dublin Bus, Bus Éireann, Go-Ahead, and
 
 - **Runtime**: Bun (server + bundler, no separate build step)
 - **Frontend**: Preact + TypeScript, Leaflet + leaflet.markercluster
-- **Data**: NTA GTFS-Realtime feed (buses), Irish Rail API (trains), SQLite for static GTFS schedule
+- **Data**: NTA GTFS-Realtime feed (buses), Irish Rail API (trains), TFI/NTA static GTFS for shapes/schedules
 - **Hosting**: Fly.io, single 256 MB shared VM, persistent volume at `/data` for schedule DBs
 
 ## Develop
@@ -31,12 +31,19 @@ bun run lint       # check only
 bun run lint:fix   # auto-fix
 ```
 
-Schedule databases ([src/data/](src/data/)) are gitignored. Generate them from the raw GTFS feeds in [gtfs/](gtfs/) with the scripts in [scripts/](scripts/):
+Static data comes from the TFI/NTA GTFS feed in [gtfs/](gtfs/). `bun run db:check` downloads the latest feed, checks route and schedule counts, and refreshes the local GTFS `.txt` files when the feed changed.
+
+Generated JSON in [src/data/](src/data/) is committed and includes bus shapes/stops/routes plus train static shapes. Train realtime still comes from the Irish Rail API; the train shape JSON is only used for route geometry because Irish Rail realtime does not provide full polylines.
 
 ```bash
-python scripts/gen_bus_schedule_sqlite.py     # Dublin Bus
-python scripts/gen_buseireann_schedule.py     # Bus Éireann
-python scripts/gen_goahead_schedule.py        # Go-Ahead
+bun run db:check
+bun run json:generate
+```
+
+Schedule databases ([src/data/](src/data/)) are gitignored and live on the Fly volume in production. Generate them from the same GTFS feed with:
+
+```bash
+bun run db:generate
 ```
 
 ## Deploy
@@ -51,10 +58,11 @@ For replacing a schedule DB on the Fly volume without a full redeploy (atomic re
 
 - [server.ts](server.ts) — `Bun.serve` entry, rate limiting, all `/api/*` routes
 - [src/api.ts](src/api.ts) — Irish Rail train data
-- [src/gtfsr.ts](src/gtfsr.ts) — NTA GTFS-R bus feed + background poller
+- [src/gtfsr.ts](src/gtfsr.ts) — public barrel for GTFS/static/realtime helpers
+- [src/gtfsr/](src/gtfsr/) — bus static schedules, GTFS-R caches, arrivals, vehicle enrichment, realtime health, train static shapes
 - [src/components/](src/components/) — Preact UI (map, search, info panel, favorites)
-- [src/data/](src/data/) — SQLite schedule DBs (gitignored, lives on Fly volume in prod)
-- [scripts/](scripts/) — GTFS → SQLite generators, splash screen builder
+- [src/data/](src/data/) — committed static JSON plus local SQLite schedule DBs (DBs are gitignored)
+- [scripts/](scripts/) — GTFS refresh/check scripts, JSON/SQLite generators, splash screen builder
 - [docs/nta-feed-history.md](docs/nta-feed-history.md) — log of NTA feed schema rolls
 
 ## Notes
