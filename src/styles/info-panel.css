@@ -21,13 +21,6 @@
 		min-width 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* Desktop: ensure both route and stop panels have the same outer box height */
-@media (min-width: 601px) {
-	#info-panel:not(.info-panel--compact) {
-		min-height: 152px;
-	}
-}
-
 #panel-header,
 #last-updated {
 	animation: info-item-in 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;

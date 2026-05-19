@@ -190,6 +190,14 @@ function App() {
 		setArrivalFocusStatus("idle");
 	}, []);
 
+	const clearBusArrivalFocusState = useCallback(() => {
+		setBusStopSummary(null);
+		setFocusContext(null);
+		setBusFocusStopsAway(null);
+		setArrivalFocusResetSignal((n) => n + 1);
+		setArrivalFocusStatus("idle");
+	}, []);
+
 	const showBusRouteOverview = useCallback(
 		(route: string, direction: string, operator?: BusOperator) => {
 			if (operator) setBusOperator(operator);
@@ -890,7 +898,7 @@ function App() {
 					onClick={() => {
 						setBusRoute(null);
 						setBusDirection(null);
-						clearBusFocusState();
+						clearBusArrivalFocusState();
 						setInfoPanelDrilledIn(true);
 					}}
 				>
