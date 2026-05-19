@@ -507,7 +507,7 @@ function BusSearchPanel({
 		(arrivals === null || arrivals.length === 0);
 
 	useEffect(() => {
-		if (busSearchTab !== "stop" || !selectedStop) {
+		if (busSearchTab !== "stop" || !selectedStop || !selectedArrivalTripId) {
 			onStopSummaryChange(null);
 			return;
 		}
@@ -524,9 +524,7 @@ function BusSearchPanel({
 			? null
 			: selectedArrivalPending
 				? null
-				: selectedArrivalTripId
-					? selectedArrival
-					: (arrivals?.[0] ?? null);
+				: selectedArrival;
 		const stopsAway =
 			next &&
 			selectedArrivalTripId &&

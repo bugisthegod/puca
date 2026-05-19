@@ -890,10 +890,8 @@ function App() {
 					onClick={() => {
 						setBusRoute(null);
 						setBusDirection(null);
-						setFocusContext(null);
-						setArrivalFocusResetSignal((n) => n + 1);
-						setInfoPanelDrilledIn(false);
-						setArrivalFocusStatus("idle");
+						clearBusFocusState();
+						setInfoPanelDrilledIn(true);
 					}}
 				>
 					&larr; {t("bus.back.all")}
