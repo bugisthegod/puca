@@ -29,7 +29,6 @@ if (typeof window !== "undefined") {
 	window.addEventListener("beforeinstallprompt", (e) => {
 		e.preventDefault();
 		deferredPrompt = e as BeforeInstallPromptEvent;
-		trackEvent("event/pwa/install-available");
 		notify();
 	});
 	window.addEventListener("appinstalled", () => {
@@ -56,11 +55,6 @@ async function triggerInstall(): Promise<
 	if (!deferredPrompt) return "unavailable";
 	await deferredPrompt.prompt();
 	const { outcome } = await deferredPrompt.userChoice;
-	trackEvent(
-		outcome === "accepted"
-			? "event/pwa/install-accepted"
-			: "event/pwa/install-dismissed",
-	);
 	// prompt() consumes the event — a second call would throw. Clear and notify
 	// so the button hides regardless of whether the user accepted or dismissed.
 	deferredPrompt = null;

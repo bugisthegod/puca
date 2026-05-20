@@ -390,7 +390,6 @@ function App() {
 	);
 
 	function openAbout() {
-		trackEvent("event/about/open");
 		setShowAbout(true);
 		if (!seenAbout) {
 			setSeenAbout(true);
@@ -442,9 +441,7 @@ function App() {
 					);
 				},
 			});
-			trackEvent("event/location/success");
 		} catch (err) {
-			trackEvent("event/location/error");
 			// GeolocationPositionError codes: 1=denied, 2=unavailable, 3=timeout.
 			// Surface each as a scannable toast with a hint the user can act on —
 			// "User denied Geolocation" is the browser's spec text, not something
@@ -509,7 +506,6 @@ function App() {
 
 	const handlePickBusFavorite = useCallback(
 		(f: BusFavorite) => {
-			trackEvent("event/favorite/pick-bus-route");
 			setMode("bus");
 			showBusRouteOverview(f.shortName, f.direction, f.operator);
 		},
@@ -518,7 +514,6 @@ function App() {
 
 	const handlePickTrainFavorite = useCallback(
 		(f: TrainFavorite) => {
-			trackEvent("event/favorite/pick-train");
 			sessionStorage.setItem(
 				"search",
 				JSON.stringify({
@@ -554,7 +549,6 @@ function App() {
 
 	const handleTrainSelect = useCallback(
 		async (code: string, boardingStationCode?: string) => {
-			trackEvent("event/search/train-select");
 			const result = await focusTrain(code, boardingStationCode);
 			if (result === "focused") setSearchCodes([code]);
 			return result;
@@ -568,7 +562,6 @@ function App() {
 	}, [clearTrainFocus]);
 
 	const handlePickStopFavorite = useCallback((s: BusStopFavorite) => {
-		trackEvent("event/favorite/pick-bus-stop");
 		setMode((current) => (current === "bus" ? current : "bus"));
 		if (s.operator !== busOperatorRef.current) {
 			setBusOperator(s.operator);
@@ -657,7 +650,6 @@ function App() {
 				React.ComponentProps<typeof BusSearchPanel>["onPickArrival"]
 			>[2],
 		) => {
-			trackEvent("event/search/bus-arrival");
 			// Clear any selected route so the user lands in all-buses mode — the
 			// target tripId is included in fetchAllBuses, so the focus effect can
 			// find the marker without drawing the whole polyline.
