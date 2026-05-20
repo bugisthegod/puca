@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { isStandalonePwa, trackEvent } from "../analytics";
 
 type BeforeInstallPromptEvent = Event & {
 	prompt: () => Promise<void>;
@@ -28,11 +29,13 @@ if (typeof window !== "undefined") {
 	window.addEventListener("beforeinstallprompt", (e) => {
 		e.preventDefault();
 		deferredPrompt = e as BeforeInstallPromptEvent;
+		trackEvent("event/pwa/install-available");
 		notify();
 	});
 	window.addEventListener("appinstalled", () => {
 		installed = true;
 		deferredPrompt = null;
+		trackEvent("event/pwa/installed");
 		notify();
 	});
 }
@@ -45,10 +48,7 @@ const getInstalled = () => installed;
 // we're running as an installed PWA and shouldn't pitch install again.
 // Captured at module load — standalone-ness is fixed for the lifetime of
 // a window, so re-querying matchMedia on every render is wasted work.
-const isStandalone =
-	typeof window !== "undefined" &&
-	(window.matchMedia("(display-mode: standalone)").matches ||
-		(navigator as { standalone?: boolean }).standalone === true);
+const isStandalone = typeof window !== "undefined" && isStandalonePwa();
 
 async function triggerInstall(): Promise<
 	"accepted" | "dismissed" | "unavailable"
@@ -56,6 +56,11 @@ async function triggerInstall(): Promise<
 	if (!deferredPrompt) return "unavailable";
 	await deferredPrompt.prompt();
 	const { outcome } = await deferredPrompt.userChoice;
+	trackEvent(
+		outcome === "accepted"
+			? "event/pwa/install-accepted"
+			: "event/pwa/install-dismissed",
+	);
 	// prompt() consumes the event — a second call would throw. Clear and notify
 	// so the button hides regardless of whether the user accepted or dismissed.
 	deferredPrompt = null;

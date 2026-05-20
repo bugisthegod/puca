@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { trackEvent } from "../analytics";
 import { readRealtimeHealth } from "../realtime";
 import type { BusOperator, BusVehicle, RealtimeHealth, Train } from "../types";
 import { isInServiceHours } from "../utils";
@@ -85,6 +86,7 @@ export function useVehiclePolling(
 				markChangedIfNeeded(snapshotSignature(data, trainSignature));
 			} catch (err) {
 				if (cancelled) return;
+				trackEvent("event/error/api-trains");
 				console.error("Failed to fetch trains:", err);
 			}
 		}
@@ -110,6 +112,7 @@ export function useVehiclePolling(
 				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
+				trackEvent("event/error/api-bus-vehicles");
 				console.error("Failed to fetch buses:", err);
 			}
 		}
@@ -131,6 +134,7 @@ export function useVehiclePolling(
 				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
+				trackEvent("event/error/api-bus-vehicles");
 				console.error("Failed to fetch all buses:", err);
 			}
 		}

@@ -1,3 +1,5 @@
+import { trackEvent } from "./analytics";
+
 export function registerServiceWorker() {
 	if (!("serviceWorker" in navigator)) return;
 
@@ -15,6 +17,7 @@ export function registerServiceWorker() {
 
 	window.addEventListener("load", () => {
 		navigator.serviceWorker.register("/sw.js").catch((err) => {
+			trackEvent("event/error/sw-registration");
 			console.warn("SW registration failed:", err);
 		});
 	});

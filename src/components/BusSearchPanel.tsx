@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { trackEvent } from "../analytics";
 import { useLocale } from "../i18n";
 import { readRealtimeHealth } from "../realtime";
 import {
@@ -323,6 +324,7 @@ function BusSearchPanel({
 				}
 			} catch (err) {
 				if ((err as Error).name === "AbortError") return;
+				trackEvent("event/error/api-bus-arrivals");
 				setArrivals(null);
 				setArrivalsRealtimeHealth(null);
 				setArrivalsFetchedAt(null);

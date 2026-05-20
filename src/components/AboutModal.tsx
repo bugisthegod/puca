@@ -1,5 +1,6 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import { trackEvent } from "../analytics";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
 import { useLocale } from "../i18n";
@@ -129,6 +130,7 @@ export default function AboutModal({
 	}, []);
 
 	async function handleShare() {
+		trackEvent("event/about/share");
 		await copyText(SHARE_TEXT[locale]);
 		setShareCopied(true);
 		if (shareResetRef.current) clearTimeout(shareResetRef.current);
@@ -232,7 +234,10 @@ export default function AboutModal({
 							<button
 								type="button"
 								className="about-tour-btn"
-								onClick={onShowTour}
+								onClick={() => {
+									trackEvent("event/about/tour");
+									onShowTour();
+								}}
 							>
 								{t("about.tour.btn")}
 							</button>
@@ -306,6 +311,7 @@ export default function AboutModal({
 											type="button"
 											className="about-install-btn"
 											onClick={() => {
+												trackEvent("event/pwa/install-click");
 												void triggerInstall();
 											}}
 										>
@@ -406,6 +412,7 @@ export default function AboutModal({
 								target="_blank"
 								rel="noopener noreferrer"
 								className="about-feedback-btn"
+								onClick={() => trackEvent("event/about/feedback")}
 							>
 								<span aria-hidden="true">🍀</span>
 								{t("about.feedback.btn")}
@@ -418,6 +425,7 @@ export default function AboutModal({
 								target="_blank"
 								rel="noopener noreferrer"
 								className="about-donate-btn"
+								onClick={() => trackEvent("event/about/donate")}
 							>
 								<span aria-hidden="true">🍭</span>
 								{t("about.donate.btn")}

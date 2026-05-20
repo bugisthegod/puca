@@ -13,7 +13,7 @@ A vehicle-centric PWA. Live positions of Dublin Bus, Bus Éireann, Go-Ahead, and
 - **Runtime**: Bun (server + bundler, no separate build step)
 - **Frontend**: Preact + TypeScript, Leaflet + leaflet.markercluster
 - **Data**: NTA GTFS-Realtime feed (buses), Irish Rail API (trains), TFI/NTA static GTFS for shapes/schedules
-- **Hosting**: Fly.io, single 256 MB shared VM, persistent volume at `/data` for schedule DBs
+- **Hosting**: Fly.io, single 512 MB shared VM, persistent volume at `/data` for schedule DBs
 
 ## Develop
 

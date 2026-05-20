@@ -5,6 +5,7 @@ import "leaflet.markercluster";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { isStandalonePwa, trackEvent } from "./analytics";
 import AboutModal from "./components/AboutModal";
 import BusSearchPanel, {
 	type BusStopSummary,
@@ -173,6 +174,11 @@ function App() {
 	const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
 	const mapRef = useRef<HTMLDivElement>(null);
 
+	useEffect(() => {
+		trackEvent("event/app/open");
+		if (isStandalonePwa()) trackEvent("event/app/standalone-open");
+	}, []);
+
 	// When a stop-arrival is focused, hide every other bus from the map so the
 	// user sees only their bus + the partial route to their stop. Flipping back
 	// to full fleet is one click on the "All buses" button.
@@ -326,6 +332,11 @@ function App() {
 			return;
 		}
 		const headsign = busFavKey.headsign || busDirection || "";
+		trackEvent(
+			busIsFav
+				? "event/favorite/remove-bus-route"
+				: "event/favorite/add-bus-route",
+		);
 		toggleBus({ ...busFavKey, headsign });
 	}, [busDirection, busFavKey, busIsFav, showFavLimitToast, toggleBus]);
 	const tryToggleTrain = useCallback(
@@ -338,6 +349,11 @@ function App() {
 				showFavLimitToast();
 				return;
 			}
+			trackEvent(
+				hasTrain(latestFavs, f)
+					? "event/favorite/remove-train"
+					: "event/favorite/add-train",
+			);
 			toggleTrain(f);
 		},
 		[showFavLimitToast, toggleTrain],
@@ -363,12 +379,18 @@ function App() {
 				showFavLimitToast();
 				return;
 			}
+			trackEvent(
+				hasStop(latestFavs, fav)
+					? "event/favorite/remove-bus-stop"
+					: "event/favorite/add-bus-stop",
+			);
 			toggleStop(fav);
 		},
 		[showFavLimitToast, toggleStop],
 	);
 
 	function openAbout() {
+		trackEvent("event/about/open");
 		setShowAbout(true);
 		if (!seenAbout) {
 			setSeenAbout(true);
@@ -407,6 +429,7 @@ function App() {
 
 	async function handleLocate() {
 		if (locating) return;
+		trackEvent("event/location/request");
 		setLocating(true);
 		try {
 			await locateUser({
@@ -419,7 +442,9 @@ function App() {
 					);
 				},
 			});
+			trackEvent("event/location/success");
 		} catch (err) {
+			trackEvent("event/location/error");
 			// GeolocationPositionError codes: 1=denied, 2=unavailable, 3=timeout.
 			// Surface each as a scannable toast with a hint the user can act on —
 			// "User denied Geolocation" is the browser's spec text, not something
@@ -472,6 +497,7 @@ function App() {
 	const handleBusOperatorChange = useCallback(
 		(op: BusOperator) => {
 			if (op === busOperatorRef.current) return;
+			trackEvent(`event/bus/operator/${op}`);
 			setBusOperator(op);
 			setBusRoute(null);
 			setBusDirection(null);
@@ -483,6 +509,7 @@ function App() {
 
 	const handlePickBusFavorite = useCallback(
 		(f: BusFavorite) => {
+			trackEvent("event/favorite/pick-bus-route");
 			setMode("bus");
 			showBusRouteOverview(f.shortName, f.direction, f.operator);
 		},
@@ -491,6 +518,7 @@ function App() {
 
 	const handlePickTrainFavorite = useCallback(
 		(f: TrainFavorite) => {
+			trackEvent("event/favorite/pick-train");
 			sessionStorage.setItem(
 				"search",
 				JSON.stringify({
@@ -512,6 +540,7 @@ function App() {
 
 	const handleTrainSearch = useCallback(
 		(codes: string[]) => {
+			trackEvent("event/search/train");
 			setSearchCodes(codes.length > 0 ? codes : []);
 			clearTrainFocus();
 		},
@@ -525,6 +554,7 @@ function App() {
 
 	const handleTrainSelect = useCallback(
 		async (code: string, boardingStationCode?: string) => {
+			trackEvent("event/search/train-select");
 			const result = await focusTrain(code, boardingStationCode);
 			if (result === "focused") setSearchCodes([code]);
 			return result;
@@ -538,6 +568,7 @@ function App() {
 	}, [clearTrainFocus]);
 
 	const handlePickStopFavorite = useCallback((s: BusStopFavorite) => {
+		trackEvent("event/favorite/pick-bus-stop");
 		setMode((current) => (current === "bus" ? current : "bus"));
 		if (s.operator !== busOperatorRef.current) {
 			setBusOperator(s.operator);
@@ -554,6 +585,7 @@ function App() {
 
 	const handleSelectBusRoute = useCallback(
 		(r: string | null, op?: BusOperator) => {
+			if (r !== null) trackEvent("event/search/bus-route");
 			if (op && op !== busOperatorRef.current) {
 				setBusOperator(op);
 			}
@@ -600,6 +632,7 @@ function App() {
 
 	const handleStopIdChange = useCallback(
 		(id: string | null, op: BusOperator | null) => {
+			if (id !== null) trackEvent("event/search/bus-stop");
 			setBusStopId(id);
 			setBusStopOperator(op);
 			setArrivalFocusStatus("idle");
@@ -624,6 +657,7 @@ function App() {
 				React.ComponentProps<typeof BusSearchPanel>["onPickArrival"]
 			>[2],
 		) => {
+			trackEvent("event/search/bus-arrival");
 			// Clear any selected route so the user lands in all-buses mode — the
 			// target tripId is included in fetchAllBuses, so the focus effect can
 			// find the marker without drawing the whole polyline.
@@ -668,6 +702,7 @@ function App() {
 
 	const handleModeChange = useCallback(
 		(m: Mode) => {
+			trackEvent(m === "bus" ? "event/mode/bus" : "event/mode/train");
 			setMode(m);
 			setSearchCodes(null);
 			clearTrainFocus();
