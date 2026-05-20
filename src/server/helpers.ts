@@ -122,6 +122,25 @@ export function memoryMb(): number {
 	return Math.round(process.memoryUsage().rss / 1024 / 1024);
 }
 
+export function startEventLoopLagMonitor(
+	intervalMs = 1000,
+	warnThresholdMs = 250,
+): void {
+	let expected = performance.now() + intervalMs;
+	const timer = setInterval(() => {
+		const now = performance.now();
+		const lagMs = now - expected;
+		expected = now + intervalMs;
+		if (lagMs < warnThresholdMs) return;
+		log.warn("event_loop.lag", {
+			lag_ms: Math.round(lagMs),
+			threshold_ms: warnThresholdMs,
+			memory_mb: memoryMb(),
+		});
+	}, intervalMs);
+	timer.unref?.();
+}
+
 export function hasUsableTrainPosition(
 	train: { lat: number; lng: number } | undefined,
 ): boolean {
