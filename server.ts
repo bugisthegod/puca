@@ -23,12 +23,15 @@ import {
 } from "./src/gtfsr.ts";
 import {
 	clampMins,
+	createServerTimer,
 	detailedHealth,
 	hasUsableTrainPosition,
 	isValidTrainDate,
+	logSlowRequest,
 	parseOperator,
 	staticFile,
 	todayFormatted,
+	withServerTiming,
 } from "./src/server/helpers.ts";
 import { hasOriginAccess, rateLimit } from "./src/server/rateLimit.ts";
 import { isInServiceHours } from "./src/utils.ts";
@@ -274,6 +277,7 @@ Bun.serve({
 			});
 		}),
 		"/api/bus/vehicles": rateLimit(async (req) => {
+			const timer = createServerTimer();
 			// Server background poll runs every 35s — shortening CDN max-age below
 			// that improves perceived freshness without burning more NTA quota.
 			// 5s + 15s SWR keeps Fly origin hits low (~12/min/edge) while letting
@@ -286,10 +290,14 @@ Bun.serve({
 			// Frontend stops polling too, but stale tabs / other clients can still hit us.
 			// Short TTL so CF flushes the empty payload quickly once service resumes.
 			if (!isInServiceHours("bus")) {
+				timer.mark("service_hours");
 				return Response.json([], {
-					headers: {
-						"Cache-Control": vehicleHeaders["Cache-Control"],
-					},
+					headers: withServerTiming(
+						{
+							"Cache-Control": vehicleHeaders["Cache-Control"],
+						},
+						timer,
+					),
 				});
 			}
 			try {
@@ -297,12 +305,24 @@ Bun.serve({
 				const operator = parseOperator(
 					url.searchParams.get("operator") ?? "dublinbus",
 				);
+				timer.mark("parse");
 				if (!operator)
-					return Response.json({ error: "unknown operator" }, { status: 400 });
+					return Response.json(
+						{ error: "unknown operator" },
+						{ status: 400, headers: withServerTiming(undefined, timer) },
+					);
 				const route = url.searchParams.get("route");
 				if (!route) {
 					const vehicles = await getAllBusVehicles(operator);
-					return Response.json(vehicles, { headers: vehicleHeaders });
+					timer.mark("data");
+					logSlowRequest(timer, "http.bus_vehicles.slow", {
+						operator,
+						route: null,
+						vehicle_count: vehicles.length,
+					});
+					return Response.json(vehicles, {
+						headers: withServerTiming(vehicleHeaders, timer),
+					});
 				}
 				const dirParam = url.searchParams.get("direction");
 				let direction: 0 | 1 | undefined;
@@ -311,7 +331,7 @@ Bun.serve({
 					if (n !== 0 && n !== 1) {
 						return Response.json(
 							{ error: "direction must be 0 or 1" },
-							{ status: 400 },
+							{ status: 400, headers: withServerTiming(undefined, timer) },
 						);
 					}
 					direction = n;
@@ -321,11 +341,21 @@ Bun.serve({
 					route,
 					direction,
 				);
-				return Response.json(vehicles, { headers: vehicleHeaders });
+				timer.mark("data");
+				logSlowRequest(timer, "http.bus_vehicles.slow", {
+					operator,
+					route,
+					direction: direction ?? null,
+					vehicle_count: vehicles.length,
+				});
+				return Response.json(vehicles, {
+					headers: withServerTiming(vehicleHeaders, timer),
+				});
 			} catch {
+				timer.mark("error");
 				return Response.json([], {
 					status: 502,
-					headers: getBusVehicleRealtimeHeaders(),
+					headers: withServerTiming(getBusVehicleRealtimeHeaders(), timer),
 				});
 			}
 		}),
@@ -342,25 +372,48 @@ Bun.serve({
 			});
 		}),
 		"/api/bus/trip/:tripId": rateLimit(async (req) => {
+			const timer = createServerTimer();
 			const tripHeaders = {
 				"Cache-Control": "public, max-age=30, stale-while-revalidate=60",
 			};
-			if (!isInServiceHours("bus"))
-				return Response.json({}, { headers: tripHeaders });
+			if (!isInServiceHours("bus")) {
+				timer.mark("service_hours");
+				return Response.json(
+					{},
+					{ headers: withServerTiming(tripHeaders, timer) },
+				);
+			}
 			try {
 				const url = new URL(req.url);
 				const operator = parseOperator(
 					url.searchParams.get("operator") ?? "dublinbus",
 				);
+				timer.mark("parse");
 				if (!operator)
-					return Response.json({ error: "unknown operator" }, { status: 400 });
+					return Response.json(
+						{ error: "unknown operator" },
+						{ status: 400, headers: withServerTiming(undefined, timer) },
+					);
 				const trip = await getBusTripStops(
 					operator,
 					req.params.tripId as string,
 				);
-				return Response.json(trip ?? {}, { headers: tripHeaders });
+				timer.mark("data");
+				logSlowRequest(timer, "http.bus_trip.slow", {
+					operator,
+					trip_id: req.params.tripId,
+					stop_count: trip?.stops.length ?? 0,
+					found: Boolean(trip),
+				});
+				return Response.json(trip ?? {}, {
+					headers: withServerTiming(tripHeaders, timer),
+				});
 			} catch {
-				return Response.json({}, { status: 502 });
+				timer.mark("error");
+				return Response.json(
+					{},
+					{ status: 502, headers: withServerTiming(undefined, timer) },
+				);
 			}
 		}),
 		"/api/bus/stops/search": rateLimit((req) => {
@@ -379,34 +432,57 @@ Bun.serve({
 			return Response.json(searchBusStops(operator, q), { headers });
 		}),
 		"/api/bus/stop/:stopId/arrivals": rateLimit(async (req) => {
+			const timer = createServerTimer();
 			const url = new URL(req.url);
 			const operator = parseOperator(
 				url.searchParams.get("operator") ?? "dublinbus",
 			);
-			if (!operator)
-				return Response.json({ error: "unknown operator" }, { status: 400 });
 			const stopId = req.params.stopId as string;
+			timer.mark("parse");
+			if (!operator)
+				return Response.json(
+					{ error: "unknown operator" },
+					{ status: 400, headers: withServerTiming(undefined, timer) },
+				);
 			if (!getOperatorStop(operator, stopId)) {
-				return Response.json({ error: "unknown stopId" }, { status: 404 });
+				timer.mark("validate");
+				return Response.json(
+					{ error: "unknown stopId" },
+					{ status: 404, headers: withServerTiming(undefined, timer) },
+				);
 			}
+			timer.mark("validate");
 			const arrivalsHeaders = {
 				"Cache-Control": "public, max-age=30, stale-while-revalidate=60",
 				...getBusTripUpdateRealtimeHeaders(),
 			};
 			if (!isInServiceHours("bus")) {
+				timer.mark("service_hours");
 				return Response.json([], {
-					headers: {
-						"Cache-Control": arrivalsHeaders["Cache-Control"],
-					},
+					headers: withServerTiming(
+						{
+							"Cache-Control": arrivalsHeaders["Cache-Control"],
+						},
+						timer,
+					),
 				});
 			}
 			try {
 				const arrivals = await getBusStopArrivals(operator, stopId);
-				return Response.json(arrivals, { headers: arrivalsHeaders });
+				timer.mark("data");
+				logSlowRequest(timer, "http.bus_arrivals.slow", {
+					operator,
+					stop_id: stopId,
+					arrival_count: arrivals.length,
+				});
+				return Response.json(arrivals, {
+					headers: withServerTiming(arrivalsHeaders, timer),
+				});
 			} catch {
+				timer.mark("error");
 				return Response.json([], {
 					status: 502,
-					headers: getBusTripUpdateRealtimeHeaders(),
+					headers: withServerTiming(getBusTripUpdateRealtimeHeaders(), timer),
 				});
 			}
 		}),

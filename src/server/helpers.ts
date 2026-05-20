@@ -1,4 +1,5 @@
 import { getGtfsrHealthSnapshot, type Operator } from "../gtfsr.ts";
+import { log } from "../logger.ts";
 import { OPERATORS } from "../types.ts";
 
 export const VALID_OPERATORS = new Set<Operator>(OPERATORS);
@@ -54,6 +55,67 @@ export function staticFile(path: string, ttlSec: number) {
 		new Response(Bun.file(path), {
 			headers: { "Cache-Control": `public, max-age=${ttlSec}` },
 		});
+}
+
+type TimingMeasure = {
+	name: string;
+	durationMs: number;
+};
+
+export type ServerTimer = {
+	mark: (name: string) => void;
+	totalMs: () => number;
+	toHeader: () => string;
+};
+
+function formatDuration(ms: number): string {
+	return ms.toFixed(1);
+}
+
+export function createServerTimer(): ServerTimer {
+	const start = performance.now();
+	let last = start;
+	const measures: TimingMeasure[] = [];
+	return {
+		mark(name: string) {
+			const now = performance.now();
+			measures.push({ name, durationMs: now - last });
+			last = now;
+		},
+		totalMs() {
+			return performance.now() - start;
+		},
+		toHeader() {
+			const total = performance.now() - start;
+			return [
+				`app;dur=${formatDuration(total)}`,
+				...measures.map((m) => `${m.name};dur=${formatDuration(m.durationMs)}`),
+			].join(", ");
+		},
+	};
+}
+
+export function withServerTiming(
+	headers: HeadersInit | undefined,
+	timer: ServerTimer,
+): Headers {
+	const out = new Headers(headers);
+	out.set("Server-Timing", timer.toHeader());
+	return out;
+}
+
+export function logSlowRequest(
+	timer: ServerTimer,
+	event: string,
+	meta: Record<string, unknown>,
+	thresholdMs = 1000,
+): void {
+	const durationMs = timer.totalMs();
+	if (durationMs < thresholdMs) return;
+	log.info(event, {
+		...meta,
+		duration_ms: Math.round(durationMs),
+	});
 }
 
 export function memoryMb(): number {
