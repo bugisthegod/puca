@@ -113,6 +113,7 @@ def main():
 
     print("Creating index …")
     cur.execute("CREATE INDEX idx_stop_times_trip ON stop_times(trip_id)")
+    cur.execute("CREATE INDEX idx_stop_times_stop ON stop_times(stop_id)")
     con.commit()
 
     print("Running VACUUM …")
