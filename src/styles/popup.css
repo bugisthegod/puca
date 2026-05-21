@@ -158,8 +158,11 @@
 .popup-loading {
 	font-size: 0.78rem;
 	color: var(--text-muted);
-	margin-top: 6px;
 	font-style: italic;
+	min-height: 260px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 /* ============================================================
@@ -351,6 +354,10 @@
 
 	.popup-table-wrap {
 		max-height: 180px;
+	}
+
+	.popup-loading {
+		min-height: 180px;
 	}
 
 	.movements-table th,
