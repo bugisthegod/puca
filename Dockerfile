@@ -9,4 +9,4 @@ COPY public/ public/
 COPY index.html server.ts tsconfig.json ./
 
 EXPOSE 3000
-CMD ["bun", "--smol", "run", "server.ts"]
+CMD ["bun", "run", "server.ts"]
