@@ -167,8 +167,8 @@ export function useVehicleMap(
 
 			busClusterLayer.current = L.markerClusterGroup({
 				showCoverageOnHover: false,
-				maxClusterRadius: 60,
-				disableClusteringAtZoom: 18,
+				maxClusterRadius: (zoom) => (zoom < 12 ? 60 : zoom < 15 ? 45 : 30),
+				disableClusteringAtZoom: 17,
 				spiderfyOnMaxZoom: false,
 				chunkedLoading: true,
 				animate: false,
