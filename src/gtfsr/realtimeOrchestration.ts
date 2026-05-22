@@ -19,18 +19,51 @@ import {
 
 let backgroundPollingStarted = false;
 
+function warnIfTickDelayed({
+	event,
+	intervalMs,
+	lastTickAt,
+}: {
+	event: string;
+	intervalMs: number;
+	lastTickAt: number;
+}): void {
+	if (lastTickAt === 0) return;
+	const elapsedMs = Date.now() - lastTickAt;
+	if (elapsedMs <= intervalMs * 2) return;
+	log.warn(event, {
+		elapsed_ms: elapsedMs,
+		interval_ms: intervalMs,
+		delay_ms: elapsedMs - intervalMs,
+	});
+}
+
 export function startBackgroundPolling(): void {
 	if (backgroundPollingStarted) return;
 	backgroundPollingStarted = true;
+	let lastVehicleTickAt = 0;
+	let lastTripUpdateTickAt = 0;
 
 	const tickVehicles = () => {
 		if (!isInServiceHours("bus")) return;
+		warnIfTickDelayed({
+			event: "nta.vehicles.tick_delayed",
+			intervalMs: NTA_VEHICLES_INTERVAL_MS,
+			lastTickAt: lastVehicleTickAt,
+		});
+		lastVehicleTickAt = Date.now();
 		void refreshVehiclesIfDue().catch((err) =>
 			log.error("nta.background_vehicles_failed", errToMeta(err)),
 		);
 	};
 	const tickTripUpdates = () => {
 		if (!isInServiceHours("bus")) return;
+		warnIfTickDelayed({
+			event: "nta.trip_updates.tick_delayed",
+			intervalMs: NTA_TRIP_UPDATES_INTERVAL_MS,
+			lastTickAt: lastTripUpdateTickAt,
+		});
+		lastTripUpdateTickAt = Date.now();
 		void refreshTripUpdatesIfDue().catch((err) =>
 			log.error("nta.background_trip_updates_failed", errToMeta(err)),
 		);
