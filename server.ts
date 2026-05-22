@@ -55,7 +55,7 @@ function parseVehicleBounds(url: URL): VehicleBounds | Response | undefined {
 		west: params.get("w"),
 	};
 	if (Object.values(raw).every((v) => v === null)) return undefined;
-	if (Object.values(raw).some((v) => v === null)) {
+	if (Object.values(raw).some((v) => v === null || v.trim() === "")) {
 		return Response.json(
 			{ error: "bounds require n, s, e, and w" },
 			{ status: 400 },
