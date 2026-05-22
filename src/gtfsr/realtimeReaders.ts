@@ -1,4 +1,8 @@
-import type { BusVehicle, BusOperator as Operator } from "../types";
+import type {
+	BusVehicle,
+	BusOperator as Operator,
+	VehicleBounds,
+} from "../types";
 import { dublinSecondsSinceMidnight } from "../utils";
 import {
 	type BusStopArrival,
@@ -9,7 +13,6 @@ import {
 	getAllOperatorsBusVehiclesFromCache,
 	getBusVehiclesByRouteFromCache,
 	type OperatorBusVehicle,
-	type VehicleBounds,
 } from "./busVehicles";
 import { getBusTripStopsFromCache, type TripUpdate } from "./trips";
 import {

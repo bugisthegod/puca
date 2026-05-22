@@ -11,7 +11,10 @@ import type { GtfsVehiclePosition } from "./vehicles";
 
 export type OperatorBusVehicle = BusVehicle & { operator: Operator };
 
-function vehicleInBounds(vehicle: BusVehicle, bounds: VehicleBounds): boolean {
+function vehicleInBounds(
+	vehicle: Pick<BusVehicle, "lat" | "lng">,
+	bounds: VehicleBounds,
+): boolean {
 	return (
 		vehicle.lat >= bounds.south &&
 		vehicle.lat <= bounds.north &&
