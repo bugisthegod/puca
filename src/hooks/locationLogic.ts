@@ -1,5 +1,6 @@
 export const LAST_FIX_TTL_MS = 2 * 60 * 60 * 1000;
 export const GOOD_LOCATION_ACCURACY_M = 50;
+export const GEOLOCATION_MAX_AGE_MS = 30_000;
 
 export interface CachedFix {
 	lat: number;

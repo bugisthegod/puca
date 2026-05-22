@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	decideLocationFix,
+	GEOLOCATION_MAX_AGE_MS,
 	LAST_FIX_TTL_MS,
 	parseCachedFix,
 } from "../src/hooks/locationLogic";
@@ -46,6 +47,13 @@ describe("location cache parsing", () => {
 				now,
 			),
 		).toBeNull();
+	});
+});
+
+describe("geolocation request tuning", () => {
+	test("allows a short-lived browser position cache for repeated mobile taps", () => {
+		expect(GEOLOCATION_MAX_AGE_MS).toBe(30_000);
+		expect(GEOLOCATION_MAX_AGE_MS).toBeLessThan(LAST_FIX_TTL_MS);
 	});
 });
 

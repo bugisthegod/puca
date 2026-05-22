@@ -18,6 +18,7 @@ import type { Station } from "../types";
 import {
 	type CachedFix,
 	decideLocationFix,
+	GEOLOCATION_MAX_AGE_MS,
 	parseCachedFix,
 } from "./locationLogic";
 import type { Mode } from "./useVehicleMap";
@@ -405,7 +406,11 @@ export function useMapInstance(
 					if (bestFix) finish();
 					else fail(err);
 				},
-				{ enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
+				{
+					enableHighAccuracy: true,
+					timeout: 10_000,
+					maximumAge: GEOLOCATION_MAX_AGE_MS,
+				},
 			);
 		});
 
