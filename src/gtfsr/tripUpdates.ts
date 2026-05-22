@@ -17,6 +17,7 @@ export const NTA_TRIP_UPDATES_STALE_AFTER_SEC = 300;
 // the polling cadence and connection pool from getting dragged around by a
 // single slow upstream response.
 const NTA_FETCH_TIMEOUT_MS = 5_000;
+const NTA_REFRESH_WATCHDOG_MS = NTA_FETCH_TIMEOUT_MS * 2;
 
 export type RawTripUpdate = LiveTripData & {
 	tripId: string;
@@ -41,12 +42,14 @@ let tripUpdateCache: RawTripUpdateMap | null = null;
 let lastTripUpdateCall = 0;
 let tripUpdateCacheUpdatedAt = 0;
 let tripUpdateRefreshPromise: Promise<void> | null = null;
+let latestTripUpdateRefreshId = 0;
 
 export function resetTripUpdateCacheForTest(): void {
 	tripUpdateCache = null;
 	lastTripUpdateCall = 0;
 	tripUpdateCacheUpdatedAt = 0;
 	tripUpdateRefreshPromise = null;
+	latestTripUpdateRefreshId = 0;
 }
 
 export function seedTripUpdateCacheForTest({
@@ -93,7 +96,7 @@ export function getBusTripUpdateRealtimeHealth(
 	};
 }
 
-async function fetchTripUpdates(): Promise<void> {
+async function fetchTripUpdates(refreshId: number): Promise<void> {
 	const apiKey = process.env.NTA_API_KEY;
 	if (!apiKey) {
 		log.error("nta.trip_updates.no_api_key");
@@ -143,6 +146,14 @@ async function fetchTripUpdates(): Promise<void> {
 			});
 		}
 
+		if (refreshId !== latestTripUpdateRefreshId) {
+			log.warn("nta.trip_updates.stale_refresh_ignored", {
+				trip_count: map.size,
+				duration_ms,
+			});
+			return;
+		}
+
 		tripUpdateCache = map;
 		tripUpdateCacheUpdatedAt = Date.now();
 		log.info("nta.trip_updates.ok", { trip_count: map.size, duration_ms });
@@ -155,6 +166,39 @@ async function fetchTripUpdates(): Promise<void> {
 	}
 }
 
+function withTripUpdateRefreshWatchdog(refresh: Promise<void>): Promise<void> {
+	const startedAt = Date.now();
+	return new Promise<void>((resolve, reject) => {
+		let settled = false;
+		const timeout = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			log.warn("nta.trip_updates.refresh_watchdog_timeout", {
+				duration_ms: Date.now() - startedAt,
+				watchdog_ms: NTA_REFRESH_WATCHDOG_MS,
+				stale_cache_size: tripUpdateCache?.size ?? 0,
+			});
+			resolve();
+		}, NTA_REFRESH_WATCHDOG_MS);
+		timeout.unref?.();
+
+		refresh.then(
+			() => {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timeout);
+				resolve();
+			},
+			(err) => {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timeout);
+				reject(err);
+			},
+		);
+	});
+}
+
 export async function refreshTripUpdatesIfDue(): Promise<void> {
 	if (!isInServiceHours("bus")) return;
 	if (Date.now() - lastTripUpdateCall < NTA_TRIP_UPDATES_INTERVAL_MS) {
@@ -162,9 +206,16 @@ export async function refreshTripUpdatesIfDue(): Promise<void> {
 	}
 	if (tripUpdateRefreshPromise) return tripUpdateRefreshPromise;
 	lastTripUpdateCall = Date.now();
-	tripUpdateRefreshPromise = fetchTripUpdates().finally(() => {
-		tripUpdateRefreshPromise = null;
+	const refreshId = ++latestTripUpdateRefreshId;
+	let refreshPromise: Promise<void>;
+	refreshPromise = withTripUpdateRefreshWatchdog(
+		fetchTripUpdates(refreshId),
+	).finally(() => {
+		if (tripUpdateRefreshPromise === refreshPromise) {
+			tripUpdateRefreshPromise = null;
+		}
 	});
+	tripUpdateRefreshPromise = refreshPromise;
 	return tripUpdateRefreshPromise;
 }
 

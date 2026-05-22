@@ -16,6 +16,7 @@ export const NTA_VEHICLES_STALE_AFTER_SEC = 150;
 // the polling cadence and connection pool from getting dragged around by a
 // single slow upstream response.
 const NTA_FETCH_TIMEOUT_MS = 5_000;
+const NTA_REFRESH_WATCHDOG_MS = NTA_FETCH_TIMEOUT_MS * 2;
 
 export type GtfsVehiclePosition = Omit<
 	BusVehicle,
@@ -40,12 +41,14 @@ let vehicleCache: GtfsVehiclePosition[] | null = null;
 let lastVehicleCall = 0;
 let vehicleCacheUpdatedAt = 0;
 let vehicleRefreshPromise: Promise<void> | null = null;
+let latestVehicleRefreshId = 0;
 
 export function resetVehicleCacheForTest(): void {
 	vehicleCache = null;
 	lastVehicleCall = 0;
 	vehicleCacheUpdatedAt = 0;
 	vehicleRefreshPromise = null;
+	latestVehicleRefreshId = 0;
 }
 
 export function seedVehicleCacheForTest({
@@ -90,7 +93,7 @@ export function getBusVehicleCacheHealth(now = Date.now()): RealtimeHealth {
 	};
 }
 
-async function fetchVehicles(): Promise<void> {
+async function fetchVehicles(refreshId: number): Promise<void> {
 	const apiKey = process.env.NTA_API_KEY;
 	if (!apiKey) {
 		log.error("nta.vehicles.no_api_key");
@@ -135,6 +138,14 @@ async function fetchVehicles(): Promise<void> {
 			});
 		}
 
+		if (refreshId !== latestVehicleRefreshId) {
+			log.warn("nta.vehicles.stale_refresh_ignored", {
+				vehicle_count: vehicles.length,
+				duration_ms,
+			});
+			return;
+		}
+
 		vehicleCache = vehicles;
 		vehicleCacheUpdatedAt = Date.now();
 		log.info("nta.vehicles.ok", {
@@ -150,6 +161,39 @@ async function fetchVehicles(): Promise<void> {
 	}
 }
 
+function withVehicleRefreshWatchdog(refresh: Promise<void>): Promise<void> {
+	const startedAt = Date.now();
+	return new Promise<void>((resolve, reject) => {
+		let settled = false;
+		const timeout = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			log.warn("nta.vehicles.refresh_watchdog_timeout", {
+				duration_ms: Date.now() - startedAt,
+				watchdog_ms: NTA_REFRESH_WATCHDOG_MS,
+				stale_cache_size: vehicleCache?.length ?? 0,
+			});
+			resolve();
+		}, NTA_REFRESH_WATCHDOG_MS);
+		timeout.unref?.();
+
+		refresh.then(
+			() => {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timeout);
+				resolve();
+			},
+			(err) => {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timeout);
+				reject(err);
+			},
+		);
+	});
+}
+
 export async function refreshVehiclesIfDue(): Promise<void> {
 	if (!isInServiceHours("bus")) return;
 	if (Date.now() - lastVehicleCall < NTA_VEHICLES_INTERVAL_MS) {
@@ -157,9 +201,16 @@ export async function refreshVehiclesIfDue(): Promise<void> {
 	}
 	if (vehicleRefreshPromise) return vehicleRefreshPromise;
 	lastVehicleCall = Date.now();
-	vehicleRefreshPromise = fetchVehicles().finally(() => {
-		vehicleRefreshPromise = null;
-	});
+	const refreshId = ++latestVehicleRefreshId;
+	let refreshPromise: Promise<void>;
+	refreshPromise = withVehicleRefreshWatchdog(fetchVehicles(refreshId)).finally(
+		() => {
+			if (vehicleRefreshPromise === refreshPromise) {
+				vehicleRefreshPromise = null;
+			}
+		},
+	);
+	vehicleRefreshPromise = refreshPromise;
 	return vehicleRefreshPromise;
 }
 

@@ -288,6 +288,8 @@ describe("getGtfsrHealthSnapshot", () => {
 describe("realtime cache request path", () => {
 	const originalFetch = globalThis.fetch;
 	const originalDate = globalThis.Date;
+	const originalSetTimeout = globalThis.setTimeout;
+	const originalClearTimeout = globalThis.clearTimeout;
 	const originalApiKey = process.env.NTA_API_KEY;
 
 	function pendingFetch() {
@@ -302,9 +304,27 @@ describe("realtime cache request path", () => {
 		return {
 			calls,
 			fetch,
+			resolveOne: (index: number, response: Response) =>
+				resolvers[index]?.(response),
 			resolveAll: (responseFactory = () => Response.json({ entity: [] })) =>
 				resolvers.splice(0).forEach((resolve) => resolve(responseFactory())),
 		};
+	}
+
+	function manualTimers() {
+		const timers: Array<() => void> = [];
+		return {
+			setTimeout: ((callback: () => void) => {
+				timers.push(callback);
+				return { unref() {} };
+			}) as unknown as typeof setTimeout,
+			clearTimeout: (() => {}) as typeof clearTimeout,
+			runNext: () => timers.shift()?.(),
+		};
+	}
+
+	async function flushMicrotasks(): Promise<void> {
+		for (let i = 0; i < 5; i++) await Promise.resolve();
 	}
 
 	function tripUpdateForTest(): LiveTripData & { tripId: string } {
@@ -322,6 +342,43 @@ describe("realtime cache request path", () => {
 				},
 			],
 		};
+	}
+
+	function vehicleResponse(label: string, lat: number): Response {
+		return Response.json({
+			entity: [
+				{
+					vehicle: {
+						trip: {
+							trip_id: `trip-${label}`,
+							route_id: "1 38A c a",
+							direction_id: 0,
+						},
+						position: { latitude: lat, longitude: -6.26 },
+						vehicle: { label },
+						timestamp: 1,
+					},
+				},
+			],
+		});
+	}
+
+	function tripUpdatesResponse(tripIds: string[]): Response {
+		return Response.json({
+			entity: tripIds.map((tripId) => ({
+				trip_update: {
+					trip: { trip_id: tripId, route_id: "1 38A c a", direction_id: 0 },
+					stop_time_update: [
+						{
+							stop_sequence: 1,
+							stop_id: "S1",
+							arrival: { delay: 60 },
+							schedule_relationship: "SCHEDULED",
+						},
+					],
+				},
+			})),
+		});
 	}
 
 	async function expectSettlesQuickly<T>(promise: Promise<T>): Promise<T> {
@@ -344,14 +401,18 @@ describe("realtime cache request path", () => {
 	}
 
 	function mockClock(fixedMs: number): void {
+		mockMutableClock(() => fixedMs);
+	}
+
+	function mockMutableClock(nowMs: () => number): void {
 		globalThis.Date = class extends originalDate {
 			constructor(...args: any[]) {
 				if (args.length > 0) super(args[0]);
-				else super(fixedMs);
+				else super(nowMs());
 			}
 
 			static override now() {
-				return fixedMs;
+				return nowMs();
 			}
 		} as DateConstructor;
 	}
@@ -359,6 +420,8 @@ describe("realtime cache request path", () => {
 	afterEach(() => {
 		globalThis.fetch = originalFetch;
 		globalThis.Date = originalDate;
+		globalThis.setTimeout = originalSetTimeout;
+		globalThis.clearTimeout = originalClearTimeout;
 		if (originalApiKey === undefined) delete process.env.NTA_API_KEY;
 		else process.env.NTA_API_KEY = originalApiKey;
 		__testing.resetRealtimeState();
@@ -462,6 +525,35 @@ describe("realtime cache request path", () => {
 		expect(hangingFetch.calls[0]).toContain("/Vehicles");
 	});
 
+	test("vehicle watchdog unblocks polling and ignores late stale responses", async () => {
+		let now = originalDate.parse("2026-05-09T12:00:00+01:00");
+		mockMutableClock(() => now);
+		const timers = manualTimers();
+		globalThis.setTimeout = timers.setTimeout;
+		globalThis.clearTimeout = timers.clearTimeout;
+		process.env.NTA_API_KEY = "test-key";
+		const hangingFetch = pendingFetch();
+		globalThis.fetch = hangingFetch.fetch;
+		__testing.seedRealtimeState({ tripUpdates: new Map() });
+
+		getGtfsrVehiclePositions();
+		expect(hangingFetch.calls).toHaveLength(1);
+
+		timers.runNext();
+		await flushMicrotasks();
+		now += 36_000;
+		getGtfsrVehiclePositions();
+		expect(hangingFetch.calls).toHaveLength(2);
+
+		hangingFetch.resolveOne(1, vehicleResponse("newer", 53.35));
+		await flushMicrotasks();
+		expect(getGtfsrVehiclePositions()[0]?.label).toBe("newer");
+
+		hangingFetch.resolveOne(0, vehicleResponse("older", 53.36));
+		await flushMicrotasks();
+		expect(getGtfsrVehiclePositions()[0]?.label).toBe("newer");
+	});
+
 	test("returns null quickly on cold TripUpdates cache instead of waiting for NTA", async () => {
 		mockServiceHourClock();
 		process.env.NTA_API_KEY = "test-key";
@@ -530,6 +622,35 @@ describe("realtime cache request path", () => {
 		expect(trip).toBeNull();
 		expect(hangingFetch.calls).toHaveLength(1);
 		expect(hangingFetch.calls[0]).toContain("/TripUpdates");
+	});
+
+	test("TripUpdates watchdog unblocks polling and ignores late stale responses", async () => {
+		let now = originalDate.parse("2026-05-09T12:00:00+01:00");
+		mockMutableClock(() => now);
+		const timers = manualTimers();
+		globalThis.setTimeout = timers.setTimeout;
+		globalThis.clearTimeout = timers.clearTimeout;
+		process.env.NTA_API_KEY = "test-key";
+		const hangingFetch = pendingFetch();
+		globalThis.fetch = hangingFetch.fetch;
+		__testing.resetRealtimeState();
+
+		await getBusTripStops("dublinbus", "T1");
+		expect(hangingFetch.calls).toHaveLength(1);
+
+		timers.runNext();
+		await flushMicrotasks();
+		now += 76_000;
+		await getBusTripStops("dublinbus", "T1");
+		expect(hangingFetch.calls).toHaveLength(2);
+
+		hangingFetch.resolveOne(1, tripUpdatesResponse(["newer-1", "newer-2"]));
+		await flushMicrotasks();
+		expect((await getGtfsrHealthSnapshot()).nta.tripUpdates.count).toBe(2);
+
+		hangingFetch.resolveOne(0, tripUpdatesResponse(["older"]));
+		await flushMicrotasks();
+		expect((await getGtfsrHealthSnapshot()).nta.tripUpdates.count).toBe(2);
 	});
 
 	test("does not serve stale vehicles outside bus service hours", () => {
