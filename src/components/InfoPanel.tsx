@@ -3,11 +3,24 @@ import React from "react";
 import type { Mode } from "../hooks/useVehicleMap";
 import type { t as translate } from "../i18n";
 import { useLocale } from "../i18n";
-import type { TrainFocusSummary } from "../types";
+import type { BusOperator, TrainFocusSummary } from "../types";
+import type { BusStopSummary } from "./BusSearchPanel";
+
+type BusRouteSummary = {
+	routeShortName: string;
+	headsign: string;
+	operator: BusOperator;
+	vehicleCount: number;
+};
 
 type InfoPanelProps = {
+	lastUpdated: string;
 	mode: Mode;
 	onModeChange: (m: Mode) => void;
+	busSearchTab: "route" | "stop";
+	busRouteSummary: BusRouteSummary | null;
+	busStopSummary: BusStopSummary | null;
+	trainFocusSummary: TrainFocusSummary | null;
 };
 
 type Translate = typeof translate;
@@ -42,7 +55,116 @@ export function trainFocusSummaryMeta(
 		.join(" · ");
 }
 
-function InfoPanel({ mode, onModeChange }: InfoPanelProps) {
+function InfoPanel({
+	lastUpdated,
+	mode,
+	onModeChange,
+	busSearchTab,
+	busRouteSummary,
+	busStopSummary,
+	trainFocusSummary,
+}: InfoPanelProps) {
+	const { t } = useLocale();
+	const stopSummary =
+		mode === "bus" && busSearchTab === "stop" ? busStopSummary : null;
+	const routeSummary =
+		mode === "bus" && busSearchTab === "route" ? busRouteSummary : null;
+	const trainSummary = mode === "train" ? trainFocusSummary : null;
+	const trainSummaryMeta = trainFocusSummaryMeta(trainSummary, t);
+
+	if (!stopSummary && !routeSummary && !trainSummary) {
+		return <ModeSwitch mode={mode} onModeChange={onModeChange} />;
+	}
+
+	return (
+		<div
+			id="info-panel"
+			className="info-panel--detail info-panel--stop-summary"
+		>
+			{trainSummary && (
+				<div className="info-stop-summary info-stop-summary--train">
+					<div className="info-stop-summary__updated">{lastUpdated}</div>
+					<div className="info-stop-summary__stop">
+						<strong>
+							{trainSummary.directionName
+								? t("train.focus.direction", {
+										station: trainSummary.directionName,
+									})
+								: t("info.mode.train")}
+						</strong>
+					</div>
+					<div className="info-stop-summary__arrival">
+						<span className="info-stop-summary__route">
+							{trainSummary.trainCode}
+						</span>
+						<span className="info-stop-summary__meta">{trainSummaryMeta}</span>
+					</div>
+				</div>
+			)}
+			{stopSummary && (
+				<div
+					className={`info-stop-summary info-stop-summary--${stopSummary.operator}`}
+				>
+					<div className="info-stop-summary__updated">{lastUpdated}</div>
+					<div className="info-stop-summary__stop">
+						<strong>{stopSummary.stopCode}</strong>
+						<span>{stopSummary.stopName}</span>
+					</div>
+					{stopSummary.nextArrival ? (
+						<div className="info-stop-summary__arrival">
+							<span className="info-stop-summary__route">
+								{stopSummary.nextArrival.routeShortName}
+							</span>
+							<span className="info-stop-summary__headsign">
+								{stopSummary.nextArrival.headsign}
+							</span>
+							<span className="info-stop-summary__meta">
+								{[
+									stopSummary.nextArrival.stopsAwayText,
+									stopSummary.nextArrival.etaText,
+								]
+									.filter(Boolean)
+									.join(" · ")}
+							</span>
+						</div>
+					) : (
+						<div className="info-stop-summary__empty">
+							{stopSummary.emptyText}
+						</div>
+					)}
+				</div>
+			)}
+			{routeSummary && (
+				<div
+					className={`info-stop-summary info-stop-summary--${routeSummary.operator}`}
+				>
+					<div className="info-stop-summary__updated">{lastUpdated}</div>
+					<div className="info-stop-summary__stop">
+						<strong>
+							{t("bus.search.going", { dest: routeSummary.headsign })}
+						</strong>
+					</div>
+					<div className="info-stop-summary__arrival">
+						<span className="info-stop-summary__route">
+							{routeSummary.routeShortName}
+						</span>
+						<span className="info-stop-summary__meta">
+							{t("info.running.bus", { n: routeSummary.vehicleCount })}
+						</span>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}
+
+function ModeSwitch({
+	mode,
+	onModeChange,
+}: {
+	mode: Mode;
+	onModeChange: (m: Mode) => void;
+}) {
 	const { t } = useLocale();
 	const isBus = mode === "bus";
 	const label = isBus ? t("info.mode.bus") : t("info.mode.train");

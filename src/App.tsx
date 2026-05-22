@@ -46,6 +46,7 @@ import type {
 	BusOperator,
 	BusShape,
 	FocusContext,
+	TrainFocusSummary,
 	VehicleBounds,
 } from "./types";
 import type { Filter } from "./utils";
@@ -152,14 +153,20 @@ function App() {
 		},
 		[],
 	);
-	const { trains, buses, busRealtimeHealth, inService, trainsLoaded } =
-		useVehiclePolling(
-			mode,
-			busOperator,
-			busRoute,
-			busDirection,
-			busVehicleBounds,
-		);
+	const {
+		trains,
+		buses,
+		busRealtimeHealth,
+		lastUpdatedAgeSec,
+		inService,
+		trainsLoaded,
+	} = useVehiclePolling(
+		mode,
+		busOperator,
+		busRoute,
+		busDirection,
+		busVehicleBounds,
+	);
 	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
 		savedBusSearch.busSearchTab ?? "route",
 	);
@@ -169,6 +176,20 @@ function App() {
 	const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(
 		savedBusSearch.busStopOperator ?? null,
 	);
+	const [busStopSummary, setBusStopSummary] = useState<BusStopSummary | null>(
+		null,
+	);
+	const [trainFocusSummary, setTrainFocusSummary] =
+		useState<TrainFocusSummary | null>(null);
+	const lastUpdated =
+		lastUpdatedAgeSec === null
+			? t("info.updated.empty")
+			: t("info.updated", {
+					time:
+						lastUpdatedAgeSec <= 1
+							? t("info.updated.justnow")
+							: t("info.updated.seconds", { n: lastUpdatedAgeSec }),
+				});
 	const [arrivalFocusResetSignal, setArrivalFocusResetSignal] = useState(0);
 	const [arrivalFocusStatus, setArrivalFocusStatus] = useState<
 		"idle" | "pending" | "ok" | "unavailable"
@@ -195,10 +216,20 @@ function App() {
 	const visibleBuses = focusContext
 		? buses.filter((b) => b.tripId === focusContext.tripId)
 		: buses;
+	const busRouteSummary =
+		mode === "bus" && busRoute && busDirection
+			? {
+					routeShortName: busRoute,
+					headsign: busShape?.[busDirection]?.headsign ?? busDirection,
+					operator: busOperator,
+					vehicleCount: buses.length,
+				}
+			: null;
 
 	const clearBusFocusState = useCallback(() => {
 		setBusStopId(null);
 		setBusStopOperator(null);
+		setBusStopSummary(null);
 		setFocusContext(null);
 		setBusFocusStopsAway(null);
 		setArrivalFocusResetSignal((n) => n + 1);
@@ -254,6 +285,7 @@ function App() {
 			},
 			initialView: savedSession.mapView ?? null,
 			focusContext,
+			onTrainFocusSummary: setTrainFocusSummary,
 			onFocusSegmentStatus: (status) => {
 				setArrivalFocusStatus(status);
 			},
@@ -528,6 +560,7 @@ function App() {
 		(codes: string[]) => {
 			trackEvent("event/search/train");
 			setSearchCodes(codes.length > 0 ? codes : []);
+			setTrainFocusSummary(null);
 			clearTrainFocus();
 		},
 		[clearTrainFocus],
@@ -535,6 +568,7 @@ function App() {
 
 	const handleClearTrainSearch = useCallback(() => {
 		setSearchCodes(null);
+		setTrainFocusSummary(null);
 		clearTrainFocus();
 	}, [clearTrainFocus]);
 
@@ -549,6 +583,7 @@ function App() {
 
 	const handleShowAllTrains = useCallback(() => {
 		setSearchCodes(null);
+		setTrainFocusSummary(null);
 		clearTrainFocus();
 	}, [clearTrainFocus]);
 
@@ -661,6 +696,7 @@ function App() {
 
 	const handleStopSummaryChange = useCallback(
 		(summary: BusStopSummary | null) => {
+			setBusStopSummary(summary);
 			if (summary) setBusSearchTab("stop");
 		},
 		[],
@@ -900,7 +936,15 @@ function App() {
 					&larr; {t("train.back.all")}
 				</button>
 			)}
-			<InfoPanel mode={mode} onModeChange={handleModeChange} />
+			<InfoPanel
+				lastUpdated={lastUpdated}
+				mode={mode}
+				onModeChange={handleModeChange}
+				busSearchTab={busSearchTab}
+				busRouteSummary={busRouteSummary}
+				busStopSummary={busStopSummary}
+				trainFocusSummary={trainFocusSummary}
+			/>
 		</>
 	);
 }
