@@ -49,6 +49,7 @@ export function useVehiclePolling(
 	busRoute: string | null,
 	busDirection: string | null,
 	busVehicleBounds: VehicleBounds | null = null,
+	busFocusTripId: string | null = null,
 ) {
 	const [trains, setTrains] = useState<Train[]>([]);
 	const [buses, setBuses] = useState<BusVehicle[]>([]);
@@ -126,7 +127,10 @@ export function useVehiclePolling(
 			}
 		}
 
-		async function fetchAllBuses(bounds: VehicleBounds | null) {
+		async function fetchAllBuses(
+			bounds: VehicleBounds | null,
+			focusTripId: string | null,
+		) {
 			try {
 				const url = new URL("/api/bus/vehicles/all", window.location.origin);
 				if (bounds) {
@@ -135,6 +139,7 @@ export function useVehiclePolling(
 					url.searchParams.set("e", String(bounds.east));
 					url.searchParams.set("w", String(bounds.west));
 				}
+				if (focusTripId) url.searchParams.set("tripId", focusTripId);
 				const res = await fetch(`${url.pathname}${url.search}`);
 				const realtimeHealth = readRealtimeHealth(res);
 				if (!res.ok) {
@@ -197,7 +202,7 @@ export function useVehiclePolling(
 				}
 				return;
 			}
-			poll = () => fetchAllBuses(busVehicleBounds);
+			poll = () => fetchAllBuses(busVehicleBounds, busFocusTripId);
 			intervalMs = 15_000;
 		} else {
 			setBuses([]);
@@ -227,7 +232,15 @@ export function useVehiclePolling(
 			document.removeEventListener("visibilitychange", onVisibility);
 			stop();
 		};
-	}, [mode, busOperator, busRoute, busDirection, busVehicleBounds, inService]);
+	}, [
+		mode,
+		busOperator,
+		busRoute,
+		busDirection,
+		busVehicleBounds,
+		busFocusTripId,
+		inService,
+	]);
 
 	const lastUpdatedAgeSec =
 		dataChangedAt === null

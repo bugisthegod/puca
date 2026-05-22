@@ -139,6 +139,7 @@ function App() {
 	}, []);
 	const [busVehicleBounds, setBusVehicleBounds] =
 		useState<VehicleBounds | null>(null);
+	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
 	const busVehicleBoundsSignatureRef = useRef<string | null>(null);
 	const handleBusVehicleBoundsChange = useCallback(
 		(bounds: VehicleBounds | null) => {
@@ -166,6 +167,7 @@ function App() {
 		busRoute,
 		busDirection,
 		busVehicleBounds,
+		focusContext?.tripId ?? null,
 	);
 	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
 		savedBusSearch.busSearchTab ?? "route",
@@ -195,7 +197,6 @@ function App() {
 		"idle" | "pending" | "ok" | "unavailable"
 	>("idle");
 	const [panelCollapsed, setPanelCollapsed] = useState(true);
-	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
 	const [busFocusStopsAway, setBusFocusStopsAway] = useState<{
 		tripId: string;
 		stopsAway: number | null;

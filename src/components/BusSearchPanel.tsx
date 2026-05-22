@@ -198,16 +198,14 @@ function BusSearchPanel({
 
 	useEffect(() => {
 		let cancelled = false;
-		Promise.all(
-			BUS_SEARCH_OPERATORS.map((op) =>
-				fetch(`/api/bus/routes?operator=${encodeURIComponent(op)}`)
-					.then((r) => (r.ok ? r.json() : []))
-					.then((data: BusRoute[]) => data.map((r) => ({ ...r, operator: op })))
-					.catch(() => [] as RouteWithOperator[]),
-			),
-		).then((lists) => {
-			if (!cancelled) setRoutes(lists.flat());
-		});
+		fetch("/api/bus/routes/all")
+			.then((r) => (r.ok ? r.json() : []))
+			.then((data: RouteWithOperator[]) => {
+				if (!cancelled) setRoutes(data);
+			})
+			.catch(() => {
+				if (!cancelled) setRoutes([]);
+			});
 		return () => {
 			cancelled = true;
 		};

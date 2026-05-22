@@ -36,7 +36,7 @@ import {
 	withServerTiming,
 } from "./src/server/helpers.ts";
 import { hasOriginAccess, rateLimit } from "./src/server/rateLimit.ts";
-import type { VehicleBounds } from "./src/types.ts";
+import { OPERATORS, type VehicleBounds } from "./src/types.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
 // Service worker cache version: bumped automatically per Fly deploy so PWA
@@ -314,9 +314,20 @@ Bun.serve({
 				return Response.json([], { status: 502 });
 			}
 		}),
+		"/api/bus/routes/all": rateLimit(() => {
+			return Response.json(
+				OPERATORS.flatMap((operator) =>
+					getBusRoutes(operator).map((route) => ({ ...route, operator })),
+				),
+				{
+					headers: { "Cache-Control": "public, max-age=3600" },
+				},
+			);
+		}),
 		"/api/bus/routes": rateLimit(async (req) => {
+			const url = new URL(req.url);
 			const operator = parseOperator(
-				new URL(req.url).searchParams.get("operator") ?? "dublinbus",
+				url.searchParams.get("operator") ?? "dublinbus",
 			);
 			if (!operator)
 				return Response.json({ error: "unknown operator" }, { status: 400 });
@@ -342,9 +353,14 @@ Bun.serve({
 				});
 			}
 			try {
-				const bounds = parseVehicleBounds(new URL(req.url));
+				const url = new URL(req.url);
+				const bounds = parseVehicleBounds(url);
 				if (bounds instanceof Response) return bounds;
-				const vehicles = await getAllOperatorsBusVehicles(bounds);
+				const targetTripId = url.searchParams.get("tripId")?.trim();
+				const vehicles = await getAllOperatorsBusVehicles(
+					bounds,
+					targetTripId ? [targetTripId] : [],
+				);
 				timer.mark("data");
 				logSlowRequest(timer, "http.bus_vehicles_all.slow", {
 					vehicle_count: vehicles.length,

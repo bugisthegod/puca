@@ -88,11 +88,13 @@ export function getAllOperatorsBusVehiclesFromCache({
 	tripUpdates,
 	nowSec,
 	bounds,
+	includeTripIds = new Set(),
 }: {
 	vehicles: readonly GtfsVehiclePosition[];
 	tripUpdates: ReadonlyMap<string, LiveTripData>;
 	nowSec: number;
 	bounds?: VehicleBounds;
+	includeTripIds?: ReadonlySet<string>;
 }): OperatorBusVehicle[] {
 	const routeById = new Map<string, { operator: Operator; route: BusRoute }>();
 	for (const [operator, routes] of Object.entries(operatorRoutes) as [
@@ -112,7 +114,8 @@ export function getAllOperatorsBusVehiclesFromCache({
 	const shapeMaps = new Map<Operator, Map<string, string>>();
 	const result: OperatorBusVehicle[] = [];
 	for (const v of vehicles) {
-		if (bounds && !vehicleInBounds(v, bounds)) continue;
+		if (bounds && !vehicleInBounds(v, bounds) && !includeTripIds.has(v.tripId))
+			continue;
 		const match = routeById.get(v.routeId);
 		if (!match) continue;
 		let shapeMap = shapeMaps.get(match.operator);
@@ -145,6 +148,7 @@ function enrichBusVehicle(
 ): BusVehicle {
 	return {
 		...vehicle,
+		operator,
 		routeShortName: route.shortName,
 		shapeId: shapeMap.get(vehicle.tripId) ?? null,
 		stale: isTripEnded(operator, vehicle.tripId, nowSec, tripUpdates),

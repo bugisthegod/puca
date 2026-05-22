@@ -491,6 +491,58 @@ describe("realtime cache request path", () => {
 		expect(slowFetch.calls).toHaveLength(1);
 	});
 
+	test("keeps a focused bus even when it is outside requested bounds", async () => {
+		mockServiceHourClock();
+		process.env.NTA_API_KEY = "test-key";
+		const slowFetch = pendingFetch();
+		globalThis.fetch = slowFetch.fetch;
+		__testing.seedRealtimeState({
+			vehicles: [
+				{
+					tripId: "DUB-1",
+					routeId: "1 1 e a",
+					lat: 53.35,
+					lng: -6.26,
+					bearing: null,
+					speed: null,
+					timestamp: 1,
+					label: "Dublin Bus 1",
+					directionId: 0,
+				},
+				{
+					tripId: "BE-100",
+					routeId: "2 100 c e",
+					lat: 53.71,
+					lng: -6.35,
+					bearing: null,
+					speed: null,
+					timestamp: 1,
+					label: "Bus Eireann 100",
+					directionId: 0,
+				},
+			],
+			tripUpdates: new Map(),
+			lastVehicleCallMs: 0,
+			lastTripUpdateCallMs: Date.now(),
+		});
+
+		const vehicles = await expectSettlesQuickly(
+			getAllOperatorsBusVehicles(
+				{
+					north: 53.4,
+					south: 53.3,
+					east: -6.2,
+					west: -6.3,
+				},
+				["BE-100"],
+			),
+		);
+		slowFetch.resolveAll();
+
+		expect(vehicles.map((v) => v.tripId)).toEqual(["DUB-1", "BE-100"]);
+		expect(slowFetch.calls).toHaveLength(1);
+	});
+
 	test("returns an empty list quickly on cold cache instead of waiting for NTA", async () => {
 		mockServiceHourClock();
 		process.env.NTA_API_KEY = "test-key";

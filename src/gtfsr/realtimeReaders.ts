@@ -110,12 +110,14 @@ export async function getAllBusVehicles(
 
 export async function getAllOperatorsBusVehicles(
 	bounds?: VehicleBounds,
+	includeTripIds: readonly string[] = [],
 ): Promise<OperatorBusVehicle[]> {
 	return getAllOperatorsBusVehiclesFromCache({
 		vehicles: getCachedVehicles({ refreshIfStale: true }),
 		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
 		nowSec: dublinSecondsSinceMidnight(),
 		bounds,
+		includeTripIds: new Set(includeTripIds),
 	});
 }
 
