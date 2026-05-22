@@ -6,7 +6,10 @@ import {
 } from "./arrivals";
 import {
 	getAllBusVehiclesFromCache,
+	getAllOperatorsBusVehiclesFromCache,
 	getBusVehiclesByRouteFromCache,
+	type OperatorBusVehicle,
+	type VehicleBounds,
 } from "./busVehicles";
 import { getBusTripStopsFromCache, type TripUpdate } from "./trips";
 import {
@@ -99,6 +102,17 @@ export async function getAllBusVehicles(
 		vehicles: getCachedVehicles({ refreshIfStale: true }),
 		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
 		nowSec: dublinSecondsSinceMidnight(),
+	});
+}
+
+export async function getAllOperatorsBusVehicles(
+	bounds?: VehicleBounds,
+): Promise<OperatorBusVehicle[]> {
+	return getAllOperatorsBusVehiclesFromCache({
+		vehicles: getCachedVehicles({ refreshIfStale: true }),
+		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
+		nowSec: dublinSecondsSinceMidnight(),
+		bounds,
 	});
 }
 

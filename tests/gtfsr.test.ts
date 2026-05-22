@@ -4,6 +4,7 @@ import {
 	decideStopArrival,
 	type GtfsVehiclePosition,
 	getAllBusVehicles,
+	getAllOperatorsBusVehicles,
 	getBusRouteShape,
 	getBusTripStops,
 	getBusTripUpdateRealtimeHealth,
@@ -393,6 +394,100 @@ describe("realtime cache request path", () => {
 		expect(vehicles).toHaveLength(1);
 		expect(vehicles[0]?.tripId).toBe("T1");
 		expect(vehicles[0]?.routeShortName).toBe("38A");
+		expect(slowFetch.calls).toHaveLength(1);
+	});
+
+	test("returns all operators' buses from the shared vehicle cache", async () => {
+		mockServiceHourClock();
+		process.env.NTA_API_KEY = "test-key";
+		const slowFetch = pendingFetch();
+		globalThis.fetch = slowFetch.fetch;
+		__testing.seedRealtimeState({
+			vehicles: [
+				{
+					tripId: "DUB-1",
+					routeId: "1 1 e a",
+					lat: 53.35,
+					lng: -6.26,
+					bearing: null,
+					speed: null,
+					timestamp: 1,
+					label: "Dublin Bus 1",
+					directionId: 0,
+				},
+				{
+					tripId: "BE-100",
+					routeId: "2 100 c e",
+					lat: 53.71,
+					lng: -6.35,
+					bearing: null,
+					speed: null,
+					timestamp: 1,
+					label: "Bus Eireann 100",
+					directionId: 0,
+				},
+			],
+			tripUpdates: new Map(),
+			lastVehicleCallMs: 0,
+			lastTripUpdateCallMs: Date.now(),
+		});
+
+		const vehicles = await expectSettlesQuickly(getAllOperatorsBusVehicles());
+		slowFetch.resolveAll();
+
+		expect(vehicles.map((v) => [v.operator, v.routeShortName])).toEqual([
+			["dublinbus", "1"],
+			["buseireann", "100"],
+		]);
+		expect(slowFetch.calls).toHaveLength(1);
+	});
+
+	test("filters all operators' buses to the requested bounds", async () => {
+		mockServiceHourClock();
+		process.env.NTA_API_KEY = "test-key";
+		const slowFetch = pendingFetch();
+		globalThis.fetch = slowFetch.fetch;
+		__testing.seedRealtimeState({
+			vehicles: [
+				{
+					tripId: "DUB-1",
+					routeId: "1 1 e a",
+					lat: 53.35,
+					lng: -6.26,
+					bearing: null,
+					speed: null,
+					timestamp: 1,
+					label: "Dublin Bus 1",
+					directionId: 0,
+				},
+				{
+					tripId: "BE-100",
+					routeId: "2 100 c e",
+					lat: 53.71,
+					lng: -6.35,
+					bearing: null,
+					speed: null,
+					timestamp: 1,
+					label: "Bus Eireann 100",
+					directionId: 0,
+				},
+			],
+			tripUpdates: new Map(),
+			lastVehicleCallMs: 0,
+			lastTripUpdateCallMs: Date.now(),
+		});
+
+		const vehicles = await expectSettlesQuickly(
+			getAllOperatorsBusVehicles({
+				north: 53.4,
+				south: 53.3,
+				east: -6.2,
+				west: -6.3,
+			}),
+		);
+		slowFetch.resolveAll();
+
+		expect(vehicles.map((v) => v.tripId)).toEqual(["DUB-1"]);
 		expect(slowFetch.calls).toHaveLength(1);
 	});
 

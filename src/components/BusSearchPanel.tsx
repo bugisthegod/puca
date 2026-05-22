@@ -112,7 +112,6 @@ type BusSearchPanelProps = {
 	busShape: BusShape;
 	isFavorite: boolean;
 	onToggleFavorite: () => void;
-	busOperator: BusOperator;
 	busSearchTab: BusSearchTab;
 	onTabChange: (tab: BusSearchTab) => void;
 	busStopId: string | null;

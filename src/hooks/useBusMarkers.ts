@@ -125,10 +125,12 @@ interface UseBusMarkersOptions {
 	mode: Mode;
 	currentBusRoute: string | null;
 	onSelectBusRoute: React.RefObject<
-		((route: string, direction: string) => void) | undefined
+		| ((route: string, direction: string, operator?: BusOperator) => void)
+		| undefined
 	>;
 	onRouteJump: React.RefObject<
-		((route: string, direction: string) => void) | undefined
+		| ((route: string, direction: string, operator?: BusOperator) => void)
+		| undefined
 	>;
 	leafletMap: React.RefObject<L.Map | null>;
 	busClusterLayer: React.RefObject<L.MarkerClusterGroup | L.LayerGroup | null>;
@@ -175,6 +177,10 @@ export function useBusMarkers({
 	currentBusRouteRef.current = currentBusRoute;
 	const busOperatorRef = useRef(busOperator);
 	busOperatorRef.current = busOperator;
+
+	function operatorForBus(bus: BusVehicle): BusOperator {
+		return bus.operator ?? busOperatorRef.current;
+	}
 
 	// -------------------------------------------------------------------------
 	// Variant branch style helpers.
@@ -239,12 +245,16 @@ export function useBusMarkers({
 		btn.addEventListener("click", () => {
 			const route = decodeURIComponent(btn.getAttribute("data-route") ?? "");
 			const dir = btn.getAttribute("data-dir") ?? "";
+			const operatorRaw = btn.getAttribute(
+				"data-operator",
+			) as BusOperator | null;
+			const operator = operatorRaw || undefined;
 			if (route && dir) {
 				leafletMap.current?.closePopup();
 				if (onRouteJump.current) {
-					onRouteJump.current(route, dir);
+					onRouteJump.current(route, dir, operator);
 				} else {
-					onSelectBusRouteRef.current?.(route, dir);
+					onSelectBusRouteRef.current?.(route, dir, operator);
 				}
 			}
 		});
@@ -292,8 +302,9 @@ export function useBusMarkers({
 		}
 		busTripInFlight.add(bus.tripId);
 		try {
+			const operator = operatorForBus(bus);
 			const res = await fetch(
-				`/api/bus/trip/${encodeURIComponent(bus.tripId)}?operator=${encodeURIComponent(busOperatorRef.current)}`,
+				`/api/bus/trip/${encodeURIComponent(bus.tripId)}?operator=${encodeURIComponent(operator)}`,
 			);
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const trip = await res.json();
@@ -321,7 +332,7 @@ export function useBusMarkers({
 
 	function makeBusMarker(bus: BusVehicle): L.Marker {
 		const marker = L.marker([bus.lat, bus.lng], {
-			icon: makeBusMarkerIcon(bus, busOperatorRef.current),
+			icon: makeBusMarkerIcon(bus, operatorForBus(bus)),
 		});
 		marker.bindPopup(buildBusPopupHTML(bus, null), {
 			maxWidth: 520,
@@ -414,9 +425,7 @@ export function useBusMarkers({
 				// Always: icon swap if stale flipped, routeLine backfill, bus ref
 				// refresh — these matter regardless of GPS freshness.
 				if (existing.bus.stale !== bus.stale) {
-					existing.marker.setIcon(
-						makeBusMarkerIcon(bus, busOperatorRef.current),
-					);
+					existing.marker.setIcon(makeBusMarkerIcon(bus, operatorForBus(bus)));
 				}
 				if (!existing.routeLine && lineInfo) {
 					existing.routeLine = lineInfo.routeLine;

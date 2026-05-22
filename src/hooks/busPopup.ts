@@ -116,7 +116,7 @@ export function buildBusPopupHTML(
          </div>`
 			: `<div class="popup-message">${i18n("popup.bus.empty")}</div>`;
 	const jumpBtn = options.showRouteJump
-		? `<button class="popup-route-jump" type="button" data-route="${encodeURIComponent(bus.routeShortName)}" data-dir="${bus.directionId}">${i18n("popup.bus.showall", { route: escapeHtml(bus.routeShortName) })}</button>`
+		? `<button class="popup-route-jump" type="button" data-route="${encodeURIComponent(bus.routeShortName)}" data-dir="${bus.directionId}" data-operator="${bus.operator ?? ""}">${i18n("popup.bus.showall", { route: escapeHtml(bus.routeShortName) })}</button>`
 		: "";
 	const stops = trip?.stops ?? [];
 	const originDest =

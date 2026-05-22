@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "../analytics";
 import { readRealtimeHealth } from "../realtime";
-import type { BusOperator, BusVehicle, RealtimeHealth, Train } from "../types";
+import type {
+	BusOperator,
+	BusVehicle,
+	RealtimeHealth,
+	Train,
+	VehicleBounds,
+} from "../types";
 import { isInServiceHours } from "../utils";
 import type { Mode } from "./useVehicleMap";
 
@@ -19,6 +25,7 @@ export function trainSignature(train: Train): string {
 export function busVehicleSignature(vehicle: BusVehicle): string {
 	return [
 		vehicle.tripId || vehicle.label,
+		vehicle.operator ?? "",
 		vehicle.routeId,
 		vehicle.directionId,
 		vehicle.lat.toFixed(5),
@@ -41,6 +48,7 @@ export function useVehiclePolling(
 	busOperator: BusOperator,
 	busRoute: string | null,
 	busDirection: string | null,
+	busVehicleBounds: VehicleBounds | null = null,
 ) {
 	const [trains, setTrains] = useState<Train[]>([]);
 	const [buses, setBuses] = useState<BusVehicle[]>([]);
@@ -52,6 +60,8 @@ export function useVehiclePolling(
 		isInServiceHours(mode),
 	);
 	const [trainsLoaded, setTrainsLoaded] = useState(false);
+	const lastSnapshotSignatureRef = useRef<string | null>(null);
+	const resetKeyRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		const id = setInterval(() => setClockNow(Date.now()), 1000);
@@ -67,11 +77,10 @@ export function useVehiclePolling(
 
 	useEffect(() => {
 		let cancelled = false;
-		let lastSignature: string | null = null;
 
 		function markChangedIfNeeded(nextSignature: string) {
-			if (nextSignature === lastSignature) return;
-			lastSignature = nextSignature;
+			if (nextSignature === lastSnapshotSignatureRef.current) return;
+			lastSnapshotSignatureRef.current = nextSignature;
 			setDataChangedAt(Date.now());
 		}
 
@@ -117,11 +126,16 @@ export function useVehiclePolling(
 			}
 		}
 
-		async function fetchAllBuses(operator: BusOperator) {
+		async function fetchAllBuses(bounds: VehicleBounds | null) {
 			try {
-				const res = await fetch(
-					`/api/bus/vehicles?operator=${encodeURIComponent(operator)}`,
-				);
+				const url = new URL("/api/bus/vehicles/all", window.location.origin);
+				if (bounds) {
+					url.searchParams.set("n", String(bounds.north));
+					url.searchParams.set("s", String(bounds.south));
+					url.searchParams.set("e", String(bounds.east));
+					url.searchParams.set("w", String(bounds.west));
+				}
+				const res = await fetch(`${url.pathname}${url.search}`);
 				const realtimeHealth = readRealtimeHealth(res);
 				if (!res.ok) {
 					if (!cancelled) setBusRealtimeHealth(realtimeHealth);
@@ -148,9 +162,21 @@ export function useVehiclePolling(
 			return;
 		}
 
-		setBuses([]);
-		setBusRealtimeHealth(null);
-		setDataChangedAt(null);
+		const resetKey = [
+			mode,
+			busOperator,
+			busRoute ?? "",
+			busDirection ?? "",
+			inService ? "1" : "0",
+		].join("|");
+		const shouldReset = resetKeyRef.current !== resetKey;
+		resetKeyRef.current = resetKey;
+		if (shouldReset) {
+			setBuses([]);
+			setBusRealtimeHealth(null);
+			setDataChangedAt(null);
+			lastSnapshotSignatureRef.current = null;
+		}
 
 		let poll: (() => void) | null = null;
 		let intervalMs = 0;
@@ -163,7 +189,15 @@ export function useVehiclePolling(
 			poll = () => fetchBuses(busOperator, route, dir);
 			intervalMs = 15_000;
 		} else if (!busRoute) {
-			poll = () => fetchAllBuses(busOperator);
+			if (!busVehicleBounds) {
+				if (shouldReset) {
+					setBuses([]);
+					setBusRealtimeHealth(null);
+					setDataChangedAt(null);
+				}
+				return;
+			}
+			poll = () => fetchAllBuses(busVehicleBounds);
 			intervalMs = 15_000;
 		} else {
 			setBuses([]);
@@ -193,7 +227,7 @@ export function useVehiclePolling(
 			document.removeEventListener("visibilitychange", onVisibility);
 			stop();
 		};
-	}, [mode, busOperator, busRoute, busDirection, inService]);
+	}, [mode, busOperator, busRoute, busDirection, busVehicleBounds, inService]);
 
 	const lastUpdatedAgeSec =
 		dataChangedAt === null

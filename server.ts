@@ -6,6 +6,7 @@ import {
 } from "./src/api.ts";
 import {
 	getAllBusVehicles,
+	getAllOperatorsBusVehicles,
 	getAllTrainShapes,
 	getBusRouteShape,
 	getBusRoutes,
@@ -35,6 +36,7 @@ import {
 	withServerTiming,
 } from "./src/server/helpers.ts";
 import { hasOriginAccess, rateLimit } from "./src/server/rateLimit.ts";
+import type { VehicleBounds } from "./src/types.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
 // Service worker cache version: bumped automatically per Fly deploy so PWA
@@ -43,6 +45,50 @@ import { isInServiceHours } from "./src/utils.ts";
 const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
 const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
+
+function parseVehicleBounds(url: URL): VehicleBounds | Response | undefined {
+	const params = url.searchParams;
+	const raw = {
+		north: params.get("n"),
+		south: params.get("s"),
+		east: params.get("e"),
+		west: params.get("w"),
+	};
+	if (Object.values(raw).every((v) => v === null)) return undefined;
+	if (Object.values(raw).some((v) => v === null)) {
+		return Response.json(
+			{ error: "bounds require n, s, e, and w" },
+			{ status: 400 },
+		);
+	}
+
+	const bounds = {
+		north: Number(raw.north),
+		south: Number(raw.south),
+		east: Number(raw.east),
+		west: Number(raw.west),
+	};
+	if (
+		!Number.isFinite(bounds.north) ||
+		!Number.isFinite(bounds.south) ||
+		!Number.isFinite(bounds.east) ||
+		!Number.isFinite(bounds.west) ||
+		bounds.north < -90 ||
+		bounds.north > 90 ||
+		bounds.south < -90 ||
+		bounds.south > 90 ||
+		bounds.east < -180 ||
+		bounds.east > 180 ||
+		bounds.west < -180 ||
+		bounds.west > 180 ||
+		bounds.north < bounds.south ||
+		bounds.east < bounds.west
+	) {
+		return Response.json({ error: "invalid bounds" }, { status: 400 });
+	}
+
+	return bounds;
+}
 
 startBackgroundPolling();
 startEventLoopLagMonitor();
@@ -277,6 +323,43 @@ Bun.serve({
 			return Response.json(getBusRoutes(operator), {
 				headers: { "Cache-Control": "public, max-age=3600" }, // 1 hour; route list is static
 			});
+		}),
+		"/api/bus/vehicles/all": rateLimit(async (req) => {
+			const timer = createServerTimer();
+			const vehicleHeaders = {
+				"Cache-Control": "public, max-age=5, stale-while-revalidate=15",
+				...getBusVehicleRealtimeHeaders(),
+			};
+			if (!isInServiceHours("bus")) {
+				timer.mark("service_hours");
+				return Response.json([], {
+					headers: withServerTiming(
+						{
+							"Cache-Control": vehicleHeaders["Cache-Control"],
+						},
+						timer,
+					),
+				});
+			}
+			try {
+				const bounds = parseVehicleBounds(new URL(req.url));
+				if (bounds instanceof Response) return bounds;
+				const vehicles = await getAllOperatorsBusVehicles(bounds);
+				timer.mark("data");
+				logSlowRequest(timer, "http.bus_vehicles_all.slow", {
+					vehicle_count: vehicles.length,
+					bounded: bounds ? 1 : 0,
+				});
+				return Response.json(vehicles, {
+					headers: withServerTiming(vehicleHeaders, timer),
+				});
+			} catch {
+				timer.mark("error");
+				return Response.json([], {
+					status: 502,
+					headers: withServerTiming(getBusVehicleRealtimeHeaders(), timer),
+				});
+			}
 		}),
 		"/api/bus/vehicles": rateLimit(async (req) => {
 			const timer = createServerTimer();
