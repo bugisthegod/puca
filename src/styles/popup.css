@@ -64,7 +64,8 @@
 	flex-shrink: 0;
 }
 
-.popup-stale-icon svg {
+.popup-stale-icon img {
+	display: block;
 	width: 100%;
 	height: 100%;
 }

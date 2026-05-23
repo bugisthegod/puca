@@ -921,6 +921,7 @@ function App() {
 			<InfoPanel
 				lastUpdated={lastUpdated}
 				mode={mode}
+				inService={inService}
 				onModeChange={handleModeChange}
 				busSearchTab={busSearchTab}
 				busRouteSummary={busRouteSummary}

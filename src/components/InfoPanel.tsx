@@ -16,6 +16,7 @@ type BusRouteSummary = {
 type InfoPanelProps = {
 	lastUpdated: string;
 	mode: Mode;
+	inService: boolean;
 	onModeChange: (m: Mode) => void;
 	busSearchTab: "route" | "stop";
 	busRouteSummary: BusRouteSummary | null;
@@ -58,6 +59,7 @@ export function trainFocusSummaryMeta(
 function InfoPanel({
 	lastUpdated,
 	mode,
+	inService,
 	onModeChange,
 	busSearchTab,
 	busRouteSummary,
@@ -73,6 +75,9 @@ function InfoPanel({
 	const trainSummaryMeta = trainFocusSummaryMeta(trainSummary, t);
 
 	if (!stopSummary && !routeSummary && !trainSummary) {
+		if (!inService) {
+			return <OffHoursPanel mode={mode} onModeChange={onModeChange} />;
+		}
 		return <ModeSwitch mode={mode} onModeChange={onModeChange} />;
 	}
 
@@ -154,6 +159,53 @@ function InfoPanel({
 					</div>
 				</div>
 			)}
+		</div>
+	);
+}
+
+function OffHoursPanel({
+	mode,
+	onModeChange,
+}: {
+	mode: Mode;
+	onModeChange: (m: Mode) => void;
+}) {
+	const { t } = useLocale();
+
+	return (
+		<div id="info-panel" className={`off-hours-panel off-hours-panel--${mode}`}>
+			<img
+				className="off-hours-panel__puca"
+				src="/puca-sleeping.svg?v=transparent-1"
+				alt=""
+				aria-hidden="true"
+			/>
+			<div className="off-hours-panel__copy">
+				<div className="off-hours-panel__title">{t("info.kip")}</div>
+				<div className="off-hours-panel__status">
+					{t("info.offhours.status")}
+				</div>
+			</div>
+			<div className="off-hours-panel__switch">
+				<button
+					type="button"
+					className="off-hours-panel__mode off-hours-panel__mode--train"
+					aria-pressed={mode === "train"}
+					onClick={() => onModeChange("train")}
+				>
+					<TramFront size={16} strokeWidth={2.3} />
+					<span>{t("info.mode.train")}</span>
+				</button>
+				<button
+					type="button"
+					className="off-hours-panel__mode off-hours-panel__mode--bus"
+					aria-pressed={mode === "bus"}
+					onClick={() => onModeChange("bus")}
+				>
+					<BusFront size={16} strokeWidth={2.3} />
+					<span>{t("info.mode.bus")}</span>
+				</button>
+			</div>
 		</div>
 	);
 }

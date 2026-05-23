@@ -2,11 +2,8 @@ import { t as i18n } from "../i18n";
 import type { BusVehicle } from "../types";
 import { escapeHtml } from "../utils";
 
-// Inline Púca jack-o'-lantern face used by the stale-trip marker and popup
-// banner. Mirrors public/puca-jack-o.svg — duplicated as a raw SVG string
-// because Leaflet divIcons and popup HTML can't render React components or
-// follow build-time CSS url() imports for files served at runtime.
-export const PUCA_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(56 52) scale(0.78)"><path d="M 112 152 C 112 88, 168 72, 220 72 L 292 72 C 344 72, 400 88, 400 152 L 400 392 Q 376 444, 340 416 Q 304 390, 272 416 Q 240 442, 210 416 Q 180 390, 148 416 Q 118 442, 112 396 Z" fill="#fff" stroke="#16161c" stroke-width="16" stroke-linejoin="round"/><path d="M 110 260 C 70 256, 54 292, 64 324 C 74 348, 104 346, 116 330 Z" fill="#fff" stroke="#16161c" stroke-width="16" stroke-linejoin="round"/><path d="M 402 260 C 442 256, 458 292, 448 324 C 438 348, 408 346, 396 330 Z" fill="#fff" stroke="#16161c" stroke-width="16" stroke-linejoin="round"/><path d="M 168 208 L 228 232 L 214 272 L 168 276 Z" fill="#16161c"/><path d="M 344 208 L 284 232 L 298 272 L 344 276 Z" fill="#16161c"/><path d="M 214 310 L 228 296 L 242 312 L 256 298 L 270 312 L 284 298 L 298 310 L 298 338 L 284 352 L 270 336 L 256 350 L 242 336 L 228 352 L 214 338 Z" fill="#16161c"/></g></svg>`;
+export const PUCA_IMG_HTML =
+	'<img src="/puca-jack-o.svg?v=transparent-1" alt="" aria-hidden="true" loading="lazy" decoding="async" />';
 
 export type BusTripStop = {
 	sequence: number;
@@ -134,7 +131,7 @@ export function buildBusPopupHTML(
   `;
 	const staleBanner = bus.stale
 		? `<div class="popup-stale-banner">
-         <div class="popup-stale-icon">${PUCA_SVG}</div>
+         <div class="popup-stale-icon">${PUCA_IMG_HTML}</div>
          <div class="popup-stale-text">
            <strong>${i18n("popup.bus.stale.title")}</strong>
            <span>${i18n("popup.bus.stale.body")}</span>

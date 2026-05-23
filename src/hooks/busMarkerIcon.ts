@@ -1,6 +1,6 @@
 import type { BusOperator, BusVehicle } from "../types";
 import { escapeHtml } from "../utils";
-import { PUCA_SVG } from "./busPopup";
+import { PUCA_IMG_HTML } from "./busPopup";
 
 // Side-view bus silhouette for vehicle markers. Body fill uses currentColor so
 // per-operator CSS can drive the color via .bus-marker--*.bus-icon { color: ... }.
@@ -32,7 +32,7 @@ export function buildBusIconSpec(
 		.join(" ");
 	const label = `<div class="bus-label">${escapeHtml(bus.routeShortName)}</div>`;
 	const html = bus.stale
-		? `<div class="bus-puca">${PUCA_SVG}</div>${label}`
+		? `<div class="bus-puca">${PUCA_IMG_HTML}</div>${label}`
 		: `<div class="bus-icon">${BUS_SVG}</div>${label}`;
 	return {
 		className: classes,

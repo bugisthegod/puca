@@ -92,6 +92,13 @@ Bun.serve({
 		"/public/icon-512.png": staticFile("./public/icon-512.png", 604800),
 		"/icon.svg": staticFile("./public/icon.svg", 604800),
 		"/public/icon.svg": staticFile("./public/icon.svg", 604800),
+		"/puca-jack-o.svg": staticFile("./public/puca-jack-o.svg", 604800),
+		"/public/puca-jack-o.svg": staticFile("./public/puca-jack-o.svg", 604800),
+		"/puca-sleeping.svg": staticFile("./public/puca-sleeping.svg", 604800),
+		"/public/puca-sleeping.svg": staticFile(
+			"./public/puca-sleeping.svg",
+			604800,
+		),
 		"/splash/iphone-17-pro-max.png": staticFile(
 			"./public/splash/iphone-17-pro-max.png",
 			604800,
