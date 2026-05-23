@@ -694,6 +694,7 @@ function App() {
 			setBusDirection(null);
 			setBusStopId(null);
 			setBusStopOperator(null);
+			setBusStopSummary(null);
 			setBusSearchTab(m === "bus" ? "stop" : "route");
 			setFocusContext(null);
 			setArrivalFocusStatus("idle");

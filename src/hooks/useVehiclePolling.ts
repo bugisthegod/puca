@@ -154,7 +154,6 @@ export function useVehiclePolling(
 			busOperator,
 			busRoute ?? "",
 			busDirection ?? "",
-			inService ? "1" : "0",
 		].join("|");
 		const shouldReset = resetKeyRef.current !== resetKey;
 		resetKeyRef.current = resetKey;
