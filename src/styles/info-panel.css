@@ -4,10 +4,10 @@
 
 #info-panel.info-panel--detail {
 	position: fixed;
-	top: auto;
-	right: auto;
-	bottom: calc(24px + env(safe-area-inset-bottom));
-	left: 50%;
+	top: calc(12px + env(safe-area-inset-top));
+	right: calc(12px + env(safe-area-inset-right));
+	bottom: auto;
+	left: auto;
 	z-index: 1000;
 	background: var(--glass-bg);
 	color: var(--glass-text);
@@ -15,10 +15,10 @@
 	border-radius: 12px;
 	padding: 10px 12px;
 	box-shadow: var(--shadow-panel);
-	width: min(640px, calc(100vw - 32px));
+	width: min(420px, calc(100vw - 32px));
 	backdrop-filter: var(--glass-blur);
 	-webkit-backdrop-filter: var(--glass-blur);
-	transform: translateX(-50%);
+	transform: none;
 }
 
 .info-stop-summary {
@@ -149,9 +149,9 @@
 	z-index: 1000;
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	width: 136px;
-	height: 42px;
-	padding: 3px;
+	width: 152px;
+	height: 48px;
+	padding: 4px;
 	border-radius: 999px;
 	background: rgba(32, 32, 38, 0.76);
 	border: 1px solid rgba(255, 255, 255, 0.16);
@@ -172,7 +172,7 @@
 #info-panel.mode-switch::before {
 	content: "";
 	position: absolute;
-	inset: 3px;
+	inset: 4px;
 	border-radius: 999px;
 	background: rgba(8, 8, 12, 0.18);
 	pointer-events: none;
@@ -224,10 +224,10 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 4px;
+	gap: 5px;
 	min-width: 0;
 	color: rgba(255, 255, 255, 0.58);
-	font-size: 0.76rem;
+	font-size: 0.84rem;
 	font-weight: 750;
 	line-height: 1;
 	white-space: nowrap;
@@ -238,6 +238,8 @@
 
 .mode-switch__option svg {
 	flex: 0 0 auto;
+	width: 20px;
+	height: 20px;
 }
 
 .mode-switch--train .mode-switch__option--train,
@@ -247,10 +249,13 @@
 
 @media (max-width: 600px) {
 	#info-panel.info-panel--detail {
-		bottom: calc(24px + env(safe-area-inset-bottom));
+		top: auto;
+		right: auto;
+		bottom: calc(8px + env(safe-area-inset-bottom));
 		left: 50%;
 		width: calc(100vw - 32px);
 		padding: 8px 10px;
+		transform: translateX(-50%);
 	}
 
 	.info-stop-summary {
@@ -276,12 +281,12 @@
 	#info-panel.mode-switch {
 		top: auto;
 		bottom: calc(24px + env(safe-area-inset-bottom));
-		width: 128px;
-		height: 40px;
+		width: 148px;
+		height: 46px;
 	}
 
 	.mode-switch__option {
-		gap: 3px;
-		font-size: 0.72rem;
+		gap: 4px;
+		font-size: 0.82rem;
 	}
 }

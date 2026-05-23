@@ -47,7 +47,6 @@ import type {
 	BusShape,
 	FocusContext,
 	TrainFocusSummary,
-	VehicleBounds,
 } from "./types";
 import type { Filter } from "./utils";
 import "./style.css";
@@ -137,23 +136,7 @@ function App() {
 	const requestTrainEmptyNotice = useCallback(() => {
 		setTrainEmptyNoticeRequest((n) => n + 1);
 	}, []);
-	const [busVehicleBounds, setBusVehicleBounds] =
-		useState<VehicleBounds | null>(null);
 	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
-	const busVehicleBoundsSignatureRef = useRef<string | null>(null);
-	const handleBusVehicleBoundsChange = useCallback(
-		(bounds: VehicleBounds | null) => {
-			const signature = bounds
-				? [bounds.north, bounds.south, bounds.east, bounds.west]
-						.map((n) => n.toFixed(5))
-						.join(",")
-				: null;
-			if (signature === busVehicleBoundsSignatureRef.current) return;
-			busVehicleBoundsSignatureRef.current = signature;
-			setBusVehicleBounds(bounds);
-		},
-		[],
-	);
 	const {
 		trains,
 		buses,
@@ -166,7 +149,6 @@ function App() {
 		busOperator,
 		busRoute,
 		busDirection,
-		busVehicleBounds,
 		focusContext?.tripId ?? null,
 	);
 	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
@@ -275,9 +257,9 @@ function App() {
 		busShape,
 		busDirection,
 		busOperator,
+		busRealtimeHealth,
 		{
 			currentBusRoute: busRoute,
-			onBusVehicleBoundsChange: handleBusVehicleBoundsChange,
 			onSelectBusRoute: (route, direction, operator) => {
 				showBusRouteOverview(route, direction, operator);
 			},
@@ -665,9 +647,8 @@ function App() {
 				React.ComponentProps<typeof BusSearchPanel>["onPickArrival"]
 			>[2],
 		) => {
-			// Clear any selected route so the user lands in all-buses mode — the
-			// target tripId is included in fetchAllBuses, so the focus effect can
-			// find the marker without drawing the whole polyline.
+			// Clear any selected route so the user lands in all-buses mode; the
+			// full vehicle response already includes the target trip for focusing.
 			setBusRoute(null);
 			setBusDirection(null);
 			setArrivalFocusStatus("pending");

@@ -9,6 +9,7 @@ import type { BusOperator, FocusContext } from "../types";
 import { getMapFitPadding } from "./mapFitPadding";
 import {
 	buildRouteLine,
+	buildRouteLookup,
 	projectOntoRoute,
 	segmentLengthM,
 } from "./routeProjection";
@@ -277,6 +278,16 @@ export function useFocusSegment({
 				onStopsAwayChange?.(null);
 				focusBusOnly(map, busLatLng);
 				return;
+			}
+			if (!busEntry.routeLine || busEntry.routeLengthMeters === null) {
+				busEntry.routeLine = lineInfo.routeLine;
+				busEntry.routeLookup = buildRouteLookup(lineInfo.routeLine);
+				busEntry.routeLengthMeters = lineInfo.routeLengthMeters;
+				busEntry.offRoute = false;
+				busEntry.prevDistance = null;
+				busEntry.currentDistance = busD;
+				busEntry.animStartPerfMs = null;
+				busEntry.lastRenderedDistance = null;
 			}
 
 			let lastStopsAway: number | null = null;

@@ -45,6 +45,7 @@ const STOP_MIN_ZOOM = 13;
 const DEFAULT_ANIM_DURATION_MS = 30_000;
 const MIN_ANIM_DURATION_MS = 5_000;
 const MAX_ANIM_DURATION_MS = 60_000;
+const MAX_CACHE_CATCHUP_MS = 8_000;
 const ROUTE_FLY_DURATION_MS = 1500;
 const ROUTE_DETAIL_FALLBACK_MS = ROUTE_FLY_DURATION_MS + 700;
 
@@ -124,6 +125,7 @@ interface UseBusMarkersOptions {
 	busOperator: BusOperator;
 	mode: Mode;
 	currentBusRoute: string | null;
+	realtimeAgeSec: number | null;
 	onSelectBusRoute: React.RefObject<
 		| ((route: string, direction: string, operator?: BusOperator) => void)
 		| undefined
@@ -143,6 +145,7 @@ export function useBusMarkers({
 	busOperator,
 	mode,
 	currentBusRoute,
+	realtimeAgeSec,
 	onSelectBusRoute,
 	onRouteJump,
 	leafletMap,
@@ -431,6 +434,22 @@ export function useBusMarkers({
 					existing.routeLine = lineInfo.routeLine;
 					existing.routeLookup = buildRouteLookup(lineInfo.routeLine);
 					existing.routeLengthMeters = lineInfo.routeLengthMeters;
+					const projection = projectOntoRoute(
+						bus.lat,
+						bus.lng,
+						lineInfo.routeLine,
+						lineInfo.routeLengthMeters,
+						null,
+						null,
+						now,
+					);
+					if (!projection.offRoute) {
+						existing.offRoute = false;
+						existing.prevDistance = null;
+						existing.currentDistance = projection.targetDistanceAlongRoute;
+						existing.animStartPerfMs = null;
+						existing.lastRenderedDistance = null;
+					}
 				}
 
 				if (isDuplicate) {
@@ -445,6 +464,8 @@ export function useBusMarkers({
 				// New GPS data — reset render-skip and run the animation update.
 				existing.settled = false;
 				existing.lastRenderedDistance = null;
+				existing.targetLat = bus.lat;
+				existing.targetLng = bus.lng;
 
 				const rl = existing.routeLine;
 				const rlm = existing.routeLengthMeters;
@@ -481,9 +502,16 @@ export function useBusMarkers({
 							seedPrev = computeBusCurrentDistance(existing, now);
 						}
 						const measuredMs = (bus.timestamp - prevTimestamp) * 1000;
+						const catchupMs =
+							realtimeAgeSec === null
+								? 0
+								: Math.min(
+										MAX_CACHE_CATCHUP_MS,
+										Math.max(0, realtimeAgeSec * 1000),
+									);
 						const animDurationMs = Math.max(
 							MIN_ANIM_DURATION_MS,
-							Math.min(measuredMs, MAX_ANIM_DURATION_MS),
+							Math.min(measuredMs - catchupMs, MAX_ANIM_DURATION_MS),
 						);
 						existing.offRoute = false;
 						existing.prevDistance = seedPrev;

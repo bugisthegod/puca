@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "../analytics";
 import { readRealtimeHealth } from "../realtime";
-import type {
-	BusOperator,
-	BusVehicle,
-	RealtimeHealth,
-	Train,
-	VehicleBounds,
-} from "../types";
+import type { BusOperator, BusVehicle, RealtimeHealth, Train } from "../types";
 import { isInServiceHours } from "../utils";
 import type { Mode } from "./useVehicleMap";
 
@@ -48,8 +42,7 @@ export function useVehiclePolling(
 	busOperator: BusOperator,
 	busRoute: string | null,
 	busDirection: string | null,
-	busVehicleBounds: VehicleBounds | null = null,
-	busFocusTripId: string | null = null,
+	busRefreshKey: string | null = null,
 ) {
 	const [trains, setTrains] = useState<Train[]>([]);
 	const [buses, setBuses] = useState<BusVehicle[]>([]);
@@ -127,20 +120,9 @@ export function useVehiclePolling(
 			}
 		}
 
-		async function fetchAllBuses(
-			bounds: VehicleBounds | null,
-			focusTripId: string | null,
-		) {
+		async function fetchAllBuses() {
 			try {
-				const url = new URL("/api/bus/vehicles/all", window.location.origin);
-				if (bounds) {
-					url.searchParams.set("n", String(bounds.north));
-					url.searchParams.set("s", String(bounds.south));
-					url.searchParams.set("e", String(bounds.east));
-					url.searchParams.set("w", String(bounds.west));
-				}
-				if (focusTripId) url.searchParams.set("tripId", focusTripId);
-				const res = await fetch(`${url.pathname}${url.search}`);
+				const res = await fetch("/api/bus/vehicles/all");
 				const realtimeHealth = readRealtimeHealth(res);
 				if (!res.ok) {
 					if (!cancelled) setBusRealtimeHealth(realtimeHealth);
@@ -194,15 +176,7 @@ export function useVehiclePolling(
 			poll = () => fetchBuses(busOperator, route, dir);
 			intervalMs = 15_000;
 		} else if (!busRoute) {
-			if (!busVehicleBounds) {
-				if (shouldReset) {
-					setBuses([]);
-					setBusRealtimeHealth(null);
-					setDataChangedAt(null);
-				}
-				return;
-			}
-			poll = () => fetchAllBuses(busVehicleBounds, busFocusTripId);
+			poll = fetchAllBuses;
 			intervalMs = 15_000;
 		} else {
 			setBuses([]);
@@ -232,15 +206,7 @@ export function useVehiclePolling(
 			document.removeEventListener("visibilitychange", onVisibility);
 			stop();
 		};
-	}, [
-		mode,
-		busOperator,
-		busRoute,
-		busDirection,
-		busVehicleBounds,
-		busFocusTripId,
-		inService,
-	]);
+	}, [mode, busOperator, busRoute, busDirection, busRefreshKey, inService]);
 
 	const lastUpdatedAgeSec =
 		dataChangedAt === null

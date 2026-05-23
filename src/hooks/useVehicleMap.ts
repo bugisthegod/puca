@@ -5,9 +5,9 @@ import type {
 	BusShape,
 	BusVehicle,
 	FocusContext,
+	RealtimeHealth,
 	Train,
 	TrainFocusSummary,
-	VehicleBounds,
 } from "../types";
 import type { Filter } from "../utils";
 import { alongLookup } from "./routeProjection";
@@ -26,7 +26,25 @@ const EXTRAP_CAP = 35_000;
 // enough to run at 30 FPS without CPU pressure. Faster than the old 20 FPS
 // but avoids the per-frame setLatLng DOM cost of running at full 60 FPS.
 const TICK_INTERVAL_MS = 33;
-const BUS_BOUNDS_DEBOUNCE_MS = 600;
+
+function busClusterOperatorClass(cluster: L.MarkerCluster): string {
+	const counts = {
+		dublinbus: 0,
+		buseireann: 0,
+		goahead: 0,
+	};
+	for (const marker of cluster.getAllChildMarkers()) {
+		const className = marker.getIcon().options.className ?? "";
+		if (className.includes("bus-marker--buseireann")) counts.buseireann++;
+		else if (className.includes("bus-marker--goahead")) counts.goahead++;
+		else counts.dublinbus++;
+	}
+	const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+	const [top, runnerUp] = entries;
+	if (!top || !runnerUp || top[1] === runnerUp[1])
+		return "bus-cluster--dublinbus";
+	return `bus-cluster--${top[0]}`;
+}
 
 interface UseVehicleMapOptions {
 	currentBusRoute?: string | null;
@@ -45,17 +63,6 @@ interface UseVehicleMapOptions {
 	onFocusSegmentStatus?: (status: "ok" | "unavailable") => void;
 	onBusFocusStopsAway?: (stopsAway: number | null) => void;
 	onTrainFocusSummary?: (summary: TrainFocusSummary | null) => void;
-	onBusVehicleBoundsChange?: (bounds: VehicleBounds | null) => void;
-}
-
-function getPaddedVehicleBounds(map: L.Map): VehicleBounds {
-	const bounds = map.getBounds().pad(0.5);
-	return {
-		north: bounds.getNorth(),
-		south: bounds.getSouth(),
-		east: bounds.getEast(),
-		west: bounds.getWest(),
-	};
 }
 
 export function useVehicleMap(
@@ -68,6 +75,7 @@ export function useVehicleMap(
 	busShape: BusShape = null,
 	busDirection: string | null = null,
 	busOperator: BusOperator = "dublinbus",
+	busRealtimeHealth: RealtimeHealth | null = null,
 	options: UseVehicleMapOptions = {},
 ): {
 	focusTrain: (
@@ -93,7 +101,6 @@ export function useVehicleMap(
 		onFocusSegmentStatus,
 		onBusFocusStopsAway,
 		onTrainFocusSummary,
-		onBusVehicleBoundsChange,
 	} = options;
 
 	const onSelectBusRouteRef = useRef(onSelectBusRoute);
@@ -145,6 +152,7 @@ export function useVehicleMap(
 		busOperator,
 		mode,
 		currentBusRoute,
+		realtimeAgeSec: busRealtimeHealth?.ageSec ?? null,
 		onSelectBusRoute: onSelectBusRouteRef,
 		onRouteJump: onRouteJumpRef,
 		leafletMap,
@@ -159,34 +167,6 @@ export function useVehicleMap(
 		onSegmentStatus: onFocusSegmentStatus,
 		onStopsAwayChange: onBusFocusStopsAway,
 	});
-
-	useEffect(() => {
-		const map = leafletMap.current;
-		if (!map || !onBusVehicleBoundsChange) return;
-		if (mode !== "bus" || singleRouteMode) {
-			onBusVehicleBoundsChange(null);
-			return;
-		}
-		let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-		const emitBounds = () => {
-			if (debounceTimer) clearTimeout(debounceTimer);
-			onBusVehicleBoundsChange(getPaddedVehicleBounds(map));
-		};
-		const scheduleEmitBounds = () => {
-			if (debounceTimer) clearTimeout(debounceTimer);
-			debounceTimer = setTimeout(() => {
-				debounceTimer = null;
-				emitBounds();
-			}, BUS_BOUNDS_DEBOUNCE_MS);
-		};
-		emitBounds();
-		map.on("moveend zoomend resize", scheduleEmitBounds);
-		return () => {
-			if (debounceTimer) clearTimeout(debounceTimer);
-			map.off("moveend zoomend resize", scheduleEmitBounds);
-		};
-	}, [mode, singleRouteMode, onBusVehicleBoundsChange]);
 
 	// Bus container lifecycle — recreated on mode/single-route change.
 	// - Default: MarkerClusterGroup for the mixed-operator all-bus view
@@ -223,7 +203,7 @@ export function useVehicleMap(
 					const dim = size === "large" ? 46 : size === "medium" ? 38 : 30;
 					return L.divIcon({
 						html: `<span>${count}</span>`,
-						className: `bus-cluster bus-cluster--${size}`,
+						className: `bus-cluster bus-cluster--${size} ${busClusterOperatorClass(cluster)}`,
 						iconSize: L.point(dim, dim),
 					});
 				},
