@@ -22,6 +22,8 @@ const PRECACHE_URLS = [
 	"/icon-192.png",
 	"/icon-512.png",
 	"/icon.svg",
+	"/puca-jack-o.svg?v=transparent-1",
+	"/puca-sleeping.svg?v=transparent-1",
 	"/splash/iphone-17-pro-max.png",
 	"/splash/iphone-17.png",
 	"/splash/iphone-16-pro-max.png",

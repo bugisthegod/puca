@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
 	BUS_OPERATOR_INITIALS,
 	BUS_OPERATOR_LABEL,
-	BUS_SEARCH_OPERATORS,
 	displayEtaSeconds,
 	filterBusRoutes,
 	getBusDirections,
@@ -33,12 +32,7 @@ describe("BusSearchPanel smoke helpers", () => {
 		},
 	];
 
-	test("keeps all three bus operators visible in a stable order", () => {
-		expect(BUS_SEARCH_OPERATORS).toEqual([
-			"dublinbus",
-			"buseireann",
-			"goahead",
-		]);
+	test("keeps all three bus operator badges labelled", () => {
 		expect(BUS_OPERATOR_INITIALS).toEqual({
 			dublinbus: "DB",
 			buseireann: "BÉ",

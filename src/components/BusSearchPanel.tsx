@@ -7,13 +7,7 @@ import {
 	loadBusSearchSession,
 	saveBusSearchSession,
 } from "../session";
-import {
-	type BusOperator,
-	type BusRoute,
-	type BusShape,
-	OPERATORS,
-	type RealtimeHealth,
-} from "../types";
+import type { BusOperator, BusRoute, BusShape, RealtimeHealth } from "../types";
 import { collapseSelection } from "../utils";
 import FavStar from "./FavStar";
 
@@ -54,7 +48,6 @@ export type BusStopSummary = {
 	} | null;
 };
 
-export const BUS_SEARCH_OPERATORS: BusOperator[] = [...OPERATORS];
 export const BUS_OPERATOR_INITIALS: Record<BusOperator, string> = {
 	dublinbus: "DB",
 	buseireann: "BÉ",
