@@ -49,6 +49,9 @@ describe("bus marker icon spec", () => {
 			"bus-marker bus-marker--buseireann bus-marker--stale",
 		);
 		expect(spec.html).toContain("bus-puca");
+		expect(spec.html).toContain("<svg");
+		expect(spec.html).not.toContain("<img");
+		expect(spec.html).not.toContain("puca-jack-o.svg");
 		expect(spec.html).not.toContain("bus-icon");
 		expect(spec.iconSize).toEqual([44, 52]);
 		expect(spec.iconAnchor).toEqual([22, 26]);
