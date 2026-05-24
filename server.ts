@@ -6,6 +6,7 @@ import {
 } from "./src/api.ts";
 import {
 	getAllBusVehicles,
+	getAllOperatorsBusVehicles,
 	getAllTrainShapes,
 	getBusRouteShape,
 	getBusRoutes,
@@ -35,6 +36,7 @@ import {
 	withServerTiming,
 } from "./src/server/helpers.ts";
 import { hasOriginAccess, rateLimit } from "./src/server/rateLimit.ts";
+import { OPERATORS } from "./src/types.ts";
 import { isInServiceHours } from "./src/utils.ts";
 
 // Service worker cache version: bumped automatically per Fly deploy so PWA
@@ -90,6 +92,13 @@ Bun.serve({
 		"/public/icon-512.png": staticFile("./public/icon-512.png", 604800),
 		"/icon.svg": staticFile("./public/icon.svg", 604800),
 		"/public/icon.svg": staticFile("./public/icon.svg", 604800),
+		"/puca-jack-o.svg": staticFile("./public/puca-jack-o.svg", 604800),
+		"/public/puca-jack-o.svg": staticFile("./public/puca-jack-o.svg", 604800),
+		"/puca-sleeping.svg": staticFile("./public/puca-sleeping.svg", 604800),
+		"/public/puca-sleeping.svg": staticFile(
+			"./public/puca-sleeping.svg",
+			604800,
+		),
 		"/splash/iphone-17-pro-max.png": staticFile(
 			"./public/splash/iphone-17-pro-max.png",
 			604800,
@@ -268,15 +277,60 @@ Bun.serve({
 				return Response.json([], { status: 502 });
 			}
 		}),
+		"/api/bus/routes/all": rateLimit(() => {
+			return Response.json(
+				OPERATORS.flatMap((operator) =>
+					getBusRoutes(operator).map((route) => ({ ...route, operator })),
+				),
+				{
+					headers: { "Cache-Control": "public, max-age=3600" },
+				},
+			);
+		}),
 		"/api/bus/routes": rateLimit(async (req) => {
+			const url = new URL(req.url);
 			const operator = parseOperator(
-				new URL(req.url).searchParams.get("operator") ?? "dublinbus",
+				url.searchParams.get("operator") ?? "dublinbus",
 			);
 			if (!operator)
 				return Response.json({ error: "unknown operator" }, { status: 400 });
 			return Response.json(getBusRoutes(operator), {
 				headers: { "Cache-Control": "public, max-age=3600" }, // 1 hour; route list is static
 			});
+		}),
+		"/api/bus/vehicles/all": rateLimit(async () => {
+			const timer = createServerTimer();
+			const vehicleHeaders = {
+				"Cache-Control": "public, max-age=5, stale-while-revalidate=15",
+				...getBusVehicleRealtimeHeaders(),
+			};
+			if (!isInServiceHours("bus")) {
+				timer.mark("service_hours");
+				return Response.json([], {
+					headers: withServerTiming(
+						{
+							"Cache-Control": vehicleHeaders["Cache-Control"],
+						},
+						timer,
+					),
+				});
+			}
+			try {
+				const vehicles = await getAllOperatorsBusVehicles();
+				timer.mark("data");
+				logSlowRequest(timer, "http.bus_vehicles_all.slow", {
+					vehicle_count: vehicles.length,
+				});
+				return Response.json(vehicles, {
+					headers: withServerTiming(vehicleHeaders, timer),
+				});
+			} catch {
+				timer.mark("error");
+				return Response.json([], {
+					status: 502,
+					headers: withServerTiming(getBusVehicleRealtimeHeaders(), timer),
+				});
+			}
 		}),
 		"/api/bus/vehicles": rateLimit(async (req) => {
 			const timer = createServerTimer();

@@ -5,6 +5,7 @@ import type {
 	BusShape,
 	BusVehicle,
 	FocusContext,
+	RealtimeHealth,
 	Train,
 	TrainFocusSummary,
 } from "../types";
@@ -26,10 +27,37 @@ const EXTRAP_CAP = 35_000;
 // but avoids the per-frame setLatLng DOM cost of running at full 60 FPS.
 const TICK_INTERVAL_MS = 33;
 
+function busClusterOperatorClass(cluster: L.MarkerCluster): string {
+	const counts = {
+		dublinbus: 0,
+		buseireann: 0,
+		goahead: 0,
+	};
+	for (const marker of cluster.getAllChildMarkers()) {
+		const className = marker.getIcon().options.className ?? "";
+		if (className.includes("bus-marker--buseireann")) counts.buseireann++;
+		else if (className.includes("bus-marker--goahead")) counts.goahead++;
+		else counts.dublinbus++;
+	}
+	const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+	const [top, runnerUp] = entries;
+	if (!top || !runnerUp || top[1] === runnerUp[1])
+		return "bus-cluster--dublinbus";
+	return `bus-cluster--${top[0]}`;
+}
+
 interface UseVehicleMapOptions {
 	currentBusRoute?: string | null;
-	onSelectBusRoute?: (route: string, direction: string) => void;
-	onRouteJump?: (route: string, direction: string) => void;
+	onSelectBusRoute?: (
+		route: string,
+		direction: string,
+		operator?: BusOperator,
+	) => void;
+	onRouteJump?: (
+		route: string,
+		direction: string,
+		operator?: BusOperator,
+	) => void;
 	initialView?: MapView | null;
 	focusContext?: FocusContext | null;
 	onFocusSegmentStatus?: (status: "ok" | "unavailable") => void;
@@ -47,6 +75,7 @@ export function useVehicleMap(
 	busShape: BusShape = null,
 	busDirection: string | null = null,
 	busOperator: BusOperator = "dublinbus",
+	busRealtimeHealth: RealtimeHealth | null = null,
 	options: UseVehicleMapOptions = {},
 ): {
 	focusTrain: (
@@ -123,6 +152,7 @@ export function useVehicleMap(
 		busOperator,
 		mode,
 		currentBusRoute,
+		realtimeAgeSec: busRealtimeHealth?.ageSec ?? null,
 		onSelectBusRoute: onSelectBusRouteRef,
 		onRouteJump: onRouteJumpRef,
 		leafletMap,
@@ -138,8 +168,8 @@ export function useVehicleMap(
 		onStopsAwayChange: onBusFocusStopsAway,
 	});
 
-	// Bus container lifecycle — recreated on mode/operator/single-route change.
-	// - Default: MarkerClusterGroup (cluster icon closure captures operator color)
+	// Bus container lifecycle — recreated on mode/single-route change.
+	// - Default: MarkerClusterGroup for the mixed-operator all-bus view
 	// - Single-route mode: plain LayerGroup, no clustering for the handful of buses
 	useEffect(() => {
 		const map = leafletMap.current;
@@ -158,13 +188,6 @@ export function useVehicleMap(
 		if (singleRouteMode) {
 			busClusterLayer.current = L.layerGroup();
 		} else {
-			const operatorClass =
-				busOperator === "buseireann"
-					? "bus-cluster--buseireann"
-					: busOperator === "goahead"
-						? "bus-cluster--goahead"
-						: "";
-
 			busClusterLayer.current = L.markerClusterGroup({
 				showCoverageOnHover: false,
 				maxClusterRadius: (zoom) => (zoom < 12 ? 60 : zoom < 15 ? 45 : 30),
@@ -180,15 +203,14 @@ export function useVehicleMap(
 					const dim = size === "large" ? 46 : size === "medium" ? 38 : 30;
 					return L.divIcon({
 						html: `<span>${count}</span>`,
-						className:
-							`bus-cluster bus-cluster--${size} ${operatorClass}`.trim(),
+						className: `bus-cluster bus-cluster--${size} ${busClusterOperatorClass(cluster)}`,
 						iconSize: L.point(dim, dim),
 					});
 				},
 			});
 		}
 		busClusterLayer.current.addTo(map);
-	}, [mode, busOperator, singleRouteMode]);
+	}, [mode, singleRouteMode]);
 
 	// RAF tick loop — shared across trains + buses, reads from refs only.
 	useEffect(() => {

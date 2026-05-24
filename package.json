@@ -31,6 +31,7 @@
 		"fast-xml-parser": "^5.7.0",
 		"leaflet": "1.9.4",
 		"leaflet.markercluster": "1.5.3",
+		"lucide-preact": "^1.16.0",
 		"preact": "^10.29.1"
 	}
 }

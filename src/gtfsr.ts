@@ -15,6 +15,7 @@ import {
 import {
 	__testing,
 	getAllBusVehicles,
+	getAllOperatorsBusVehicles,
 	getBusStopArrivals,
 	getBusTripStops,
 	getBusVehiclesByRoute,
@@ -38,6 +39,7 @@ import {
 	type TripUpdate,
 } from "./gtfsr/trips";
 import type { GtfsVehiclePosition } from "./gtfsr/vehicles";
+import type { VehicleBounds } from "./types";
 
 export type { BusOperator as Operator, BusRoute, BusVehicle } from "./types";
 export type {
@@ -51,11 +53,13 @@ export type {
 	StopSearchResult,
 	StopTimeUpdate,
 	TripUpdate,
+	VehicleBounds,
 };
 export {
 	__testing,
 	decideStopArrival,
 	getAllBusVehicles,
+	getAllOperatorsBusVehicles,
 	getAllTrainShapes,
 	getBusRouteShape,
 	getBusRoutes,

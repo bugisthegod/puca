@@ -1,8 +1,27 @@
-import type { BusRoute, BusVehicle, BusOperator as Operator } from "../types";
+import type {
+	BusRoute,
+	BusVehicle,
+	BusOperator as Operator,
+	VehicleBounds,
+} from "../types";
 import { isTripEnded } from "./arrivals";
 import { getTripShapeMap, operatorRoutes } from "./schedules";
 import type { LiveTripData } from "./timing";
 import type { GtfsVehiclePosition } from "./vehicles";
+
+export type OperatorBusVehicle = BusVehicle & { operator: Operator };
+
+function vehicleInBounds(
+	vehicle: Pick<BusVehicle, "lat" | "lng">,
+	bounds: VehicleBounds,
+): boolean {
+	return (
+		vehicle.lat >= bounds.south &&
+		vehicle.lat <= bounds.north &&
+		vehicle.lng >= bounds.west &&
+		vehicle.lng <= bounds.east
+	);
+}
 
 export function getBusVehiclesByRouteFromCache({
 	operator,
@@ -64,6 +83,61 @@ export function getAllBusVehiclesFromCache({
 	return result;
 }
 
+export function getAllOperatorsBusVehiclesFromCache({
+	vehicles,
+	tripUpdates,
+	nowSec,
+	bounds,
+	includeTripIds = new Set(),
+}: {
+	vehicles: readonly GtfsVehiclePosition[];
+	tripUpdates: ReadonlyMap<string, LiveTripData>;
+	nowSec: number;
+	bounds?: VehicleBounds;
+	includeTripIds?: ReadonlySet<string>;
+}): OperatorBusVehicle[] {
+	const routeById = new Map<string, { operator: Operator; route: BusRoute }>();
+	for (const [operator, routes] of Object.entries(operatorRoutes) as [
+		Operator,
+		BusRoute[],
+	][]) {
+		for (const route of routes) {
+			// NTA route_id is treated as the global identity for a route across the
+			// combined VehiclePositions feed. If a duplicate ever appears, keep the
+			// first mapping deterministic rather than changing attribution by import
+			// order.
+			if (!routeById.has(route.id))
+				routeById.set(route.id, { operator, route });
+		}
+	}
+
+	const shapeMaps = new Map<Operator, Map<string, string>>();
+	const result: OperatorBusVehicle[] = [];
+	for (const v of vehicles) {
+		if (bounds && !vehicleInBounds(v, bounds) && !includeTripIds.has(v.tripId))
+			continue;
+		const match = routeById.get(v.routeId);
+		if (!match) continue;
+		let shapeMap = shapeMaps.get(match.operator);
+		if (!shapeMap) {
+			shapeMap = getTripShapeMap(match.operator);
+			shapeMaps.set(match.operator, shapeMap);
+		}
+		result.push({
+			...enrichBusVehicle(
+				match.operator,
+				v,
+				match.route,
+				shapeMap,
+				tripUpdates,
+				nowSec,
+			),
+			operator: match.operator,
+		});
+	}
+	return result;
+}
+
 function enrichBusVehicle(
 	operator: Operator,
 	vehicle: GtfsVehiclePosition,
@@ -74,6 +148,7 @@ function enrichBusVehicle(
 ): BusVehicle {
 	return {
 		...vehicle,
+		operator,
 		routeShortName: route.shortName,
 		shapeId: shapeMap.get(vehicle.tripId) ?? null,
 		stale: isTripEnded(operator, vehicle.tripId, nowSec, tripUpdates),

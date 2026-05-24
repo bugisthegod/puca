@@ -48,7 +48,7 @@ import type {
 	FocusContext,
 	TrainFocusSummary,
 } from "./types";
-import { type Filter, SERVICE_RESUME_LABEL } from "./utils";
+import type { Filter } from "./utils";
 import "./style.css";
 
 const LOW_LOCATION_ACCURACY_M = 500;
@@ -71,7 +71,7 @@ const needsCompassToggle =
 		.requestPermission === "function";
 
 function App() {
-	const { locale, t } = useLocale();
+	const { t } = useLocale();
 	const tourSteps: TourStep[] = [
 		{
 			title: t("tour.welcome.title"),
@@ -136,6 +136,7 @@ function App() {
 	const requestTrainEmptyNotice = useCallback(() => {
 		setTrainEmptyNoticeRequest((n) => n + 1);
 	}, []);
+	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
 	const {
 		trains,
 		buses,
@@ -143,7 +144,13 @@ function App() {
 		lastUpdatedAgeSec,
 		inService,
 		trainsLoaded,
-	} = useVehiclePolling(mode, busOperator, busRoute, busDirection);
+	} = useVehiclePolling(
+		mode,
+		busOperator,
+		busRoute,
+		busDirection,
+		focusContext?.tripId ?? null,
+	);
 	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
 		savedBusSearch.busSearchTab ?? "route",
 	);
@@ -158,19 +165,26 @@ function App() {
 	);
 	const [trainFocusSummary, setTrainFocusSummary] =
 		useState<TrainFocusSummary | null>(null);
-	const [infoPanelDrilledIn, setInfoPanelDrilledIn] = useState(false);
+	const lastUpdated =
+		lastUpdatedAgeSec === null
+			? t("info.updated.empty")
+			: t("info.updated", {
+					time:
+						lastUpdatedAgeSec <= 1
+							? t("info.updated.justnow")
+							: t("info.updated.seconds", { n: lastUpdatedAgeSec }),
+				});
 	const [arrivalFocusResetSignal, setArrivalFocusResetSignal] = useState(0);
 	const [arrivalFocusStatus, setArrivalFocusStatus] = useState<
 		"idle" | "pending" | "ok" | "unavailable"
 	>("idle");
 	const [panelCollapsed, setPanelCollapsed] = useState(true);
-	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
 	const [busFocusStopsAway, setBusFocusStopsAway] = useState<{
 		tripId: string;
 		stopsAway: number | null;
 	} | null>(null);
 	const [busShape, setBusShape] = useState<BusShape>(null);
-	const [filter, setFilter] = useState<Filter>(savedSession.filter ?? "all");
+	const filter: Filter = "all";
 	const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
 	const mapRef = useRef<HTMLDivElement>(null);
 
@@ -185,6 +199,15 @@ function App() {
 	const visibleBuses = focusContext
 		? buses.filter((b) => b.tripId === focusContext.tripId)
 		: buses;
+	const busRouteSummary =
+		mode === "bus" && busRoute && busDirection
+			? {
+					routeShortName: busRoute,
+					headsign: busShape?.[busDirection]?.headsign ?? busDirection,
+					operator: busOperator,
+					vehicleCount: buses.length,
+				}
+			: null;
 
 	const clearBusFocusState = useCallback(() => {
 		setBusStopId(null);
@@ -197,7 +220,6 @@ function App() {
 	}, []);
 
 	const clearBusArrivalFocusState = useCallback(() => {
-		setBusStopSummary(null);
 		setFocusContext(null);
 		setBusFocusStopsAway(null);
 		setArrivalFocusResetSignal((n) => n + 1);
@@ -211,7 +233,6 @@ function App() {
 			setBusDirection(direction);
 			setBusSearchTab("route");
 			clearBusFocusState();
-			setInfoPanelDrilledIn(true);
 			setPanelCollapsed(false);
 		},
 		[clearBusFocusState],
@@ -236,16 +257,18 @@ function App() {
 		busShape,
 		busDirection,
 		busOperator,
+		busRealtimeHealth,
 		{
 			currentBusRoute: busRoute,
-			onSelectBusRoute: (route, direction) => {
-				showBusRouteOverview(route, direction);
+			onSelectBusRoute: (route, direction, operator) => {
+				showBusRouteOverview(route, direction, operator);
 			},
-			onRouteJump: (route, direction) => {
-				showBusRouteOverview(route, direction);
+			onRouteJump: (route, direction, operator) => {
+				showBusRouteOverview(route, direction, operator);
 			},
 			initialView: savedSession.mapView ?? null,
 			focusContext,
+			onTrainFocusSummary: setTrainFocusSummary,
 			onFocusSegmentStatus: (status) => {
 				setArrivalFocusStatus(status);
 			},
@@ -253,10 +276,6 @@ function App() {
 				setBusFocusStopsAway(
 					focusContext ? { tripId: focusContext.tripId, stopsAway } : null,
 				);
-			},
-			onTrainFocusSummary: (summary) => {
-				setTrainFocusSummary(summary);
-				if (summary) setInfoPanelDrilledIn(true);
 			},
 		},
 	);
@@ -491,19 +510,6 @@ function App() {
 		};
 	}, [busRoute, busOperator]);
 
-	const handleBusOperatorChange = useCallback(
-		(op: BusOperator) => {
-			if (op === busOperatorRef.current) return;
-			trackEvent(`event/bus/operator/${op}`);
-			setBusOperator(op);
-			setBusRoute(null);
-			setBusDirection(null);
-			clearBusFocusState();
-			setPanelCollapsed(true);
-		},
-		[clearBusFocusState],
-	);
-
 	const handlePickBusFavorite = useCallback(
 		(f: BusFavorite) => {
 			setMode("bus");
@@ -537,6 +543,7 @@ function App() {
 		(codes: string[]) => {
 			trackEvent("event/search/train");
 			setSearchCodes(codes.length > 0 ? codes : []);
+			setTrainFocusSummary(null);
 			clearTrainFocus();
 		},
 		[clearTrainFocus],
@@ -544,6 +551,7 @@ function App() {
 
 	const handleClearTrainSearch = useCallback(() => {
 		setSearchCodes(null);
+		setTrainFocusSummary(null);
 		clearTrainFocus();
 	}, [clearTrainFocus]);
 
@@ -558,14 +566,12 @@ function App() {
 
 	const handleShowAllTrains = useCallback(() => {
 		setSearchCodes(null);
+		setTrainFocusSummary(null);
 		clearTrainFocus();
 	}, [clearTrainFocus]);
 
 	const handlePickStopFavorite = useCallback((s: BusStopFavorite) => {
 		setMode((current) => (current === "bus" ? current : "bus"));
-		if (s.operator !== busOperatorRef.current) {
-			setBusOperator(s.operator);
-		}
 		setBusRoute(null);
 		setBusDirection(null);
 		setFocusContext(null);
@@ -587,7 +593,6 @@ function App() {
 			setBusSearchTab("route");
 			clearBusFocusState();
 			if (r !== null) {
-				setInfoPanelDrilledIn(true);
 				setPanelCollapsed(false);
 			}
 		},
@@ -618,7 +623,6 @@ function App() {
 		if (tab === "route") {
 			setFocusContext(null);
 			setArrivalFocusResetSignal((n) => n + 1);
-			setInfoPanelDrilledIn(false);
 			setArrivalFocusStatus("idle");
 		}
 	}, []);
@@ -629,13 +633,6 @@ function App() {
 			setBusStopId(id);
 			setBusStopOperator(op);
 			setArrivalFocusStatus("idle");
-			// Picking a stop in an operator different from the current route-mode
-			// default would otherwise leave the all-fleet browse pinned to the old
-			// operator — sync it so a tab back to route mode shows buses near the
-			// chosen stop.
-			if (op && op !== busOperatorRef.current) {
-				setBusOperator(op);
-			}
 		},
 		[],
 	);
@@ -650,12 +647,10 @@ function App() {
 				React.ComponentProps<typeof BusSearchPanel>["onPickArrival"]
 			>[2],
 		) => {
-			// Clear any selected route so the user lands in all-buses mode — the
-			// target tripId is included in fetchAllBuses, so the focus effect can
-			// find the marker without drawing the whole polyline.
+			// Clear any selected route so the user lands in all-buses mode; the
+			// full vehicle response already includes the target trip for focusing.
 			setBusRoute(null);
 			setBusDirection(null);
-			setInfoPanelDrilledIn(true);
 			setArrivalFocusStatus("pending");
 			setBusFocusStopsAway({
 				tripId: arrival.tripId,
@@ -684,10 +679,7 @@ function App() {
 	const handleStopSummaryChange = useCallback(
 		(summary: BusStopSummary | null) => {
 			setBusStopSummary(summary);
-			if (summary) {
-				setBusSearchTab("stop");
-				setInfoPanelDrilledIn(true);
-			}
+			if (summary) setBusSearchTab("stop");
 		},
 		[],
 	);
@@ -718,18 +710,6 @@ function App() {
 		[clearTrainFocus],
 	);
 
-	const vehicleCount =
-		mode === "train"
-			? trains.filter((t) => t.status === "R").length
-			: buses.length;
-	const lastUpdatedLabel = useMemo(() => {
-		if (lastUpdatedAgeSec === null) return t("info.updated.empty");
-		const time =
-			lastUpdatedAgeSec === 0
-				? t("info.updated.justnow")
-				: t("info.updated.seconds", { n: lastUpdatedAgeSec });
-		return t("info.updated", { time });
-	}, [lastUpdatedAgeSec, locale, t]);
 	const showNoTrainPositions = mode === "train" && trainEmptyNoticeVisible;
 	const showTrainEmptyNoticeIfUnavailable = useCallback(() => {
 		requestTrainEmptyNotice();
@@ -900,7 +880,6 @@ function App() {
 					busShape={busShape}
 					isFavorite={busIsFav}
 					onToggleFavorite={onToggleBusFav}
-					busOperator={busOperator}
 					busSearchTab={busSearchTab}
 					onTabChange={handleBusTabChange}
 					busStopId={busStopId}
@@ -926,7 +905,6 @@ function App() {
 						setBusRoute(null);
 						setBusDirection(null);
 						clearBusArrivalFocusState();
-						setInfoPanelDrilledIn(true);
 					}}
 				>
 					&larr; {t("bus.back.all")}
@@ -942,24 +920,14 @@ function App() {
 				</button>
 			)}
 			<InfoPanel
-				vehicleCount={vehicleCount}
-				lastUpdated={lastUpdatedLabel}
+				lastUpdated={lastUpdated}
 				mode={mode}
-				busSearchTab={busSearchTab}
-				filter={filter}
 				inService={inService}
-				resumeLabel={SERVICE_RESUME_LABEL}
-				busOperator={busOperator}
+				onModeChange={handleModeChange}
+				busSearchTab={busSearchTab}
+				busRouteSummary={busRouteSummary}
 				busStopSummary={busStopSummary}
 				trainFocusSummary={trainFocusSummary}
-				drilledIn={infoPanelDrilledIn}
-				onDrilledInChange={(next) => {
-					setInfoPanelDrilledIn(next);
-					if (!next && mode === "train") clearTrainFocus();
-				}}
-				onModeChange={handleModeChange}
-				onFilterChange={setFilter}
-				onBusOperatorChange={handleBusOperatorChange}
 			/>
 		</>
 	);

@@ -1,4 +1,8 @@
-import type { BusVehicle, BusOperator as Operator } from "../types";
+import type {
+	BusVehicle,
+	BusOperator as Operator,
+	VehicleBounds,
+} from "../types";
 import { dublinSecondsSinceMidnight } from "../utils";
 import {
 	type BusStopArrival,
@@ -6,7 +10,9 @@ import {
 } from "./arrivals";
 import {
 	getAllBusVehiclesFromCache,
+	getAllOperatorsBusVehiclesFromCache,
 	getBusVehiclesByRouteFromCache,
+	type OperatorBusVehicle,
 } from "./busVehicles";
 import { getBusTripStopsFromCache, type TripUpdate } from "./trips";
 import {
@@ -99,6 +105,19 @@ export async function getAllBusVehicles(
 		vehicles: getCachedVehicles({ refreshIfStale: true }),
 		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
 		nowSec: dublinSecondsSinceMidnight(),
+	});
+}
+
+export async function getAllOperatorsBusVehicles(
+	bounds?: VehicleBounds,
+	includeTripIds: readonly string[] = [],
+): Promise<OperatorBusVehicle[]> {
+	return getAllOperatorsBusVehiclesFromCache({
+		vehicles: getCachedVehicles({ refreshIfStale: true }),
+		tripUpdates: getCachedTripUpdates({ refreshIfStale: true }),
+		nowSec: dublinSecondsSinceMidnight(),
+		bounds,
+		includeTripIds: new Set(includeTripIds),
 	});
 }
 

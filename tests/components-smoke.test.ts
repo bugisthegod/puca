@@ -8,11 +8,7 @@ import {
 	getBusDirections,
 	type RouteWithOperator,
 } from "../src/components/BusSearchPanel";
-import {
-	INFO_BUS_OPERATORS,
-	INFO_FILTERS,
-	trainFocusSummaryMeta,
-} from "../src/components/InfoPanel";
+import { trainFocusSummaryMeta } from "../src/components/InfoPanel";
 import { t } from "../src/i18n";
 
 describe("BusSearchPanel smoke helpers", () => {
@@ -93,32 +89,7 @@ describe("BusSearchPanel smoke helpers", () => {
 	});
 });
 
-describe("InfoPanel smoke constants", () => {
-	test("keeps train filters and bus operators in the expected UI order", () => {
-		expect(INFO_FILTERS.map((f) => f.value)).toEqual([
-			"all",
-			"dart",
-			"commuter",
-			"intercity",
-		]);
-		expect(INFO_FILTERS.map((f) => f.label)).toEqual([
-			"All",
-			"DART",
-			"Commuter",
-			"Intercity",
-		]);
-		expect(INFO_BUS_OPERATORS.map((op) => op.value)).toEqual([
-			"dublinbus",
-			"buseireann",
-			"goahead",
-		]);
-		expect(INFO_BUS_OPERATORS.map((op) => op.label)).toEqual([
-			"Dublin Bus",
-			"Bus Éireann",
-			"Go-Ahead",
-		]);
-	});
-
+describe("InfoPanel smoke helpers", () => {
 	test("uses departure copy for train summaries at the origin stop", () => {
 		expect(
 			trainFocusSummaryMeta(

@@ -67,6 +67,13 @@ export type RealtimeHealth = {
 	ageSec: number | null;
 };
 
+export type VehicleBounds = {
+	north: number;
+	south: number;
+	east: number;
+	west: number;
+};
+
 export type BusRoute = {
 	id: string;
 	shortName: string;
@@ -111,6 +118,7 @@ export type FocusContext = {
 
 export type BusVehicle = {
 	tripId: string;
+	operator?: BusOperator;
 	routeId: string;
 	routeShortName: string;
 	lat: number;
