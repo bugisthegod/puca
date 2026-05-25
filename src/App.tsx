@@ -45,8 +45,10 @@ import { registerServiceWorker } from "./sw-register";
 import type {
 	BusOperator,
 	BusShape,
+	BusVehicle,
 	FocusContext,
 	TrainFocusSummary,
+	VehicleBounds,
 } from "./types";
 import type { Filter } from "./utils";
 import "./style.css";
@@ -57,6 +59,25 @@ const savedSession = loadSession();
 const savedBusSearch = loadBusSearchSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
+
+function busInBounds(
+	bus: Pick<BusVehicle, "lat" | "lng">,
+	bounds: VehicleBounds,
+): boolean {
+	return (
+		bus.lat >= bounds.south &&
+		bus.lat <= bounds.north &&
+		bus.lng >= bounds.west &&
+		bus.lng <= bounds.east
+	);
+}
+
+function boundsSignature(bounds: VehicleBounds | null): string | null {
+	if (!bounds) return null;
+	return [bounds.north, bounds.south, bounds.east, bounds.west]
+		.map((n) => n.toFixed(5))
+		.join(",");
+}
 
 // Clean up deprecated localStorage keys from removed features.
 cleanupDeprecatedSettings();
@@ -137,6 +158,18 @@ function App() {
 		setTrainEmptyNoticeRequest((n) => n + 1);
 	}, []);
 	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
+	const [busViewportBounds, setBusViewportBounds] =
+		useState<VehicleBounds | null>(null);
+	const busViewportBoundsSignatureRef = useRef<string | null>(null);
+	const handleBusViewportBoundsChange = useCallback(
+		(bounds: VehicleBounds | null) => {
+			const signature = boundsSignature(bounds);
+			if (signature === busViewportBoundsSignatureRef.current) return;
+			busViewportBoundsSignatureRef.current = signature;
+			setBusViewportBounds(bounds);
+		},
+		[],
+	);
 	const {
 		trains,
 		buses,
@@ -196,9 +229,16 @@ function App() {
 	// When a stop-arrival is focused, hide every other bus from the map so the
 	// user sees only their bus + the partial route to their stop. Flipping back
 	// to full fleet is one click on the "All buses" button.
-	const visibleBuses = focusContext
-		? buses.filter((b) => b.tripId === focusContext.tripId)
-		: buses;
+	const visibleBuses = useMemo(() => {
+		if (focusContext) {
+			return buses.filter((b) => b.tripId === focusContext.tripId);
+		}
+		if (mode === "bus" && !busRoute) {
+			if (!busViewportBounds) return [];
+			return buses.filter((b) => busInBounds(b, busViewportBounds));
+		}
+		return buses;
+	}, [buses, busRoute, busViewportBounds, focusContext, mode]);
 	const busRouteSummary =
 		mode === "bus" && busRoute && busDirection
 			? {
@@ -268,6 +308,7 @@ function App() {
 			},
 			initialView: savedSession.mapView ?? null,
 			focusContext,
+			onBusViewportBoundsChange: handleBusViewportBoundsChange,
 			onTrainFocusSummary: setTrainFocusSummary,
 			onFocusSegmentStatus: (status) => {
 				setArrivalFocusStatus(status);
