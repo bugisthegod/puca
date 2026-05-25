@@ -3,7 +3,7 @@
 Generate src/data/goahead-stops.json: { stop_id: { name, lat, lng } }
 for all stops used by Go-Ahead Ireland trips.
 
-Go-Ahead Ireland agency_ids in this GTFS feed: 7778006 and 7778021
+Go-Ahead Ireland agency_ids in this GTFS feed: 3 and 03C
 """
 import csv
 import json
@@ -14,7 +14,7 @@ GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"
 OUT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data", "goahead-stops.json"))
 
 # Both agency_id values for Go-Ahead Ireland in this feed
-AGENCY_IDS = {"7778006", "7778021"}
+AGENCY_IDS = {"3", "03C"}
 
 
 def main():

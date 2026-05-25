@@ -31,12 +31,12 @@ DB_FILES = {
 }
 
 AGENCY_TO_OPERATOR = {
-    "7778019": "dublinbus",
-    "7778020": "buseireann",
-    "7778008": "buseireann",
-    "7778021": "goahead",
-    "7778006": "goahead",
-    "7778017": "train",
+    "1": "dublinbus",
+    "2": "buseireann",
+    "WFRD": "buseireann",
+    "3": "goahead",
+    "03C": "goahead",
+    "IR": "train",
 }
 
 BUS_OPERATORS = ("dublinbus", "buseireann", "goahead")

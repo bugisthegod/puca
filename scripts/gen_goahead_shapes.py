@@ -4,7 +4,7 @@ Generate Go-Ahead Ireland static data files:
   src/data/goahead-shapes.json   — polylines per route+direction (with stops)
   src/data/goahead-routes.json   — route metadata list
 
-Go-Ahead Ireland agency_ids in this GTFS feed: 7778006 and 7778021
+Go-Ahead Ireland agency_ids in this GTFS feed: 3 and 03C
 (Two entries exist in agency.txt for Go-Ahead Ireland.)
 
 Strategy (mirrors gen_buseireann_shapes.py):
@@ -28,7 +28,7 @@ OUT_SHAPES = f"{DATA_DIR}/goahead-shapes.json"
 OUT_ROUTES = f"{DATA_DIR}/goahead-routes.json"
 
 # Both agency_id values for Go-Ahead Ireland in this feed
-AGENCY_IDS = {"7778006", "7778021"}
+AGENCY_IDS = {"3", "03C"}
 
 RDP_TOLERANCE_M = 20.0
 EARTH_RADIUS_M = 6_371_000.0

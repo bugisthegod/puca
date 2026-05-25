@@ -6,7 +6,7 @@ Schema (identical to bus-schedule.db and buseireann-schedule.db):
   stop_times(trip_id TEXT, stop_sequence INTEGER, stop_id TEXT, arrival_sec INTEGER,
              PRIMARY KEY (trip_id, stop_sequence))
 
-Go-Ahead Ireland agency_ids in this GTFS feed: 7778006 and 7778021
+Go-Ahead Ireland agency_ids in this GTFS feed: 3 and 03C
 """
 import csv
 import os
@@ -21,7 +21,7 @@ OUT_DB = os.path.normpath(
 )
 
 # Both agency_id values for Go-Ahead Ireland in this feed
-AGENCY_IDS = {"7778006", "7778021"}
+AGENCY_IDS = {"3", "03C"}
 BATCH_SIZE = 50_000
 
 

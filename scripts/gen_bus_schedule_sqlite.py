@@ -11,7 +11,7 @@ STOP_TIMES_FILE = f"{GTFS_DIR}/stop_times.txt"
 OUT_DB = os.path.join(os.path.dirname(__file__), "../src/data/bus-schedule.db")
 BATCH_SIZE = 50_000
 
-AGENCY_ID = "7778019"
+AGENCY_IDS = {"1"}
 
 
 def parse_arrival_sec(t: str) -> int:
@@ -26,7 +26,7 @@ def main():
     dublin_bus_route_ids: set[str] = set()
     with open(ROUTES_FILE, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            if row["agency_id"] == AGENCY_ID:
+            if row["agency_id"] in AGENCY_IDS:
                 dublin_bus_route_ids.add(row["route_id"])
     print(f"  Dublin Bus routes: {len(dublin_bus_route_ids):,}")
 

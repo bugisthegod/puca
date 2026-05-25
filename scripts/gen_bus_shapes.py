@@ -4,7 +4,7 @@ Generate Dublin Bus static data files:
   src/data/dublinbus-shapes.json   — polylines per route+direction (with stops)
   src/data/dublinbus-routes.json   — route metadata list
 
-Dublin Bus agency_id in this GTFS feed: 7778019
+Dublin Bus agency_id in this GTFS feed: 1
 
 Strategy:
   - For each (route_id, direction_id), pick the MODAL shape_id — the shape
@@ -43,7 +43,7 @@ OUT_SHAPES = f"{DATA_DIR}/dublinbus-shapes.json"
 OUT_ROUTES = f"{DATA_DIR}/dublinbus-routes.json"
 OUT_VARIANTS = f"{DATA_DIR}/dublinbus-variants.json"
 
-AGENCY_ID = "7778019"
+AGENCY_IDS = {"1"}
 
 RDP_TOLERANCE_M = 20.0
 EARTH_RADIUS_M = 6_371_000.0
@@ -179,7 +179,7 @@ def main():
     db_routes: dict[str, dict] = {}  # route_id -> {shortName, longName}
     with open(f"{GTFS_DIR}/routes.txt", newline="") as f:
         for row in csv.DictReader(f):
-            if row["agency_id"] == AGENCY_ID:
+            if row["agency_id"] in AGENCY_IDS:
                 db_routes[row["route_id"]] = {
                     "shortName": row["route_short_name"].strip(),
                     "longName": row["route_long_name"].strip(),

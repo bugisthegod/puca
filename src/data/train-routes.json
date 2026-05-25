@@ -1,97 +1,97 @@
 [
-	{
-		"id": "BRAY-HOWTH-I",
-		"shortName": "DART",
-		"longName": "Bray - Howth"
-	},
-	{
-		"id": "DUB-BFT-I",
-		"shortName": "rail",
-		"longName": "Belfast - Dublin"
-	},
-	{
-		"id": "DUB-BFT-O",
-		"shortName": "rail",
-		"longName": "Dublin - Belfast"
-	},
-	{
-		"id": "DUB-CORK-O",
-		"shortName": "InterCity",
-		"longName": "Dublin - Cork"
-	},
-	{
-		"id": "DUB-DRO/DUN-O",
-		"shortName": "rail",
-		"longName": "Dublin - Drogheda/Dundalk"
-	},
-	{
-		"id": "DUB-EUROPORT-I",
-		"shortName": "rail",
-		"longName": "Dublin - Europort"
-	},
-	{
-		"id": "DUB-GALWAY-O",
-		"shortName": "rail",
-		"longName": "Dublin - Galway"
-	},
-	{
-		"id": "DUB-LIMERICK-I",
-		"shortName": "rail",
-		"longName": "Dublin - Limerick"
-	},
-	{
-		"id": "DUB-MAYNOOTH-O",
-		"shortName": "rail",
-		"longName": "Dublin - Maynooth"
-	},
-	{
-		"id": "DUB-NEN-LIM-I",
-		"shortName": "rail",
-		"longName": "Dublin - Limerick via Nenagh"
-	},
-	{
-		"id": "DUB-PORTLAOIS-O",
-		"shortName": "Commuter",
-		"longName": "Dublin - Portlaoise"
-	},
-	{
-		"id": "DUB-SLIGO-O",
-		"shortName": "rail",
-		"longName": "Dublin - Sligo"
-	},
-	{
-		"id": "DUB-TRALEE-O",
-		"shortName": "rail",
-		"longName": "Dublin - Tralee"
-	},
-	{
-		"id": "DUB-WATERFORD-I",
-		"shortName": "rail",
-		"longName": "Dublin - Waterford"
-	},
-	{
-		"id": "DUB-WESTPORT-I",
-		"shortName": "rail",
-		"longName": "Dublin - Westport"
-	},
-	{
-		"id": "GALWAY-LIM-I",
-		"shortName": "rail",
-		"longName": "Limerick - Galway"
-	},
-	{
-		"id": "LIM-BALLYBROP-I",
-		"shortName": "rail",
-		"longName": "Limerick - Ballybrophy"
-	},
-	{
-		"id": "LIMERICK-WAT-O",
-		"shortName": "rail",
-		"longName": "Waterford - Limerick"
-	},
-	{
-		"id": "MAL-COBH-O",
-		"shortName": "rail",
-		"longName": "Mallow - Cobh"
-	}
+  {
+    "id": "BRAY-HOWTH-I",
+    "shortName": "DART",
+    "longName": "Bray - Howth"
+  },
+  {
+    "id": "DUB-BFT-I",
+    "shortName": "rail",
+    "longName": "Belfast - Dublin"
+  },
+  {
+    "id": "DUB-BFT-O",
+    "shortName": "rail",
+    "longName": "Dublin - Belfast"
+  },
+  {
+    "id": "DUB-CORK-O",
+    "shortName": "InterCity",
+    "longName": "Dublin - Cork"
+  },
+  {
+    "id": "DUB-DRO/DUN-O",
+    "shortName": "rail",
+    "longName": "Dublin - Drogheda/Dundalk"
+  },
+  {
+    "id": "DUB-EUROPORT-I",
+    "shortName": "rail",
+    "longName": "Dublin - Europort"
+  },
+  {
+    "id": "DUB-GALWAY-O",
+    "shortName": "rail",
+    "longName": "Dublin - Galway"
+  },
+  {
+    "id": "DUB-LIMERICK-I",
+    "shortName": "rail",
+    "longName": "Dublin - Limerick"
+  },
+  {
+    "id": "DUB-MAYNOOTH-O",
+    "shortName": "rail",
+    "longName": "Dublin - Maynooth"
+  },
+  {
+    "id": "DUB-NEN-LIM-I",
+    "shortName": "rail",
+    "longName": "Dublin - Limerick via Nenagh"
+  },
+  {
+    "id": "DUB-PORTLAOIS-O",
+    "shortName": "Commuter",
+    "longName": "Dublin - Portlaoise"
+  },
+  {
+    "id": "DUB-SLIGO-O",
+    "shortName": "rail",
+    "longName": "Dublin - Sligo"
+  },
+  {
+    "id": "DUB-TRALEE-O",
+    "shortName": "rail",
+    "longName": "Dublin - Tralee"
+  },
+  {
+    "id": "DUB-WATERFORD-I",
+    "shortName": "rail",
+    "longName": "Dublin - Waterford"
+  },
+  {
+    "id": "DUB-WESTPORT-I",
+    "shortName": "rail",
+    "longName": "Dublin - Westport"
+  },
+  {
+    "id": "GALWAY-LIM-I",
+    "shortName": "rail",
+    "longName": "Limerick - Galway"
+  },
+  {
+    "id": "LIM-BALLYBROP-I",
+    "shortName": "rail",
+    "longName": "Limerick - Ballybrophy"
+  },
+  {
+    "id": "LIMERICK-WAT-O",
+    "shortName": "rail",
+    "longName": "Waterford - Limerick"
+  },
+  {
+    "id": "MAL-COBH-O",
+    "shortName": "rail",
+    "longName": "Mallow - Cobh"
+  }
 ]

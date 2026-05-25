@@ -7,7 +7,7 @@ Generate Irish Rail static data files:
   src/data/train-routes-by-endpoints.json — "origin|dest" -> {routeId, directionId}
 
 Uses GTFS static data present at the project's gtfs/ directory.
-Irish Rail agency_id: 7778017
+Irish Rail agency_id: IR
 
 Strategy (mirrors gen_bus_shapes.py):
   - For each (route_id, direction_id), pick the trip with the most stops (longest trip).
@@ -31,7 +31,7 @@ OUT_ROUTES = f"{DATA_DIR}/train-routes.json"
 OUT_STOPS = f"{DATA_DIR}/train-stops.json"
 OUT_ENDPOINTS = f"{DATA_DIR}/train-routes-by-endpoints.json"
 
-AGENCY_ID = "7778017"
+AGENCY_IDS = {"IR"}
 
 # RDP tolerance in degrees — 15m ≈ 0.000135 deg at Irish latitudes (cos(53°) ~ 0.60)
 # We use perpendicular distance in equirectangular space, scaled by cos(lat).
@@ -92,7 +92,7 @@ def main():
     rail_routes: dict[str, dict] = {}  # route_id -> {short_name, long_name}
     with open(f"{GTFS_DIR}/routes.txt", newline="") as f:
         for row in csv.DictReader(f):
-            if row["agency_id"] == AGENCY_ID:
+            if row["agency_id"] in AGENCY_IDS:
                 rail_routes[row["route_id"]] = {
                     "shortName": row["route_short_name"].strip(),
                     "longName": row["route_long_name"].strip(),
