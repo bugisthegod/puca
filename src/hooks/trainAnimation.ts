@@ -9,6 +9,7 @@ export function tickTrainMarker(entry: TrainMarkerEntry, now: number): void {
 	if (
 		!entry.offRoute &&
 		entry.routeLine &&
+		entry.routeLookup &&
 		entry.routeLengthMeters !== null &&
 		entry.distanceAtPing !== null &&
 		entry.targetDistanceAlongRoute !== null &&
@@ -21,10 +22,8 @@ export function tickTrainMarker(entry: TrainMarkerEntry, now: number): void {
 			entry.targetDistanceAlongRoute + TRAIN_EXTRAP_BUFFER_METERS,
 		);
 		const clamped = Math.max(0, Math.min(capped, entry.routeLengthMeters));
-		if (entry.routeLookup) {
-			const [lat, lng] = alongLookup(entry.routeLookup, clamped);
-			entry.marker.setLatLng([lat, lng]);
-		}
+		const [lat, lng] = alongLookup(entry.routeLookup, clamped);
+		entry.marker.setLatLng([lat, lng]);
 		return;
 	}
 

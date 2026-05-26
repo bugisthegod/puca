@@ -129,6 +129,50 @@ describe("busAnimationDurationMs", () => {
 		expect(entry.settled).toBe(true);
 	});
 
+	test("ticks an on-route bus marker along the route and skips duplicate renders", () => {
+		const { marker, calls } = markerWithRecorder();
+		const entry: BusMarkerEntry = {
+			marker,
+			bus: {
+				tripId: "trip-1",
+				operator: "dublinbus",
+				routeId: "route-1",
+				routeShortName: "1",
+				lat: 0,
+				lng: 0,
+				bearing: null,
+				speed: null,
+				timestamp: 100,
+				label: "Bus 1",
+				directionId: 0,
+				shapeId: null,
+				stale: false,
+			},
+			targetLat: 0,
+			targetLng: 0,
+			correctionFromLat: 0,
+			correctionFromLng: 0,
+			correctionStartTime: 0,
+			routeLine: null,
+			routeLookup: new Float64Array([0, 0, 0, 100, 1, 1]),
+			routeLengthMeters: 100,
+			prevDistance: 0,
+			currentDistance: 100,
+			animStartPerfMs: 0,
+			animDurationMs: 1000,
+			offRoute: false,
+			settled: false,
+			lastRenderedDistance: null,
+			shapeId: null,
+		};
+
+		tickBusMarker(entry, 500);
+		tickBusMarker(entry, 500);
+
+		expect(calls).toEqual([[0.5, 0.5]]);
+		expect(entry.lastRenderedDistance).toBe(50);
+	});
+
 	test("ticks an off-route train marker with velocity extrapolation", () => {
 		const { marker, calls } = markerWithRecorder();
 		const entry: TrainMarkerEntry = {
@@ -159,6 +203,82 @@ describe("busAnimationDurationMs", () => {
 			pathSpeedMps: 0,
 			lastPingTime: null,
 			offRoute: true,
+			originDestKey: null,
+		};
+
+		tickTrainMarker(entry, 2000);
+
+		expect(calls).toEqual([[2, 4]]);
+	});
+
+	test("ticks an on-route train marker with capped route extrapolation", () => {
+		const { marker, calls } = markerWithRecorder();
+		const entry: TrainMarkerEntry = {
+			marker,
+			lastColor: "green",
+			train: {
+				code: "E123",
+				lat: 0,
+				lng: 0,
+				status: "R",
+				message: "",
+				direction: "Northbound",
+				date: "09 May 2026",
+			},
+			targetLat: 0,
+			targetLng: 0,
+			velocityLat: 0,
+			velocityLng: 0,
+			lastUpdateTime: 0,
+			correctionFromLat: 0,
+			correctionFromLng: 0,
+			correctionStartTime: 0,
+			routeLine: {} as TrainMarkerEntry["routeLine"],
+			routeLookup: new Float64Array([0, 0, 0, 100, 1, 1]),
+			routeLengthMeters: 100,
+			distanceAtPing: 10,
+			targetDistanceAlongRoute: 20,
+			pathSpeedMps: 100,
+			lastPingTime: 0,
+			offRoute: false,
+			originDestKey: null,
+		};
+
+		tickTrainMarker(entry, 1_000);
+
+		expect(calls).toEqual([[1, 1]]);
+	});
+
+	test("falls back to train velocity path when route lookup is missing", () => {
+		const { marker, calls } = markerWithRecorder();
+		const entry: TrainMarkerEntry = {
+			marker,
+			lastColor: "green",
+			train: {
+				code: "E123",
+				lat: 1,
+				lng: 2,
+				status: "R",
+				message: "",
+				direction: "Northbound",
+				date: "09 May 2026",
+			},
+			targetLat: 1,
+			targetLng: 2,
+			velocityLat: 0.001,
+			velocityLng: 0.002,
+			lastUpdateTime: 1000,
+			correctionFromLat: 1,
+			correctionFromLng: 2,
+			correctionStartTime: 0,
+			routeLine: {} as TrainMarkerEntry["routeLine"],
+			routeLookup: null,
+			routeLengthMeters: 100,
+			distanceAtPing: 10,
+			targetDistanceAlongRoute: 20,
+			pathSpeedMps: 100,
+			lastPingTime: 0,
+			offRoute: false,
 			originDestKey: null,
 		};
 

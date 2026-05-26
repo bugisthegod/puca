@@ -1,6 +1,8 @@
 import { alongLookup } from "./routeProjection";
 import type { BusMarkerEntry } from "./useBusMarkers";
 
+const BLEND_DURATION_MS = 1500;
+
 export type BusAnimationDurationStrategy = (
 	prevTimestamp: number,
 	nextTimestamp: number,
@@ -69,8 +71,8 @@ export function tickBusMarker(entry: BusMarkerEntry, now: number): void {
 	// Off-route fallback: blend lat/lng over BLEND_DURATION, then settle.
 	if (entry.settled) return;
 	const blendElapsed = now - entry.correctionStartTime;
-	if (blendElapsed < 1500) {
-		const t = blendElapsed / 1500;
+	if (blendElapsed < BLEND_DURATION_MS) {
+		const t = blendElapsed / BLEND_DURATION_MS;
 		const ease = 1 - (1 - t) * (1 - t);
 		const lat =
 			entry.correctionFromLat +
