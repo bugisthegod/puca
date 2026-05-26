@@ -1,29 +1,40 @@
 import { describe, expect, test } from "bun:test";
-import {
-	type BusMarkerEntry,
-	busAnimationDurationMs,
-	clearFocusRouteLine,
-} from "../src/hooks/useBusMarkers";
+import { clearBusRouteLine, tickBusMarker } from "../src/hooks/busAnimation";
+import { tickTrainMarker } from "../src/hooks/trainAnimation";
+import type { BusMarkerEntry } from "../src/hooks/useBusMarkers";
+import type { TrainMarkerEntry } from "../src/hooks/useTrainMarkers";
+import { busAnimationDurationMs } from "../src/hooks/useVehicleMap";
+
+function markerWithRecorder() {
+	const calls: [number, number][] = [];
+	const marker = {
+		getLatLng: () => ({ lat: 53.34, lng: -6.25 }),
+		setLatLng: (latLng: [number, number]) => {
+			calls.push(latLng);
+			return marker as L.Marker;
+		},
+	} as L.Marker;
+	return { marker, calls };
+}
 
 describe("busAnimationDurationMs", () => {
 	test("keeps normal route animation matched to the GPS interval", () => {
-		expect(busAnimationDurationMs(100, 135, 0, false)).toBe(35_000);
+		expect(busAnimationDurationMs(100, 135, 0, 5_000, 60_000)).toBe(35_000);
 	});
 
 	test("caps focused stop animation so the marker catches up quickly", () => {
-		expect(busAnimationDurationMs(100, 135, 0, true)).toBe(4_000);
+		expect(busAnimationDurationMs(100, 135, 0, 1_500, 4_000)).toBe(4_000);
 	});
 
 	test("uses a shorter minimum duration for focused stop animation", () => {
-		expect(busAnimationDurationMs(100, 101, 0, true)).toBe(1_500);
+		expect(busAnimationDurationMs(100, 101, 0, 1_500, 4_000)).toBe(1_500);
 	});
 
 	test("clears temporary focus route constraints back to GPS fallback state", () => {
-		const markerLatLng = { lat: 53.34, lng: -6.25 };
+		const { marker } = markerWithRecorder();
+		const markerLatLng = marker.getLatLng();
 		const entry: BusMarkerEntry = {
-			marker: {
-				getLatLng: () => markerLatLng,
-			} as L.Marker,
+			marker,
 			bus: {
 				tripId: "trip-1",
 				operator: "dublinbus",
@@ -47,7 +58,6 @@ describe("busAnimationDurationMs", () => {
 			routeLine: {} as BusMarkerEntry["routeLine"],
 			routeLookup: new Float64Array([0, 53.3, -6.2]),
 			routeLengthMeters: 1000,
-			routeLineSource: "focus",
 			prevDistance: 100,
 			currentDistance: 200,
 			animStartPerfMs: 10,
@@ -58,12 +68,11 @@ describe("busAnimationDurationMs", () => {
 			shapeId: null,
 		};
 
-		clearFocusRouteLine(entry, { lat: 53.35, lng: -6.26 }, 1234);
+		clearBusRouteLine(entry, { lat: 53.35, lng: -6.26 }, 1234);
 
 		expect(entry.routeLine).toBeNull();
 		expect(entry.routeLookup).toBeNull();
 		expect(entry.routeLengthMeters).toBeNull();
-		expect(entry.routeLineSource).toBeNull();
 		expect(entry.offRoute).toBe(true);
 		expect(entry.prevDistance).toBeNull();
 		expect(entry.currentDistance).toBeNull();
@@ -75,5 +84,86 @@ describe("busAnimationDurationMs", () => {
 		expect(entry.targetLng).toBe(-6.26);
 		expect(entry.settled).toBe(false);
 		expect(entry.lastRenderedDistance).toBeNull();
+	});
+
+	test("ticks an off-route bus marker to its GPS target and settles", () => {
+		const { marker, calls } = markerWithRecorder();
+		const entry: BusMarkerEntry = {
+			marker,
+			bus: {
+				tripId: "trip-1",
+				operator: "dublinbus",
+				routeId: "route-1",
+				routeShortName: "1",
+				lat: 10,
+				lng: 20,
+				bearing: null,
+				speed: null,
+				timestamp: 100,
+				label: "Bus 1",
+				directionId: 0,
+				shapeId: null,
+				stale: false,
+			},
+			targetLat: 10,
+			targetLng: 20,
+			correctionFromLat: 0,
+			correctionFromLng: 0,
+			correctionStartTime: 0,
+			routeLine: null,
+			routeLookup: null,
+			routeLengthMeters: null,
+			prevDistance: null,
+			currentDistance: null,
+			animStartPerfMs: null,
+			animDurationMs: 30_000,
+			offRoute: true,
+			settled: false,
+			lastRenderedDistance: null,
+			shapeId: null,
+		};
+
+		tickBusMarker(entry, 2000);
+
+		expect(calls).toEqual([[10, 20]]);
+		expect(entry.settled).toBe(true);
+	});
+
+	test("ticks an off-route train marker with velocity extrapolation", () => {
+		const { marker, calls } = markerWithRecorder();
+		const entry: TrainMarkerEntry = {
+			marker,
+			lastColor: "green",
+			train: {
+				code: "E123",
+				lat: 1,
+				lng: 2,
+				status: "R",
+				message: "",
+				direction: "Northbound",
+				date: "09 May 2026",
+			},
+			targetLat: 1,
+			targetLng: 2,
+			velocityLat: 0.001,
+			velocityLng: 0.002,
+			lastUpdateTime: 1000,
+			correctionFromLat: 1,
+			correctionFromLng: 2,
+			correctionStartTime: 0,
+			routeLine: null,
+			routeLookup: null,
+			routeLengthMeters: null,
+			distanceAtPing: null,
+			targetDistanceAlongRoute: null,
+			pathSpeedMps: 0,
+			lastPingTime: null,
+			offRoute: true,
+			originDestKey: null,
+		};
+
+		tickTrainMarker(entry, 2000);
+
+		expect(calls).toEqual([[2, 4]]);
 	});
 });
