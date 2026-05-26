@@ -46,6 +46,8 @@ const DEFAULT_ANIM_DURATION_MS = 30_000;
 const MIN_ANIM_DURATION_MS = 5_000;
 const MAX_ANIM_DURATION_MS = 60_000;
 const MAX_CACHE_CATCHUP_MS = 8_000;
+const FOCUS_MIN_ANIM_DURATION_MS = 1_500;
+const FOCUS_ANIM_DURATION_MS = 4_000;
 const ROUTE_FLY_DURATION_MS = 1500;
 const ROUTE_DETAIL_FALLBACK_MS = ROUTE_FLY_DURATION_MS + 700;
 
@@ -71,6 +73,50 @@ export function computeBusCurrentDistance(
 	return entry.prevDistance + (entry.currentDistance - entry.prevDistance) * t;
 }
 
+export function busAnimationDurationMs(
+	prevTimestamp: number,
+	nextTimestamp: number,
+	realtimeAgeSec: number | null,
+	focused: boolean,
+): number {
+	const measuredMs = (nextTimestamp - prevTimestamp) * 1000;
+	const catchupMs =
+		realtimeAgeSec === null
+			? 0
+			: Math.min(MAX_CACHE_CATCHUP_MS, Math.max(0, realtimeAgeSec * 1000));
+	const minDurationMs = focused
+		? FOCUS_MIN_ANIM_DURATION_MS
+		: MIN_ANIM_DURATION_MS;
+	const maxDurationMs = focused ? FOCUS_ANIM_DURATION_MS : MAX_ANIM_DURATION_MS;
+	return Math.max(
+		minDurationMs,
+		Math.min(measuredMs - catchupMs, maxDurationMs),
+	);
+}
+
+export function clearFocusRouteLine(
+	entry: BusMarkerEntry,
+	bus: Pick<BusVehicle, "lat" | "lng">,
+	now: number,
+): void {
+	const cur = entry.marker.getLatLng();
+	entry.routeLine = null;
+	entry.routeLookup = null;
+	entry.routeLengthMeters = null;
+	entry.routeLineSource = null;
+	entry.offRoute = true;
+	entry.prevDistance = null;
+	entry.currentDistance = null;
+	entry.animStartPerfMs = null;
+	entry.correctionFromLat = cur.lat;
+	entry.correctionFromLng = cur.lng;
+	entry.correctionStartTime = now;
+	entry.targetLat = bus.lat;
+	entry.targetLng = bus.lng;
+	entry.settled = false;
+	entry.lastRenderedDistance = null;
+}
+
 // ---------------------------------------------------------------------------
 // Interpolation entry type
 // ---------------------------------------------------------------------------
@@ -90,6 +136,7 @@ export interface BusMarkerEntry {
 	routeLine: Feature<LineString> | null;
 	routeLookup: Float64Array | null;
 	routeLengthMeters: number | null;
+	routeLineSource: "route" | "focus" | null;
 	// Two-point interpolation buffer for the on-route branch. On each ping with
 	// a new bus.timestamp:
 	//   prevDistance = where the marker is currently rendered (so animation
@@ -125,6 +172,7 @@ interface UseBusMarkersOptions {
 	busOperator: BusOperator;
 	mode: Mode;
 	currentBusRoute: string | null;
+	focusedBusTripId: string | null;
 	realtimeAgeSec: number | null;
 	onSelectBusRoute: React.RefObject<
 		| ((route: string, direction: string, operator?: BusOperator) => void)
@@ -145,6 +193,7 @@ export function useBusMarkers({
 	busOperator,
 	mode,
 	currentBusRoute,
+	focusedBusTripId,
 	realtimeAgeSec,
 	onSelectBusRoute,
 	onRouteJump,
@@ -434,6 +483,7 @@ export function useBusMarkers({
 					existing.routeLine = lineInfo.routeLine;
 					existing.routeLookup = buildRouteLookup(lineInfo.routeLine);
 					existing.routeLengthMeters = lineInfo.routeLengthMeters;
+					existing.routeLineSource = "route";
 					const projection = projectOntoRoute(
 						bus.lat,
 						bus.lng,
@@ -450,6 +500,12 @@ export function useBusMarkers({
 						existing.animStartPerfMs = null;
 						existing.lastRenderedDistance = null;
 					}
+				}
+				if (
+					existing.routeLineSource === "focus" &&
+					focusedBusTripId !== bus.tripId
+				) {
+					clearFocusRouteLine(existing, bus, now);
 				}
 
 				if (isDuplicate) {
@@ -501,17 +557,11 @@ export function useBusMarkers({
 						} else {
 							seedPrev = computeBusCurrentDistance(existing, now);
 						}
-						const measuredMs = (bus.timestamp - prevTimestamp) * 1000;
-						const catchupMs =
-							realtimeAgeSec === null
-								? 0
-								: Math.min(
-										MAX_CACHE_CATCHUP_MS,
-										Math.max(0, realtimeAgeSec * 1000),
-									);
-						const animDurationMs = Math.max(
-							MIN_ANIM_DURATION_MS,
-							Math.min(measuredMs - catchupMs, MAX_ANIM_DURATION_MS),
+						const animDurationMs = busAnimationDurationMs(
+							prevTimestamp,
+							bus.timestamp,
+							realtimeAgeSec,
+							focusedBusTripId === bus.tripId,
 						);
 						existing.offRoute = false;
 						existing.prevDistance = seedPrev;
@@ -585,6 +635,7 @@ export function useBusMarkers({
 					routeLine: lineInfo?.routeLine ?? null,
 					routeLookup: lineInfo ? buildRouteLookup(lineInfo.routeLine) : null,
 					routeLengthMeters: lineInfo?.routeLengthMeters ?? null,
+					routeLineSource: lineInfo ? "route" : null,
 					prevDistance,
 					currentDistance,
 					animStartPerfMs,
@@ -620,7 +671,7 @@ export function useBusMarkers({
 		);
 		applyVariantStyles();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [buses, mode, busShape, busDirection, busOperator]);
+	}, [buses, mode, busShape, busDirection, busOperator, focusedBusTripId]);
 
 	// -------------------------------------------------------------------------
 	// Bus shape polyline + stop markers sync

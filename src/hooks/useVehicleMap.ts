@@ -166,6 +166,7 @@ export function useVehicleMap(
 		busOperator,
 		mode,
 		currentBusRoute,
+		focusedBusTripId: focusContext?.tripId ?? null,
 		realtimeAgeSec: busRealtimeHealth?.ageSec ?? null,
 		onSelectBusRoute: onSelectBusRouteRef,
 		onRouteJump: onRouteJumpRef,

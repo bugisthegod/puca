@@ -283,6 +283,7 @@ export function useFocusSegment({
 				busEntry.routeLine = lineInfo.routeLine;
 				busEntry.routeLookup = buildRouteLookup(lineInfo.routeLine);
 				busEntry.routeLengthMeters = lineInfo.routeLengthMeters;
+				busEntry.routeLineSource = "focus";
 				busEntry.offRoute = false;
 				busEntry.prevDistance = null;
 				busEntry.currentDistance = busD;
