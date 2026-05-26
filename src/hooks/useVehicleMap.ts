@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useCallback, useEffect, useRef } from "react";
 import type { MapView } from "../session";
 import type {
 	BusOperator,
@@ -11,8 +11,9 @@ import type {
 	VehicleBounds,
 } from "../types";
 import type { Filter } from "../utils";
-import { alongLookup } from "./routeProjection";
-import { computeBusCurrentDistance, useBusMarkers } from "./useBusMarkers";
+import { tickBusMarker } from "./busAnimation";
+import { tickTrainMarker } from "./trainAnimation";
+import { useBusMarkers } from "./useBusMarkers";
 import { useFocusSegment } from "./useFocusSegment";
 import { useMapInstance } from "./useMapInstance";
 import type { FocusTrainResult } from "./useTrainMarkers";
@@ -20,14 +21,35 @@ import { useTrainMarkers } from "./useTrainMarkers";
 
 export type Mode = "train" | "bus";
 
-const BLEND_DURATION = 1500;
-const EXTRAP_CAP = 35_000;
+const ROUTE_MIN_ANIM_DURATION_MS = 5_000;
+const ROUTE_MAX_ANIM_DURATION_MS = 60_000;
+const FOCUS_MIN_ANIM_DURATION_MS = 1_500;
+const FOCUS_MAX_ANIM_DURATION_MS = 4_000;
+const MAX_CACHE_CATCHUP_MS = 8_000;
 
 // Lookup-table positions replace turf's O(n) along() — binary search is cheap
 // enough to run at 30 FPS without CPU pressure. Faster than the old 20 FPS
 // but avoids the per-frame setLatLng DOM cost of running at full 60 FPS.
 const TICK_INTERVAL_MS = 33;
 const BUS_VIEWPORT_BOUNDS_DEBOUNCE_MS = 150;
+
+export function busAnimationDurationMs(
+	prevTimestamp: number,
+	nextTimestamp: number,
+	realtimeAgeSec: number | null,
+	minDurationMs: number,
+	maxDurationMs: number,
+): number {
+	const measuredMs = (nextTimestamp - prevTimestamp) * 1000;
+	const catchupMs =
+		realtimeAgeSec === null
+			? 0
+			: Math.min(MAX_CACHE_CATCHUP_MS, Math.max(0, realtimeAgeSec * 1000));
+	return Math.max(
+		minDurationMs,
+		Math.min(measuredMs - catchupMs, maxDurationMs),
+	);
+}
 
 function getPaddedVehicleBounds(map: L.Map): VehicleBounds {
 	const bounds = map.getBounds().pad(0.5);
@@ -159,6 +181,25 @@ export function useVehicleMap(
 		leafletMap.current?.closePopup();
 	}
 
+	const getBusAnimationDurationMs = useCallback(
+		(
+			prevTimestamp: number,
+			nextTimestamp: number,
+			realtimeAgeSec: number | null,
+			tripId: string,
+		) => {
+			const focused = focusContext?.tripId === tripId;
+			return busAnimationDurationMs(
+				prevTimestamp,
+				nextTimestamp,
+				realtimeAgeSec,
+				focused ? FOCUS_MIN_ANIM_DURATION_MS : ROUTE_MIN_ANIM_DURATION_MS,
+				focused ? FOCUS_MAX_ANIM_DURATION_MS : ROUTE_MAX_ANIM_DURATION_MS,
+			);
+		},
+		[focusContext?.tripId],
+	);
+
 	const { busMarkers } = useBusMarkers({
 		buses,
 		busShape,
@@ -166,8 +207,8 @@ export function useVehicleMap(
 		busOperator,
 		mode,
 		currentBusRoute,
-		focusedBusTripId: focusContext?.tripId ?? null,
 		realtimeAgeSec: busRealtimeHealth?.ageSec ?? null,
+		getAnimationDurationMs: getBusAnimationDurationMs,
 		onSelectBusRoute: onSelectBusRouteRef,
 		onRouteJump: onRouteJumpRef,
 		leafletMap,
@@ -276,54 +317,10 @@ export function useVehicleMap(
 			// Viewport culling: targetLat/Lng (latest GPS) vs padded map bounds.
 			const bounds = map.getBounds().pad(0.25);
 
-			const TRAIN_EXTRAP_BUFFER_METERS = 5000;
 			for (const [, entry] of markers.current) {
 				if (!map.hasLayer(entry.marker)) continue;
 				if (!bounds.contains([entry.targetLat, entry.targetLng])) continue;
-
-				if (
-					!entry.offRoute &&
-					entry.routeLine &&
-					entry.routeLengthMeters !== null &&
-					entry.distanceAtPing !== null &&
-					entry.targetDistanceAlongRoute !== null &&
-					entry.lastPingTime !== null
-				) {
-					const dtSec = (now - entry.lastPingTime) / 1000;
-					const advanced = entry.distanceAtPing + entry.pathSpeedMps * dtSec;
-					const capped = Math.min(
-						advanced,
-						entry.targetDistanceAlongRoute + TRAIN_EXTRAP_BUFFER_METERS,
-					);
-					const clamped = Math.max(
-						0,
-						Math.min(capped, entry.routeLengthMeters),
-					);
-					if (entry.routeLookup) {
-						const [lat, lng] = alongLookup(entry.routeLookup, clamped);
-						entry.marker.setLatLng([lat, lng]);
-					}
-					continue;
-				}
-
-				// Velocity fallback (unmapped routes / off-route)
-				const dt = Math.min(now - entry.lastUpdateTime, EXTRAP_CAP);
-				const extrapLat = entry.targetLat + entry.velocityLat * dt;
-				const extrapLng = entry.targetLng + entry.velocityLng * dt;
-				const blendElapsed = now - entry.correctionStartTime;
-				if (blendElapsed < BLEND_DURATION) {
-					const t = blendElapsed / BLEND_DURATION;
-					const ease = 1 - (1 - t) * (1 - t);
-					const lat =
-						entry.correctionFromLat +
-						(extrapLat - entry.correctionFromLat) * ease;
-					const lng =
-						entry.correctionFromLng +
-						(extrapLng - entry.correctionFromLng) * ease;
-					entry.marker.setLatLng([lat, lng]);
-				} else {
-					entry.marker.setLatLng([extrapLat, extrapLng]);
-				}
+				tickTrainMarker(entry, now);
 			}
 
 			for (const [, entry] of busMarkers.current) {
@@ -343,42 +340,7 @@ export function useVehicleMap(
 				}
 				if (!bounds.contains([entry.targetLat, entry.targetLng])) continue;
 				if (entry.marker.isPopupOpen?.()) continue;
-
-				// On-route: lerp between prevDistance (where the marker was at last
-				// ping) and currentDistance (latest GPS projection) over the fixed
-				// animation window. After t hits 1 the marker sits at currentDistance
-				// — no extrapolation, no snap-back when the next ping arrives.
-				if (
-					!entry.offRoute &&
-					entry.routeLookup &&
-					entry.currentDistance !== null
-				) {
-					const dist = computeBusCurrentDistance(entry, now);
-					if (dist === null) continue;
-					if (entry.lastRenderedDistance === dist) continue;
-					const [lat, lng] = alongLookup(entry.routeLookup, dist);
-					entry.marker.setLatLng([lat, lng]);
-					entry.lastRenderedDistance = dist;
-					continue;
-				}
-
-				// Off-route fallback: blend lat/lng over BLEND_DURATION, then settle.
-				if (entry.settled) continue;
-				const blendElapsed = now - entry.correctionStartTime;
-				if (blendElapsed < BLEND_DURATION) {
-					const t = blendElapsed / BLEND_DURATION;
-					const ease = 1 - (1 - t) * (1 - t);
-					const lat =
-						entry.correctionFromLat +
-						(entry.targetLat - entry.correctionFromLat) * ease;
-					const lng =
-						entry.correctionFromLng +
-						(entry.targetLng - entry.correctionFromLng) * ease;
-					entry.marker.setLatLng([lat, lng]);
-				} else {
-					entry.marker.setLatLng([entry.targetLat, entry.targetLng]);
-					entry.settled = true;
-				}
+				tickBusMarker(entry, now);
 			}
 
 			rafId.current = requestAnimationFrame(tickAllMarkers);

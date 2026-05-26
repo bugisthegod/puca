@@ -6,6 +6,7 @@ import {
 	useRef,
 } from "react";
 import type { BusOperator, FocusContext } from "../types";
+import { clearBusRouteLine } from "./busAnimation";
 import { getMapFitPadding } from "./mapFitPadding";
 import {
 	buildRouteLine,
@@ -165,6 +166,7 @@ export function useFocusSegment({
 
 		let cancelled = false;
 		let stopsAwayTimer: ReturnType<typeof setInterval> | null = null;
+		let injectedRouteTripId: string | null = null;
 
 		(async () => {
 			const cacheKey = `${focusContext.operator}:${focusContext.routeShortName}`;
@@ -283,7 +285,7 @@ export function useFocusSegment({
 				busEntry.routeLine = lineInfo.routeLine;
 				busEntry.routeLookup = buildRouteLookup(lineInfo.routeLine);
 				busEntry.routeLengthMeters = lineInfo.routeLengthMeters;
-				busEntry.routeLineSource = "focus";
+				injectedRouteTripId = focusContext.tripId;
 				busEntry.offRoute = false;
 				busEntry.prevDistance = null;
 				busEntry.currentDistance = busD;
@@ -444,6 +446,10 @@ export function useFocusSegment({
 		return () => {
 			cancelled = true;
 			if (stopsAwayTimer) clearInterval(stopsAwayTimer);
+			if (injectedRouteTripId) {
+				const entry = busMarkers.current.get(injectedRouteTripId);
+				if (entry) clearBusRouteLine(entry, entry.bus, performance.now());
+			}
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [focusContext, mode]);
