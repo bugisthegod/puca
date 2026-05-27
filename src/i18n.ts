@@ -117,7 +117,7 @@ const EN = {
 		"A live map for Ireland's trains and buses, with routes, stops, arrivals, and favourites. Quick tour — takes 20 seconds.",
 	"tour.mode.title": "Switch mode",
 	"tour.mode.body":
-		"Switch between Train and Bus. In Bus mode, choose Dublin Bus, Bus Éireann, or Go-Ahead.",
+		"Switch between Train and Bus.",
 	"tour.search.title": "Search",
 	"tour.search.body":
 		"Search trains between stations, or find buses by route, stop number, or stop name.",
@@ -349,7 +349,7 @@ const ZH: Record<Key, string> = {
 		"爱尔兰列车与公交实时地图，支持线路、站点、到站与收藏。快速引导，20 秒搞定。",
 	"tour.mode.title": "切换模式",
 	"tour.mode.body":
-		"在列车和公交间切换。公交模式下可选择 Dublin Bus、Bus Éireann 或 Go-Ahead。",
+		"在列车和公交间切换。",
 	"tour.search.title": "搜索",
 	"tour.search.body": "查找两站之间的列车，或按线路、站号、站名搜索公交。",
 	"tour.tap.title": "点击车辆",
