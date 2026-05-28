@@ -80,7 +80,7 @@ export type BusRoute = {
 	longName: string;
 };
 
-export type BusStop = {
+type BusStop = {
 	id: string;
 	name: string;
 	lat: number;
@@ -93,10 +93,10 @@ export type BusVariant = {
 	branches: [number, number][][];
 };
 
-export type BusDirectionShape = {
+type BusDirectionShape = {
 	headsign: string;
 	coords: [number, number][];
-	stops: { id: string; name: string; lat: number; lng: number }[];
+	stops: BusStop[];
 	variants?: BusVariant[];
 };
 
