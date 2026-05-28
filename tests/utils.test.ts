@@ -8,7 +8,6 @@ import {
 	parseLateMinutes,
 	parseRoute,
 	parseTrainProgress,
-	trainCategory,
 } from "../src/utils";
 
 describe("parseLateMinutes", () => {
@@ -144,23 +143,6 @@ describe("markerColor", () => {
 	test("running with unparseable message is gray, not falsely-green", () => {
 		// Lateness unknown → must NOT default to "on time" green; that would lie to the user.
 		expect(markerColor(train("R", "Train cancelled"))).toBe("#9e9e9e");
-	});
-});
-
-describe("trainCategory", () => {
-	test("E prefix is DART", () => {
-		expect(trainCategory("E101")).toBe("dart");
-		expect(trainCategory("E001")).toBe("dart");
-	});
-
-	test("P prefix is commuter", () => {
-		expect(trainCategory("P530")).toBe("commuter");
-	});
-
-	test("anything else is intercity", () => {
-		expect(trainCategory("A001")).toBe("intercity");
-		expect(trainCategory("D123")).toBe("intercity");
-		expect(trainCategory("")).toBe("intercity");
 	});
 });
 

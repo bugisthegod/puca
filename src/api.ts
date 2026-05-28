@@ -1,15 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
-import stationsData from "./data/stations.json" with { type: "json" };
-import type { Station, StationTrain, Train, TrainMovement } from "./types.ts";
+import type { StationTrain, Train, TrainMovement } from "./types.ts";
 
 const BASE_URL = "https://api.irishrail.ie/realtime/realtime.asmx";
-
-const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE", {
-	timeZone: "Europe/Dublin",
-	day: "numeric",
-	month: "short",
-	year: "numeric",
-});
 
 // --- Cache layer ---
 const cache = new Map<string, { data: unknown; expires: number }>();
@@ -55,14 +47,6 @@ const parser = new XMLParser({
 	parseAttributeValue: true,
 	parseTagValue: true,
 });
-
-function todayFormatted(): string {
-	const parts = DUBLIN_DATE_FMT.formatToParts(new Date());
-	const day = parts.find((p) => p.type === "day")?.value;
-	const month = parts.find((p) => p.type === "month")?.value.toLowerCase();
-	const year = parts.find((p) => p.type === "year")?.value;
-	return `${day} ${month} ${year}`;
-}
 
 function normalizeArray<T>(value: T | T[] | undefined): T[] {
 	if (value === undefined || value === null) return [];
@@ -125,7 +109,7 @@ export function getStationData(
 
 export function getTrainMovements(
 	trainId: string,
-	trainDate: string = todayFormatted(),
+	trainDate: string,
 ): Promise<TrainMovement[]> {
 	return cached(`movements:${trainId}:${trainDate}`, 30_000, async () => {
 		const url = `${BASE_URL}/getTrainMovementsXML?TrainId=${encodeURIComponent(trainId)}&TrainDate=${encodeURIComponent(trainDate)}`;
@@ -148,8 +132,4 @@ export function getTrainMovements(
 			stopType: String(item.StopType ?? ""),
 		}));
 	});
-}
-
-export function getAllStations(): Promise<Station[]> {
-	return Promise.resolve(stationsData as Station[]);
 }

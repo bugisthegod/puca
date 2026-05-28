@@ -10,7 +10,6 @@ import type {
 	TrainFocusSummary,
 	VehicleBounds,
 } from "../types";
-import type { Filter } from "../utils";
 import { tickBusMarker } from "./busAnimation";
 import { tickTrainMarker } from "./trainAnimation";
 import { useBusMarkers } from "./useBusMarkers";
@@ -103,7 +102,6 @@ interface UseVehicleMapOptions {
 export function useVehicleMap(
 	mapRef: RefObject<HTMLDivElement | null>,
 	trains: Train[],
-	filter: Filter,
 	searchCodes: string[] | null = null,
 	mode: Mode = "train",
 	buses: BusVehicle[] = [],
@@ -169,7 +167,6 @@ export function useVehicleMap(
 
 	const { markers, clearTrainFocus, focusTrain } = useTrainMarkers({
 		trains,
-		filter,
 		searchCodes,
 		mode,
 		leafletMap,

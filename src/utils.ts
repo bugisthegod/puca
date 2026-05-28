@@ -1,7 +1,5 @@
 import type { Train } from "./types";
 
-export type Filter = "all" | "dart" | "commuter" | "intercity";
-
 /** Parse late minutes from a PublicMessage string.
  *  Returns a number (negative = early, 0 = on time, positive = late).
  *  Returns null when the message gives no useful timing info.
@@ -74,13 +72,6 @@ export function markerColor(train: Train): string {
 	return "#f44336"; // red — >5 mins late
 }
 
-/** Return the train category for filtering. */
-export function trainCategory(code: string): "dart" | "commuter" | "intercity" {
-	if (code.startsWith("E")) return "dart";
-	if (code.startsWith("P")) return "commuter";
-	return "intercity";
-}
-
 /** Format a time string for display in the popup. */
 export function fmtTime(t: string): string {
 	if (!t) return "—";
@@ -136,9 +127,6 @@ export function isInServiceHours(
 	if (mode === "train") return mins >= 300;
 	return mins >= 300;
 }
-
-/** Label shown when off-hours — always next 05:00 service resume. */
-export const SERVICE_RESUME_LABEL = "05:00";
 
 /** Escape a string for safe interpolation into innerHTML. Popups are built
  *  by concatenating raw HTML strings, so any upstream-derived field (Irish Rail

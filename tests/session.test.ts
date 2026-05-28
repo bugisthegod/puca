@@ -59,7 +59,6 @@ const BUS_SEARCH_KEY = "puca-bus-search-v1";
 
 const completeSession: Session = {
 	mode: "bus",
-	filter: "all",
 	busOperator: "dublinbus",
 	mapView: { lat: 53.349, lng: -6.26, zoom: 14 },
 };
@@ -100,21 +99,18 @@ describe("loadSession", () => {
 		lsStore.set(KEY, JSON.stringify({ ...completeSession, mode: "spaceship" }));
 		const out = loadSession();
 		expect(out.mode).toBeUndefined();
-		expect(out.filter).toBe("all");
 		expect(out.busOperator).toBe("dublinbus");
 	});
 
-	test("invalid filter / operator are individually dropped", () => {
+	test("invalid operator is dropped", () => {
 		lsStore.set(
 			KEY,
 			JSON.stringify({
 				...completeSession,
-				filter: "luas",
 				busOperator: "notReal",
 			}),
 		);
 		const out = loadSession();
-		expect(out.filter).toBeUndefined();
 		expect(out.busOperator).toBeUndefined();
 		expect(out.mode).toBe("bus"); // unrelated valid fields still rehydrate
 	});
@@ -171,13 +167,11 @@ describe("loadSession", () => {
 				KEY,
 				JSON.stringify({
 					mode: "train",
-					filter: "dart",
 					mapView: { lat: 999, lng: 0, zoom: 10 },
 				}),
 			);
 			const out = loadSession();
 			expect(out.mode).toBe("train");
-			expect(out.filter).toBe("dart");
 			expect(out.mapView).toBeUndefined();
 		});
 	});
