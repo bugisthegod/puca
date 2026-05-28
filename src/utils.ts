@@ -35,7 +35,7 @@ export function parseRoute(
 	return null;
 }
 
-export type TrainProgress = {
+type TrainProgress = {
 	kind: "arrived" | "departed";
 	currentStation: string;
 	nextStation: string | null;
