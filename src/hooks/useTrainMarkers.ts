@@ -8,11 +8,9 @@ import type {
 } from "../types";
 import {
 	dublinMinutesSinceMidnight,
-	type Filter,
 	markerColor,
 	parseRoute,
 	parseTrainProgress,
-	trainCategory,
 } from "../utils";
 import {
 	buildRouteLine,
@@ -239,7 +237,6 @@ export async function pollForMarker(
 
 interface UseTrainMarkersOptions {
 	trains: Train[];
-	filter: Filter;
 	searchCodes: string[] | null;
 	mode: Mode;
 	leafletMap: React.RefObject<L.Map | null>;
@@ -249,7 +246,6 @@ interface UseTrainMarkersOptions {
 
 export function useTrainMarkers({
 	trains,
-	filter,
 	searchCodes,
 	mode,
 	leafletMap,
@@ -266,8 +262,6 @@ export function useTrainMarkers({
 	const markers = useRef<Map<string, TrainMarkerEntry>>(new Map());
 
 	// Stable refs for values used in closures (avoids stale captures)
-	const filterRef = useRef<Filter>(filter);
-	filterRef.current = filter;
 	const modeRef = useRef<Mode>(mode);
 	modeRef.current = mode;
 	const searchCodesRef = useRef<string[] | null>(searchCodes);
@@ -293,8 +287,7 @@ export function useTrainMarkers({
 		if (searchCodesRef.current !== null) {
 			return searchCodesRef.current.includes(train.code);
 		}
-		if (filterRef.current === "all") return true;
-		return trainCategory(train.code) === filterRef.current;
+		return true;
 	}
 
 	function clearTrainFocus() {
@@ -695,7 +688,7 @@ export function useTrainMarkers({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [trains]);
 
-	// Apply filter / search / mode — show or hide existing markers
+	// Apply search / mode — show or hide existing markers
 	useEffect(() => {
 		const map = leafletMap.current;
 		if (!map) return;
@@ -708,7 +701,7 @@ export function useTrainMarkers({
 			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filter, searchCodes, mode]);
+	}, [searchCodes, mode]);
 
 	// -------------------------------------------------------------------------
 	// Public API

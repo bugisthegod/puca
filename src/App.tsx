@@ -28,7 +28,6 @@ import {
 	type TrainFavorite,
 	totalFavorites,
 } from "./favorites";
-import { cleanupDeprecatedSettings } from "./hooks/useAppearance";
 import { useFavorites } from "./hooks/useFavorites";
 import { useToast } from "./hooks/useToast";
 import { type Mode, useVehicleMap } from "./hooks/useVehicleMap";
@@ -50,7 +49,6 @@ import type {
 	TrainFocusSummary,
 	VehicleBounds,
 } from "./types";
-import type { Filter } from "./utils";
 import "./style.css";
 
 const LOW_LOCATION_ACCURACY_M = 500;
@@ -78,9 +76,6 @@ function boundsSignature(bounds: VehicleBounds | null): string | null {
 		.map((n) => n.toFixed(5))
 		.join(",");
 }
-
-// Clean up deprecated localStorage keys from removed features.
-cleanupDeprecatedSettings();
 
 // iOS (Safari/WebKit) is the only platform that gates device orientation
 // behind a per-page-load permission prompt — Android just works. Use the
@@ -217,7 +212,6 @@ function App() {
 		stopsAway: number | null;
 	} | null>(null);
 	const [busShape, setBusShape] = useState<BusShape>(null);
-	const filter: Filter = "all";
 	const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
 	const mapRef = useRef<HTMLDivElement>(null);
 
@@ -290,7 +284,6 @@ function App() {
 	} = useVehicleMap(
 		mapRef,
 		trains,
-		filter,
 		searchCodes,
 		mode,
 		visibleBuses,
@@ -466,7 +459,6 @@ function App() {
 			if (mv) lastMapViewRef.current = mv;
 			saveSession({
 				mode,
-				filter,
 				busOperator,
 				mapView: lastMapViewRef.current,
 			});
@@ -480,7 +472,7 @@ function App() {
 			document.removeEventListener("visibilitychange", onVisibility);
 			window.removeEventListener("pagehide", save);
 		};
-	}, [mode, filter, busOperator, getMapView]);
+	}, [mode, busOperator, getMapView]);
 
 	useEffect(() => {
 		if (!focusContext) setBusFocusStopsAway(null);

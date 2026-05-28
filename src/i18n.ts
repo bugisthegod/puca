@@ -136,7 +136,6 @@ const EN = {
 	// InfoPanel
 	"info.mode.train": "Train",
 	"info.mode.bus": "Bus",
-	"info.filter.all": "All",
 	"info.running.train": "{n} trains running",
 	"info.running.bus": "{n} buses running",
 	"info.kip": "Púca's having a kip",
@@ -363,7 +362,6 @@ const ZH: Record<Key, string> = {
 	// InfoPanel
 	"info.mode.train": "列车",
 	"info.mode.bus": "公交",
-	"info.filter.all": "全部",
 	"info.running.train": "{n} 辆列车运行中",
 	"info.running.bus": "{n} 辆公交运行中",
 	"info.kip": "Púca 在打盹",

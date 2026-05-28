@@ -1,10 +1,9 @@
-// Persists the user's long-lived app state (mode, filter, bus operator, map
-// view) to localStorage so closing and reopening the app resumes where they
-// left off. Search state that should die with the tab lives in sessionStorage.
+// Persists the user's long-lived app state (mode, bus operator, map view) to
+// localStorage so closing and reopening the app resumes where they left off.
+// Search state that should die with the tab lives in sessionStorage.
 
 import type { Mode } from "./hooks/useVehicleMap";
 import { type BusOperator, OPERATORS } from "./types";
-import type { Filter } from "./utils";
 
 const KEY = "puca-session-v1";
 const BUS_SEARCH_KEY = "puca-bus-search-v1";
@@ -17,7 +16,6 @@ export interface MapView {
 
 export interface Session {
 	mode: Mode;
-	filter: Filter;
 	busOperator: BusOperator;
 	mapView: MapView | null;
 }
@@ -39,7 +37,6 @@ export interface BusSearchSession {
 }
 
 const MODES: readonly Mode[] = ["train", "bus"];
-const FILTERS: readonly Filter[] = ["all", "dart", "commuter", "intercity"];
 
 function validMapView(v: unknown): MapView | null {
 	if (!v || typeof v !== "object") return null;
@@ -69,7 +66,6 @@ export function loadSession(): Partial<Session> {
 		const s = JSON.parse(raw) as Partial<Session>;
 		const out: Partial<Session> = {};
 		if (s.mode && MODES.includes(s.mode)) out.mode = s.mode;
-		if (s.filter && FILTERS.includes(s.filter)) out.filter = s.filter;
 		if (s.busOperator && OPERATORS.includes(s.busOperator))
 			out.busOperator = s.busOperator;
 		const mv = validMapView(s.mapView);
