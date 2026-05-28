@@ -303,7 +303,8 @@ Bun.serve({
 		"/api/bus/vehicles/all": rateLimit(async () => {
 			const timer = createServerTimer();
 			const vehicleHeaders = {
-				"Cache-Control": "public, max-age=5, stale-while-revalidate=15",
+				"Cache-Control":
+					"public, max-age=0, s-maxage=5, stale-while-revalidate=15",
 				...getBusVehicleRealtimeHeaders(),
 			};
 			if (!isInServiceHours("bus")) {
@@ -341,7 +342,8 @@ Bun.serve({
 			// 5s + 15s SWR keeps Fly origin hits low (~12/min/edge) while letting
 			// the CDN return data within ~5s of the latest server snapshot.
 			const vehicleHeaders = {
-				"Cache-Control": "public, max-age=5, stale-while-revalidate=15",
+				"Cache-Control":
+					"public, max-age=0, s-maxage=5, stale-while-revalidate=15",
 				...getBusVehicleRealtimeHeaders(),
 			};
 			// Off-hours short-circuit: don't pay an NTA round-trip when no buses run.
