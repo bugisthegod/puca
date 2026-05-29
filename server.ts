@@ -82,7 +82,6 @@ Bun.serve({
 				},
 			});
 		},
-		"/robots.txt": staticFile("./public/robots.txt", 3600),
 		"/sitemap.xml": staticFile("./public/sitemap.xml", 3600),
 		"/manifest.json": staticFile("./public/manifest.json", 86400),
 		"/public/manifest.json": staticFile("./public/manifest.json", 86400),
