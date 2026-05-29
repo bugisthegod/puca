@@ -80,6 +80,7 @@ textarea,
 select,
 label {
 	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
 }
 
 html,
