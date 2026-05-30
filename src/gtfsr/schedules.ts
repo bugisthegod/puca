@@ -73,6 +73,33 @@ export const operatorRoutes: Record<Operator, BusRoute[]> = {
 	goahead: goAheadRoutes as BusRoute[],
 };
 
+function buildRouteByShortName(routes: BusRoute[]): Map<string, BusRoute> {
+	const map = new Map<string, BusRoute>();
+	for (const route of routes) map.set(route.shortName.toLowerCase(), route);
+	return map;
+}
+
+function buildRouteById(routes: BusRoute[]): Map<string, BusRoute> {
+	const map = new Map<string, BusRoute>();
+	for (const route of routes) map.set(route.id, route);
+	return map;
+}
+
+export const operatorRouteByShortName: Record<
+	Operator,
+	Map<string, BusRoute>
+> = {
+	dublinbus: buildRouteByShortName(operatorRoutes.dublinbus),
+	buseireann: buildRouteByShortName(operatorRoutes.buseireann),
+	goahead: buildRouteByShortName(operatorRoutes.goahead),
+};
+
+export const operatorRouteById: Record<Operator, Map<string, BusRoute>> = {
+	dublinbus: buildRouteById(operatorRoutes.dublinbus),
+	buseireann: buildRouteById(operatorRoutes.buseireann),
+	goahead: buildRouteById(operatorRoutes.goahead),
+};
+
 export const operatorShapes: Record<Operator, ShapesDict> = {
 	dublinbus: dublinBusShapes as unknown as ShapesDict,
 	buseireann: busEireannShapes as unknown as ShapesDict,
@@ -91,6 +118,55 @@ const operatorVariants: Record<Operator, VariantsDict> = {
 	buseireann: {} as VariantsDict,
 	goahead: {} as VariantsDict,
 };
+
+type StopSearchIndex = {
+	entries: Array<StopSearchResult & { nameLower: string }>;
+	codeExact: Map<string, StopSearchResult[]>;
+};
+
+function buildStopSearchIndex(
+	operator: Operator,
+	stops: StopsDict,
+): StopSearchIndex {
+	const entries: StopSearchIndex["entries"] = [];
+	const codeExact = new Map<string, StopSearchResult[]>();
+	for (const [id, s] of Object.entries(stops)) {
+		const result = {
+			id,
+			name: s.name,
+			code: s.code ?? "",
+			lat: s.lat,
+			lng: s.lng,
+			operator,
+		};
+		entries.push({ ...result, nameLower: s.name.toLowerCase() });
+		if (s.code) {
+			const arr = codeExact.get(s.code);
+			if (arr) arr.push(result);
+			else codeExact.set(s.code, [result]);
+		}
+	}
+	return { entries, codeExact };
+}
+
+const stopSearchIndexes: Record<Operator, StopSearchIndex> = {
+	dublinbus: buildStopSearchIndex("dublinbus", operatorStops.dublinbus),
+	buseireann: buildStopSearchIndex("buseireann", operatorStops.buseireann),
+	goahead: buildStopSearchIndex("goahead", operatorStops.goahead),
+};
+
+function publicStopSearchResult(
+	result: StopSearchResult & { nameLower?: string },
+): StopSearchResult {
+	return {
+		id: result.id,
+		name: result.name,
+		code: result.code,
+		lat: result.lat,
+		lng: result.lng,
+		operator: result.operator,
+	};
+}
 
 const DB_DIR = process.env.BUS_DB_DIR ?? "./src/data";
 const DB_PATHS: Record<Operator, string> = {
@@ -281,12 +357,9 @@ export function getBusRouteShape(
 	operator: Operator,
 	shortName: string,
 ): { [direction: string]: BusRouteDirectionShape } | null {
-	const routes = operatorRoutes[operator];
 	const shapes = operatorShapes[operator];
 	const variants = operatorVariants[operator];
-	const route = routes.find(
-		(r) => r.shortName.toLowerCase() === shortName.toLowerCase(),
-	);
+	const route = operatorRouteByShortName[operator].get(shortName.toLowerCase());
 	if (!route) return null;
 	const shape = shapes[route.id];
 	if (!shape) return null;
@@ -316,13 +389,16 @@ export function searchBusStops(
 	limit = 10,
 ): StopSearchResult[] {
 	const stops = operatorStops[operator];
+	const index = stopSearchIndexes[operator];
 	const q = query.trim();
 	if (!q) return [];
 	const out: StopSearchResult[] = [];
+	const seen = new Set<string>();
 	// Exact ID match first — lets session/favorite rehydration round-trip a
 	// stopId back to a full StopSearchResult without a separate endpoint.
 	const direct = stops[q];
 	if (direct) {
+		seen.add(q);
 		out.push({
 			id: q,
 			name: direct.name,
@@ -334,46 +410,28 @@ export function searchBusStops(
 	}
 	const isDigits = /^\d+$/.test(q);
 	if (isDigits) {
-		for (const [id, s] of Object.entries(stops)) {
-			if (s.code && s.code === q)
-				out.push({
-					id,
-					name: s.name,
-					code: s.code,
-					lat: s.lat,
-					lng: s.lng,
-					operator,
-				});
+		for (const result of index.codeExact.get(q) ?? []) {
+			if (seen.has(result.id)) continue;
+			seen.add(result.id);
+			out.push(result);
 			if (out.length >= limit) break;
 		}
 		if (out.length < limit) {
-			for (const [id, s] of Object.entries(stops)) {
-				if (out.find((r) => r.id === id)) continue;
-				if (s.code?.startsWith(q))
-					out.push({
-						id,
-						name: s.name,
-						code: s.code,
-						lat: s.lat,
-						lng: s.lng,
-						operator,
-					});
+			for (const s of index.entries) {
+				if (seen.has(s.id)) continue;
+				if (s.code.startsWith(q)) {
+					seen.add(s.id);
+					out.push(publicStopSearchResult(s));
+				}
 				if (out.length >= limit) break;
 			}
 		}
 		return out;
 	}
 	const qLower = q.toLowerCase();
-	for (const [id, s] of Object.entries(stops)) {
-		if (s.name.toLowerCase().startsWith(qLower)) {
-			out.push({
-				id,
-				name: s.name,
-				code: s.code ?? "",
-				lat: s.lat,
-				lng: s.lng,
-				operator,
-			});
+	for (const s of index.entries) {
+		if (s.nameLower.startsWith(qLower)) {
+			out.push(publicStopSearchResult(s));
 			if (out.length >= limit) break;
 		}
 	}

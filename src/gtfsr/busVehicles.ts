@@ -5,7 +5,12 @@ import type {
 	VehicleBounds,
 } from "../types";
 import { isTripEnded } from "./arrivals";
-import { getTripShapeMap, operatorRoutes } from "./schedules";
+import {
+	getTripShapeMap,
+	operatorRouteById,
+	operatorRouteByShortName,
+	operatorRoutes,
+} from "./schedules";
 import type { LiveTripData } from "./timing";
 import type { GtfsVehiclePosition } from "./vehicles";
 
@@ -23,6 +28,24 @@ function vehicleInBounds(
 	);
 }
 
+const allOperatorRouteById = new Map<
+	string,
+	{ operator: Operator; route: BusRoute }
+>();
+for (const [operator, routes] of Object.entries(operatorRoutes) as [
+	Operator,
+	BusRoute[],
+][]) {
+	for (const route of routes) {
+		// NTA route_id is treated as the global identity for a route across the
+		// combined VehiclePositions feed. If a duplicate ever appears, keep the
+		// first mapping deterministic rather than changing attribution by import
+		// order.
+		if (!allOperatorRouteById.has(route.id))
+			allOperatorRouteById.set(route.id, { operator, route });
+	}
+}
+
 export function getBusVehiclesByRouteFromCache({
 	operator,
 	shortName,
@@ -38,10 +61,7 @@ export function getBusVehiclesByRouteFromCache({
 	tripUpdates: ReadonlyMap<string, LiveTripData>;
 	nowSec: number;
 }): BusVehicle[] {
-	const routes = operatorRoutes[operator];
-	const route = routes.find(
-		(r) => r.shortName.toLowerCase() === shortName.toLowerCase(),
-	);
+	const route = operatorRouteByShortName[operator].get(shortName.toLowerCase());
 	if (!route) return [];
 
 	const shapeMap = getTripShapeMap(operator);
@@ -67,9 +87,7 @@ export function getAllBusVehiclesFromCache({
 	tripUpdates: ReadonlyMap<string, LiveTripData>;
 	nowSec: number;
 }): BusVehicle[] {
-	const routes = operatorRoutes[operator];
-	const routeById = new Map<string, BusRoute>();
-	for (const route of routes) routeById.set(route.id, route);
+	const routeById = operatorRouteById[operator];
 
 	const shapeMap = getTripShapeMap(operator);
 	const result: BusVehicle[] = [];
@@ -96,27 +114,12 @@ export function getAllOperatorsBusVehiclesFromCache({
 	bounds?: VehicleBounds;
 	includeTripIds?: ReadonlySet<string>;
 }): OperatorBusVehicle[] {
-	const routeById = new Map<string, { operator: Operator; route: BusRoute }>();
-	for (const [operator, routes] of Object.entries(operatorRoutes) as [
-		Operator,
-		BusRoute[],
-	][]) {
-		for (const route of routes) {
-			// NTA route_id is treated as the global identity for a route across the
-			// combined VehiclePositions feed. If a duplicate ever appears, keep the
-			// first mapping deterministic rather than changing attribution by import
-			// order.
-			if (!routeById.has(route.id))
-				routeById.set(route.id, { operator, route });
-		}
-	}
-
 	const shapeMaps = new Map<Operator, Map<string, string>>();
 	const result: OperatorBusVehicle[] = [];
 	for (const v of vehicles) {
 		if (bounds && !vehicleInBounds(v, bounds) && !includeTripIds.has(v.tripId))
 			continue;
-		const match = routeById.get(v.routeId);
+		const match = allOperatorRouteById.get(v.routeId);
 		if (!match) continue;
 		let shapeMap = shapeMaps.get(match.operator);
 		if (!shapeMap) {
