@@ -32,6 +32,12 @@ import { useFavorites } from "./hooks/useFavorites";
 import { useToast } from "./hooks/useToast";
 import { type Mode, useVehicleMap } from "./hooks/useVehicleMap";
 import { useVehiclePolling } from "./hooks/useVehiclePolling";
+import {
+	boundsSignature,
+	busInBounds,
+	stableVisibleBuses,
+	type VisibleBusCache,
+} from "./hooks/visibleBuses";
 import { useLocale } from "./i18n";
 import {
 	type BusSearchTab,
@@ -57,25 +63,6 @@ const savedSession = loadSession();
 const savedBusSearch = loadBusSearchSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
-
-function busInBounds(
-	bus: Pick<BusVehicle, "lat" | "lng">,
-	bounds: VehicleBounds,
-): boolean {
-	return (
-		bus.lat >= bounds.south &&
-		bus.lat <= bounds.north &&
-		bus.lng >= bounds.west &&
-		bus.lng <= bounds.east
-	);
-}
-
-function boundsSignature(bounds: VehicleBounds | null): string | null {
-	if (!bounds) return null;
-	return [bounds.north, bounds.south, bounds.east, bounds.west]
-		.map((n) => n.toFixed(5))
-		.join(",");
-}
 
 // iOS (Safari/WebKit) is the only platform that gates device orientation
 // behind a per-page-load permission prompt — Android just works. Use the
@@ -214,6 +201,10 @@ function App() {
 	const [busShape, setBusShape] = useState<BusShape>(null);
 	const [searchCodes, setSearchCodes] = useState<string[] | null>(null);
 	const mapRef = useRef<HTMLDivElement>(null);
+	const visibleBusesCacheRef = useRef<VisibleBusCache>({
+		signature: "",
+		buses: [],
+	});
 
 	useEffect(() => {
 		trackEvent("event/app/open");
@@ -224,14 +215,17 @@ function App() {
 	// user sees only their bus + the partial route to their stop. Flipping back
 	// to full fleet is one click on the "All buses" button.
 	const visibleBuses = useMemo(() => {
+		let nextBuses: BusVehicle[];
 		if (focusContext) {
-			return buses.filter((b) => b.tripId === focusContext.tripId);
+			nextBuses = buses.filter((b) => b.tripId === focusContext.tripId);
+		} else if (mode === "bus" && !busRoute) {
+			nextBuses = busViewportBounds
+				? buses.filter((b) => busInBounds(b, busViewportBounds))
+				: [];
+		} else {
+			nextBuses = buses;
 		}
-		if (mode === "bus" && !busRoute) {
-			if (!busViewportBounds) return [];
-			return buses.filter((b) => busInBounds(b, busViewportBounds));
-		}
-		return buses;
+		return stableVisibleBuses(nextBuses, visibleBusesCacheRef.current);
 	}, [buses, busRoute, busViewportBounds, focusContext, mode]);
 	const busRouteSummary =
 		mode === "bus" && busRoute && busDirection

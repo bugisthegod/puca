@@ -87,6 +87,25 @@ type UnifiedResult =
 	| { kind: "route"; route: RouteWithOperator }
 	| { kind: "stop"; stop: StopSearchResult };
 
+const STOP_SEARCH_DEBOUNCE_MS = 150;
+const STOP_SEARCH_CACHE_MAX = 50;
+const stopSearchCache = new Map<string, StopSearchResult[]>();
+
+function stopSearchCacheKey(query: string): string {
+	return query.trim().toLowerCase();
+}
+
+function rememberStopSearchResults(
+	key: string,
+	results: StopSearchResult[],
+): void {
+	if (stopSearchCache.has(key)) stopSearchCache.delete(key);
+	stopSearchCache.set(key, results);
+	if (stopSearchCache.size <= STOP_SEARCH_CACHE_MAX) return;
+	const oldest = stopSearchCache.keys().next().value;
+	if (oldest) stopSearchCache.delete(oldest);
+}
+
 export function displayEtaSeconds(
 	etaSeconds: number,
 	fetchedAt: number | null,
@@ -188,6 +207,7 @@ function BusSearchPanel({
 	const [selectedArrivalTripId, setSelectedArrivalTripId] = useState<
 		string | null
 	>(null);
+	const stopSearchAbortRef = useRef<AbortController | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -251,26 +271,46 @@ function BusSearchPanel({
 	// Debounced cross-operator stop search. Omits `operator=` so the backend
 	// returns matches from all three fleets in one round-trip.
 	useEffect(() => {
-		if (selectedRoute || selectedStop || busStopId) return;
+		if (selectedRoute || selectedStop || busStopId) {
+			setStopResults([]);
+			return;
+		}
 		const q = stopQuery.trim();
 		if (!q) {
 			setStopResults([]);
 			return;
 		}
+		const key = stopSearchCacheKey(q);
+		const cached = stopSearchCache.get(key);
+		if (cached) {
+			rememberStopSearchResults(key, cached);
+			setStopResults(cached);
+			return;
+		}
 		let cancelled = false;
+		const ac = new AbortController();
 		const timer = setTimeout(() => {
-			fetch(`/api/bus/stops/search?q=${encodeURIComponent(q)}`)
+			stopSearchAbortRef.current?.abort();
+			stopSearchAbortRef.current = ac;
+			fetch(`/api/bus/stops/search?q=${encodeURIComponent(q)}`, {
+				signal: ac.signal,
+			})
 				.then((r) => (r.ok ? r.json() : []))
 				.then((data: StopSearchResult[]) => {
-					if (!cancelled) setStopResults(data);
+					if (cancelled || ac.signal.aborted) return;
+					rememberStopSearchResults(key, data);
+					setStopResults(data);
 				})
-				.catch(() => {
+				.catch((err) => {
+					if ((err as Error).name === "AbortError") return;
 					if (!cancelled) setStopResults([]);
 				});
-		}, 120);
+		}, STOP_SEARCH_DEBOUNCE_MS);
 		return () => {
 			cancelled = true;
 			clearTimeout(timer);
+			ac.abort();
+			if (stopSearchAbortRef.current === ac) stopSearchAbortRef.current = null;
 		};
 	}, [stopQuery, selectedRoute, selectedStop, busStopId]);
 
