@@ -15,6 +15,7 @@ import {
 	type LiveTripData,
 	mergeTripStops,
 	type ScheduledRow,
+	searchBusStops,
 } from "../src/gtfsr";
 
 const stops = {
@@ -259,6 +260,54 @@ describe("getBusRouteShape", () => {
 
 	test("returns null for an unknown shortName", () => {
 		expect(getBusRouteShape("dublinbus", "NOPE_999")).toBeNull();
+	});
+});
+
+describe("searchBusStops", () => {
+	test("rehydrates an exact stop id without leaking index-only fields", () => {
+		const results = searchBusStops("dublinbus", "822008203");
+
+		expect(results[0]).toEqual({
+			id: "822008203",
+			name: "Visitor Centre",
+			code: "8203",
+			lat: 53.36469,
+			lng: -6.33167,
+			operator: "dublinbus",
+		});
+		expect(results[0]).not.toHaveProperty("nameLower");
+	});
+
+	test("matches public stop codes exactly before prefix matches", () => {
+		const results = searchBusStops("dublinbus", "8203");
+
+		expect(results[0]).toMatchObject({
+			id: "822008203",
+			name: "Visitor Centre",
+			code: "8203",
+			operator: "dublinbus",
+		});
+		expect(
+			results.every((r) => r.code === "8203" || r.code.startsWith("8203")),
+		).toBe(true);
+	});
+
+	test("matches stop names case-insensitively", () => {
+		const results = searchBusStops("dublinbus", "abbey");
+
+		expect(results[0]).toMatchObject({
+			id: "8220DB000289",
+			name: "Abbey St",
+			code: "289",
+			operator: "dublinbus",
+		});
+	});
+
+	test("does not return duplicate stop ids", () => {
+		const results = searchBusStops("dublinbus", "82");
+		const ids = results.map((r) => r.id);
+
+		expect(new Set(ids).size).toBe(ids.length);
 	});
 });
 
