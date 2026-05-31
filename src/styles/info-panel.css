@@ -145,12 +145,14 @@
 #info-panel.mode-switch {
 	position: fixed;
 	top: calc(12px + env(safe-area-inset-top));
-	left: 50%;
+	right: 0;
+	left: 0;
 	z-index: 1000;
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	width: 152px;
 	height: 48px;
+	margin-inline: auto;
 	padding: 4px;
 	border-radius: 999px;
 	background: rgba(32, 32, 38, 0.76);
@@ -163,10 +165,9 @@
 	color: var(--glass-text);
 	cursor: pointer;
 	overflow: hidden;
-	transform: translateX(-50%);
 	transition:
 		background var(--motion-fast),
-		transform 0.1s;
+		box-shadow var(--motion-fast);
 }
 
 #info-panel.mode-switch::before {
@@ -183,7 +184,9 @@
 }
 
 .mode-switch:active {
-	transform: translateX(-50%) scale(0.98);
+	box-shadow:
+		0 6px 18px rgba(0, 0, 0, 0.24),
+		0 1px 0 rgba(255, 255, 255, 0.12) inset;
 }
 
 .mode-switch__indicator {
