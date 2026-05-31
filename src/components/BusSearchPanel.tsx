@@ -38,10 +38,9 @@ export type BusStopSummary = {
 	stopCode: string;
 	stopName: string;
 	operator: BusOperator;
-	selected: boolean;
-	focusKey: string | null;
 	emptyText: string | null;
 	nextArrival: {
+		tripId: string;
 		routeShortName: string;
 		headsign: string;
 		etaText: string;
@@ -587,10 +586,6 @@ function BusSearchPanel({
 			stopCode: selectedStop.code || selectedStop.id,
 			stopName: selectedStop.name,
 			operator: selectedStop.operator,
-			focusKey: selectedArrivalTripId,
-			selected:
-				selectedArrivalTripId !== null &&
-				next?.tripId === selectedArrivalTripId,
 			emptyText:
 				selectedArrivalUnavailable || selectedArrivalMissing
 					? t("bus.search.arrivals.maybePassed")
@@ -602,6 +597,7 @@ function BusSearchPanel({
 								: t("info.stop.noarrivals"))),
 			nextArrival: next
 				? {
+						tripId: next.tripId,
 						routeShortName: next.routeShortName,
 						headsign: next.headsign,
 						etaText,

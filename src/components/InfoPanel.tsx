@@ -73,6 +73,52 @@ function InfoPanel({
 		mode === "bus" && busSearchTab === "route" ? busRouteSummary : null;
 	const trainSummary = mode === "train" ? trainFocusSummary : null;
 	const trainSummaryMeta = trainFocusSummaryMeta(trainSummary, t);
+	const summaryAnimationSignature = trainSummary
+		? ["train", trainSummary.trainCode, trainSummary.directionName ?? ""].join(
+				":",
+			)
+		: stopSummary
+			? [
+					"stop",
+					stopSummary.operator,
+					stopSummary.stopCode,
+					stopSummary.nextArrival?.tripId ?? "empty",
+				].join(":")
+			: routeSummary
+				? [
+						"route",
+						routeSummary.operator,
+						routeSummary.routeShortName,
+						routeSummary.headsign,
+					].join(":")
+				: null;
+	const [summaryAnimationVariant, setSummaryAnimationVariant] =
+		React.useState(0);
+	const previousSummaryAnimationSignatureRef = React.useRef(
+		summaryAnimationSignature,
+	);
+
+	React.useEffect(() => {
+		if (summaryAnimationSignature === null) {
+			previousSummaryAnimationSignatureRef.current = null;
+			return;
+		}
+		if (previousSummaryAnimationSignatureRef.current === null) {
+			previousSummaryAnimationSignatureRef.current = summaryAnimationSignature;
+			return;
+		}
+		if (
+			previousSummaryAnimationSignatureRef.current !== summaryAnimationSignature
+		) {
+			previousSummaryAnimationSignatureRef.current = summaryAnimationSignature;
+			setSummaryAnimationVariant((variant) => variant + 1);
+		}
+	}, [summaryAnimationSignature]);
+
+	const summaryAnimationClass =
+		summaryAnimationVariant % 2 === 0
+			? " info-stop-summary--animate-a"
+			: " info-stop-summary--animate-b";
 
 	if (!stopSummary && !routeSummary && !trainSummary) {
 		if (!inService) {
@@ -88,8 +134,7 @@ function InfoPanel({
 		>
 			{trainSummary && (
 				<div
-					key={`train:${trainSummary.trainCode}:${trainSummary.directionName ?? ""}`}
-					className="info-stop-summary info-stop-summary--train"
+					className={`info-stop-summary info-stop-summary--train${summaryAnimationClass}`}
 				>
 					<div className="info-stop-summary__updated">{lastUpdated}</div>
 					<div className="info-stop-summary__stop">
@@ -111,13 +156,7 @@ function InfoPanel({
 			)}
 			{stopSummary && (
 				<div
-					key={[
-						"stop",
-						stopSummary.operator,
-						stopSummary.stopCode,
-						stopSummary.focusKey ?? "empty",
-					].join(":")}
-					className={`info-stop-summary info-stop-summary--${stopSummary.operator}`}
+					className={`info-stop-summary info-stop-summary--${stopSummary.operator}${summaryAnimationClass}`}
 				>
 					<div className="info-stop-summary__updated">{lastUpdated}</div>
 					<div className="info-stop-summary__stop">
@@ -150,13 +189,7 @@ function InfoPanel({
 			)}
 			{routeSummary && (
 				<div
-					key={[
-						"route",
-						routeSummary.operator,
-						routeSummary.routeShortName,
-						routeSummary.headsign,
-					].join(":")}
-					className={`info-stop-summary info-stop-summary--${routeSummary.operator}`}
+					className={`info-stop-summary info-stop-summary--${routeSummary.operator}${summaryAnimationClass}`}
 				>
 					<div className="info-stop-summary__updated">{lastUpdated}</div>
 					<div className="info-stop-summary__stop">
