@@ -39,6 +39,7 @@ export type BusStopSummary = {
 	stopName: string;
 	operator: BusOperator;
 	selected: boolean;
+	focusKey: string | null;
 	emptyText: string | null;
 	nextArrival: {
 		routeShortName: string;
@@ -266,7 +267,7 @@ function BusSearchPanel({
 		}
 		document.addEventListener("mousedown", handleClick);
 		return () => document.removeEventListener("mousedown", handleClick);
-	}, []);
+	}, [onCollapsedChange]);
 
 	// Debounced cross-operator stop search. Omits `operator=` so the backend
 	// returns matches from all three fleets in one round-trip.
@@ -363,7 +364,7 @@ function BusSearchPanel({
 				if (!ac.signal.aborted) setArrivalsLoading(false);
 			}
 		},
-		[],
+		[t],
 	);
 
 	// Keep stop ETAs feeling alive between 30s fetches. The upstream TripUpdates
@@ -409,21 +410,27 @@ function BusSearchPanel({
 			selectedStop.operator === busStopOperator
 		)
 			return;
+		const ac = new AbortController();
 		// Rehydrate from a saved stopId — searchBusStops does an exact id match
 		// as its first branch, so one tiny fetch round-trips the full metadata.
 		// Clear if the stop no longer exists (e.g. operator removed it from GTFS).
 		fetch(
 			`/api/bus/stops/search?operator=${encodeURIComponent(busStopOperator)}&q=${encodeURIComponent(busStopId)}`,
+			{ signal: ac.signal },
 		)
 			.then((r) => (r.ok ? r.json() : []))
 			.then((data: StopSearchResult[]) => {
+				if (ac.signal.aborted) return;
 				const match = data.find((s) => s.id === busStopId);
 				if (match) setSelectedStop(match);
 				else onStopIdChange(null, null);
 			})
-			.catch(() => onStopIdChange(null, null));
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [busSearchTab, busStopId, busStopOperator]);
+			.catch((err) => {
+				if ((err as Error).name === "AbortError") return;
+				onStopIdChange(null, null);
+			});
+		return () => ac.abort();
+	}, [busSearchTab, busStopId, busStopOperator, onStopIdChange, selectedStop]);
 
 	const filtered = filterBusRoutes(routes, query);
 	const routeResults = filtered.slice(0, 8);
@@ -580,6 +587,7 @@ function BusSearchPanel({
 			stopCode: selectedStop.code || selectedStop.id,
 			stopName: selectedStop.name,
 			operator: selectedStop.operator,
+			focusKey: selectedArrivalTripId,
 			selected:
 				selectedArrivalTripId !== null &&
 				next?.tripId === selectedArrivalTripId,
@@ -843,54 +851,60 @@ function BusSearchPanel({
 											)}
 										{arrivals && arrivals.length > 0 && (
 											<ul className="stop-arrivals__list">
-												{arrivals.map((a) => (
-													<li key={a.tripId}>
-														<button
-															type="button"
-															className={`stop-arrival${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}`}
-															onClick={() => {
-																if (a.status === "scheduled") {
-																	onShowToast(
-																		t("bus.search.toast.notonmap.title"),
+												{arrivals.map((a) => {
+													const isSelected =
+														a.tripId === selectedArrivalTripId &&
+														a.status !== "scheduled";
+													return (
+														<li key={a.tripId}>
+															<button
+																type="button"
+																className={`stop-arrival${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}${isSelected ? " stop-arrival--selected" : ""}`}
+																aria-current={isSelected ? "true" : undefined}
+																onClick={() => {
+																	if (a.status === "scheduled") {
+																		onShowToast(
+																			t("bus.search.toast.notonmap.title"),
+																		);
+																		return;
+																	}
+																	setSelectedArrivalTripId(a.tripId);
+																	if (!selectedStop) return;
+																	onStopIdChange(
+																		selectedStop.id,
+																		selectedStop.operator,
 																	);
-																	return;
-																}
-																setSelectedArrivalTripId(a.tripId);
-																if (!selectedStop) return;
-																onStopIdChange(
-																	selectedStop.id,
-																	selectedStop.operator,
-																);
-																onTabChange("stop");
-																if (window.innerWidth <= 600)
-																	onCollapsedChange(true);
-																onPickArrival(
-																	a,
-																	selectedStop.operator,
-																	selectedStop,
-																);
-															}}
-														>
-															<span className="stop-arrival__route">
-																{a.routeShortName}
-															</span>
-															<span className="stop-arrival__headsign">
-																{a.headsign}
-															</span>
-															<span
-																className={`stop-arrival__eta${a.delaySec >= 300 ? " late" : ""}`}
+																	onTabChange("stop");
+																	if (window.innerWidth <= 600)
+																		onCollapsedChange(true);
+																	onPickArrival(
+																		a,
+																		selectedStop.operator,
+																		selectedStop,
+																	);
+																}}
 															>
-																{etaLabel(
-																	displayEtaSeconds(
-																		a.etaSeconds,
-																		arrivalsFetchedAt,
-																		arrivalClockNow,
-																	),
-																)}
-															</span>
-														</button>
-													</li>
-												))}
+																<span className="stop-arrival__route">
+																	{a.routeShortName}
+																</span>
+																<span className="stop-arrival__headsign">
+																	{a.headsign}
+																</span>
+																<span
+																	className={`stop-arrival__eta${a.delaySec >= 300 ? " late" : ""}`}
+																>
+																	{etaLabel(
+																		displayEtaSeconds(
+																			a.etaSeconds,
+																			arrivalsFetchedAt,
+																			arrivalClockNow,
+																		),
+																	)}
+																</span>
+															</button>
+														</li>
+													);
+												})}
 											</ul>
 										)}
 									</div>
