@@ -1,4 +1,3 @@
-import { BusFront, TramFront } from "lucide-preact";
 import React from "react";
 import type { Mode } from "../hooks/useVehicleMap";
 import type { t as translate } from "../i18n";
@@ -193,7 +192,6 @@ function OffHoursPanel({
 					aria-pressed={mode === "train"}
 					onClick={() => onModeChange("train")}
 				>
-					<TramFront size={16} strokeWidth={2.3} />
 					<span>{t("info.mode.train")}</span>
 				</button>
 				<button
@@ -202,7 +200,6 @@ function OffHoursPanel({
 					aria-pressed={mode === "bus"}
 					onClick={() => onModeChange("bus")}
 				>
-					<BusFront size={16} strokeWidth={2.3} />
 					<span>{t("info.mode.bus")}</span>
 				</button>
 			</div>
@@ -240,14 +237,12 @@ function ModeSwitch({
 				className="mode-switch__option mode-switch__option--train"
 				aria-hidden="true"
 			>
-				<TramFront size={18} strokeWidth={2.3} />
 				<span>{t("info.mode.train")}</span>
 			</span>
 			<span
 				className="mode-switch__option mode-switch__option--bus"
 				aria-hidden="true"
 			>
-				<BusFront size={18} strokeWidth={2.3} />
 				<span>{t("info.mode.bus")}</span>
 			</span>
 		</button>
