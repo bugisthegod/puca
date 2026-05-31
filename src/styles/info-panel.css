@@ -161,15 +161,13 @@
    ============================================================ */
 
 #info-panel.mode-switch {
-	--mode-switch-width: 152px;
-	--mode-switch-half: 76px;
 	position: fixed;
 	top: calc(12px + env(safe-area-inset-top));
-	left: calc(50% - var(--mode-switch-half));
+	left: 50%;
 	z-index: 1000;
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	width: var(--mode-switch-width);
+	width: 152px;
 	height: 48px;
 	padding: 4px;
 	border-radius: 999px;
@@ -183,15 +181,12 @@
 	color: var(--glass-text);
 	cursor: pointer;
 	overflow: hidden;
-	transform: none;
-	transition: background var(--motion-fast);
-	animation: info-mode-switch-in 0.36s cubic-bezier(0.18, 0.84, 0.22, 1);
-	appearance: none;
-	-webkit-appearance: none;
-	-webkit-font-smoothing: antialiased;
-	font: inherit;
-	font-style: normal;
-	text-align: center;
+	transform: translateX(-50%);
+	transition:
+		background var(--motion-fast),
+		transform 0.1s;
+	transform-origin: center;
+	animation: info-mode-switch-in 0.38s cubic-bezier(0.18, 0.84, 0.22, 1);
 }
 
 #info-panel.mode-switch::before {
@@ -208,7 +203,7 @@
 }
 
 .mode-switch:active {
-	transform: none;
+	transform: translateX(-50%) scale(0.98);
 }
 
 .mode-switch__indicator {
@@ -259,25 +254,12 @@
 	transition:
 		color var(--motion-fast),
 		transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
-	transform: none;
-	backface-visibility: hidden;
-	-webkit-transform: none;
-	-webkit-backface-visibility: hidden;
-	font-style: normal;
-	font-synthesis-style: none;
 }
 
 .mode-switch__option svg {
 	flex: 0 0 auto;
 	width: 20px;
 	height: 20px;
-	display: block;
-	transform: none;
-	transform-origin: 50% 50%;
-	backface-visibility: hidden;
-	-webkit-transform: none;
-	-webkit-transform-origin: 50% 50%;
-	-webkit-backface-visibility: hidden;
 }
 
 .mode-switch--train .mode-switch__option--train,
@@ -288,15 +270,19 @@
 @keyframes info-mode-switch-in {
 	0% {
 		opacity: 0;
-		top: calc(24px + env(safe-area-inset-top));
+		transform: translateX(-50%) translateY(12px) scale(0.82);
 	}
-	58% {
+	54% {
 		opacity: 1;
-		top: calc(9px + env(safe-area-inset-top));
+		transform: translateX(-50%) translateY(-2px) scale(1.045);
+	}
+	78% {
+		opacity: 1;
+		transform: translateX(-50%) translateY(1px) scale(0.992);
 	}
 	100% {
 		opacity: 1;
-		top: calc(12px + env(safe-area-inset-top));
+		transform: translateX(-50%) translateY(0) scale(1);
 	}
 }
 
@@ -436,12 +422,10 @@
 	}
 
 	#info-panel.mode-switch {
-		--mode-switch-width: 148px;
-		--mode-switch-half: 74px;
 		top: auto;
 		bottom: calc(24px + env(safe-area-inset-bottom));
+		width: 148px;
 		height: 46px;
-		animation-name: info-mode-switch-mobile-in;
 	}
 
 	#info-panel.off-hours-panel {
@@ -473,21 +457,6 @@
 	100% {
 		opacity: 1;
 		transform: translateX(-50%) scale(1);
-	}
-}
-
-@keyframes info-mode-switch-mobile-in {
-	0% {
-		opacity: 0;
-		bottom: calc(12px + env(safe-area-inset-bottom));
-	}
-	58% {
-		opacity: 1;
-		bottom: calc(27px + env(safe-area-inset-bottom));
-	}
-	100% {
-		opacity: 1;
-		bottom: calc(24px + env(safe-area-inset-bottom));
 	}
 }
 
