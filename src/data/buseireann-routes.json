@@ -610,6 +610,11 @@
     "longName": "Limerick - Ennis - Kilrush - Kilkee"
   },
   {
+    "id": "2 336 g#1",
+    "shortName": "336",
+    "longName": "Ennis - Kilrush - Doonbeg"
+  },
+  {
     "id": "2 343 c b",
     "shortName": "343",
     "longName": "Limerick - Shannon Airport"
@@ -878,6 +883,11 @@
     "id": "2 480 d",
     "shortName": "480",
     "longName": "Sligo - Donegal - Letterkenny - Derry"
+  },
+  {
+    "id": "2 486 a",
+    "shortName": "486",
+    "longName": "Ballyshannon - Lough Derg"
   },
   {
     "id": "2 487 d",
