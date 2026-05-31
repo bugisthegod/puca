@@ -87,7 +87,10 @@ function InfoPanel({
 			className="info-panel--detail info-panel--stop-summary"
 		>
 			{trainSummary && (
-				<div className="info-stop-summary info-stop-summary--train">
+				<div
+					key={`train:${trainSummary.trainCode}:${trainSummary.directionName ?? ""}`}
+					className="info-stop-summary info-stop-summary--train"
+				>
 					<div className="info-stop-summary__updated">{lastUpdated}</div>
 					<div className="info-stop-summary__stop">
 						<strong>
@@ -108,6 +111,12 @@ function InfoPanel({
 			)}
 			{stopSummary && (
 				<div
+					key={[
+						"stop",
+						stopSummary.operator,
+						stopSummary.stopCode,
+						stopSummary.focusKey ?? "empty",
+					].join(":")}
 					className={`info-stop-summary info-stop-summary--${stopSummary.operator}`}
 				>
 					<div className="info-stop-summary__updated">{lastUpdated}</div>
@@ -141,6 +150,12 @@ function InfoPanel({
 			)}
 			{routeSummary && (
 				<div
+					key={[
+						"route",
+						routeSummary.operator,
+						routeSummary.routeShortName,
+						routeSummary.headsign,
+					].join(":")}
 					className={`info-stop-summary info-stop-summary--${routeSummary.operator}`}
 				>
 					<div className="info-stop-summary__updated">{lastUpdated}</div>
