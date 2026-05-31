@@ -56,6 +56,20 @@ export function trainFocusSummaryMeta(
 		.join(" · ");
 }
 
+function getSummaryAnimationSignature(
+	trainSummary: TrainFocusSummary | null,
+	stopSummary: BusStopSummary | null,
+	routeSummary: BusRouteSummary | null,
+): string | null {
+	if (trainSummary)
+		return `train:${trainSummary.trainCode}:${trainSummary.directionName ?? ""}`;
+	if (stopSummary)
+		return `stop:${stopSummary.operator}:${stopSummary.stopCode}:${stopSummary.nextArrival?.tripId ?? "empty"}`;
+	if (routeSummary)
+		return `route:${routeSummary.operator}:${routeSummary.routeShortName}:${routeSummary.headsign ?? ""}`;
+	return null;
+}
+
 function InfoPanel({
 	lastUpdated,
 	mode,
@@ -73,52 +87,31 @@ function InfoPanel({
 		mode === "bus" && busSearchTab === "route" ? busRouteSummary : null;
 	const trainSummary = mode === "train" ? trainFocusSummary : null;
 	const trainSummaryMeta = trainFocusSummaryMeta(trainSummary, t);
-	const summaryAnimationSignature = trainSummary
-		? ["train", trainSummary.trainCode, trainSummary.directionName ?? ""].join(
-				":",
-			)
-		: stopSummary
-			? [
-					"stop",
-					stopSummary.operator,
-					stopSummary.stopCode,
-					stopSummary.nextArrival?.tripId ?? "empty",
-				].join(":")
-			: routeSummary
-				? [
-						"route",
-						routeSummary.operator,
-						routeSummary.routeShortName,
-						routeSummary.headsign,
-					].join(":")
-				: null;
-	const [summaryAnimationVariant, setSummaryAnimationVariant] =
-		React.useState(0);
-	const previousSummaryAnimationSignatureRef = React.useRef(
-		summaryAnimationSignature,
+	const signature = getSummaryAnimationSignature(
+		trainSummary,
+		stopSummary,
+		routeSummary,
 	);
+	const prevSignatureRef = React.useRef(signature);
+	const variantRef = React.useRef(0);
 
-	React.useEffect(() => {
-		if (summaryAnimationSignature === null) {
-			previousSummaryAnimationSignatureRef.current = null;
-			return;
+	// Bump variant when the summary identity changes so CSS re-triggers the
+	// entrance animation. Skip the initial mount (null → value) — the
+	// element's first paint already animates.
+	if (signature !== prevSignatureRef.current) {
+		const wasNull = prevSignatureRef.current === null;
+		prevSignatureRef.current = signature;
+		if (signature !== null && !wasNull) {
+			variantRef.current += 1;
 		}
-		if (previousSummaryAnimationSignatureRef.current === null) {
-			previousSummaryAnimationSignatureRef.current = summaryAnimationSignature;
-			return;
-		}
-		if (
-			previousSummaryAnimationSignatureRef.current !== summaryAnimationSignature
-		) {
-			previousSummaryAnimationSignatureRef.current = summaryAnimationSignature;
-			setSummaryAnimationVariant((variant) => variant + 1);
-		}
-	}, [summaryAnimationSignature]);
+	}
 
 	const summaryAnimationClass =
-		summaryAnimationVariant % 2 === 0
-			? " info-stop-summary--animate-a"
-			: " info-stop-summary--animate-b";
+		signature === null
+			? ""
+			: variantRef.current % 2 === 0
+				? " info-stop-summary--animate-a"
+				: " info-stop-summary--animate-b";
 
 	if (!stopSummary && !routeSummary && !trainSummary) {
 		if (!inService) {
