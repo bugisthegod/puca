@@ -143,13 +143,15 @@
    ============================================================ */
 
 #info-panel.mode-switch {
+	--mode-switch-width: 152px;
+	--mode-switch-half: 76px;
 	position: fixed;
 	top: calc(12px + env(safe-area-inset-top));
-	left: 50%;
+	left: calc(50% - var(--mode-switch-half));
 	z-index: 1000;
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	width: 152px;
+	width: var(--mode-switch-width);
 	height: 48px;
 	padding: 4px;
 	border-radius: 999px;
@@ -163,10 +165,14 @@
 	color: var(--glass-text);
 	cursor: pointer;
 	overflow: hidden;
-	transform: translateX(-50%);
-	transition:
-		background var(--motion-fast),
-		transform 0.1s;
+	transform: none;
+	transition: background var(--motion-fast);
+	appearance: none;
+	-webkit-appearance: none;
+	-webkit-font-smoothing: antialiased;
+	font: inherit;
+	font-style: normal;
+	text-align: center;
 }
 
 #info-panel.mode-switch::before {
@@ -183,7 +189,7 @@
 }
 
 .mode-switch:active {
-	transform: translateX(-50%) scale(0.98);
+	transform: none;
 }
 
 .mode-switch__indicator {
@@ -234,17 +240,44 @@
 	transition:
 		color var(--motion-fast),
 		transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+	transform: none;
+	-webkit-transform: none;
+	font-style: normal;
+	font-synthesis: none;
 }
 
 .mode-switch__option svg {
 	flex: 0 0 auto;
 	width: 20px;
 	height: 20px;
+	display: block;
+	transform: none;
+	-webkit-transform: none;
 }
 
 .mode-switch--train .mode-switch__option--train,
 .mode-switch--bus .mode-switch__option--bus {
 	color: rgba(255, 255, 255, 0.94);
+}
+
+@supports (-webkit-touch-callout: none) {
+	#info-panel.mode-switch {
+		background: rgba(32, 32, 38, 0.92);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+
+	.mode-switch__option {
+		font-weight: 700;
+	}
+
+	.mode-switch:active .mode-switch__indicator {
+		transform: translateX(0);
+	}
+
+	.mode-switch--bus:active .mode-switch__indicator {
+		transform: translateX(100%);
+	}
 }
 
 /* ============================================================
@@ -380,9 +413,10 @@
 	}
 
 	#info-panel.mode-switch {
+		--mode-switch-width: 148px;
+		--mode-switch-half: 74px;
 		top: auto;
 		bottom: calc(24px + env(safe-area-inset-bottom));
-		width: 148px;
 		height: 46px;
 	}
 
