@@ -102,7 +102,7 @@ function InfoPanel({
 		const wasNull = prevSignatureRef.current === null;
 		prevSignatureRef.current = signature;
 		if (signature !== null && !wasNull) {
-			variantRef.current += 1;
+			variantRef.current = 1 - variantRef.current;
 		}
 	}
 
