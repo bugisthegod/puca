@@ -164,6 +164,7 @@
 	-webkit-backdrop-filter: blur(14px) saturate(140%);
 	color: var(--glass-text);
 	cursor: pointer;
+	touch-action: manipulation;
 	overflow: hidden;
 	transition:
 		background var(--motion-fast),
