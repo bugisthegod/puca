@@ -167,6 +167,7 @@
 	transition:
 		background var(--motion-fast),
 		transform 0.1s;
+	touch-action: auto;
 }
 
 #info-panel.mode-switch::before {
