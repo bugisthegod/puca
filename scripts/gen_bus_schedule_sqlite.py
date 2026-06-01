@@ -110,7 +110,6 @@ def main():
     print(f"\n  total inserted: {total:,}")
 
     print("Creating index …")
-    cur.execute("CREATE INDEX idx_stop_times_trip ON stop_times(trip_id)")
     cur.execute("CREATE INDEX idx_stop_times_stop ON stop_times(stop_id)")
     con.commit()
 

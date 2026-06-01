@@ -22,7 +22,7 @@ project memory. Treat it as durable working context for future agents.
   product or commercial service.
 - Do not pitch marketing, growth funnels, analytics platforms, multi-region
   scaling, or user acquisition strategy unless explicitly asked.
-- As of 2026-05-05, daily usage is around 4-5 users. Treat load-related issues
+- As of 2026-06-01, daily usage is around 25-30 users. Treat load-related issues
   as code/data problems first, not traffic problems.
 - The owner accepts occasional Fly.io OOM restarts on the smallest tier for now.
   Prefer code-level fixes over paid scaling suggestions.
