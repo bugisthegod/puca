@@ -22,6 +22,7 @@ import {
 	searchBusStops,
 	startBackgroundPolling,
 } from "./src/gtfsr.ts";
+import { errToMeta, log } from "./src/logger.ts";
 import {
 	clampMins,
 	createServerTimer,
@@ -45,6 +46,12 @@ import { isInServiceHours } from "./src/utils.ts";
 const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
 const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
+
+function routeParam(req: Request, name: string): string {
+	return (
+		(req as Request & { params: Record<string, string> }).params[name] ?? ""
+	);
+}
 
 startBackgroundPolling();
 startEventLoopLagMonitor();
@@ -166,7 +173,8 @@ Bun.serve({
 			try {
 				const trains = await getCurrentTrains();
 				return Response.json(trains, { headers });
-			} catch {
+			} catch (err) {
+				log.error("http.trains.failed", errToMeta(err));
 				return Response.json([], { status: 502 });
 			}
 		}),
@@ -176,7 +184,7 @@ Bun.serve({
 			};
 			if (!isInServiceHours("train")) return Response.json([], { headers });
 			try {
-				const code = req.params.code as string;
+				const code = routeParam(req, "code");
 				const url = new URL(req.url);
 				const numMins = clampMins(url.searchParams.get("mins"), 90);
 				const data = await getStationData(code, numMins);
@@ -267,7 +275,7 @@ Bun.serve({
 			};
 			if (!isInServiceHours("train")) return Response.json([], { headers });
 			try {
-				const trainId = req.params.id as string;
+				const trainId = routeParam(req, "id");
 				const url = new URL(req.url);
 				const dateRaw = url.searchParams.get("date");
 				const trainDate =
@@ -326,8 +334,12 @@ Bun.serve({
 				return Response.json(vehicles, {
 					headers: withServerTiming(vehicleHeaders, timer),
 				});
-			} catch {
+			} catch (err) {
 				timer.mark("error");
+				log.error("http.bus_vehicles_all.failed", {
+					...errToMeta(err),
+					duration_ms: Math.round(timer.totalMs()),
+				});
 				return Response.json([], {
 					status: 502,
 					headers: withServerTiming(getBusVehicleRealtimeHeaders(), timer),
@@ -359,8 +371,8 @@ Bun.serve({
 					),
 				});
 			}
+			const url = new URL(req.url);
 			try {
-				const url = new URL(req.url);
 				const operator = parseOperator(
 					url.searchParams.get("operator") ?? "dublinbus",
 				);
@@ -410,8 +422,15 @@ Bun.serve({
 				return Response.json(vehicles, {
 					headers: withServerTiming(vehicleHeaders, timer),
 				});
-			} catch {
+			} catch (err) {
 				timer.mark("error");
+				log.error("http.bus_vehicles.failed", {
+					...errToMeta(err),
+					operator: url.searchParams.get("operator") ?? "dublinbus",
+					route: url.searchParams.get("route"),
+					direction: url.searchParams.get("direction"),
+					duration_ms: Math.round(timer.totalMs()),
+				});
 				return Response.json([], {
 					status: 502,
 					headers: withServerTiming(getBusVehicleRealtimeHeaders(), timer),
@@ -425,7 +444,7 @@ Bun.serve({
 			);
 			if (!operator)
 				return Response.json({ error: "unknown operator" }, { status: 400 });
-			const shape = getBusRouteShape(operator, req.params.route as string);
+			const shape = getBusRouteShape(operator, routeParam(req, "route"));
 			return Response.json(shape ?? {}, {
 				headers: { "Cache-Control": "public, max-age=86400" }, // 1 day; shapes are static
 			});
@@ -442,8 +461,9 @@ Bun.serve({
 					{ headers: withServerTiming(tripHeaders, timer) },
 				);
 			}
+			const url = new URL(req.url);
+			const tripId = routeParam(req, "tripId");
 			try {
-				const url = new URL(req.url);
 				const operator = parseOperator(
 					url.searchParams.get("operator") ?? "dublinbus",
 				);
@@ -453,22 +473,25 @@ Bun.serve({
 						{ error: "unknown operator" },
 						{ status: 400, headers: withServerTiming(undefined, timer) },
 					);
-				const trip = await getBusTripStops(
-					operator,
-					req.params.tripId as string,
-				);
+				const trip = await getBusTripStops(operator, tripId);
 				timer.mark("data");
 				logSlowRequest(timer, "http.bus_trip.slow", {
 					operator,
-					trip_id: req.params.tripId,
+					trip_id: tripId,
 					stop_count: trip?.stops.length ?? 0,
 					found: Boolean(trip),
 				});
 				return Response.json(trip ?? {}, {
 					headers: withServerTiming(tripHeaders, timer),
 				});
-			} catch {
+			} catch (err) {
 				timer.mark("error");
+				log.error("http.bus_trip.failed", {
+					...errToMeta(err),
+					operator: url.searchParams.get("operator") ?? "dublinbus",
+					trip_id: tripId,
+					duration_ms: Math.round(timer.totalMs()),
+				});
 				return Response.json(
 					{},
 					{ status: 502, headers: withServerTiming(undefined, timer) },
@@ -496,7 +519,7 @@ Bun.serve({
 			const operator = parseOperator(
 				url.searchParams.get("operator") ?? "dublinbus",
 			);
-			const stopId = req.params.stopId as string;
+			const stopId = routeParam(req, "stopId");
 			timer.mark("parse");
 			if (!operator)
 				return Response.json(
@@ -537,8 +560,14 @@ Bun.serve({
 				return Response.json(arrivals, {
 					headers: withServerTiming(arrivalsHeaders, timer),
 				});
-			} catch {
+			} catch (err) {
 				timer.mark("error");
+				log.error("http.bus_arrivals.failed", {
+					...errToMeta(err),
+					operator: url.searchParams.get("operator") ?? "dublinbus",
+					stop_id: stopId,
+					duration_ms: Math.round(timer.totalMs()),
+				});
 				return Response.json([], {
 					status: 502,
 					headers: withServerTiming(getBusTripUpdateRealtimeHeaders(), timer),
