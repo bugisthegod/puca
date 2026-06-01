@@ -216,35 +216,26 @@ function ModeSwitch({
 }) {
 	const { t } = useLocale();
 	const isBus = mode === "bus";
-	const label = isBus ? t("info.mode.bus") : t("info.mode.train");
-	const nextMode: Mode = isBus ? "train" : "bus";
-
-	function handleModeClick() {
-		onModeChange(nextMode);
-	}
 
 	return (
-		<button
-			id="info-panel"
-			type="button"
-			className={`mode-switch mode-switch--${mode}`}
-			aria-label={`${t("tour.mode.title")}: ${label}`}
-			aria-pressed={isBus}
-			onClick={handleModeClick}
-		>
-			<span
+		<div id="info-panel" className={`mode-switch mode-switch--${mode}`}>
+			<button
+				type="button"
 				className="mode-switch__option mode-switch__option--train"
-				aria-hidden="true"
+				aria-pressed={!isBus}
+				onClick={() => onModeChange("train")}
 			>
 				<span>{t("info.mode.train")}</span>
-			</span>
-			<span
+			</button>
+			<button
+				type="button"
 				className="mode-switch__option mode-switch__option--bus"
-				aria-hidden="true"
+				aria-pressed={isBus}
+				onClick={() => onModeChange("bus")}
 			>
 				<span>{t("info.mode.bus")}</span>
-			</span>
-		</button>
+			</button>
+		</div>
 	);
 }
 

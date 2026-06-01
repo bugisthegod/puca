@@ -150,6 +150,7 @@
 	z-index: 1000;
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: stretch;
 	width: 152px;
 	height: 48px;
 	margin-inline: auto;
@@ -163,7 +164,6 @@
 	backdrop-filter: blur(14px) saturate(140%);
 	-webkit-backdrop-filter: blur(14px) saturate(140%);
 	color: var(--glass-text);
-	cursor: pointer;
 	touch-action: manipulation;
 	overflow: hidden;
 	transition:
@@ -196,14 +196,25 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 5px;
+	align-self: stretch;
 	min-width: 0;
+	min-height: 0;
+	height: 100%;
+	padding: 0;
+	border: 1px solid transparent;
 	color: rgba(255, 255, 255, 0.58);
+	background: transparent;
 	font-size: 0.84rem;
 	font-weight: 750;
+	font-family: inherit;
 	line-height: 1;
+	text-align: center;
 	white-space: nowrap;
 	border-radius: 999px;
+	cursor: pointer;
+	appearance: none;
+	-webkit-appearance: none;
+	touch-action: manipulation;
 	transition:
 		background var(--motion-fast),
 		box-shadow var(--motion-fast),
