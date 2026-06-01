@@ -1,0 +1,115 @@
+name: Prepare data update PR
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: prepare-data-update
+  cancel-in-progress: false
+
+env:
+  FEED_INFO_FILE: .github/data/feed_info.txt
+  NTA_ZIP_URL: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
+
+jobs:
+  prepare:
+    name: Generate JSON and open PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Download latest NTA GTFS
+        run: |
+          mkdir -p gtfs
+          curl -fL "${NTA_ZIP_URL}?_=$(date +%s)" -o /tmp/GTFS_Realtime.zip
+          unzip -q -o /tmp/GTFS_Realtime.zip -d gtfs
+          python3 - <<'PY'
+          from pathlib import Path
+
+          required = ("routes.txt", "trips.txt", "stop_times.txt", "shapes.txt", "stops.txt", "feed_info.txt")
+          missing = [name for name in required if not (Path("gtfs") / name).exists()]
+          if missing:
+              raise SystemExit(f"Missing GTFS files: {', '.join(missing)}")
+
+          print((Path("gtfs") / "feed_info.txt").read_text(encoding="utf-8-sig"))
+          PY
+          cp gtfs/feed_info.txt /tmp/feed_info.txt
+
+      - name: Check feed version
+        id: feed
+        run: |
+          DATA=$(sed -n '2p' /tmp/feed_info.txt | tr -d '\r')
+          UUID=$(echo "$DATA" | awk -F',' '{print $6}')
+          START=$(echo "$DATA" | awk -F',' '{print $4}')
+          END=$(echo "$DATA" | awk -F',' '{print $5}')
+
+          ACK_DATA=$(sed -n '2p' "$FEED_INFO_FILE" 2>/dev/null | tr -d '\r')
+          ACK_UUID=$(echo "$ACK_DATA" | awk -F',' '{print $6}')
+
+          echo "uuid=$UUID" >> "$GITHUB_OUTPUT"
+          echo "feed_start=$START" >> "$GITHUB_OUTPUT"
+          echo "feed_end=$END" >> "$GITHUB_OUTPUT"
+          echo "ack_uuid=$ACK_UUID" >> "$GITHUB_OUTPUT"
+
+          echo "Repo feed UUID: '${ACK_UUID:-missing}'"
+          echo "Latest zip feed UUID: '$UUID'"
+
+          if [ -n "$UUID" ] && [ "$UUID" = "$ACK_UUID" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Feed already matches repo marker; no PR needed."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate JSON data
+        if: steps.feed.outputs.changed == 'true'
+        run: bun run json:generate
+
+      - name: Update feed marker
+        if: steps.feed.outputs.changed == 'true'
+        run: |
+          mkdir -p "$(dirname "$FEED_INFO_FILE")"
+          cp /tmp/feed_info.txt "$FEED_INFO_FILE"
+
+      - name: Open data update PR
+        if: steps.feed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet -- src/data "$FEED_INFO_FILE"; then
+            echo "No tracked JSON or feed marker changes after generation."
+            exit 0
+          fi
+
+          BRANCH="bot/nta-data-${{ steps.feed.outputs.uuid }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add src/data "$FEED_INFO_FILE"
+          git commit -m "chore(data): NTA feed ${{ steps.feed.outputs.feed_start }}"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: update NTA static data (${{ steps.feed.outputs.feed_start }})" \
+            --body "$(cat <<'BODY'
+          Updates static GTFS-derived JSON and the tracked feed marker from the latest full GTFS zip.
+
+          | field | value |
+          |---|---|
+          | `feed_start_date` | `${{ steps.feed.outputs.feed_start }}` |
+          | `feed_end_date` | `${{ steps.feed.outputs.feed_end }}` |
+          | `feed_version` | `${{ steps.feed.outputs.uuid }}` |
+
+          After this PR is merged and deployed, run `Update schedule DBs on Fly` manually to generate and upload the matching schedule SQLite DBs.
+          BODY
+          )"

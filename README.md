@@ -150,7 +150,7 @@ Regenerate local schedule SQLite databases:
 bun run db:generate
 ```
 
-When arrivals suddenly disappear or buses go to zero while production logs still show vehicles, diagnose GTFS feed drift before regenerating. Treat the tracked `.github/data/feed_info.txt` as the current acknowledged static feed marker, and compare it with `feed_info.txt` from the full GTFS zip; the lightweight feed metadata endpoint can lag behind or move ahead of the zip.
+When arrivals suddenly disappear or buses go to zero while production logs still show vehicles, diagnose GTFS feed drift before regenerating. Compare `.github/data/feed_info.txt` with `feed_info.txt` from the full GTFS zip; the lightweight feed metadata endpoint can lag behind or move ahead of the zip.
 
 Historical feed notes live in [docs/nta-feed-history.md](docs/nta-feed-history.md).
 

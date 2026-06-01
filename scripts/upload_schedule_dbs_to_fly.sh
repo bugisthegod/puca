@@ -53,6 +53,17 @@ for db in "${DBS[@]}"; do
 	remote_path="$DATA_DIR/$db"
 	remote_tmp="$remote_path.new"
 	size_mb=$(du -m "$local_path" | cut -f1)
+	local_bytes=$(wc -c < "$local_path" | tr -d ' ')
+	available_kb=$(
+		"$FLY_BIN" ssh console -a "$APP" --command "df -Pk \"$DATA_DIR\" | awk 'NR==2 {print \$4}'"
+	)
+	available_bytes=$(( available_kb * 1024 ))
+
+	if (( available_bytes < local_bytes )); then
+		printf 'Not enough free space on %s for %s.new: need %s bytes, have %s bytes\n' \
+			"$DATA_DIR" "$db" "$local_bytes" "$available_bytes" >&2
+		exit 1
+	fi
 
 	log "Uploading $db ($size_mb MB) to $remote_tmp"
 	start_sec=$(date +%s)
@@ -60,15 +71,14 @@ for db in "${DBS[@]}"; do
 	elapsed=$(( $(date +%s) - start_sec ))
 
 	log "Checking uploaded size for $db"
-	local_bytes=$(wc -c < "$local_path" | tr -d ' ')
 	"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'test \"\$(stat -c%s \"$remote_tmp\")\" = \"$local_bytes\"'"
 
 	log "Uploaded $db in ${elapsed}s, replacing $remote_path"
 	"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'mv \"$remote_tmp\" \"$remote_path\"'"
 	log "Replaced $remote_path"
-done
 
-log "Restarting Fly app"
-"$FLY_BIN" apps restart "$APP"
+	log "Restarting Fly app to release old $db file handles"
+	"$FLY_BIN" apps restart "$APP"
+done
 
 log "Done"

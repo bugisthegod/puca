@@ -24,25 +24,37 @@ fly tokens create deploy -a puca
 手动运行：
 
 - 打开 GitHub repo 的 `Actions`
-- 选择 `Update schedule DBs on Fly`
+- 如果 zip 里有新 feed，先选择 `Prepare data update PR`
+- 合并 PR 并等待 `CI / Deploy` 完成
+- 再选择 `Update schedule DBs on Fly`
 - 点击 `Run workflow`
 
-Workflow 会：
+`Prepare data update PR` 会：
 
 1. 下载最新 `GTFS_Realtime.zip`
 2. 解压到 runner 的 `gtfs/`
-3. 对比 zip 内的 `feed_info.txt` `feed_version` 和 Fly volume 上的 `/data/feed_info.txt`
-4. 如果版本相同，直接跳过，不生成 DB，也不上传
-5. 如果版本不同或 marker 不存在，执行 `bun run db:generate`
-6. 对三个 SQLite DB 跑 `PRAGMA integrity_check` 和 row count 检查
-7. 执行 `bun run db:upload`
-8. 上传到 `/data/*.db.new`，校验远端文件大小
-9. 原子 `mv` 替换正式 DB
-10. 重启 Fly app
-11. 把本次 zip 内的 `feed_info.txt` 保存为 `/data/feed_info.txt`
+3. 对比 zip 内的 `feed_info.txt` `feed_version` 和 repo 里的 `.github/data/feed_info.txt`
+4. 如果版本相同，直接跳过
+5. 如果版本不同或 marker 不存在，执行 `bun run json:generate`
+6. 把 `src/data/*.json` 和 `.github/data/feed_info.txt` 放进同一个 PR
+
+`Update schedule DBs on Fly` 会：
+
+1. 下载最新 `GTFS_Realtime.zip`
+2. 确认 zip 内的 `feed_info.txt` `feed_version` 和 repo 里的 `.github/data/feed_info.txt` 一致
+3. 如果不一致，直接失败，避免把新 DB 上传到还没部署新 JSON 的线上 app
+4. 执行 `bun run db:generate`
+5. 对三个 SQLite DB 跑 `PRAGMA integrity_check` 和 row count 检查
+6. 执行 `bun run db:upload`
+7. 上传到 `/data/*.db.new`，校验远端文件大小
+8. 原子 `mv` 替换正式 DB
+9. 每替换完一个 DB 后重启 Fly app，释放旧 SQLite 文件句柄
 
 Repo 里追踪的 `.github/data/feed_info.txt` 是“已确认处理”的标准 marker；它替代了
 旧的 `.github/data/last-feed-uuid`，但保留了完整 `feed_info.txt` 内容。
+
+没有自动 feed checker；这两个 workflow 都是手动入口。判断是否继续时，它们都会下载
+完整 zip，并读取 zip 内的 `feed_info.txt`，不要用轻量 `feed_info.txt` 端点。
 
 如果 NTA route/stops/shapes 静态 JSON 也发生变化，不要只跑这个 workflow；需要先更新
 JSON 并正常 `fly deploy`，再更新 volume DB。

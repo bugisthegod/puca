@@ -12,7 +12,7 @@ concurrency:
 
 env:
   APP: puca
-  DATA_DIR: /data
+  FEED_INFO_FILE: .github/data/feed_info.txt
   NTA_ZIP_URL: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
 
 jobs:
@@ -23,8 +23,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
@@ -47,42 +45,38 @@ jobs:
 
       - name: Check feed version
         id: feed
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           DATA=$(sed -n '2p' /tmp/feed_info.txt | tr -d '\r')
           UUID=$(echo "$DATA" | awk -F',' '{print $6}')
           START=$(echo "$DATA" | awk -F',' '{print $4}')
           END=$(echo "$DATA" | awk -F',' '{print $5}')
 
-          if flyctl ssh console -a "$APP" --command "cat \"$DATA_DIR/feed_info.txt\"" > /tmp/remote_feed_info.txt; then
-            REMOTE_DATA=$(sed -n '2p' /tmp/remote_feed_info.txt | tr -d '\r')
-            REMOTE_UUID=$(echo "$REMOTE_DATA" | awk -F',' '{print $6}')
-          else
-            REMOTE_UUID=""
-          fi
+          ACK_DATA=$(sed -n '2p' "$FEED_INFO_FILE" 2>/dev/null | tr -d '\r')
+          ACK_UUID=$(echo "$ACK_DATA" | awk -F',' '{print $6}')
 
           echo "uuid=$UUID" >> "$GITHUB_OUTPUT"
           echo "feed_start=$START" >> "$GITHUB_OUTPUT"
           echo "feed_end=$END" >> "$GITHUB_OUTPUT"
-          echo "remote_uuid=$REMOTE_UUID" >> "$GITHUB_OUTPUT"
+          echo "ack_uuid=$ACK_UUID" >> "$GITHUB_OUTPUT"
 
-          echo "Remote feed UUID: '${REMOTE_UUID:-missing}'"
+          echo "Repo feed UUID: '${ACK_UUID:-missing}'"
           echo "Latest zip feed UUID: '$UUID'"
 
-          if [ -n "$UUID" ] && [ "$UUID" = "$REMOTE_UUID" ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Feed already uploaded; skipping DB generation and upload."
+          if [ -n "$UUID" ] && [ "$UUID" = "$ACK_UUID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Feed matches repo marker; generating and uploading DBs."
           else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Latest zip feed does not match repo marker. Run Prepare data update PR, merge it, and let the app deploy before uploading DBs." >&2
+            exit 1
           fi
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Generate schedule DBs
-        if: steps.feed.outputs.changed == 'true'
         run: bun run db:generate
 
       - name: Check generated DBs
-        if: steps.feed.outputs.changed == 'true'
         run: |
           python3 - <<'PY'
           import sqlite3
@@ -112,16 +106,7 @@ jobs:
           PY
 
       - name: Upload DBs to Fly volume
-        if: steps.feed.outputs.changed == 'true'
         run: bun run db:upload
         env:
           APP: ${{ env.APP }}
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
-      - name: Save uploaded feed marker
-        if: steps.feed.outputs.changed == 'true'
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          flyctl sftp put /tmp/feed_info.txt "$DATA_DIR/feed_info.txt.new" -a "$APP"
-          flyctl ssh console -a "$APP" --command "mv \"$DATA_DIR/feed_info.txt.new\" \"$DATA_DIR/feed_info.txt\""

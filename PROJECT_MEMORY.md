@@ -76,9 +76,9 @@ project memory. Treat it as durable working context for future agents.
   - Realtime moves ahead of static temporarily, causing route_id mismatches even
     when trip_id still matches.
   - Lightweight `feed_info.txt` can lag behind or move ahead of the full zip.
-- When users report 0 buses while Fly logs show vehicles, treat tracked
-  `.github/data/feed_info.txt` as the acknowledged static feed marker and compare it
-  with `feed_info.txt` from the full GTFS zip before recommending regen.
+- When users report 0 buses while Fly logs show vehicles, compare tracked
+  `.github/data/feed_info.txt` with `feed_info.txt` from the full GTFS zip
+  before recommending regen.
 - If lightweight `feed_info.txt` disagrees with the zip, trust the zip for
   regeneration decisions.
 - Historical notes live in `docs/nta-feed-history.md`.
