@@ -16,10 +16,23 @@ export function registerServiceWorker() {
 	}
 
 	window.addEventListener("load", () => {
-		navigator.serviceWorker.register("/sw.js").catch((err) => {
-			trackEvent("event/error/sw-registration");
-			console.warn("SW registration failed:", err);
+		let reloadingForUpdate = false;
+
+		navigator.serviceWorker.addEventListener("controllerchange", () => {
+			if (reloadingForUpdate) return;
+			reloadingForUpdate = true;
+			window.location.reload();
 		});
+
+		navigator.serviceWorker
+			.register("/sw.js", { updateViaCache: "none" })
+			.then((registration) => {
+				registration.update().catch(() => {});
+			})
+			.catch((err) => {
+				trackEvent("event/error/sw-registration");
+				console.warn("SW registration failed:", err);
+			});
 	});
 }
 
