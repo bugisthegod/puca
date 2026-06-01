@@ -232,7 +232,6 @@ function ModeSwitch({
 			aria-pressed={isBus}
 			onClick={handleModeClick}
 		>
-			<span className="mode-switch__indicator" aria-hidden="true" />
 			<span
 				className="mode-switch__option mode-switch__option--train"
 				aria-hidden="true"

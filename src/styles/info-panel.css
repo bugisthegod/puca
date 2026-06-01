@@ -190,38 +190,6 @@
 		0 1px 0 rgba(255, 255, 255, 0.12) inset;
 }
 
-.mode-switch__indicator {
-	position: absolute;
-	top: 4px;
-	left: 4px;
-	width: calc((100% - 8px) / 2);
-	height: calc(100% - 8px);
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.15);
-	border: 1px solid rgba(255, 255, 255, 0.16);
-	box-shadow:
-		0 3px 10px rgba(0, 0, 0, 0.2),
-		0 1px 0 rgba(255, 255, 255, 0.14) inset;
-	transform: translateX(0);
-	transition:
-		background var(--motion-fast),
-		transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
-		box-shadow 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
-	z-index: 0;
-}
-
-.mode-switch--bus .mode-switch__indicator {
-	transform: translateX(100%);
-}
-
-.mode-switch:active .mode-switch__indicator {
-	transform: scale(0.96);
-}
-
-.mode-switch--bus:active .mode-switch__indicator {
-	transform: translateX(100%) scale(0.96);
-}
-
 .mode-switch__option {
 	position: relative;
 	z-index: 1;
@@ -235,19 +203,20 @@
 	font-weight: 750;
 	line-height: 1;
 	white-space: nowrap;
+	border-radius: 999px;
 	transition:
-		color var(--motion-fast),
-		transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-.mode-switch__option svg {
-	flex: 0 0 auto;
-	width: 20px;
-	height: 20px;
+		background var(--motion-fast),
+		box-shadow var(--motion-fast),
+		color var(--motion-fast);
 }
 
 .mode-switch--train .mode-switch__option--train,
 .mode-switch--bus .mode-switch__option--bus {
+	background: rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	box-shadow:
+		0 3px 10px rgba(0, 0, 0, 0.2),
+		0 1px 0 rgba(255, 255, 255, 0.14) inset;
 	color: rgba(255, 255, 255, 0.94);
 }
 
