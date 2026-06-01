@@ -75,11 +75,12 @@ project memory. Treat it as durable working context for future agents.
   - Static route_id schema changes while trip_id and shape_id remain stable.
   - Realtime moves ahead of static temporarily, causing route_id mismatches even
     when trip_id still matches.
-  - Lightweight `feed_info.txt` updates before the full zip is republished.
-- When users report 0 buses while Fly logs show vehicles, compare live
-  `feed_info.txt` with local `gtfs/feed_info.txt` before recommending regen.
-- If the zip `Last-Modified` has not changed even though lightweight
-  `feed_info.txt` has, wait; regeneration will fetch the old zip.
+  - Lightweight `feed_info.txt` can lag behind or move ahead of the full zip.
+- When users report 0 buses while Fly logs show vehicles, treat tracked
+  `.github/data/feed_info.txt` as the acknowledged static feed marker and compare it
+  with `feed_info.txt` from the full GTFS zip before recommending regen.
+- If lightweight `feed_info.txt` disagrees with the zip, trust the zip for
+  regeneration decisions.
 - Historical notes live in `docs/nta-feed-history.md`.
 
 ## Luas Future Work

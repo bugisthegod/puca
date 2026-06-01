@@ -3,6 +3,7 @@ set -euo pipefail
 
 APP="${APP:-puca}"
 DATA_DIR="${DATA_DIR:-/data}"
+FLY_BIN="${FLY:-}"
 
 DBS=(
 	"bus-schedule.db"
@@ -14,14 +15,18 @@ log() {
 	printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
 }
 
-require_command() {
-	if ! command -v "$1" >/dev/null 2>&1; then
-		printf 'Missing required command: %s\n' "$1" >&2
-		exit 1
+if [[ -z "$FLY_BIN" ]]; then
+	if command -v fly >/dev/null 2>&1; then
+		FLY_BIN="fly"
+	elif command -v flyctl >/dev/null 2>&1; then
+		FLY_BIN="flyctl"
 	fi
-}
+fi
 
-require_command fly
+if [[ -z "$FLY_BIN" ]]; then
+	printf 'Missing required command: fly or flyctl\n' >&2
+	exit 1
+fi
 
 for db in "${DBS[@]}"; do
 	path="src/data/$db"
@@ -38,10 +43,10 @@ for db in "${DBS[@]}"; do
 done
 
 log "Checking Fly app access"
-fly status -a "$APP" >/dev/null
+"$FLY_BIN" status -a "$APP" >/dev/null
 
 log "Remote /data free space"
-fly ssh console -a "$APP" --command "sh -c 'df -h \"$DATA_DIR\" && ls -lh \"$DATA_DIR\"'"
+"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'df -h \"$DATA_DIR\" && ls -lh \"$DATA_DIR\"'"
 
 for db in "${DBS[@]}"; do
 	local_path="src/data/$db"
@@ -51,15 +56,19 @@ for db in "${DBS[@]}"; do
 
 	log "Uploading $db ($size_mb MB) to $remote_tmp"
 	start_sec=$(date +%s)
-	fly sftp put "$local_path" "$remote_tmp" -a "$APP"
+	"$FLY_BIN" sftp put "$local_path" "$remote_tmp" -a "$APP"
 	elapsed=$(( $(date +%s) - start_sec ))
 
+	log "Checking uploaded size for $db"
+	local_bytes=$(wc -c < "$local_path" | tr -d ' ')
+	"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'test \"\$(stat -c%s \"$remote_tmp\")\" = \"$local_bytes\"'"
+
 	log "Uploaded $db in ${elapsed}s, replacing $remote_path"
-	fly ssh console -a "$APP" --command "sh -c 'mv \"$remote_tmp\" \"$remote_path\"'"
+	"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'mv \"$remote_tmp\" \"$remote_path\"'"
 	log "Replaced $remote_path"
 done
 
 log "Restarting Fly app"
-fly apps restart "$APP"
+"$FLY_BIN" apps restart "$APP"
 
 log "Done"

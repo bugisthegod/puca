@@ -2,7 +2,7 @@ name: Check NTA feed
 
 # Daily check: did NTA publish a new GTFS static zip? If yes:
 #   1. Open a tracking issue (action checklist for the regen)
-#   2. Open a PR updating the witness file, linking back to the issue
+#   2. Open a PR updating .github/data/feed_info.txt, linking back to the issue
 # Bot never touches main directly — review/merge the PR is acknowledgment.
 # Manual regen still happens locally per docs/nta-feed-history.md.
 
@@ -21,18 +21,13 @@ on:
   workflow_dispatch:       # manual trigger from Actions tab
 
 permissions:
-  contents: write        # create branch + commit witness update
+  contents: write        # create branch + commit feed_info update
   pull-requests: write   # open PR
   issues: write          # open tracking issue
 
 env:
-  # Lightweight endpoint NTA published in response to our feature request
-  # (INC0036622, 2026-04-28). Returns just feed_info.txt (~270 B) instead of
-  # the full ~90 MB GTFS zip. Note: same CDN cache as the zip (max-age=172800,
-  # 48h), so query-string cache-bust still applied as a hedge.
-  NTA_FEED_INFO_URL: https://www.transportforireland.ie/transitData/Data/feed_info.txt
   NTA_ZIP_URL: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
-  WITNESS_FILE: .github/data/last-feed-uuid
+  FEED_INFO_FILE: .github/data/feed_info.txt
 
 jobs:
   check:
@@ -40,28 +35,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch NTA feed_info.txt
+      - name: Fetch NTA zip feed_info.txt
         id: feed
         run: |
-          curl -sL "${NTA_FEED_INFO_URL}?_=$(date +%s)" -o /tmp/feed_info.txt
+          curl -fsL "${NTA_ZIP_URL}?_=$(date +%s)" -o /tmp/GTFS_Realtime.zip
+          unzip -p /tmp/GTFS_Realtime.zip feed_info.txt > /tmp/feed_info.txt
           cat /tmp/feed_info.txt
 
           # feed_info.txt format (line 2):
           # publisher,url,lang,start_date,end_date,version,email
-          # Lightweight endpoint emits ISO dates (2026-04-27); legacy zip used
-          # GTFS-spec compact format (20260427). Strip dashes to keep the
-          # downstream witness/issue/PR formatting stable.
           DATA=$(sed -n '2p' /tmp/feed_info.txt | tr -d '\r')
           UUID=$(echo "$DATA" | awk -F',' '{print $6}')
-          START=$(echo "$DATA" | awk -F',' '{print $4}' | tr -d '-')
-          END=$(echo "$DATA" | awk -F',' '{print $5}' | tr -d '-')
+          START=$(echo "$DATA" | awk -F',' '{print $4}')
+          END=$(echo "$DATA" | awk -F',' '{print $5}')
 
-          OLD_UUID=$(cat "$WITNESS_FILE" 2>/dev/null | tr -d '\r\n')
+          OLD_DATA=$(sed -n '2p' "$FEED_INFO_FILE" 2>/dev/null | tr -d '\r')
+          OLD_UUID=$(echo "$OLD_DATA" | awk -F',' '{print $6}')
+          OLD_START=$(echo "$OLD_DATA" | awk -F',' '{print $4}')
+          OLD_END=$(echo "$OLD_DATA" | awk -F',' '{print $5}')
 
           echo "uuid=$UUID" >> "$GITHUB_OUTPUT"
           echo "old_uuid=$OLD_UUID" >> "$GITHUB_OUTPUT"
           echo "feed_start=$START" >> "$GITHUB_OUTPUT"
           echo "feed_end=$END" >> "$GITHUB_OUTPUT"
+          echo "old_feed_start=$OLD_START" >> "$GITHUB_OUTPUT"
+          echo "old_feed_end=$OLD_END" >> "$GITHUB_OUTPUT"
 
           echo "Old UUID: '$OLD_UUID'"
           echo "New UUID: '$UUID'"
@@ -105,6 +103,8 @@ jobs:
           | `feed_start_date` | `${{ steps.feed.outputs.feed_start }}` |
           | `feed_end_date` | `${{ steps.feed.outputs.feed_end }}` |
           | new `feed_version` UUID | `${{ steps.feed.outputs.uuid }}` |
+          | previous `feed_start_date` | `${{ steps.feed.outputs.old_feed_start }}` |
+          | previous `feed_end_date` | `${{ steps.feed.outputs.old_feed_end }}` |
           | previous UUID | `${{ steps.feed.outputs.old_uuid }}` |
 
           Source: <${{ env.NTA_ZIP_URL }}>
@@ -115,7 +115,7 @@ jobs:
           - [ ] Compare `route_id` prefixes vs `src/data/*-routes.json` (script in [docs/nta-feed-history.md](../blob/main/docs/nta-feed-history.md#怎么快速检查有没有漂移))
           - [ ] If prefixes rolled for any operator: regen via `python3 scripts/gen_*.py` → push to the linked PR branch
           - [ ] If only metadata changed: append a row to [docs/nta-feed-history.md](../blob/main/docs/nta-feed-history.md) on the linked PR branch
-          - [ ] Merge the linked witness-update PR
+          - [ ] Merge the linked feed marker PR
           - [ ] If you regen'd: `fly deploy` + SFTP db (CLAUDE.md procedure)
           - [ ] Close this issue
 
@@ -136,9 +136,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          echo "${{ steps.feed.outputs.uuid }}" > "$WITNESS_FILE"
-          git add "$WITNESS_FILE"
-          git commit -m "chore(witness): NTA feed UUID ${{ steps.feed.outputs.uuid }}"
+          mkdir -p "$(dirname "$FEED_INFO_FILE")"
+          cp /tmp/feed_info.txt "$FEED_INFO_FILE"
+          git add "$FEED_INFO_FILE"
+          git commit -m "chore(feed): NTA feed info ${{ steps.feed.outputs.feed_start }}"
           git push origin "$BRANCH"
 
           gh pr create \
@@ -148,8 +149,11 @@ jobs:
             --body "$(cat <<'BODY'
           Fixes #${{ steps.issue.outputs.num }} — see issue for the full action checklist.
 
-          This PR only bumps the witness file:
-          - `.github/data/last-feed-uuid`: `${{ steps.feed.outputs.old_uuid }}` → `${{ steps.feed.outputs.uuid }}`
+          This PR only updates the tracked feed marker:
+          - `.github/data/feed_info.txt`
+          - `feed_version`: `${{ steps.feed.outputs.old_uuid }}` → `${{ steps.feed.outputs.uuid }}`
+          - `feed_start_date`: `${{ steps.feed.outputs.old_feed_start }}` → `${{ steps.feed.outputs.feed_start }}`
+          - `feed_end_date`: `${{ steps.feed.outputs.old_feed_end }}` → `${{ steps.feed.outputs.feed_end }}`
 
           Merging signals to the daily workflow that this NTA release has been processed (next runs go silent until NTA publishes again).
 

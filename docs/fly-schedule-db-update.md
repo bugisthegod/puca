@@ -5,6 +5,48 @@
 JSON 静态数据走 `fly deploy` 进镜像；`src/data/*.db` 被 `.gitignore` 和
 `.dockerignore` 排除，必须按下面流程单独上传到 volume。
 
+## GitHub Actions 一键更新
+
+如果只是更新 schedule DB，可以用 GitHub runner 下载 NTA GTFS、生成 DB，并上传到
+Fly volume，避免本地慢网速上传大文件。
+
+第一次使用前：
+
+```bash
+fly tokens create deploy -a puca
+```
+
+把输出保存到 GitHub repo secret：
+
+- `Settings` → `Secrets and variables` → `Actions`
+- 新建 `FLY_API_TOKEN`
+
+手动运行：
+
+- 打开 GitHub repo 的 `Actions`
+- 选择 `Update schedule DBs on Fly`
+- 点击 `Run workflow`
+
+Workflow 会：
+
+1. 下载最新 `GTFS_Realtime.zip`
+2. 解压到 runner 的 `gtfs/`
+3. 对比 zip 内的 `feed_info.txt` `feed_version` 和 Fly volume 上的 `/data/feed_info.txt`
+4. 如果版本相同，直接跳过，不生成 DB，也不上传
+5. 如果版本不同或 marker 不存在，执行 `bun run db:generate`
+6. 对三个 SQLite DB 跑 `PRAGMA integrity_check` 和 row count 检查
+7. 执行 `bun run db:upload`
+8. 上传到 `/data/*.db.new`，校验远端文件大小
+9. 原子 `mv` 替换正式 DB
+10. 重启 Fly app
+11. 把本次 zip 内的 `feed_info.txt` 保存为 `/data/feed_info.txt`
+
+Repo 里追踪的 `.github/data/feed_info.txt` 是“已确认处理”的标准 marker；它替代了
+旧的 `.github/data/last-feed-uuid`，但保留了完整 `feed_info.txt` 内容。
+
+如果 NTA route/stops/shapes 静态 JSON 也发生变化，不要只跑这个 workflow；需要先更新
+JSON 并正常 `fly deploy`，再更新 volume DB。
+
 ## 推荐顺序
 
 如果 JSON 也更新了，先部署镜像：
@@ -75,4 +117,3 @@ curl -I https://puca.dev
 ```
 
 `/data` 下应该只有正式 DB 文件，没有 `.new` 残留；`puca.dev` 应返回 `HTTP/2 200`。
-
