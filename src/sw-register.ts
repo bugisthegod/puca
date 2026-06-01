@@ -15,25 +15,23 @@ export function registerServiceWorker() {
 		return;
 	}
 
-	window.addEventListener("load", () => {
-		let reloadingForUpdate = false;
+	let reloadingForUpdate = false;
 
-		navigator.serviceWorker.addEventListener("controllerchange", () => {
-			if (reloadingForUpdate) return;
-			reloadingForUpdate = true;
-			window.location.reload();
-		});
-
-		navigator.serviceWorker
-			.register("/sw.js", { updateViaCache: "none" })
-			.then((registration) => {
-				registration.update().catch(() => {});
-			})
-			.catch((err) => {
-				trackEvent("event/error/sw-registration");
-				console.warn("SW registration failed:", err);
-			});
+	navigator.serviceWorker.addEventListener("controllerchange", () => {
+		if (reloadingForUpdate) return;
+		reloadingForUpdate = true;
+		window.location.reload();
 	});
+
+	navigator.serviceWorker
+		.register("/sw.js", { updateViaCache: "none" })
+		.then((registration) => {
+			registration.update().catch(() => {});
+		})
+		.catch((err) => {
+			trackEvent("event/error/sw-registration");
+			console.warn("SW registration failed:", err);
+		});
 }
 
 function isDevHost(): boolean {

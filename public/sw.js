@@ -16,8 +16,8 @@ const TILE_ACCESS_AT_HEADER = "x-puca-access-at";
 // first-try when the origin is warm.
 const NAV_NETWORK_TIMEOUT_MS = 2000;
 
+const APP_SHELL_URL = "/";
 const PRECACHE_URLS = [
-	"/",
 	"/manifest.json",
 	"/icon-192.png",
 	"/icon-512.png",
@@ -37,7 +37,10 @@ self.addEventListener("install", (event) => {
 	event.waitUntil(
 		caches
 			.open(CACHE_NAME)
-			.then((cache) => cache.addAll(PRECACHE_URLS))
+			.then(async (cache) => {
+				await cache.add(APP_SHELL_URL);
+				await Promise.allSettled(PRECACHE_URLS.map((url) => cache.add(url)));
+			})
 			.then(() => self.skipWaiting()),
 	);
 });
