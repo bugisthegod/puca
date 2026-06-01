@@ -1,7 +1,9 @@
 import {
 	type BusStopArrival,
+	decideScheduleVehicleArrival,
 	decideStopArrival,
 	type StopArrivalDecision,
+	shouldConsiderStopArrivalTrip,
 } from "./gtfsr/arrivals";
 import {
 	type GtfsrHealthSnapshot,
@@ -57,6 +59,7 @@ export type {
 };
 export {
 	__testing,
+	decideScheduleVehicleArrival,
 	decideStopArrival,
 	getAllBusVehicles,
 	getAllOperatorsBusVehicles,
@@ -77,5 +80,6 @@ export {
 	mergeTripStops,
 	searchAllBusStops,
 	searchBusStops,
+	shouldConsiderStopArrivalTrip,
 	startBackgroundPolling,
 };

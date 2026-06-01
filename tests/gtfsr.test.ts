@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
 	__testing,
+	decideScheduleVehicleArrival,
 	decideStopArrival,
 	type GtfsVehiclePosition,
 	getAllBusVehicles,
@@ -16,6 +17,7 @@ import {
 	mergeTripStops,
 	type ScheduledRow,
 	searchBusStops,
+	shouldConsiderStopArrivalTrip,
 } from "../src/gtfsr";
 
 const stops = {
@@ -1224,6 +1226,78 @@ describe("decideStopArrival", () => {
 		expect(result.keep).toBe(true);
 		if (!result.keep) return;
 		expect(result.delaySec).toBe(180);
+	});
+
+	test("missing TripUpdate + GPS upstream → keep from schedule and GPS delay", () => {
+		const vehicle = {
+			lat: tripStopCoords[5]!.lat,
+			lng: tripStopCoords[5]!.lng,
+		};
+		const result = decideScheduleVehicleArrival(
+			userRow,
+			vehicle,
+			tripStopCoords,
+			nowSec,
+		);
+
+		expect(result.keep).toBe(true);
+		if (!result.keep) return;
+		expect(result.vehicleSeq).toBe(6);
+		expect(result.etaSource).toBe("gps-inferred");
+		expect(result.delaySec).toBe(nowSec - tripStopCoords[5]!.arrivalSec!);
+		expect(result.etaSec).toBe(
+			userRow.arrival_sec - tripStopCoords[5]!.arrivalSec!,
+		);
+	});
+
+	test("missing TripUpdate + GPS past user's stop → drop", () => {
+		const vehicle = {
+			lat: tripStopCoords[9]!.lat,
+			lng: tripStopCoords[9]!.lng,
+		};
+		const result = decideScheduleVehicleArrival(
+			userRow,
+			vehicle,
+			tripStopCoords,
+			nowSec,
+		);
+
+		expect(result.keep).toBe(false);
+	});
+
+	test("missing TripUpdate + no GPS → drop", () => {
+		const result = decideScheduleVehicleArrival(
+			userRow,
+			null,
+			tripStopCoords,
+			nowSec,
+		);
+
+		expect(result.keep).toBe(false);
+	});
+
+	test("GPS-only trips remain candidates without TripUpdate end-delay data", () => {
+		expect(
+			shouldConsiderStopArrivalTrip(
+				"dublinbus",
+				"T-GPS-ONLY",
+				true,
+				new Map(),
+				99_999,
+			),
+		).toBe(true);
+	});
+
+	test("trips with neither TripUpdate nor GPS are not candidates", () => {
+		expect(
+			shouldConsiderStopArrivalTrip(
+				"dublinbus",
+				"T-MISSING",
+				false,
+				new Map(),
+				nowSec,
+			),
+		).toBe(false);
 	});
 });
 

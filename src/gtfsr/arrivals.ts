@@ -25,6 +25,8 @@ type StopArrivalRow = {
 
 export type BusArrivalVehicle = {
 	tripId: string;
+	routeId: string;
+	directionId: number;
 	lat: number;
 	lng: number;
 };
@@ -157,6 +159,56 @@ export function decideStopArrival(
 	return { keep: true, etaSec, delaySec, vehicleSeq, etaSource: timing.source };
 }
 
+export function decideScheduleVehicleArrival(
+	row: { stop_sequence: number; arrival_sec: number },
+	vehicle: { lat: number; lng: number } | null,
+	tripStopCoords: TripStopPoint[],
+	nowSec: number,
+): StopArrivalDecision {
+	const closestStop = findClosestTripStop(vehicle, tripStopCoords);
+	const vehicleSeq = closestStop?.sequence ?? null;
+	const vehicleScheduledArrivalSec = closestStop?.arrivalSec ?? null;
+
+	if (vehicleSeq === null) return { keep: false };
+	if (vehicleSeq > row.stop_sequence) return { keep: false };
+
+	const gpsInferredDelay =
+		vehicleScheduledArrivalSec !== null
+			? {
+					fromSequence: vehicleSeq,
+					delaySec: Math.max(0, nowSec - vehicleScheduledArrivalSec),
+				}
+			: null;
+	const timing = computeArrivalTiming({
+		arrivalSec: row.arrival_sec,
+		sequence: row.stop_sequence,
+		live: undefined,
+		gpsInferredDelay,
+		nowSec,
+		delayFallbackMode: "prior-only",
+	});
+	const delaySec = timing.delaySec ?? 0;
+	let etaSec = timing.etaSec ?? row.arrival_sec - nowSec;
+	if (etaSec < 0) {
+		etaSec = 0;
+	}
+
+	return { keep: true, etaSec, delaySec, vehicleSeq, etaSource: timing.source };
+}
+
+export function shouldConsiderStopArrivalTrip(
+	operator: Operator,
+	tripId: string,
+	hasVehicle: boolean,
+	tripUpdates: ReadonlyMap<string, LiveTripData>,
+	nowSec: number,
+): boolean {
+	const live = tripUpdates.get(tripId);
+	if (!live && !hasVehicle) return false;
+	if (live && isTripEnded(operator, tripId, nowSec, tripUpdates)) return false;
+	return true;
+}
+
 // SQLite default SQLITE_MAX_VARIABLE_NUMBER is 999. Chunk well below that
 // so a single hot stop won't blow past the parameter limit.
 const BATCH_TRIP_CHUNK = 500;
@@ -260,13 +312,17 @@ export async function getBusStopArrivals({
 	const routeIdToShortName = new Map<string, string>();
 	for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
 
-	// Filter to live, non-ended trips first - only these are arrival candidates.
-	// This prunes the 6k-row set down to a few hundred before the batch query,
-	// keeping the batch result small and avoiding wasted work on ended trips.
+	// Filter to live, non-ended trips first. Trips with GPS but no TripUpdate are
+	// kept as conservative fallback candidates; NTA sometimes emits a vehicle
+	// position without the matching per-stop prediction.
 	const activeRows = rows.filter((r) => {
-		const live = tripUpdates.get(r.trip_id);
-		if (!live) return false;
-		return !isTripEnded(operator, r.trip_id, nowSec, tripUpdates);
+		return shouldConsiderStopArrivalTrip(
+			operator,
+			r.trip_id,
+			vehicleByTripId.has(r.trip_id),
+			tripUpdates,
+			nowSec,
+		);
 	});
 
 	// Collect vehicle-equipped trip IDs (deduped) from the pruned set, then
@@ -284,7 +340,6 @@ export async function getBusStopArrivals({
 	const candidates: BusStopArrival[] = [];
 	for (const r of activeRows) {
 		const live = tripUpdates.get(r.trip_id);
-		if (!live) continue;
 
 		// Build trip stop coords from the pre-fetched batch lookup. Vehicles
 		// without cached stops (DB missing) fall back to empty coords - decision
@@ -315,18 +370,19 @@ export async function getBusStopArrivals({
 			}
 		}
 
-		const decision = decideStopArrival(
-			r,
-			live,
-			vehicle ?? null,
-			tripStopCoords,
-			nowSec,
-		);
+		const decision = live
+			? decideStopArrival(r, live, vehicle ?? null, tripStopCoords, nowSec)
+			: decideScheduleVehicleArrival(
+					r,
+					vehicle ?? null,
+					tripStopCoords,
+					nowSec,
+				);
 		if (!decision.keep) continue;
 		const { etaSec, delaySec, vehicleSeq, etaSource } = decision;
 
-		const routeId = live.routeId;
-		const directionId = live.directionId;
+		const routeId = live?.routeId || vehicle?.routeId;
+		const directionId = live?.directionId ?? vehicle?.directionId ?? 0;
 		if (!routeId) continue;
 
 		const shortName = routeIdToShortName.get(routeId);
