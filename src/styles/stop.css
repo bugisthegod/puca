@@ -334,7 +334,10 @@
 	background: rgba(255, 255, 255, 0.05);
 	color: #f0f0f0;
 	cursor: pointer;
-	transition: background 0.12s;
+	transition:
+		background 0.12s,
+		box-shadow 0.16s ease-out,
+		transform 0.16s ease-out;
 	text-align: left;
 	font-family: inherit;
 }
@@ -346,6 +349,18 @@
 .stop-arrival--scheduled {
 	opacity: 0.55;
 	cursor: default;
+}
+
+.stop-arrival--selected {
+	background: rgba(37, 168, 100, 0.18);
+	box-shadow:
+		0 0 0 1px rgba(37, 168, 100, 0.42) inset,
+		0 5px 14px rgba(0, 0, 0, 0.16);
+	animation: stop-arrival-selected-in 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.stop-arrival--selected:hover:not(:disabled) {
+	background: rgba(37, 168, 100, 0.23);
 }
 
 .stop-arrival__route {
@@ -380,6 +395,18 @@
 	color: #ff9a6b;
 }
 
+@keyframes stop-arrival-selected-in {
+	0% {
+		transform: scale(0.985);
+	}
+	58% {
+		transform: scale(1.012);
+	}
+	100% {
+		transform: none;
+	}
+}
+
 @media (max-width: 600px) {
 	.train-item {
 		padding: 6px 8px;
@@ -396,5 +423,11 @@
 
 	.train-item-status {
 		font-size: 0.6rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.stop-arrival--selected {
+		animation: none;
 	}
 }
