@@ -19,14 +19,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "malahide|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "howth|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "howth|bray (daly)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
@@ -47,7 +39,7 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "connolly|bray (daly)": {
+  "howth|connolly": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -67,9 +59,17 @@
     "routeId": "MAL-COBH-O",
     "directionId": 0
   },
+  "malahide|connolly": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
   "mallow|cobh": {
     "routeId": "MAL-COBH-O",
     "directionId": 0
+  },
+  "connolly|bray (daly)": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
   },
   "raheny|connolly": {
     "routeId": "BRAY-HOWTH-I",
@@ -99,15 +99,15 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
-  "connolly|malahide": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
   "greystones|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
   "connolly|howth": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "connolly|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
@@ -175,10 +175,6 @@
     "routeId": "DUB-DRO/DUN-O",
     "directionId": 1
   },
-  "dundalk (clarke)|drogheda (macbride)": {
-    "routeId": "DUB-DRO/DUN-O",
-    "directionId": 1
-  },
   "drogheda (macbride)|dublin pearse": {
     "routeId": "DUB-DRO/DUN-O",
     "directionId": 1
@@ -224,10 +220,6 @@
     "directionId": 1
   },
   "gorey|connolly": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
-  "gorey|bray (daly)": {
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },

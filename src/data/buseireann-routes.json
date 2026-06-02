@@ -60,19 +60,9 @@
     "longName": "Dublin - Dunshaughlin - Trim"
   },
   {
-    "id": "2 109D a",
-    "shortName": "109D",
-    "longName": "DCU - Trim"
-  },
-  {
     "id": "2 109X d",
     "shortName": "109X",
     "longName": "Dublin - Kells - Cavan Hourly Express"
-  },
-  {
-    "id": "2 110D a",
-    "shortName": "110D",
-    "longName": "DCU - Kennedy Road"
   },
   {
     "id": "2 111 d",
@@ -607,11 +597,6 @@
   {
     "id": "2 336 g",
     "shortName": "336",
-    "longName": "Limerick - Ennis - Kilrush - Kilkee"
-  },
-  {
-    "id": "2 336 g#1",
-    "shortName": "336",
     "longName": "Ennis - Kilrush - Doonbeg"
   },
   {
@@ -670,19 +655,9 @@
     "longName": "Waterford - New Ross - Wexford"
   },
   {
-    "id": "2 371 c a",
-    "shortName": "371",
-    "longName": "New Ross - Adamstown - Wexford"
-  },
-  {
     "id": "2 372 c a",
     "shortName": "372",
     "longName": "New Ross - Foulksmills - Wexford"
-  },
-  {
-    "id": "2 373 c a",
-    "shortName": "373",
-    "longName": "New Ross - Fethard - Wexford"
   },
   {
     "id": "2 374 c a",
@@ -693,16 +668,6 @@
     "id": "2 379 c e",
     "shortName": "379",
     "longName": "Wexford - Curracloe - Gorey"
-  },
-  {
-    "id": "2 382 d",
-    "shortName": "382",
-    "longName": "Adamstown - Wexford"
-  },
-  {
-    "id": "2 4 d",
-    "shortName": "4",
-    "longName": "Dublin Airport - Waterford"
   },
   {
     "id": "2 40 d",
@@ -923,11 +888,6 @@
     "id": "2 519 a",
     "shortName": "519",
     "longName": "Cork - Charleville"
-  },
-  {
-    "id": "2 52 d",
-    "shortName": "52",
-    "longName": "Ballina - Castlebar - Galway"
   },
   {
     "id": "2 55 c a",
