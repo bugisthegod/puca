@@ -1,0 +1,91 @@
+name: Upload schedule DBs
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Fly app name
+        required: true
+        default: puca
+      nta_zip_url:
+        description: Static GTFS zip URL
+        required: true
+        default: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-upload
+  cancel-in-progress: false
+
+env:
+  APP: ${{ inputs.app }}
+  NTA_ZIP_URL: ${{ inputs.nta_zip_url }}
+
+jobs:
+  upload:
+    name: Generate and upload schedule DBs
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Download latest NTA GTFS
+        run: |
+          mkdir -p gtfs
+          curl -fL "${NTA_ZIP_URL}?_=$(date +%s)" -o /tmp/GTFS_Realtime.zip
+          unzip -q -o /tmp/GTFS_Realtime.zip -d gtfs
+          python3 - <<'PY'
+          from pathlib import Path
+
+          required = ("routes.txt", "trips.txt", "stop_times.txt", "shapes.txt", "stops.txt", "feed_info.txt")
+          missing = [name for name in required if not (Path("gtfs") / name).exists()]
+          if missing:
+              raise SystemExit(f"Missing GTFS files: {', '.join(missing)}")
+
+          print((Path("gtfs") / "feed_info.txt").read_text(encoding="utf-8-sig"))
+          PY
+
+      - name: Generate schedule DBs
+        run: bun run db:generate
+
+      - name: Check generated DBs
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+          from pathlib import Path
+
+          dbs = (
+              "bus-schedule.db",
+              "buseireann-schedule.db",
+              "goahead-schedule.db",
+          )
+
+          for name in dbs:
+              path = Path("src/data") / name
+              if not path.exists():
+                  raise SystemExit(f"Missing DB: {path}")
+
+              with sqlite3.connect(path) as con:
+                  integrity = con.execute("PRAGMA integrity_check").fetchone()[0]
+                  stop_times = con.execute("SELECT COUNT(*) FROM stop_times").fetchone()[0]
+
+              if integrity != "ok":
+                  raise SystemExit(f"{name}: integrity_check={integrity}")
+              if stop_times <= 0:
+                  raise SystemExit(f"{name}: no stop_times rows")
+
+              print(f"{name}: {stop_times:,} stop_times rows, {path.stat().st_size / 1024 / 1024:.1f} MB")
+          PY
+
+      - name: Upload DBs to Fly volume
+        run: bun run db:upload
+        env:
+          APP: ${{ env.APP }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

@@ -55,7 +55,7 @@ for db in "${DBS[@]}"; do
 	size_mb=$(du -m "$local_path" | cut -f1)
 	local_bytes=$(wc -c < "$local_path" | tr -d ' ')
 	available_kb=$(
-		"$FLY_BIN" ssh console -a "$APP" --command "df -Pk \"$DATA_DIR\" | awk 'NR==2 {print \$4}'"
+		"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'df -Pk \"$DATA_DIR\" | awk \"NR==2 {print \\\$4}\"'"
 	)
 	available_bytes=$(( available_kb * 1024 ))
 
