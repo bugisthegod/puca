@@ -3,6 +3,7 @@
 Generate Go-Ahead Ireland static data files:
   src/data/goahead-shapes.json   — polylines per route+direction (with stops)
   src/data/goahead-routes.json   — route metadata list
+  src/data/goahead-stops.json    — all stops used by Go-Ahead Ireland trips
 
 Go-Ahead Ireland agency_ids in this GTFS feed: 3 and 03C
 (Two entries exist in agency.txt for Go-Ahead Ireland.)
@@ -20,12 +21,14 @@ import math
 import os
 import sys
 from collections import defaultdict
+from gtfs_json_helpers import write_operator_stops_json
 
 GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
 DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data"))
 
 OUT_SHAPES = f"{DATA_DIR}/goahead-shapes.json"
 OUT_ROUTES = f"{DATA_DIR}/goahead-routes.json"
+OUT_STOPS = f"{DATA_DIR}/goahead-stops.json"
 
 # Both agency_id values for Go-Ahead Ireland in this feed
 AGENCY_IDS = {"3", "03C"}
@@ -137,9 +140,10 @@ def main():
     with open(f"{GTFS_DIR}/stops.txt", newline="") as f:
         for row in csv.DictReader(f):
             stops_dict[row["stop_id"]] = {
-                "name": row["stop_name"].strip(),
+                "raw_name": row["stop_name"].strip(),
                 "lat": round(float(row["stop_lat"]), 6),
                 "lng": round(float(row["stop_lon"]), 6),
+                "code": (row.get("stop_code") or "").strip(),
             }
     print(f"Stops loaded: {len(stops_dict):,}", file=sys.stderr)
 
@@ -193,7 +197,7 @@ def main():
         for _, sid in stop_rows:
             s = stops_dict.get(sid)
             if s:
-                stop_list.append({"id": sid, "name": s["name"], "lat": s["lat"], "lng": s["lng"]})
+                stop_list.append({"id": sid, "name": s["raw_name"], "lat": s["lat"], "lng": s["lng"]})
         ga_shapes[rid][dir_id] = {
             "headsign": meta["headsign"],
             "coords": coords,
@@ -219,7 +223,10 @@ def main():
     size_kb2 = os.path.getsize(OUT_ROUTES) / 1024
     print(f"Written: {OUT_ROUTES} ({size_kb2:.1f} KB, {len(route_list)} routes)", file=sys.stderr)
 
-    # ── 9. Summary ────────────────────────────────────────────────────────────
+    # ── 9. Build goahead-stops.json ───────────────────────────────────────────
+    write_operator_stops_json(OUT_STOPS, stops_dict, trip_stops)
+
+    # ── 10. Summary ───────────────────────────────────────────────────────────
     print("\n=== Summary ===", file=sys.stderr)
     print(f"Routes: {len(ga_shapes)}", file=sys.stderr)
     print(f"Route+direction shapes: {sum(len(v) for v in ga_shapes.values())}", file=sys.stderr)
