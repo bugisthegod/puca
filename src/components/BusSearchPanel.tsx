@@ -39,6 +39,7 @@ export type BusStopSummary = {
 	stopName: string;
 	operator: BusOperator;
 	selected: boolean;
+	focusKey: string | null;
 	emptyText: string | null;
 	nextArrival: {
 		routeShortName: string;
@@ -580,6 +581,7 @@ function BusSearchPanel({
 			stopCode: selectedStop.code || selectedStop.id,
 			stopName: selectedStop.name,
 			operator: selectedStop.operator,
+			focusKey: selectedArrivalTripId,
 			selected:
 				selectedArrivalTripId !== null &&
 				next?.tripId === selectedArrivalTripId,
@@ -843,54 +845,60 @@ function BusSearchPanel({
 											)}
 										{arrivals && arrivals.length > 0 && (
 											<ul className="stop-arrivals__list">
-												{arrivals.map((a) => (
-													<li key={a.tripId}>
-														<button
-															type="button"
-															className={`stop-arrival${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}`}
-															onClick={() => {
-																if (a.status === "scheduled") {
-																	onShowToast(
-																		t("bus.search.toast.notonmap.title"),
+												{arrivals.map((a) => {
+													const isSelected =
+														a.tripId === selectedArrivalTripId &&
+														a.status !== "scheduled";
+													return (
+														<li key={a.tripId}>
+															<button
+																type="button"
+																className={`stop-arrival${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}${isSelected ? " stop-arrival--selected" : ""}`}
+																aria-current={isSelected ? "true" : undefined}
+																onClick={() => {
+																	if (a.status === "scheduled") {
+																		onShowToast(
+																			t("bus.search.toast.notonmap.title"),
+																		);
+																		return;
+																	}
+																	setSelectedArrivalTripId(a.tripId);
+																	if (!selectedStop) return;
+																	onStopIdChange(
+																		selectedStop.id,
+																		selectedStop.operator,
 																	);
-																	return;
-																}
-																setSelectedArrivalTripId(a.tripId);
-																if (!selectedStop) return;
-																onStopIdChange(
-																	selectedStop.id,
-																	selectedStop.operator,
-																);
-																onTabChange("stop");
-																if (window.innerWidth <= 600)
-																	onCollapsedChange(true);
-																onPickArrival(
-																	a,
-																	selectedStop.operator,
-																	selectedStop,
-																);
-															}}
-														>
-															<span className="stop-arrival__route">
-																{a.routeShortName}
-															</span>
-															<span className="stop-arrival__headsign">
-																{a.headsign}
-															</span>
-															<span
-																className={`stop-arrival__eta${a.delaySec >= 300 ? " late" : ""}`}
+																	onTabChange("stop");
+																	if (window.innerWidth <= 600)
+																		onCollapsedChange(true);
+																	onPickArrival(
+																		a,
+																		selectedStop.operator,
+																		selectedStop,
+																	);
+																}}
 															>
-																{etaLabel(
-																	displayEtaSeconds(
-																		a.etaSeconds,
-																		arrivalsFetchedAt,
-																		arrivalClockNow,
-																	),
-																)}
-															</span>
-														</button>
-													</li>
-												))}
+																<span className="stop-arrival__route">
+																	{a.routeShortName}
+																</span>
+																<span className="stop-arrival__headsign">
+																	{a.headsign}
+																</span>
+																<span
+																	className={`stop-arrival__eta${a.delaySec >= 300 ? " late" : ""}`}
+																>
+																	{etaLabel(
+																		displayEtaSeconds(
+																			a.etaSeconds,
+																			arrivalsFetchedAt,
+																			arrivalClockNow,
+																		),
+																	)}
+																</span>
+															</button>
+														</li>
+													);
+												})}
 											</ul>
 										)}
 									</div>
