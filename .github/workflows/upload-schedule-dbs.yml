@@ -2,15 +2,6 @@ name: Upload schedule DBs
 
 on:
   workflow_dispatch:
-    inputs:
-      app:
-        description: Fly app name
-        required: true
-        default: puca
-      nta_zip_url:
-        description: Static GTFS zip URL
-        required: true
-        default: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
 
 permissions:
   contents: read
@@ -20,8 +11,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP: ${{ inputs.app }}
-  NTA_ZIP_URL: ${{ inputs.nta_zip_url }}
+  APP: puca
+  NTA_ZIP_URL: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
 
 jobs:
   upload:
