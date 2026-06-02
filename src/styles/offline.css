@@ -23,7 +23,7 @@
 
 .realtime-banner {
 	position: fixed;
-	top: calc(48px + env(safe-area-inset-top));
+	top: calc(68px + env(safe-area-inset-top));
 	left: 50%;
 	transform: translateX(-50%);
 	z-index: 2001;
