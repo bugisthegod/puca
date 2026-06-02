@@ -60,7 +60,7 @@ export const OPERATORS: readonly BusOperator[] = [
 	"goahead",
 ];
 
-export type RealtimeStatus = "ok" | "stale" | "unavailable";
+export type RealtimeStatus = "ok" | "stale" | "unavailable" | "route-mismatch";
 
 export type RealtimeHealth = {
 	status: RealtimeStatus;

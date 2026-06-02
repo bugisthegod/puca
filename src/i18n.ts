@@ -267,6 +267,8 @@ const EN = {
 	"offline.banner": "Offline — showing cached data",
 	"bus.realtime.unavailable":
 		"Live bus data is temporarily unavailable. Please check again shortly.",
+	"bus.realtime.routeMismatch":
+		"Some live bus locations may be missing. Please check again shortly.",
 } as const;
 
 type Key = keyof typeof EN;
@@ -476,6 +478,8 @@ const ZH: Record<Key, string> = {
 	// Offline
 	"offline.banner": "离线 — 显示缓存数据",
 	"bus.realtime.unavailable": "实时公交数据暂时不可用，请稍后再来查看。",
+	"bus.realtime.routeMismatch":
+		"部分实时公交位置可能暂时缺失，请稍后再来查看。",
 };
 
 const STRINGS: Record<Locale, Record<Key, string>> = { en: EN, zh: ZH };

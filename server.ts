@@ -24,6 +24,11 @@ import {
 } from "./src/gtfsr.ts";
 import { errToMeta, log } from "./src/logger.ts";
 import {
+	REALTIME_MATCHED_VEHICLE_COUNT_HEADER,
+	REALTIME_RAW_VEHICLE_COUNT_HEADER,
+	REALTIME_STATUS_HEADER,
+} from "./src/realtime.ts";
+import {
 	clampMins,
 	createServerTimer,
 	detailedHealth,
@@ -309,9 +314,10 @@ Bun.serve({
 		}),
 		"/api/bus/vehicles/all": rateLimit(async () => {
 			const timer = createServerTimer();
-			const vehicleHeaders = {
-				"Cache-Control":
-					"public, max-age=0, s-maxage=5, stale-while-revalidate=15",
+			const cacheControl =
+				"public, max-age=0, s-maxage=5, stale-while-revalidate=15";
+			const vehicleHeaders: Record<string, string> = {
+				"Cache-Control": cacheControl,
 				...getBusVehicleRealtimeHeaders(),
 			};
 			if (!isInServiceHours("bus")) {
@@ -319,7 +325,7 @@ Bun.serve({
 				return Response.json([], {
 					headers: withServerTiming(
 						{
-							"Cache-Control": vehicleHeaders["Cache-Control"],
+							"Cache-Control": cacheControl,
 						},
 						timer,
 					),
@@ -327,9 +333,19 @@ Bun.serve({
 			}
 			try {
 				const vehicles = await getAllOperatorsBusVehicles();
+				const rawVehicleCount = getGtfsrVehiclePositions().length;
+				vehicleHeaders[REALTIME_RAW_VEHICLE_COUNT_HEADER] =
+					String(rawVehicleCount);
+				vehicleHeaders[REALTIME_MATCHED_VEHICLE_COUNT_HEADER] = String(
+					vehicles.length,
+				);
+				if (rawVehicleCount > 0 && vehicles.length === 0) {
+					vehicleHeaders[REALTIME_STATUS_HEADER] = "route-mismatch";
+				}
 				timer.mark("data");
 				logSlowRequest(timer, "http.bus_vehicles_all.slow", {
 					vehicle_count: vehicles.length,
+					raw_vehicle_count: rawVehicleCount,
 				});
 				return Response.json(vehicles, {
 					headers: withServerTiming(vehicleHeaders, timer),

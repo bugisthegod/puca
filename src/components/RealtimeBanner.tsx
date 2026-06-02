@@ -8,6 +8,10 @@ type RealtimeBannerProps = {
 export default function RealtimeBanner({ health }: RealtimeBannerProps) {
 	const { t } = useLocale();
 	if (!health || health.status === "ok") return null;
+	const messageKey =
+		health.status === "route-mismatch"
+			? "bus.realtime.routeMismatch"
+			: "bus.realtime.unavailable";
 
 	return (
 		<div
@@ -15,7 +19,7 @@ export default function RealtimeBanner({ health }: RealtimeBannerProps) {
 			role="status"
 			aria-live="polite"
 		>
-			{t("bus.realtime.unavailable")}
+			{t(messageKey)}
 		</div>
 	);
 }

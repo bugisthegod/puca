@@ -47,6 +47,12 @@
 	color: #fff1eb;
 }
 
+.realtime-banner--route-mismatch {
+	background: rgba(146, 83, 0, 0.96);
+	border-color: rgba(255, 209, 102, 0.62);
+	color: #fff8df;
+}
+
 @keyframes offline-banner-in {
 	from {
 		opacity: 0;

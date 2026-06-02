@@ -34,4 +34,17 @@ describe("readRealtimeHealth", () => {
 			ageSec: null,
 		});
 	});
+
+	test("parses route mismatch status", () => {
+		const res = new Response("[]", {
+			headers: {
+				[REALTIME_STATUS_HEADER]: "route-mismatch",
+			},
+		});
+
+		expect(readRealtimeHealth(res)).toEqual({
+			status: "route-mismatch",
+			ageSec: null,
+		});
+	});
 });
