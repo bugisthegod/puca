@@ -53,5 +53,41 @@ log "Restarting Fly app to release deleted SQLite file handles"
 log "Remote /data free space after delete"
 "$FLY_BIN" ssh console -a "$APP" --command "sh -c 'df -h \"$DATA_DIR\" && ls -lh \"$DATA_DIR\"'"
 
+total_bytes=0
+for db in "${DBS[@]}"; do
+	local_bytes=$(wc -c < "src/data/$db" | tr -d ' ')
+	total_bytes=$(( total_bytes + local_bytes ))
+done
+
+available_kb=$(
+	"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'df -Pk \"$DATA_DIR\" | awk \"NR==2 {print \\\$4}\"'"
+)
+available_bytes=$(( available_kb * 1024 ))
+
+if (( available_bytes < total_bytes )); then
+	printf 'Not enough free space on %s for fresh upload: need %s bytes, have %s bytes\n' \
+		"$DATA_DIR" "$total_bytes" "$available_bytes" >&2
+	exit 1
+fi
+
 log "Uploading replacement DBs"
-FLY="$FLY_BIN" APP="$APP" DATA_DIR="$DATA_DIR" bash scripts/upload_schedule_dbs_to_fly.sh
+for db in "${DBS[@]}"; do
+	local_path="src/data/$db"
+	remote_path="$DATA_DIR/$db"
+	size_mb=$(du -m "$local_path" | cut -f1)
+	local_bytes=$(wc -c < "$local_path" | tr -d ' ')
+
+	log "Uploading $db ($size_mb MB) to $remote_path"
+	"$FLY_BIN" sftp put "$local_path" "$remote_path" -a "$APP"
+
+	log "Checking uploaded size for $db"
+	"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'test \"\$(stat -c%s \"$remote_path\")\" = \"$local_bytes\"'"
+done
+
+log "Restarting Fly app once after fresh upload"
+"$FLY_BIN" apps restart "$APP"
+
+log "Remote /data after fresh upload"
+"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'df -h \"$DATA_DIR\" && ls -lh \"$DATA_DIR\"'"
+
+log "Done"
