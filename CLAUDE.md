@@ -116,32 +116,33 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 
 ## Fly.io deployment
 
-### Replacing a SQLite DB on the Fly volume
+### Replacing SQLite DBs on the Fly volume
 
-`src/data/*.db` is excluded by both `.gitignore` and `.dockerignore`, so `fly deploy` never touches schedule DBs on the `/data` volume. To update one in place: upload to a temp name → atomic rename → restart. Never `rm` then upload — reads mid-delete will fail.
+`src/data/*.db` is excluded by both `.gitignore` and `.dockerignore`, so `fly deploy` never touches schedule DBs on the `/data` volume. DB upload intentionally accepts brief schedule lookup downtime: delete all live DBs, restart to release deleted SQLite file handles, upload all three replacement DBs directly to their final names, then restart once.
 
 ```bash
 APP=puca
-DB=buseireann-schedule.db   # or bus-schedule.db / goahead-schedule.db
 
 # 1. Wake machine if auto-stopped
 fly machine list -a $APP
 fly machine start <machine-id> -a $APP
 
-# 2. Preflight: free space must cover new db (old still occupies its slot)
+# 2. Preflight
 fly ssh console -a $APP -C "sh -c 'df -h /data && ls -la /data/'"
 
-# 3. Upload to temp name — old db untouched, still served to users
-fly sftp put src/data/$DB /data/$DB.new -a $APP
+# 3. Delete old DBs and any failed-upload leftovers
+fly ssh console -a $APP -C "rm -f /data/bus-schedule.db /data/buseireann-schedule.db /data/goahead-schedule.db /data/bus-schedule.db.new /data/buseireann-schedule.db.new /data/goahead-schedule.db.new"
 
-# 4. Verify new file is intact on the volume
-fly ssh console -a $APP -C "sh -c 'ls -la /data/$DB.new && sqlite3 /data/$DB.new \"SELECT COUNT(*) FROM stop_times\"'"
+# 4. Restart so deleted inodes are released
+fly apps restart $APP
 
-# 5. Atomic rename — same-fs mv is one rename() syscall
-fly ssh console -a $APP -C "mv /data/$DB.new /data/$DB"
+# 5. Upload replacements directly to final names
+fly sftp put src/data/bus-schedule.db /data/bus-schedule.db -a $APP
+fly sftp put src/data/buseireann-schedule.db /data/buseireann-schedule.db -a $APP
+fly sftp put src/data/goahead-schedule.db /data/goahead-schedule.db -a $APP
 
-# 6. Restart so app opens the new inode (running app's fd still pins the old one until close)
+# 6. Restart once so app opens the replacements
 fly apps restart $APP
 ```
 
-Auto-stop (`auto_stop_machines = 'stop'`) watches HTTP idleness, not SSH. Multi-minute uploads generally complete fine; if interrupted mid-upload, just retry — only the `.new` file is affected, the live DB keeps serving.
+Auto-stop (`auto_stop_machines = 'stop'`) watches HTTP idleness, not SSH. Multi-minute uploads generally complete fine; if interrupted mid-upload, rerun `bun run db:upload`.

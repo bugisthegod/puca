@@ -38,9 +38,10 @@ fly tokens create deploy -a puca
 7. 不等待 PR merge，继续执行 `bun run db:generate`
 8. 对三个 SQLite DB 跑 `PRAGMA integrity_check` 和 row count 检查
 9. 执行 `bun run db:upload`
-10. 上传到 `/data/*.db.new`，校验远端文件大小
-11. 原子 `mv` 替换正式 DB
-12. 每替换完一个 DB 后重启 Fly app，释放旧 SQLite 文件句柄
+10. 删除 `/data` 里的三个正式 DB 和任何 `.new` 残留
+11. 重启 Fly app，释放已删除 SQLite 文件句柄
+12. 直接上传三个新 DB 到正式文件名，校验远端文件大小
+13. 最后重启一次 Fly app，让进程打开新 DB
 
 Repo 里追踪的 `.github/data/feed_info.txt` 是“已确认处理”的标准 marker；它替代了
 旧的 `.github/data/last-feed-uuid`，但保留了完整 `feed_info.txt` 内容。
@@ -59,8 +60,8 @@ JSON 并正常 `fly deploy`，再更新 volume DB。
 fly deploy
 ```
 
-然后上传 DB。上传流程必须保持串行：上传 `.new` 临时文件，确认上传命令成功返回后，
-立刻用同一文件系统上的 `mv` 原子替换正式 DB。三个 DB 都替换完之后再重启 app。
+然后上传 DB。上传流程会造成短暂 schedule lookup downtime：先删除三个旧 DB，
+重启释放旧 SQLite 文件句柄，再直接上传三个新 DB，最后重启一次。
 
 ## 预检
 
@@ -72,45 +73,36 @@ fly ssh console -a puca -C "sh -c 'df -h /data && ls -la /data/'"
 确认：
 
 - machine 是 `started`
-- `/data` 剩余空间足够放下最大的 `.db.new`
+- `/data` 删除旧 DB 后足够放下三个新 DB
 - 没有上次失败残留的 `.new` 文件
 
 ## 上传并替换
 
 ```bash
-# Dublin Bus
-fly sftp put src/data/bus-schedule.db /data/bus-schedule.db.new -a puca
-fly ssh console -a puca -C "mv /data/bus-schedule.db.new /data/bus-schedule.db"
+# 1. 删除旧 DB 和失败残留
+fly ssh console -a puca -C "rm -f /data/bus-schedule.db /data/buseireann-schedule.db /data/goahead-schedule.db /data/bus-schedule.db.new /data/buseireann-schedule.db.new /data/goahead-schedule.db.new"
 
-# Bus Eireann
-fly sftp put src/data/buseireann-schedule.db /data/buseireann-schedule.db.new -a puca
-fly ssh console -a puca -C "mv /data/buseireann-schedule.db.new /data/buseireann-schedule.db"
+# 2. 重启释放已删除文件的句柄
+fly apps restart puca
 
-# Go-Ahead
-fly sftp put src/data/goahead-schedule.db /data/goahead-schedule.db.new -a puca
-fly ssh console -a puca -C "mv /data/goahead-schedule.db.new /data/goahead-schedule.db"
+# 3. 直接上传到正式文件名
+fly sftp put src/data/bus-schedule.db /data/bus-schedule.db -a puca
+fly sftp put src/data/buseireann-schedule.db /data/buseireann-schedule.db -a puca
+fly sftp put src/data/goahead-schedule.db /data/goahead-schedule.db -a puca
+
+# 4. 最后重启一次
+fly apps restart puca
 ```
 
 ## 失败重试
 
-如果 `fly sftp put` 中途断线，只会影响 `.new` 临时文件。正式 DB 还没有被替换。
-先删除半截 `.new`，再重跑对应的 `sftp put`。
+如果 `fly sftp put` 中途断线，schedule lookup 可能继续不可用。直接重跑：
 
 ```bash
-fly ssh console -a puca -C "rm -f /data/bus-schedule.db.new"
-fly ssh console -a puca -C "rm -f /data/buseireann-schedule.db.new"
-fly ssh console -a puca -C "rm -f /data/goahead-schedule.db.new"
+bun run db:upload
 ```
 
-只删失败的那个 `.new` 即可。
-
-## 重启
-
-三个 DB 都替换后，重启 app，让进程关闭旧文件句柄并重新打开新的 DB：
-
-```bash
-fly apps restart puca
-```
+脚本会重新删除三份 DB 和 `.new` 残留，然后完整上传。
 
 ## 最后检查
 
