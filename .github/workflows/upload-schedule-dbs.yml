@@ -2,6 +2,15 @@ name: Upload schedule DBs
 
 on:
   workflow_dispatch:
+    inputs:
+      upload_mode:
+        description: Upload mode
+        required: true
+        default: normal
+        type: choice
+        options:
+          - normal
+          - fresh-delete-first
 
 permissions:
   contents: read
@@ -76,7 +85,15 @@ jobs:
           PY
 
       - name: Upload DBs to Fly volume
+        if: inputs.upload_mode == 'normal'
         run: bun run db:upload
+        env:
+          APP: ${{ env.APP }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Fresh upload DBs to Fly volume
+        if: inputs.upload_mode == 'fresh-delete-first'
+        run: bun run db:upload:fresh
         env:
           APP: ${{ env.APP }}
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
