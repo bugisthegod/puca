@@ -42,13 +42,26 @@ for db in "${DBS[@]}"; do
 	ls -lh "src/data/$db"
 done
 
+UPLOAD_DBS=()
+while IFS=$'\t' read -r _ db; do
+	UPLOAD_DBS+=("$db")
+done < <(
+	for db in "${DBS[@]}"; do
+		bytes=$(wc -c < "src/data/$db" | tr -d ' ')
+		printf '%s\t%s\n' "$bytes" "$db"
+	done | sort -rn
+)
+
+log "Upload order, largest first"
+printf '  %s\n' "${UPLOAD_DBS[@]}"
+
 log "Checking Fly app access"
 "$FLY_BIN" status -a "$APP" >/dev/null
 
 log "Remote /data free space"
 "$FLY_BIN" ssh console -a "$APP" --command "sh -c 'df -h \"$DATA_DIR\" && ls -lh \"$DATA_DIR\"'"
 
-for db in "${DBS[@]}"; do
+for db in "${UPLOAD_DBS[@]}"; do
 	local_path="src/data/$db"
 	remote_path="$DATA_DIR/$db"
 	remote_tmp="$remote_path.new"
