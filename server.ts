@@ -94,6 +94,9 @@ Bun.serve({
 				},
 			});
 		},
+		"/llms.txt": staticFile("./public/llms.txt", 3600),
+		"/llms-full.txt": staticFile("./public/llms-full.txt", 3600),
+		"/about.md": staticFile("./public/about.md", 3600),
 		"/sitemap.xml": staticFile("./public/sitemap.xml", 3600),
 		"/manifest.json": staticFile("./public/manifest.json", 86400),
 		"/public/manifest.json": staticFile("./public/manifest.json", 86400),
