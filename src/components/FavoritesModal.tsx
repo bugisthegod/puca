@@ -206,6 +206,7 @@ function FavoritesModal({
 															className="fav-row__confirm-dismiss"
 															tabIndex={-1}
 															aria-hidden="true"
+															onPointerDown={(e) => e.preventDefault()}
 															onClick={(e) => {
 																e.stopPropagation();
 																cancelRemove("bus", k);
@@ -294,6 +295,7 @@ function FavoritesModal({
 															className="fav-row__confirm-dismiss"
 															tabIndex={-1}
 															aria-hidden="true"
+															onPointerDown={(e) => e.preventDefault()}
 															onClick={(e) => {
 																e.stopPropagation();
 																cancelRemove("stop", k);
@@ -384,6 +386,7 @@ function FavoritesModal({
 															className="fav-row__confirm-dismiss"
 															tabIndex={-1}
 															aria-hidden="true"
+															onPointerDown={(e) => e.preventDefault()}
 															onClick={(e) => {
 																e.stopPropagation();
 																cancelRemove("train", k);
