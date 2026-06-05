@@ -203,17 +203,6 @@ function FavoritesModal({
 													<div className="fav-row__confirm">
 														<button
 															type="button"
-															className="fav-row__confirm-dismiss"
-															tabIndex={-1}
-															aria-hidden="true"
-															onPointerDown={(e) => e.preventDefault()}
-															onClick={(e) => {
-																e.stopPropagation();
-																cancelRemove("bus", k);
-															}}
-														/>
-														<button
-															type="button"
 															className="fav-row__confirm-cancel"
 															onClick={(e) => {
 																e.stopPropagation();
@@ -290,17 +279,6 @@ function FavoritesModal({
 												</button>
 												{confirming && (
 													<div className="fav-row__confirm">
-														<button
-															type="button"
-															className="fav-row__confirm-dismiss"
-															tabIndex={-1}
-															aria-hidden="true"
-															onPointerDown={(e) => e.preventDefault()}
-															onClick={(e) => {
-																e.stopPropagation();
-																cancelRemove("stop", k);
-															}}
-														/>
 														<button
 															type="button"
 															className="fav-row__confirm-cancel"
@@ -381,17 +359,6 @@ function FavoritesModal({
 												</button>
 												{confirming && (
 													<div className="fav-row__confirm">
-														<button
-															type="button"
-															className="fav-row__confirm-dismiss"
-															tabIndex={-1}
-															aria-hidden="true"
-															onPointerDown={(e) => e.preventDefault()}
-															onClick={(e) => {
-																e.stopPropagation();
-																cancelRemove("train", k);
-															}}
-														/>
 														<button
 															type="button"
 															className="fav-row__confirm-cancel"

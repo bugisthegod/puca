@@ -210,16 +210,6 @@
 	white-space: nowrap;
 }
 
-.fav-row__confirm-dismiss {
-	position: absolute;
-	inset: 0;
-	z-index: 0;
-	padding: 0;
-	background: transparent;
-	border: 0;
-	cursor: default;
-}
-
 .fav-row__confirm-action {
 	border: 1.25px solid #df4b4b;
 	color: #a61f1f;
