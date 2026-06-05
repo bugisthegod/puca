@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type {
 	BusFavorite,
 	BusStopFavorite,
@@ -27,6 +27,9 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
 	goahead: "Go-Ahead",
 };
 
+type RemoveType = "bus" | "stop" | "train";
+type PendingRemove = { type: RemoveType; key: string } | null;
+
 function FavoritesModal({
 	onClose,
 	favs,
@@ -38,14 +41,73 @@ function FavoritesModal({
 	onRemoveStop,
 }: Props) {
 	const { t } = useLocale();
+	const [pendingRemove, setPendingRemove] = useState<PendingRemove>(null);
+	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+	const removeButtonRefs = useRef(new Map<string, HTMLButtonElement>());
 	useBackToClose(onClose);
 	useEffect(() => {
 		function onKey(e: KeyboardEvent) {
-			if (e.key === "Escape") onClose();
+			if (e.key !== "Escape") return;
+			if (pendingRemove) {
+				setPendingRemove(null);
+				focusRemoveButton(pendingRemove.type, pendingRemove.key);
+				return;
+			}
+			onClose();
 		}
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
-	}, [onClose]);
+	}, [onClose, pendingRemove]);
+
+	useEffect(() => {
+		if (!pendingRemove) return;
+		requestAnimationFrame(() => {
+			document
+				.querySelector<HTMLButtonElement>(".fav-row__confirm-cancel")
+				?.focus();
+		});
+	}, [pendingRemove]);
+
+	function refKey(type: RemoveType, key: string) {
+		return `${type}:${key}`;
+	}
+
+	function setRemoveButtonRef(
+		type: RemoveType,
+		key: string,
+		node: HTMLButtonElement | null,
+	) {
+		const k = refKey(type, key);
+		if (node) removeButtonRefs.current.set(k, node);
+		else removeButtonRefs.current.delete(k);
+	}
+
+	function focusRemoveButton(type: RemoveType, key: string) {
+		requestAnimationFrame(() => {
+			removeButtonRefs.current.get(refKey(type, key))?.focus();
+		});
+	}
+
+	function isConfirmingRemove(type: RemoveType, key: string) {
+		return pendingRemove?.type === type && pendingRemove.key === key;
+	}
+
+	function requestRemove(type: RemoveType, key: string) {
+		setPendingRemove({ type, key });
+	}
+
+	function cancelRemove(type: RemoveType, key: string) {
+		setPendingRemove(null);
+		focusRemoveButton(type, key);
+	}
+
+	function removeThenClear(key: string, remove: (key: string) => void) {
+		remove(key);
+		setPendingRemove(null);
+		requestAnimationFrame(() => {
+			closeButtonRef.current?.focus();
+		});
+	}
 
 	const empty =
 		favs.buses.length === 0 &&
@@ -71,6 +133,7 @@ function FavoritesModal({
 				onKeyDown={(e) => e.stopPropagation()}
 			>
 				<button
+					ref={closeButtonRef}
 					type="button"
 					className="about-modal__close"
 					onClick={onClose}
@@ -102,6 +165,7 @@ function FavoritesModal({
 								<ul className="fav-list">
 									{favs.buses.map((b) => {
 										const k = busKey(b);
+										const confirming = isConfirmingRemove("bus", k);
 										return (
 											<li key={k} className={`fav-row fav-row--${b.operator}`}>
 												<button
@@ -119,19 +183,59 @@ function FavoritesModal({
 													</span>
 												</button>
 												<button
+													ref={(node) => setRemoveButtonRef("bus", k, node)}
 													type="button"
 													className="fav-row__remove"
+													tabIndex={confirming ? -1 : undefined}
+													aria-hidden={confirming ? true : undefined}
 													aria-label={t("favs.remove.bus.aria", {
 														name: b.shortName,
 													})}
 													title={t("favs.remove.title")}
 													onClick={(e) => {
 														e.stopPropagation();
-														onRemoveBus(k);
+														requestRemove("bus", k);
 													}}
 												>
-													&times;
+													{"\u00d7"}
 												</button>
+												{confirming && (
+													<div className="fav-row__confirm">
+														<button
+															type="button"
+															className="fav-row__confirm-dismiss"
+															tabIndex={-1}
+															aria-hidden="true"
+															onClick={(e) => {
+																e.stopPropagation();
+																cancelRemove("bus", k);
+															}}
+														/>
+														<button
+															type="button"
+															className="fav-row__confirm-cancel"
+															onClick={(e) => {
+																e.stopPropagation();
+																cancelRemove("bus", k);
+															}}
+														>
+															{t("favs.remove.cancel")}
+														</button>
+														<button
+															type="button"
+															className="fav-row__confirm-action"
+															aria-label={t("favs.remove.bus.confirm.aria", {
+																name: b.shortName,
+															})}
+															onClick={(e) => {
+																e.stopPropagation();
+																removeThenClear(k, onRemoveBus);
+															}}
+														>
+															{t("favs.remove.confirm")}
+														</button>
+													</div>
+												)}
 											</li>
 										);
 									})}
@@ -149,6 +253,7 @@ function FavoritesModal({
 								<ul className="fav-list">
 									{favs.stops.map((s) => {
 										const k = stopKey(s);
+										const confirming = isConfirmingRemove("stop", k);
 										return (
 											<li key={k} className={`fav-row fav-row--${s.operator}`}>
 												<button
@@ -166,19 +271,59 @@ function FavoritesModal({
 													</span>
 												</button>
 												<button
+													ref={(node) => setRemoveButtonRef("stop", k, node)}
 													type="button"
 													className="fav-row__remove"
+													tabIndex={confirming ? -1 : undefined}
+													aria-hidden={confirming ? true : undefined}
 													aria-label={t("favs.remove.stop.aria", {
 														name: s.stopName,
 													})}
 													title={t("favs.remove.title")}
 													onClick={(e) => {
 														e.stopPropagation();
-														onRemoveStop(k);
+														requestRemove("stop", k);
 													}}
 												>
-													&times;
+													{"\u00d7"}
 												</button>
+												{confirming && (
+													<div className="fav-row__confirm">
+														<button
+															type="button"
+															className="fav-row__confirm-dismiss"
+															tabIndex={-1}
+															aria-hidden="true"
+															onClick={(e) => {
+																e.stopPropagation();
+																cancelRemove("stop", k);
+															}}
+														/>
+														<button
+															type="button"
+															className="fav-row__confirm-cancel"
+															onClick={(e) => {
+																e.stopPropagation();
+																cancelRemove("stop", k);
+															}}
+														>
+															{t("favs.remove.cancel")}
+														</button>
+														<button
+															type="button"
+															className="fav-row__confirm-action"
+															aria-label={t("favs.remove.stop.confirm.aria", {
+																name: s.stopName,
+															})}
+															onClick={(e) => {
+																e.stopPropagation();
+																removeThenClear(k, onRemoveStop);
+															}}
+														>
+															{t("favs.remove.confirm")}
+														</button>
+													</div>
+												)}
 											</li>
 										);
 									})}
@@ -199,6 +344,7 @@ function FavoritesModal({
 								<ul className="fav-list">
 									{favs.trains.map((tr) => {
 										const k = trainKey(tr);
+										const confirming = isConfirmingRemove("train", k);
 										return (
 											<li key={k} className="fav-row fav-row--train">
 												<button
@@ -214,8 +360,11 @@ function FavoritesModal({
 													</span>
 												</button>
 												<button
+													ref={(node) => setRemoveButtonRef("train", k, node)}
 													type="button"
 													className="fav-row__remove"
+													tabIndex={confirming ? -1 : undefined}
+													aria-hidden={confirming ? true : undefined}
 													aria-label={t("favs.remove.train.aria", {
 														from: tr.fromName,
 														to: tr.toName,
@@ -223,11 +372,49 @@ function FavoritesModal({
 													title={t("favs.remove.title")}
 													onClick={(e) => {
 														e.stopPropagation();
-														onRemoveTrain(k);
+														requestRemove("train", k);
 													}}
 												>
-													&times;
+													{"\u00d7"}
 												</button>
+												{confirming && (
+													<div className="fav-row__confirm">
+														<button
+															type="button"
+															className="fav-row__confirm-dismiss"
+															tabIndex={-1}
+															aria-hidden="true"
+															onClick={(e) => {
+																e.stopPropagation();
+																cancelRemove("train", k);
+															}}
+														/>
+														<button
+															type="button"
+															className="fav-row__confirm-cancel"
+															onClick={(e) => {
+																e.stopPropagation();
+																cancelRemove("train", k);
+															}}
+														>
+															{t("favs.remove.cancel")}
+														</button>
+														<button
+															type="button"
+															className="fav-row__confirm-action"
+															aria-label={t("favs.remove.train.confirm.aria", {
+																from: tr.fromName,
+																to: tr.toName,
+															})}
+															onClick={(e) => {
+																e.stopPropagation();
+																removeThenClear(k, onRemoveTrain);
+															}}
+														>
+															{t("favs.remove.confirm")}
+														</button>
+													</div>
+												)}
 											</li>
 										);
 									})}
