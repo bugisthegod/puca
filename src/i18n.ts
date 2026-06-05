@@ -205,9 +205,15 @@ const EN = {
 	"favs.section.stops": "Bus stops",
 	"favs.section.trains": "Trains",
 	"favs.remove.title": "Remove",
+	"favs.remove.confirm": "Remove",
+	"favs.remove.cancel": "Cancel",
 	"favs.remove.bus.aria": "Remove {name} from favorites",
+	"favs.remove.bus.confirm.aria": "Confirm removing {name} from favorites",
 	"favs.remove.stop.aria": "Remove {name} from favorites",
+	"favs.remove.stop.confirm.aria": "Confirm removing {name} from favorites",
 	"favs.remove.train.aria": "Remove {from} to {to} from favorites",
+	"favs.remove.train.confirm.aria":
+		"Confirm removing {from} to {to} from favorites",
 
 	// App-level toasts
 	"toast.location.off.title": "Location is off",
@@ -418,9 +424,14 @@ const ZH: Record<Key, string> = {
 	"favs.section.stops": "公交站",
 	"favs.section.trains": "列车",
 	"favs.remove.title": "移除",
+	"favs.remove.confirm": "移除",
+	"favs.remove.cancel": "取消",
 	"favs.remove.bus.aria": "从收藏中移除 {name}",
+	"favs.remove.bus.confirm.aria": "确认从收藏中移除 {name}",
 	"favs.remove.stop.aria": "从收藏中移除 {name}",
+	"favs.remove.stop.confirm.aria": "确认从收藏中移除 {name}",
 	"favs.remove.train.aria": "从收藏中移除 {from} 到 {to}",
+	"favs.remove.train.confirm.aria": "确认从收藏中移除 {from} 到 {to}",
 
 	// App-level toasts
 	"toast.location.off.title": "定位已关闭",

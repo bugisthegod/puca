@@ -56,6 +56,7 @@
 }
 
 .fav-row {
+	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -63,6 +64,7 @@
 	background: rgba(255, 255, 255, 0.04);
 	border: 1px solid rgba(255, 255, 255, 0.06);
 	border-radius: 10px;
+	overflow: hidden;
 }
 
 .fav-row:hover {
@@ -106,7 +108,7 @@
 }
 
 .fav-row__remove {
-	width: 24px;
+	min-width: 24px;
 	height: 24px;
 	padding: 0;
 	background: transparent;
@@ -119,6 +121,7 @@
 	justify-content: center;
 	font-size: 14px;
 	line-height: 1;
+	white-space: nowrap;
 }
 
 .fav-row__remove:hover {
@@ -170,4 +173,77 @@
 .fav-row__remove:hover {
 	color: #000;
 	border-color: rgba(0, 0, 0, 0.35);
+}
+
+.fav-row__confirm {
+	--confirm-button-width: 88px;
+
+	position: absolute;
+	inset: 0 0 0 auto;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 7px;
+	width: max-content;
+	max-width: calc(100% - 4px);
+	padding: 8px 12px;
+	background: transparent;
+	animation: fav-confirm-slide-in 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+	overflow: hidden;
+}
+
+.fav-row__confirm-action,
+.fav-row__confirm-cancel {
+	position: relative;
+	z-index: 1;
+	width: var(--confirm-button-width);
+	min-height: 32px;
+	padding: 0 12px;
+	border-radius: 999px;
+	background: #fff;
+	cursor: pointer;
+	font: inherit;
+	font-size: 0.9rem;
+	font-weight: 700;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.fav-row__confirm-action {
+	border: 1.25px solid #df4b4b;
+	color: #a61f1f;
+}
+
+.fav-row__confirm-action:hover {
+	border-color: #c92d2d;
+	color: #821616;
+}
+
+.fav-row__confirm-cancel {
+	border: 1px solid rgba(0, 0, 0, 0.14);
+	color: rgba(0, 0, 0, 0.62);
+}
+
+.fav-row__confirm-cancel:hover {
+	border-color: rgba(0, 0, 0, 0.28);
+	color: #111;
+}
+
+@keyframes fav-confirm-slide-in {
+	from {
+		transform: translateX(100%);
+	}
+	72% {
+		transform: translateX(-3px);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fav-row__confirm {
+		animation: none;
+	}
 }
