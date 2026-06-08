@@ -176,15 +176,21 @@ describe("isInServiceHours", () => {
 		return new Date(`2024-07-15T${uh}:${um}:00Z`);
 	}
 
-	describe("train (in service 05:00 – 00:00)", () => {
+	describe("train (in service 05:00 – 01:00 next day)", () => {
 		test("midday is in service", () => {
 			expect(isInServiceHours("train", dublinWinter(12, 0))).toBe(true);
 		});
-		test("23:59 is in service (just before nightly cutoff)", () => {
+		test("23:59 is in service", () => {
 			expect(isInServiceHours("train", dublinWinter(23, 59))).toBe(true);
 		});
-		test("00:00 closes the window", () => {
-			expect(isInServiceHours("train", dublinWinter(0, 0))).toBe(false);
+		test("00:00 remains in service", () => {
+			expect(isInServiceHours("train", dublinWinter(0, 0))).toBe(true);
+		});
+		test("00:59 remains in service", () => {
+			expect(isInServiceHours("train", dublinWinter(0, 59))).toBe(true);
+		});
+		test("01:00 closes the window", () => {
+			expect(isInServiceHours("train", dublinWinter(1, 0))).toBe(false);
 		});
 		test("04:59 is still off-hours", () => {
 			expect(isInServiceHours("train", dublinWinter(4, 59))).toBe(false);
@@ -194,21 +200,24 @@ describe("isInServiceHours", () => {
 		});
 	});
 
-	describe("bus (in service 05:00 – 00:00)", () => {
+	describe("bus (in service 05:00 – 01:00 next day)", () => {
 		test("04:59 is off-hours", () => {
 			expect(isInServiceHours("bus", dublinWinter(4, 59))).toBe(false);
 		});
 		test("05:00 opens the window", () => {
 			expect(isInServiceHours("bus", dublinWinter(5, 0))).toBe(true);
 		});
-		test("23:59 is in service (just before nightly cutoff)", () => {
+		test("23:59 is in service", () => {
 			expect(isInServiceHours("bus", dublinWinter(23, 59))).toBe(true);
 		});
-		test("00:00 closes the window", () => {
-			expect(isInServiceHours("bus", dublinWinter(0, 0))).toBe(false);
+		test("00:00 remains in service", () => {
+			expect(isInServiceHours("bus", dublinWinter(0, 0))).toBe(true);
 		});
-		test("00:00 is off-hours (no overnight bus)", () => {
-			expect(isInServiceHours("bus", dublinWinter(0, 0))).toBe(false);
+		test("00:59 remains in service", () => {
+			expect(isInServiceHours("bus", dublinWinter(0, 59))).toBe(true);
+		});
+		test("01:00 closes the window", () => {
+			expect(isInServiceHours("bus", dublinWinter(1, 0))).toBe(false);
 		});
 	});
 
@@ -226,6 +235,18 @@ describe("isInServiceHours", () => {
 			expect(isInServiceHours("train", dublinSummer(4, 59))).toBe(false);
 			expect(isInServiceHours("bus", dublinWinter(4, 59))).toBe(false);
 			expect(isInServiceHours("bus", dublinSummer(4, 59))).toBe(false);
+		});
+		test("Dublin 00:59 is in service for both modes in Jan and Jul", () => {
+			expect(isInServiceHours("train", dublinWinter(0, 59))).toBe(true);
+			expect(isInServiceHours("train", dublinSummer(0, 59))).toBe(true);
+			expect(isInServiceHours("bus", dublinWinter(0, 59))).toBe(true);
+			expect(isInServiceHours("bus", dublinSummer(0, 59))).toBe(true);
+		});
+		test("Dublin 01:00 is off-hours for both modes in Jan and Jul", () => {
+			expect(isInServiceHours("train", dublinWinter(1, 0))).toBe(false);
+			expect(isInServiceHours("train", dublinSummer(1, 0))).toBe(false);
+			expect(isInServiceHours("bus", dublinWinter(1, 0))).toBe(false);
+			expect(isInServiceHours("bus", dublinSummer(1, 0))).toBe(false);
 		});
 	});
 });
