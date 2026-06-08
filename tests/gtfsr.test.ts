@@ -851,27 +851,28 @@ describe("realtime cache request path", () => {
 		expect((await getGtfsrHealthSnapshot()).nta.tripUpdates.count).toBe(2);
 	});
 
-	test("serves stale vehicles during overnight bus service", () => {
+	test("does not serve stale vehicles outside bus service hours", () => {
 		mockOffHoursClock();
-		const vehicle = {
-			tripId: "T1",
-			routeId: "1 38A c a",
-			lat: 53.35,
-			lng: -6.26,
-			bearing: null,
-			speed: null,
-			timestamp: 1,
-			label: "Bus 1",
-			directionId: 0,
-		};
 		__testing.seedRealtimeState({
-			vehicles: [vehicle],
+			vehicles: [
+				{
+					tripId: "T1",
+					routeId: "1 38A c a",
+					lat: 53.35,
+					lng: -6.26,
+					bearing: null,
+					speed: null,
+					timestamp: 1,
+					label: "Bus 1",
+					directionId: 0,
+				},
+			],
 		});
 
-		expect(getGtfsrVehiclePositions()).toEqual([vehicle]);
+		expect(getGtfsrVehiclePositions()).toEqual([]);
 	});
 
-	test("serves stale TripUpdates during overnight bus service", async () => {
+	test("does not serve stale TripUpdates outside bus service hours", async () => {
 		mockOffHoursClock();
 		__testing.seedRealtimeState({
 			tripUpdates: new Map([
@@ -895,10 +896,7 @@ describe("realtime cache request path", () => {
 			]),
 		});
 
-		const trip = await getBusTripStops("dublinbus", "T1");
-		expect(trip?.tripId).toBe("T1");
-		expect(trip?.stops).toHaveLength(1);
-		expect(trip?.stops[0]?.arrivalDelaySec).toBe(60);
+		await expect(getBusTripStops("dublinbus", "T1")).resolves.toBeNull();
 	});
 
 	test("reports vehicle realtime health as stale when the vehicle cache ages out", () => {

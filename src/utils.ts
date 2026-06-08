@@ -116,17 +116,17 @@ export function dublinSecondsSinceMidnight(now: Date = new Date()): number {
 
 /** Whether the given transit mode is currently within its daily service window.
  *  Train: 05:00 – 01:00 next day (off-hours 01:00–05:00)
- *  Bus:   24 hours
- *  Train resumes at 05:00 Europe/Dublin time.
+ *  Bus:   05:00 – 01:00 next day (off-hours 01:00–05:00)
+ *  Both resume at 05:00 Europe/Dublin time.
  */
 export function isInServiceHours(
 	mode: "train" | "bus",
 	now: Date = new Date(),
 ): boolean {
-	if (mode === "bus") return true;
 	const mins = dublinMinutesSinceMidnight(now);
 	const serviceStart = 5 * 60;
 	const nextDayServiceEnd = 1 * 60;
+	if (mode === "train") return mins >= serviceStart || mins < nextDayServiceEnd;
 	return mins >= serviceStart || mins < nextDayServiceEnd;
 }
 
