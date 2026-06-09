@@ -439,7 +439,10 @@ export function useMapInstance(
 			maxBoundsViscosity: 1.0,
 		});
 		const applyIrelandMinZoom = () => {
+			const size = map.getSize();
+			if (size.x <= 0 || size.y <= 0) return;
 			const minZoom = map.getBoundsZoom(irelandBounds);
+			if (!Number.isFinite(minZoom)) return;
 			map.setMinZoom(minZoom);
 			if (map.getZoom() < minZoom) {
 				map.fitBounds(irelandBounds, { animate: false });
