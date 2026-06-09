@@ -15,6 +15,34 @@ log() {
 	printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
 }
 
+upload_with_retry() {
+	local local_path="$1"
+	local remote_path="$2"
+	local attempts="${SFTP_UPLOAD_ATTEMPTS:-3}"
+	local attempt
+
+	for (( attempt = 1; attempt <= attempts; attempt++ )); do
+		if (( attempt > 1 )); then
+			log "Retrying upload ($attempt/$attempts): $local_path"
+		fi
+
+		if "$FLY_BIN" sftp put "$local_path" "$remote_path" -a "$APP"; then
+			return 0
+		fi
+
+		if (( attempt == attempts )); then
+			break
+		fi
+
+		log "Upload failed; waiting 10s before retry"
+		sleep 10
+	done
+
+	printf 'Upload failed after %s attempts: %s -> %s\n' \
+		"$attempts" "$local_path" "$remote_path" >&2
+	return 1
+}
+
 if [[ -z "$FLY_BIN" ]]; then
 	if command -v fly >/dev/null 2>&1; then
 		FLY_BIN="fly"
@@ -86,7 +114,7 @@ for db in "${DBS[@]}"; do
 	local_bytes=$(wc -c < "$local_path" | tr -d ' ')
 
 	log "Uploading $db ($size_mb MB) to $remote_path"
-	"$FLY_BIN" sftp put "$local_path" "$remote_path" -a "$APP"
+	upload_with_retry "$local_path" "$remote_path"
 
 	log "Checking uploaded size for $db"
 	"$FLY_BIN" ssh console -a "$APP" --command "sh -c 'test \"\$(stat -c%s \"$remote_path\")\" = \"$local_bytes\"'"
