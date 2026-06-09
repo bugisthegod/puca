@@ -28,11 +28,16 @@ const TILE_VOYAGER =
 
 const DEFAULT_CENTER: L.LatLngExpression = [53.35, -6.26];
 const DEFAULT_ZOOM = 8;
+const IRELAND_MAP_BOUNDS: [L.LatLngTuple, L.LatLngTuple] = [
+	[50.9, -11.4],
+	[55.7, -4.8],
+];
 
 const BASE_TILE_OPTIONS = {
 	attribution:
 		'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
 	maxZoom: 20,
+	noWrap: true,
 	subdomains: "abcd",
 	keepBuffer: 10,
 	updateWhenIdle: false,
@@ -422,11 +427,30 @@ export function useMapInstance(
 			? [initialView.lat, initialView.lng]
 			: DEFAULT_CENTER;
 		const zoom = initialView?.zoom ?? DEFAULT_ZOOM;
+		const irelandBounds = L.latLngBounds(
+			IRELAND_MAP_BOUNDS[0],
+			IRELAND_MAP_BOUNDS[1],
+		);
 		const map = L.map(mapRef.current, {
 			preferCanvas: true,
 			fadeAnimation: true,
 			zoomControl: false,
-		}).setView(center, zoom);
+			maxBounds: irelandBounds,
+			maxBoundsViscosity: 1.0,
+		});
+		const applyIrelandMinZoom = () => {
+			const size = map.getSize();
+			if (size.x <= 0 || size.y <= 0) return;
+			const minZoom = map.getBoundsZoom(irelandBounds);
+			if (!Number.isFinite(minZoom)) return;
+			map.setMinZoom(minZoom);
+			if (map.getZoom() < minZoom) {
+				map.fitBounds(irelandBounds, { animate: false });
+			}
+		};
+		applyIrelandMinZoom();
+		map.setView(center, Math.max(zoom, map.getMinZoom()));
+		map.on("resize", applyIrelandMinZoom);
 		const popupPane = map.getPane("popupPane");
 		const mapPane = map.getPanes().mapPane;
 		const originalPopupParent = popupPane?.parentElement ?? null;
@@ -464,6 +488,7 @@ export function useMapInstance(
 				attribution:
 					'&copy; <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a>',
 				maxZoom: 19,
+				noWrap: true,
 				opacity: 0.75,
 				keepBuffer: 10,
 				updateWhenIdle: false,
@@ -502,6 +527,7 @@ export function useMapInstance(
 					originalPopupParent.insertBefore(popupPane, originalPopupNextSibling);
 				}
 			}
+			map.off("resize", applyIrelandMinZoom);
 			teardownCompass();
 			if (locationWatchIdRef.current !== null) {
 				navigator.geolocation.clearWatch(locationWatchIdRef.current);
