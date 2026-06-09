@@ -355,7 +355,6 @@ function BusSearchPanel({
 				}
 			} catch (err) {
 				if ((err as Error).name === "AbortError") return;
-				trackEvent("event/error/api-bus-arrivals");
 				setArrivals(null);
 				setArrivalsRealtimeHealth(null);
 				setArrivalsFetchedAt(null);

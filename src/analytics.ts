@@ -30,11 +30,6 @@ const EVENT_TITLES: Record<string, string> = {
 	"event/pwa/installed": "PWA installed",
 	"event/about/feedback": "Feedback click",
 	"event/about/donate": "Donate click",
-	"event/error/api-trains": "Train API error",
-	"event/error/api-bus-vehicles": "Bus vehicles API error",
-	"event/error/api-train-search": "Train search API error",
-	"event/error/api-bus-arrivals": "Bus arrivals API error",
-	"event/error/sw-registration": "Service worker registration error",
 };
 
 const pending: GoatCounterEvent[] = [];

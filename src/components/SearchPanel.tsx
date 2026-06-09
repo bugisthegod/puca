@@ -166,7 +166,6 @@ function SearchPanel({
 				JSON.stringify({ from: f, to: t, fromQuery, toQuery }),
 			);
 		} catch {
-			trackEvent("event/error/api-train-search");
 			setResults([]);
 			onSearch([]);
 		} finally {

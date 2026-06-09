@@ -89,7 +89,6 @@ export function useVehiclePolling(
 				markChangedIfNeeded(snapshotSignature(data, trainSignature));
 			} catch (err) {
 				if (cancelled) return;
-				trackEvent("event/error/api-trains");
 				console.error("Failed to fetch trains:", err);
 			}
 		}
@@ -115,7 +114,6 @@ export function useVehiclePolling(
 				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
-				trackEvent("event/error/api-bus-vehicles");
 				console.error("Failed to fetch buses:", err);
 			}
 		}
@@ -135,7 +133,6 @@ export function useVehiclePolling(
 				markChangedIfNeeded(snapshotSignature(data, busVehicleSignature));
 			} catch (err) {
 				if (cancelled) return;
-				trackEvent("event/error/api-bus-vehicles");
 				console.error("Failed to fetch all buses:", err);
 			}
 		}

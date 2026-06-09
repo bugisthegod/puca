@@ -29,7 +29,6 @@ export function registerServiceWorker() {
 			registration.update().catch(() => {});
 		})
 		.catch((err) => {
-			trackEvent("event/error/sw-registration");
 			console.warn("SW registration failed:", err);
 		});
 }
