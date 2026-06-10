@@ -205,7 +205,7 @@ Do not mutate production or Fly volumes casually. Schedule DBs are excluded from
 ## Maintenance Notes
 
 - Treat low traffic as a product reality, not a scaling problem. Prefer code/data fixes over paid infrastructure changes.
-- The smallest Fly machine may occasionally restart under memory pressure; that is acceptable unless it becomes user-visible.
+- Keep the production footprint small unless performance or reliability data shows a user-visible need to scale.
 - Before committing, run `bun run typecheck`, `bun run lint`, and `bun test`.
 - If starting a local server on port 3000, first check whether the user already has one running.
 - Do not add continuous reactive loops when an event-driven state update will do.
@@ -216,3 +216,12 @@ Do not mutate production or Fly volumes casually. Schedule DBs are excluded from
 ## Notes
 
 This is a personal/portfolio project, not a company product. The point is a useful, honest, real-time map that feels good to use when you are waiting for transport in Ireland.
+
+## Contributions
+
+Púca is maintained as a personal open-source project. External pull requests are not accepted at this time, but issues and bug reports are welcome.
+
+## License
+
+Púca is licensed under the GNU Affero General Public License v3.0 only.
+See [LICENSE](LICENSE).
