@@ -34,6 +34,18 @@ intended to be safe for a public repository.
 - Do not move search state to `localStorage`.
 - Do not move favorites to `sessionStorage`.
 
+## State Rules
+
+- Search state lives in `sessionStorage`.
+  Train searches and bus search state should disappear when the tab closes.
+- Favorites live in `localStorage`.
+  They are explicit bookmarks curated by the user.
+- Long-lived app state lives in `localStorage`.
+  Mode, selected bus operator, map view, language, compass preference, and recent
+  location cache belong here.
+- When adding new state, decide which bucket it belongs to before writing code.
+  If unsure, search-like state should usually be session-scoped.
+
 ## Local Testing Hygiene
 
 - Before committing code changes, run `bun run typecheck`, `bun run lint`, and
@@ -71,6 +83,28 @@ intended to be safe for a public repository.
 - If lightweight `feed_info.txt` disagrees with the zip, trust the zip for
   regeneration decisions.
 - Historical notes live in `docs/nta-feed-history.md`.
+
+## Repository Layout
+
+- `server.ts`: `Bun.serve` entrypoint, static files, rate limiting, and API routes.
+- `src/App.tsx`: top-level app state, mode switching, search/favorites wiring,
+  and map UI chrome.
+- `src/api.ts`: Irish Rail API client and train data normalization.
+- `src/gtfsr.ts`: public barrel for GTFS/static/realtime helpers.
+- `src/gtfsr/`: bus schedules, GTFS-R caches, arrivals, trip merging, realtime
+  health, and train shape helpers.
+- `src/hooks/`: Leaflet map lifecycle, marker animation, route projection, focus
+  segments, geolocation, favorites, and toasts.
+- `src/components/`: Preact UI for search panels, info panel, favorites, modals,
+  banners, and onboarding.
+- `src/styles/`: split CSS for map UI, popups, panels, settings, stop/arrival
+  UI, markers, offline banners, and toasts.
+- `src/data/`: generated static JSON plus local gitignored schedule DBs.
+- `tests/`: Bun tests for realtime merging, polling, popups, animation,
+  persistence, favorites, and UI helpers.
+- `scripts/`: GTFS check/generation scripts, SQLite builders, Fly DB upload
+  helper, and splash generation.
+- `docs/`: operational notes and feed history.
 
 ## Luas Future Work
 

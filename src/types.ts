@@ -41,7 +41,7 @@ export type SearchResult = {
 	destination: string;
 	fromDep: string;
 	toArr: string;
-	status: "running" | "ready" | "unmapped" | "scheduled"; // running/ready=可聚焦, unmapped=在跑但暂无有效坐标
+	status: "running" | "ready" | "unmapped" | "scheduled"; // running/ready can be focused; unmapped is active without valid coordinates.
 };
 
 export type TrainFocusSummary = {
