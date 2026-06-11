@@ -6,6 +6,8 @@ primary_region = 'lhr'
 [env]
   BUS_DB_DIR = '/data'
   NODE_ENV = 'production'
+  GOATCOUNTER_URL = 'https://bugisthegod.goatcounter.com/count'
+  ANALYTICS_HOSTS = 'puca.dev'
 
 [[mounts]]
   source = 'schedule_dbs'

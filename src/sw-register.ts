@@ -1,5 +1,3 @@
-import { trackEvent } from "./analytics";
-
 export function registerServiceWorker() {
 	if (!("serviceWorker" in navigator)) return;
 

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { trackEvent } from "../analytics";
 import { readRealtimeHealth } from "../realtime";
 import type { BusOperator, BusVehicle, RealtimeHealth, Train } from "../types";
 import { isInServiceHours } from "../utils";

@@ -70,6 +70,7 @@ const EN = {
 	"about.share.btn": "Share Púca",
 	"about.share.copied": "Copied",
 	"about.donate.btn": "Buy Púca a treat",
+	"about.source.btn": "View source",
 
 	// AboutModal — Language setting
 	"about.lang.label": "Language",
@@ -296,6 +297,7 @@ const ZH: Record<Key, string> = {
 	"about.share.btn": "分享 Púca",
 	"about.share.copied": "已复制",
 	"about.donate.btn": "请 Púca 吃颗糖",
+	"about.source.btn": "查看源码",
 
 	// AboutModal — Language setting
 	"about.lang.label": "语言",

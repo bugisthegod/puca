@@ -659,6 +659,13 @@
 	padding-top: 6px;
 }
 
+.about-action--source {
+	grid-column: 1 / -1;
+	display: flex;
+	justify-content: center;
+	margin-top: -2px;
+}
+
 .about-action > a,
 .about-action > button {
 	height: 100%;
@@ -771,6 +778,39 @@
 }
 
 .about-donate-btn:active {
+	transform: scale(0.98);
+}
+
+.about-source-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: min(100%, 360px);
+	min-height: 40px;
+	padding: 8px 14px;
+	background: #24292f;
+	border: 1px solid #24292f;
+	color: #ffffff;
+	border-radius: 12px;
+	font-size: 0.86rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		border-color 0.15s,
+		color 0.15s,
+		transform 0.1s;
+	text-decoration: none;
+}
+
+.about-source-btn:hover {
+	background: #1f2328;
+	border-color: #1f2328;
+	color: #ffffff;
+}
+
+.about-source-btn:active {
 	transform: scale(0.98);
 }
 

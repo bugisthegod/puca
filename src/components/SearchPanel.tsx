@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { trackEvent } from "../analytics";
 import { type Favorites, hasTrain, type TrainFavorite } from "../favorites";
 import type { FocusTrainResult } from "../hooks/useTrainMarkers";
 import { useLocale } from "../i18n";
