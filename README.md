@@ -33,11 +33,25 @@ It is not a journey planner, ticketing product, or transport marketplace. The co
 
 ## Develop
 
+Prerequisites:
+
+- Bun 1.3 or newer.
+- Python 3 for GTFS data-generation scripts.
+- An NTA API key from [developer.nationaltransport.ie](https://developer.nationaltransport.ie/).
+
 Install dependencies:
 
 ```bash
 bun install
 ```
+
+Create a local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Then set `NTA_API_KEY` in `.env`.
 
 Run locally:
 
