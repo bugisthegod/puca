@@ -5,6 +5,11 @@ Real-time bus and train tracker for Ireland — a shapeshifting spirit of Irish 
 Live at [puca.dev](https://puca.dev).
 
 <p align="center">
+  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0">
+  <img src="https://img.shields.io/badge/runtime-Bun-000000" alt="Runtime: Bun">
+</p>
+
+<p align="center">
   <img src="docs/puca-mobile-bus.png" alt="Púca mobile map showing live buses in Dublin" width="360">
 </p>
 
@@ -22,6 +27,17 @@ It is not a journey planner, ticketing product, or transport marketplace. The co
 - Train station-to-station search with focused train tracking where live position data exists.
 - Favorites for bus routes, bus stops, and train searches.
 - Offline/PWA shell with English and Chinese UI.
+
+## How it works
+
+NTA GTFS static feeds are processed offline by Python scripts into route geometry
+JSON and SQLite schedule databases. The Bun server then polls NTA GTFS-Realtime
+(Vehicles, TripUpdates) and Irish Rail every 30 seconds, warming an in-memory
+cache of live vehicle positions and arrival predictions.
+
+The browser fetches this cache and renders bus and train markers on a Leaflet map,
+computing route projections and stop arrival estimates client-side from the
+pre-generated GTFS schedule data.
 
 ## Stack
 
@@ -77,21 +93,26 @@ bun run build
 
 ## Data
 
-Generated static JSON lives in `src/data/`. Local schedule SQLite databases are generated into `src/data/`, ignored by Git, and stored on the Fly volume in production.
+Schedule data is generated from GTFS static feeds (stored in `gtfs/`, gitignored).
 
-Common data commands:
+| Command | What it does |
+|---------|-------------|
+| `bun run db:check` | Download the latest NTA GTFS zip and validate feed versions |
+| `bun run db:generate` | Build SQLite schedule DBs from GTFS for all operators |
+| `bun run json:generate` | Generate route geometry and stop lookup JSON for the frontend |
 
-```bash
-bun run db:check
-bun run json:generate
-bun run db:generate
-```
+Generated files land in `src/data/` — JSON is committed to the repo, SQLite DBs
+are gitignored and stored on a Fly volume at `/data` in production.
 
 Operational notes live in [docs/](docs/). Project maintenance context lives in [PROJECT_NOTES.md](PROJECT_NOTES.md).
 
 ## Contributions
 
 Púca is maintained as a personal open-source project. External pull requests are not accepted at this time, but issues and bug reports are welcome.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
 ## License
 
