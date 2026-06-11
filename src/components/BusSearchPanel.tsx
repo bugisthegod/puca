@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { trackEvent } from "../analytics";
 import { useLocale } from "../i18n";
 import { readRealtimeHealth } from "../realtime";
 import {

@@ -4,10 +4,14 @@ type GoatCounterEvent = {
 	event?: boolean;
 };
 
+const GOATCOUNTER_URL = "https://bugisthegod.goatcounter.com/count";
+const ANALYTICS_HOSTS = new Set(["puca.dev"]);
+
 declare global {
 	interface Window {
 		goatcounter?: {
 			count?: (event: GoatCounterEvent) => void;
+			path?: (location: Location) => string;
 		};
 	}
 }
@@ -30,10 +34,40 @@ const EVENT_TITLES: Record<string, string> = {
 	"event/pwa/installed": "PWA installed",
 	"event/about/feedback": "Feedback click",
 	"event/about/donate": "Donate click",
+	"event/about/source": "Source click",
 };
 
 const pending: GoatCounterEvent[] = [];
 let flushScheduled = false;
+let goatCounterLoaded = false;
+
+function shouldLoadGoatCounter(): boolean {
+	if (typeof window === "undefined") return false;
+	if (!GOATCOUNTER_URL) return false;
+	if (ANALYTICS_HOSTS.size === 0) return false;
+	return ANALYTICS_HOSTS.has(window.location.hostname);
+}
+
+export function loadAnalytics(): void {
+	if (goatCounterLoaded || !shouldLoadGoatCounter()) return;
+	goatCounterLoaded = true;
+
+	window.goatcounter = {
+		...window.goatcounter,
+		path: (location) => location.pathname + location.search + location.hash,
+	};
+
+	const script = document.createElement("script");
+	script.async = true;
+	script.src = "https://gc.zgo.at/count.js";
+	script.dataset.goatcounter = GOATCOUNTER_URL;
+	script.onload = () => {
+		// GC is ready — drain any events that were queued during script load
+		setTimeout(flushPending, 100);
+	};
+	document.head.append(script);
+	scheduleFlush();
+}
 
 function count(event: GoatCounterEvent): boolean {
 	const fn = window.goatcounter?.count;
@@ -70,6 +104,8 @@ function scheduleFlush(): void {
 export function trackEvent(path: keyof typeof EVENT_TITLES): void {
 	if (typeof window === "undefined") return;
 	try {
+		if (!shouldLoadGoatCounter()) return;
+		loadAnalytics();
 		const event = {
 			path,
 			title: EVENT_TITLES[path],
