@@ -11,7 +11,6 @@ declare global {
 	interface Window {
 		goatcounter?: {
 			count?: (event: GoatCounterEvent) => void;
-			path?: (location: Location) => string;
 		};
 	}
 }
@@ -51,11 +50,6 @@ function shouldLoadGoatCounter(): boolean {
 export function loadAnalytics(): void {
 	if (goatCounterLoaded || !shouldLoadGoatCounter()) return;
 	goatCounterLoaded = true;
-
-	window.goatcounter = {
-		...window.goatcounter,
-		path: (location) => location.pathname + location.search + location.hash,
-	};
 
 	const script = document.createElement("script");
 	script.async = true;
