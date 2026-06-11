@@ -4,13 +4,8 @@ type GoatCounterEvent = {
 	event?: boolean;
 };
 
-const GOATCOUNTER_URL = process.env.GOATCOUNTER_URL as string | undefined;
-const ANALYTICS_HOSTS = new Set(
-	((process.env.ANALYTICS_HOSTS as string | undefined) ?? "")
-		.split(",")
-		.map((h) => h.trim())
-		.filter(Boolean),
-);
+const GOATCOUNTER_URL = "https://bugisthegod.goatcounter.com/count";
+const ANALYTICS_HOSTS = new Set(["puca.dev"]);
 
 declare global {
 	interface Window {
@@ -109,6 +104,7 @@ function scheduleFlush(): void {
 export function trackEvent(path: keyof typeof EVENT_TITLES): void {
 	if (typeof window === "undefined") return;
 	try {
+		if (!shouldLoadGoatCounter()) return;
 		loadAnalytics();
 		const event = {
 			path,
