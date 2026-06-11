@@ -2,7 +2,7 @@ name: Prepare data update PR
 
 on:
   schedule:
-    - cron: "30 4 * * *"   # 04:30 during Irish summer time
+    - cron: "30 2 * * *" 
   workflow_dispatch:
 
 permissions:
