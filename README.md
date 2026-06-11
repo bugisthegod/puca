@@ -1,8 +1,16 @@
-# Púca
+<p align="center">
+  <img src="public/icon.svg" alt="Púca logo" width="96" height="96">
+</p>
 
-Real-time bus and train tracker for Ireland — a shapeshifting spirit of Irish folklore watching vehicles flit across the island in real time.
+<h1 align="center">Púca</h1>
 
-Live at [puca.dev](https://puca.dev).
+<p align="center">
+  Real-time bus and train tracker for Ireland — a shapeshifting spirit of Irish folklore watching vehicles flit across the island in real time.
+</p>
+
+<p align="center">
+  Live at <a href="https://puca.dev">puca.dev</a>.
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0">
