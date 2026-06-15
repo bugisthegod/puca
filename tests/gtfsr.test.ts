@@ -13,6 +13,7 @@ import {
 	getGtfsrHealthSnapshot,
 	getGtfsrVehiclePositions,
 	getTrainRouteShape,
+	isTripEndedByLastStopSec,
 	type LiveTripData,
 	mergeTripStops,
 	type ScheduledRow,
@@ -1097,6 +1098,139 @@ describe("decideStopArrival", () => {
 		expect(result.vehicleSeq).toBe(6);
 	});
 
+	test("after midnight, 24:xx GTFS arrivals compare against 24:xx now", () => {
+		const afterMidnightNowSec = 53 * 60; // 00:53
+		const afterMidnightTripStopCoords = [
+			{
+				sequence: 20,
+				lat: 53.34,
+				lng: -6.26,
+				arrivalSec: 24 * 3600 + 52 * 60, // 00:52 on previous service day
+			},
+			{
+				sequence: 21,
+				lat: 53.35,
+				lng: -6.25,
+				arrivalSec: 25 * 3600 + 16 * 60, // 01:16 on previous service day
+			},
+		];
+		const row = {
+			stop_sequence: 21,
+			arrival_sec: 25 * 3600 + 16 * 60,
+		};
+		const live: LiveTripData = {
+			routeId: "R39A",
+			directionId: 1,
+			stopTimeUpdates: [
+				{
+					sequence: 20,
+					stopId: "T20",
+					arrivalDelaySec: 0,
+					departureDelaySec: null,
+					scheduleRelationship: "SCHEDULED",
+				},
+			],
+		};
+
+		const result = decideStopArrival(
+			row,
+			live,
+			null,
+			afterMidnightTripStopCoords,
+			afterMidnightNowSec,
+		);
+
+		expect(result.keep).toBe(true);
+		if (!result.keep) return;
+		expect(result.etaSec).toBe(23 * 60);
+		expect(result.etaSec).toBeLessThan(60 * 60);
+	});
+
+	test("after midnight, GPS-inferred delay also uses the 24:xx service day", () => {
+		const afterMidnightNowSec = 53 * 60; // 00:53
+		const afterMidnightTripStopCoords = [
+			{
+				sequence: 20,
+				lat: 53.34,
+				lng: -6.26,
+				arrivalSec: 24 * 3600 + 52 * 60, // 00:52 on previous service day
+			},
+			{
+				sequence: 21,
+				lat: 53.35,
+				lng: -6.25,
+				arrivalSec: 25 * 3600 + 16 * 60, // 01:16 on previous service day
+			},
+		];
+		const row = {
+			stop_sequence: 21,
+			arrival_sec: 25 * 3600 + 16 * 60,
+		};
+		const vehicle = {
+			lat: afterMidnightTripStopCoords[0]!.lat,
+			lng: afterMidnightTripStopCoords[0]!.lng,
+		};
+
+		const result = decideScheduleVehicleArrival(
+			row,
+			vehicle,
+			afterMidnightTripStopCoords,
+			afterMidnightNowSec,
+		);
+
+		expect(result.keep).toBe(true);
+		if (!result.keep) return;
+		expect(result.delaySec).toBe(60);
+		expect(result.etaSec).toBe(24 * 60);
+		expect(result.etaSec).toBeLessThan(60 * 60);
+	});
+
+	test("after midnight, negative NTA delay still uses the scheduled 24:xx service day", () => {
+		const afterMidnightNowSec = 15 * 60; // 00:15
+		const afterMidnightTripStopCoords = [
+			{
+				sequence: 21,
+				lat: 53.35,
+				lng: -6.25,
+				arrivalSec: 24 * 3600 + 10 * 60, // 00:10 on previous service day
+			},
+		];
+		const row = {
+			stop_sequence: 21,
+			arrival_sec: 24 * 3600 + 10 * 60,
+		};
+		const live: LiveTripData = {
+			routeId: "R39A",
+			directionId: 1,
+			stopTimeUpdates: [
+				{
+					sequence: 21,
+					stopId: "T21",
+					arrivalDelaySec: -20 * 60,
+					departureDelaySec: null,
+					scheduleRelationship: "SCHEDULED",
+				},
+			],
+		};
+		const vehicle = {
+			lat: afterMidnightTripStopCoords[0]!.lat,
+			lng: afterMidnightTripStopCoords[0]!.lng,
+		};
+
+		const result = decideStopArrival(
+			row,
+			live,
+			vehicle,
+			afterMidnightTripStopCoords,
+			afterMidnightNowSec,
+		);
+
+		expect(result.keep).toBe(true);
+		if (!result.keep) return;
+		expect(result.etaSec).toBe(0);
+		expect(result.etaSec).toBeLessThan(60 * 60);
+	});
+
 	test("GPS upstream + no NTA delay infers ETA from current scheduled stop", () => {
 		const live: LiveTripData = {
 			routeId: "R38",
@@ -1284,6 +1418,72 @@ describe("decideStopArrival", () => {
 				true,
 				new Map(),
 				99_999,
+			),
+		).toBe(true);
+	});
+
+	test("pre-midnight previous-service trips are ended shortly after midnight", () => {
+		expect(
+			isTripEndedByLastStopSec(
+				23 * 3600 + 30 * 60,
+				{
+					routeId: "R39A",
+					directionId: 1,
+					stopTimeUpdates: [
+						{
+							sequence: 18,
+							stopId: "T18",
+							arrivalDelaySec: 0,
+							departureDelaySec: null,
+							scheduleRelationship: "SCHEDULED",
+						},
+					],
+				},
+				53 * 60,
+			),
+		).toBe(true);
+	});
+
+	test("24:xx previous-service trips stay ended after the 05:00 service boundary", () => {
+		expect(
+			isTripEndedByLastStopSec(
+				24 * 3600,
+				{
+					routeId: "R39A",
+					directionId: 1,
+					stopTimeUpdates: [
+						{
+							sequence: 1,
+							stopId: "T1",
+							arrivalDelaySec: 0,
+							departureDelaySec: null,
+							scheduleRelationship: "SCHEDULED",
+						},
+					],
+				},
+				6 * 3600,
+			),
+		).toBe(true);
+	});
+
+	test("negative end delay on 24:xx trips still uses the scheduled service day", () => {
+		expect(
+			isTripEndedByLastStopSec(
+				24 * 3600,
+				{
+					routeId: "R39A",
+					directionId: 1,
+					stopTimeUpdates: [
+						{
+							sequence: 99,
+							stopId: "T99",
+							arrivalDelaySec: -20 * 60,
+							departureDelaySec: null,
+							scheduleRelationship: "SCHEDULED",
+						},
+					],
+				},
+				20 * 60,
 			),
 		).toBe(true);
 	});

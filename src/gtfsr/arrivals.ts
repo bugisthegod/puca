@@ -13,6 +13,7 @@ import {
 	computeArrivalTiming,
 	findClosestTripStop,
 	type LiveTripData,
+	normalizeGtfsNowSec,
 	sortedStopTimeUpdates,
 	type TripStopPoint,
 } from "./timing";
@@ -66,23 +67,17 @@ export type BusStopArrivalsInput = {
 	nowSec: number;
 };
 
-// "Stale" flag attached to each returned vehicle: true when the trip NTA has
-// tagged this bus with is clearly over (scheduled last stop + latest reported
-// delay + 15 min buffer is in the past). We DON'T hide these - the app's core
-// purpose is showing what's on the road. The client uses the flag to swap in
-// a Puca marker ("Puca took this bus") so users can recognise at a glance
-// that the popup's schedule may be for a completed trip, not the one the bus
-// is actually running. Genuinely late buses keep reporting growing delays
-// that push the effective end forward, so they stay non-stale until truly done.
+// Shared "trip is over" rule. Vehicle markers use this as a stale flag and
+// still render the bus; stop arrivals use it to suppress completed trips.
+// Latest reported delay shifts the effective end forward, so genuinely late
+// buses stay eligible until their delayed trip has actually finished.
 const ENDED_TRIP_BUFFER_SEC = 15 * 60;
 
-export function isTripEnded(
-	operator: Operator,
-	tripId: string,
+export function isTripEndedByLastStopSec(
+	lastStopSec: number | null,
+	live: LiveTripData | undefined,
 	nowSec: number,
-	tripUpdates: ReadonlyMap<string, LiveTripData>,
 ): boolean {
-	const lastStopSec = getTripLastStopSec(operator, tripId);
 	if (lastStopSec === null) return false; // unknown trip -> keep (conservative)
 
 	// Shift the effective end time forward by the latest reported delay so
@@ -90,7 +85,6 @@ export function isTripEnded(
 	// larger delays as they run behind, pushing the end past `now`. Stale
 	// predictions (trip actually ended but NTA didn't clear TripUpdates) leave
 	// small/old delays that don't save them once `now` rolls past.
-	const live = tripUpdates.get(tripId);
 	let endDelay = 0;
 	if (live) {
 		let maxSeq = -1;
@@ -102,7 +96,22 @@ export function isTripEnded(
 		}
 	}
 
-	return nowSec > lastStopSec + endDelay + ENDED_TRIP_BUFFER_SEC;
+	const effectiveEndSec = lastStopSec + endDelay;
+	return (
+		normalizeGtfsNowSec(lastStopSec, nowSec) >
+		effectiveEndSec + ENDED_TRIP_BUFFER_SEC
+	);
+}
+
+export function isTripEnded(
+	operator: Operator,
+	tripId: string,
+	nowSec: number,
+	tripUpdates: ReadonlyMap<string, LiveTripData>,
+): boolean {
+	const lastStopSec = getTripLastStopSec(operator, tripId);
+	const live = tripUpdates.get(tripId);
+	return isTripEndedByLastStopSec(lastStopSec, live, nowSec);
 }
 
 // Pure per-row decision used by getBusStopArrivals. Extracted so the filter
@@ -135,7 +144,11 @@ export function decideStopArrival(
 		vehicleSeq !== null && vehicleScheduledArrivalSec !== null
 			? {
 					fromSequence: vehicleSeq,
-					delaySec: Math.max(0, nowSec - vehicleScheduledArrivalSec),
+					delaySec: Math.max(
+						0,
+						normalizeGtfsNowSec(vehicleScheduledArrivalSec, nowSec) -
+							vehicleScheduledArrivalSec,
+					),
 				}
 			: null;
 	const timing = computeArrivalTiming({
@@ -147,7 +160,9 @@ export function decideStopArrival(
 		delayFallbackMode: "forward-if-no-prior",
 	});
 	const delaySec = timing.delaySec ?? 0;
-	let etaSec = timing.etaSec ?? row.arrival_sec - nowSec;
+	let etaSec =
+		timing.etaSec ??
+		row.arrival_sec - normalizeGtfsNowSec(row.arrival_sec, nowSec);
 	if (etaSec < 0) {
 		if (vehicleSeq !== null && vehicleSeq <= row.stop_sequence) {
 			etaSec = 0;
@@ -176,7 +191,11 @@ export function decideScheduleVehicleArrival(
 		vehicleScheduledArrivalSec !== null
 			? {
 					fromSequence: vehicleSeq,
-					delaySec: Math.max(0, nowSec - vehicleScheduledArrivalSec),
+					delaySec: Math.max(
+						0,
+						normalizeGtfsNowSec(vehicleScheduledArrivalSec, nowSec) -
+							vehicleScheduledArrivalSec,
+					),
 				}
 			: null;
 	const timing = computeArrivalTiming({
@@ -188,7 +207,9 @@ export function decideScheduleVehicleArrival(
 		delayFallbackMode: "prior-only",
 	});
 	const delaySec = timing.delaySec ?? 0;
-	let etaSec = timing.etaSec ?? row.arrival_sec - nowSec;
+	let etaSec =
+		timing.etaSec ??
+		row.arrival_sec - normalizeGtfsNowSec(row.arrival_sec, nowSec);
 	if (etaSec < 0) {
 		etaSec = 0;
 	}
@@ -205,7 +226,7 @@ export function shouldConsiderStopArrivalTrip(
 ): boolean {
 	const live = tripUpdates.get(tripId);
 	if (!live && !hasVehicle) return false;
-	if (live && isTripEnded(operator, tripId, nowSec, tripUpdates)) return false;
+	if (isTripEnded(operator, tripId, nowSec, tripUpdates)) return false;
 	return true;
 }
 
@@ -312,9 +333,9 @@ export async function getBusStopArrivals({
 	const routeIdToShortName = new Map<string, string>();
 	for (const r of routes) routeIdToShortName.set(r.id, r.shortName);
 
-	// Filter to live, non-ended trips first. Trips with GPS but no TripUpdate are
-	// kept as conservative fallback candidates; NTA sometimes emits a vehicle
-	// position without the matching per-stop prediction.
+	// Filter to realtime trips that are not clearly ended. GPS-only trips remain
+	// fallback candidates when the schedule DB cannot prove they are over; NTA
+	// sometimes emits a vehicle position without the matching per-stop prediction.
 	const activeRows = rows.filter((r) => {
 		return shouldConsiderStopArrivalTrip(
 			operator,

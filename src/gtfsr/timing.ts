@@ -26,6 +26,38 @@ export type TripStopPoint = {
 };
 type DelayFallbackMode = "prior-only" | "forward-if-no-prior";
 
+const GTFS_SERVICE_DAY_SEC = 24 * 60 * 60;
+const GTFS_EARLY_MORNING_CUTOFF_SEC = 5 * 60 * 60;
+const GTFS_MORNING_CLEANUP_CUTOFF_SEC = 12 * 60 * 60;
+const GTFS_PRE_MIDNIGHT_SERVICE_SEC = 20 * 60 * 60;
+
+export function normalizeGtfsNowSec(
+	referenceSec: number,
+	nowSec: number,
+): number {
+	// Static GTFS keeps after-midnight trips on the previous service day as
+	// 24:xx/25:xx, while the wall clock resets to 00:xx. During the early
+	// morning service tail, compare those arrivals with 24:xx "now" too. Keep
+	// the same normalization through the morning cleanup window so stale
+	// realtime trips from the night before do not revive after 05:00.
+	if (
+		referenceSec >= GTFS_SERVICE_DAY_SEC &&
+		nowSec < GTFS_MORNING_CLEANUP_CUTOFF_SEC
+	) {
+		return nowSec + GTFS_SERVICE_DAY_SEC;
+	}
+	// Some trips end before midnight as plain 23:xx times. If NTA keeps their
+	// realtime records around shortly after midnight, treat those as yesterday's
+	// service day rather than tonight's future departures.
+	if (
+		referenceSec >= GTFS_PRE_MIDNIGHT_SERVICE_SEC &&
+		nowSec < GTFS_EARLY_MORNING_CUTOFF_SEC
+	) {
+		return nowSec + GTFS_SERVICE_DAY_SEC;
+	}
+	return nowSec;
+}
+
 export function sortedStopTimeUpdates(
 	stopTimeUpdates: LiveTripData["stopTimeUpdates"],
 ): LiveTripData["stopTimeUpdates"] {
@@ -102,7 +134,10 @@ export function computeArrivalTiming({
 				? "gps-inferred"
 				: "schedule";
 	const expectedArrivalSec = delaySec !== null ? arrivalSec + delaySec : null;
+	const etaReferenceSec = expectedArrivalSec ?? arrivalSec;
 	const etaSec =
-		nowSec === null ? null : (expectedArrivalSec ?? arrivalSec) - nowSec;
+		nowSec === null
+			? null
+			: etaReferenceSec - normalizeGtfsNowSec(arrivalSec, nowSec);
 	return { delaySec, expectedArrivalSec, etaSec, source };
 }

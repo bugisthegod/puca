@@ -12,6 +12,7 @@ import {
 	findClosestTripStop,
 	type GpsInferredDelay,
 	type LiveTripData,
+	normalizeGtfsNowSec,
 	type TripStopPoint,
 } from "./timing";
 import type { RawTripUpdateMap } from "./tripUpdates";
@@ -152,7 +153,10 @@ function inferDelayFromVehiclePosition(
 	if (!best || best.arrivalSec === undefined) return null;
 	return {
 		fromSequence: best.sequence,
-		delaySec: Math.max(0, nowSec - best.arrivalSec),
+		delaySec: Math.max(
+			0,
+			normalizeGtfsNowSec(best.arrivalSec, nowSec) - best.arrivalSec,
+		),
 	};
 }
 

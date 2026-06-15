@@ -55,9 +55,9 @@
 	color: #fff;
 }
 
-/* Stale trip variant — NTA's tagged tripId is clearly over (layover / deadhead /
-   between trips). We still show the vehicle (the app's job is "what's on the
-   road") but swap the bus icon for Púca as a visual "caveat this data". */
+/* Stale trip variant — the vehicle's scheduled trip appears to be over
+   (layover / deadhead / between trips). We still show the vehicle, but swap
+   the bus icon for Púca as a visual "caveat this data". */
 .bus-marker--stale .bus-puca {
 	width: 36px;
 	height: 36px;

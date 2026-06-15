@@ -2,6 +2,7 @@ import {
 	type BusStopArrival,
 	decideScheduleVehicleArrival,
 	decideStopArrival,
+	isTripEndedByLastStopSec,
 	type StopArrivalDecision,
 	shouldConsiderStopArrivalTrip,
 } from "./gtfsr/arrivals";
@@ -77,6 +78,7 @@ export {
 	getGtfsrVehiclePositions,
 	getOperatorStop,
 	getTrainRouteShape,
+	isTripEndedByLastStopSec,
 	mergeTripStops,
 	searchAllBusStops,
 	searchBusStops,

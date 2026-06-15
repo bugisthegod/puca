@@ -112,7 +112,7 @@ export const operatorStops: Record<Operator, StopsDict> = {
 	goahead: goAheadStops as StopsDict,
 };
 
-// Variants are only generated for Dublin Bus today; other operators return [].
+// Only Dublin Bus has generated variant branch data; other operators return [].
 const operatorVariants: Record<Operator, VariantsDict> = {
 	dublinbus: dublinBusVariants as unknown as VariantsDict,
 	buseireann: {} as VariantsDict,
@@ -274,8 +274,8 @@ export function getTripShapeId(
 
 const lastStopSecStmtMap = new Map<Operator, ReturnType<Database["prepare"]>>();
 
-// Lightweight lookup for the stale-trip flag — we only need the last stop's
-// arrival time, not the full stop list (which getTripScheduledStops returns).
+// Lightweight lookup for trip-end checks: vehicle stale flags and stop-arrival
+// pruning only need the last stop, not the full scheduled stop list.
 export function getTripLastStopSec(
 	operator: Operator,
 	tripId: string,

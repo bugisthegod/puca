@@ -1,7 +1,7 @@
-// User-saved favorites: bus route+direction pairs, and train station→station
-// searches. Separate from session (which remembers the last-viewed state) —
-// favorites are explicit bookmarks the user curates. Persisted to localStorage
-// under its own versioned key.
+// User-saved favorites: bus route+direction pairs, bus stops, and train
+// station→station searches. Separate from session (which remembers the
+// last-viewed state) — favorites are explicit bookmarks the user curates.
+// Persisted to localStorage under its own versioned key.
 
 import { type BusOperator, OPERATORS } from "./types";
 
