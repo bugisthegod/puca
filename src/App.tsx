@@ -713,7 +713,6 @@ function App() {
 
 	const handleModeChange = useCallback(
 		(m: Mode) => {
-			trackEvent(m === "bus" ? "event/mode/bus" : "event/mode/train");
 			setMode(m);
 			setSearchCodes(null);
 			clearTrainFocus();

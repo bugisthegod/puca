@@ -18,8 +18,6 @@ declare global {
 const EVENT_TITLES: Record<string, string> = {
 	"event/app/open": "App open",
 	"event/app/standalone-open": "App open as PWA",
-	"event/mode/train": "Switch to train mode",
-	"event/mode/bus": "Switch to bus mode",
 	"event/search/train": "Train search",
 	"event/search/bus-route": "Bus route search",
 	"event/search/bus-stop": "Bus stop search",
