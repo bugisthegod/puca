@@ -9,7 +9,7 @@ import type {
 import { busKey, luasStopKey, stopKey, trainKey } from "../favorites";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useLocale } from "../i18n";
-import type { BusOperator } from "../types";
+import type { BusOperator, LuasArrival } from "../types";
 
 type Props = {
 	onClose: () => void;
@@ -22,6 +22,10 @@ type Props = {
 	onRemoveTrain: (key: string) => void;
 	onRemoveStop: (key: string) => void;
 	onRemoveLuasStop: (key: string) => void;
+	onMoveBus: (key: string, direction: -1 | 1) => void;
+	onMoveTrain: (key: string, direction: -1 | 1) => void;
+	onMoveStop: (key: string, direction: -1 | 1) => void;
+	onMoveLuasStop: (key: string, direction: -1 | 1) => void;
 };
 
 const OPERATOR_LABEL: Record<BusOperator, string> = {
@@ -32,6 +36,53 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
 
 type RemoveType = "bus" | "stop" | "luas-stop" | "train";
 type PendingRemove = { type: RemoveType; key: string } | null;
+type FavoriteSectionId = "buses" | "stops" | "trains" | "luasStops";
+type DraggedFavoriteItem = { sectionId: FavoriteSectionId; key: string } | null;
+type LuasFavoriteArrival =
+	| { status: "loading" }
+	| { status: "error" }
+	| { status: "empty" }
+	| { status: "ready"; arrival: LuasArrival; fetchedAt: number };
+
+const SECTION_ORDER_KEY = "puca-favorite-section-order-v1";
+const DEFAULT_SECTION_ORDER: FavoriteSectionId[] = [
+	"buses",
+	"stops",
+	"trains",
+	"luasStops",
+];
+const SECTION_IDS = new Set<FavoriteSectionId>(DEFAULT_SECTION_ORDER);
+
+function loadSectionOrder(): FavoriteSectionId[] {
+	try {
+		const raw = localStorage.getItem(SECTION_ORDER_KEY);
+		if (!raw) return DEFAULT_SECTION_ORDER;
+		const parsed = JSON.parse(raw);
+		if (!Array.isArray(parsed)) return DEFAULT_SECTION_ORDER;
+		const saved = parsed.filter((id): id is FavoriteSectionId =>
+			SECTION_IDS.has(id),
+		);
+		return [
+			...saved,
+			...DEFAULT_SECTION_ORDER.filter((id) => !saved.includes(id)),
+		];
+	} catch {
+		return DEFAULT_SECTION_ORDER;
+	}
+}
+
+function saveSectionOrder(order: FavoriteSectionId[]) {
+	try {
+		localStorage.setItem(SECTION_ORDER_KEY, JSON.stringify(order));
+	} catch {
+		// Best-effort UI preference.
+	}
+}
+
+function etaLabel(etaSeconds: number, t: ReturnType<typeof useLocale>["t"]) {
+	if (etaSeconds < 60) return t("luas.search.eta.due");
+	return t("luas.search.eta.min", { n: Math.round(etaSeconds / 60) });
+}
 
 function FavoritesModal({
 	onClose,
@@ -44,9 +95,26 @@ function FavoritesModal({
 	onRemoveTrain,
 	onRemoveStop,
 	onRemoveLuasStop,
+	onMoveBus,
+	onMoveTrain,
+	onMoveStop,
+	onMoveLuasStop,
 }: Props) {
 	const { t } = useLocale();
 	const [pendingRemove, setPendingRemove] = useState<PendingRemove>(null);
+	const [luasArrivals, setLuasArrivals] = useState<
+		Record<string, LuasFavoriteArrival>
+	>({});
+	const [luasClockNow, setLuasClockNow] = useState(() => Date.now());
+	const [sectionOrder, setSectionOrder] = useState(loadSectionOrder);
+	const [isEditingSections, setIsEditingSections] = useState(false);
+	const [draggedFavoriteItem, setDraggedFavoriteItem] =
+		useState<DraggedFavoriteItem>(null);
+	const [dragOverFavoriteKey, setDragOverFavoriteKey] = useState<string | null>(
+		null,
+	);
+	const draggedFavoriteItemRef = useRef<DraggedFavoriteItem>(null);
+	const dragOverFavoriteKeyRef = useRef<string | null>(null);
 	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 	const removeButtonRefs = useRef(new Map<string, HTMLButtonElement>());
 	useBackToClose(onClose);
@@ -72,6 +140,75 @@ function FavoritesModal({
 				?.focus();
 		});
 	}, [pendingRemove]);
+
+	useEffect(() => {
+		if (favs.luasStops.length === 0) {
+			setLuasArrivals({});
+			return;
+		}
+		const stopIds = favs.luasStops.map((stop) => stop.stopId);
+		const ac = new AbortController();
+		let cancelled = false;
+
+		async function fetchArrival(stopId: string) {
+			setLuasArrivals((state) => ({
+				...state,
+				[stopId]: state[stopId] ?? { status: "loading" },
+			}));
+			try {
+				const res = await fetch(
+					`/api/luas/stop/${encodeURIComponent(stopId)}/arrivals`,
+					{ signal: ac.signal },
+				);
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const data: LuasArrival[] = await res.json();
+				if (cancelled || ac.signal.aborted) return;
+				const now = Date.now();
+				setLuasClockNow(now);
+				setLuasArrivals((state) => ({
+					...state,
+					[stopId]:
+						data.length > 0
+							? {
+									status: "ready",
+									arrival: data[0] as LuasArrival,
+									fetchedAt: now,
+								}
+							: { status: "empty" },
+				}));
+			} catch (err) {
+				if ((err as Error).name === "AbortError" || cancelled) return;
+				setLuasArrivals((state) => ({
+					...state,
+					[stopId]: { status: "error" },
+				}));
+			}
+		}
+
+		setLuasArrivals((state) => {
+			const next: Record<string, LuasFavoriteArrival> = {};
+			for (const stopId of stopIds) {
+				next[stopId] = state[stopId] ?? { status: "loading" };
+			}
+			return next;
+		});
+		for (const stopId of stopIds) void fetchArrival(stopId);
+		const id = setInterval(() => {
+			for (const stopId of stopIds) void fetchArrival(stopId);
+		}, 30_000);
+
+		return () => {
+			cancelled = true;
+			clearInterval(id);
+			ac.abort();
+		};
+	}, [favs.luasStops]);
+
+	useEffect(() => {
+		if (favs.luasStops.length === 0) return;
+		const id = setInterval(() => setLuasClockNow(Date.now()), 30_000);
+		return () => clearInterval(id);
+	}, [favs.luasStops.length]);
 
 	function refKey(type: RemoveType, key: string) {
 		return `${type}:${key}`;
@@ -112,6 +249,276 @@ function FavoritesModal({
 		requestAnimationFrame(() => {
 			closeButtonRef.current?.focus();
 		});
+	}
+
+	function luasArrivalContent(stopId: string): React.ReactNode {
+		const state = luasArrivals[stopId];
+		if (!state || state.status === "loading")
+			return (
+				<span className="fav-row__luas-next fav-row__luas-next--status">
+					{t("favs.luas.next.loading")}
+				</span>
+			);
+		if (state.status === "error")
+			return (
+				<span className="fav-row__luas-next fav-row__luas-next--status">
+					{t("favs.luas.next.error")}
+				</span>
+			);
+		if (state.status === "empty")
+			return (
+				<span className="fav-row__luas-next fav-row__luas-next--status">
+					{t("favs.luas.next.empty")}
+				</span>
+			);
+		const elapsed = Math.floor((luasClockNow - state.fetchedAt) / 1000);
+		const etaText = etaLabel(
+			Math.max(0, state.arrival.etaSeconds - elapsed),
+			t,
+		);
+		return (
+			<>
+				<span className="fav-row__luas-destination">
+					{state.arrival.headsign}
+				</span>
+				<span className="fav-row__luas-eta">
+					{t("favs.luas.next.timing", {
+						eta: etaText,
+					})}
+				</span>
+			</>
+		);
+	}
+
+	function sectionHasItems(sectionId: FavoriteSectionId) {
+		if (sectionId === "buses") return favs.buses.length > 0;
+		if (sectionId === "stops") return favs.stops.length > 0;
+		if (sectionId === "trains") return favs.trains.length > 0;
+		return favs.luasStops.length > 0;
+	}
+
+	const visibleSectionIds = sectionOrder.filter(sectionHasItems);
+
+	function moveSection(sectionId: FavoriteSectionId, direction: -1 | 1) {
+		const visibleIndex = visibleSectionIds.indexOf(sectionId);
+		const swapWith = visibleSectionIds[visibleIndex + direction];
+		if (!swapWith) return;
+		setSectionOrder((order) => {
+			const next = [...order];
+			const from = next.indexOf(sectionId);
+			const to = next.indexOf(swapWith);
+			if (from < 0 || to < 0) return order;
+			[next[from], next[to]] = [
+				next[to] as FavoriteSectionId,
+				next[from] as FavoriteSectionId,
+			];
+			saveSectionOrder(next);
+			return next;
+		});
+	}
+
+	function sectionLabel(sectionId: FavoriteSectionId) {
+		if (sectionId === "buses") return t("favs.section.buses");
+		if (sectionId === "stops") return t("favs.section.stops");
+		if (sectionId === "trains") return t("favs.section.trains");
+		return t("favs.section.luasStops");
+	}
+
+	function renderSectionHeader(
+		sectionId: FavoriteSectionId,
+		index: number,
+		total: number,
+	) {
+		const label = sectionLabel(sectionId);
+		return (
+			<div className="fav-section-header">
+				<div className="about-block__label">{label}</div>
+				{isEditingSections && total > 1 && (
+					<div className="fav-section-header__controls">
+						<button
+							type="button"
+							className="fav-section-header__move"
+							disabled={index === 0}
+							aria-label={t("favs.section.moveUp.aria", { name: label })}
+							title={t("favs.section.moveUp.title")}
+							onClick={() => moveSection(sectionId, -1)}
+						>
+							<svg
+								viewBox="0 0 24 24"
+								width="15"
+								height="15"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2.4"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								aria-hidden="true"
+							>
+								<path d="m18 15-6-6-6 6" />
+							</svg>
+						</button>
+						<button
+							type="button"
+							className="fav-section-header__move"
+							disabled={index === total - 1}
+							aria-label={t("favs.section.moveDown.aria", { name: label })}
+							title={t("favs.section.moveDown.title")}
+							onClick={() => moveSection(sectionId, 1)}
+						>
+							<svg
+								viewBox="0 0 24 24"
+								width="15"
+								height="15"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2.4"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								aria-hidden="true"
+							>
+								<path d="m6 9 6 6 6-6" />
+							</svg>
+						</button>
+					</div>
+				)}
+			</div>
+		);
+	}
+
+	function sectionKeys(sectionId: FavoriteSectionId): string[] {
+		if (sectionId === "buses") return favs.buses.map(busKey);
+		if (sectionId === "stops") return favs.stops.map(stopKey);
+		if (sectionId === "trains") return favs.trains.map(trainKey);
+		return favs.luasStops.map(luasStopKey);
+	}
+
+	function moveFavorite(
+		sectionId: FavoriteSectionId,
+		key: string,
+		direction: -1 | 1,
+	) {
+		if (sectionId === "buses") onMoveBus(key, direction);
+		else if (sectionId === "stops") onMoveStop(key, direction);
+		else if (sectionId === "trains") onMoveTrain(key, direction);
+		else onMoveLuasStop(key, direction);
+	}
+
+	function moveFavoriteTo(
+		sectionId: FavoriteSectionId,
+		key: string,
+		targetKey: string,
+	) {
+		if (key === targetKey) return;
+		const keys = sectionKeys(sectionId);
+		const from = keys.indexOf(key);
+		const to = keys.indexOf(targetKey);
+		if (from < 0 || to < 0 || from === to) return;
+		const direction: -1 | 1 = from < to ? 1 : -1;
+		for (let i = 0; i < Math.abs(to - from); i++) {
+			moveFavorite(sectionId, key, direction);
+		}
+	}
+
+	function setDraggedFavorite(item: DraggedFavoriteItem) {
+		draggedFavoriteItemRef.current = item;
+		setDraggedFavoriteItem(item);
+	}
+
+	function clearDraggedFavoriteItem() {
+		setDraggedFavorite(null);
+	}
+
+	function setFavoriteDragOver(key: string | null) {
+		dragOverFavoriteKeyRef.current = key;
+		setDragOverFavoriteKey(key);
+	}
+
+	function clearFavoriteDragOver() {
+		setFavoriteDragOver(null);
+	}
+
+	function dragTargetFromPoint(
+		sectionId: FavoriteSectionId,
+		x: number,
+		y: number,
+	): string | null {
+		const el = document.elementFromPoint(x, y);
+		const row = el?.closest<HTMLElement>("[data-fav-section][data-fav-key]");
+		if (!row || row.dataset.favSection !== sectionId) return null;
+		return row.dataset.favKey ?? null;
+	}
+
+	function renderDragHandle(
+		sectionId: FavoriteSectionId,
+		key: string,
+		name: string,
+		total: number,
+	) {
+		if (!isEditingSections) return null;
+		return (
+			<button
+				type="button"
+				className="fav-row__drag"
+				aria-label={t("favs.item.drag.aria", { name })}
+				title={t("favs.item.drag.title")}
+				onClick={(e) => e.stopPropagation()}
+				onPointerDown={(e) => {
+					if (total <= 1) return;
+					e.stopPropagation();
+					e.preventDefault();
+					e.currentTarget.setPointerCapture?.(e.pointerId);
+					setDraggedFavorite({ sectionId, key });
+					setFavoriteDragOver(key);
+				}}
+				onPointerMove={(e) => {
+					if (total <= 1 || draggedFavoriteItemRef.current?.key !== key) return;
+					e.stopPropagation();
+					const targetKey = dragTargetFromPoint(
+						sectionId,
+						e.clientX,
+						e.clientY,
+					);
+					if (targetKey) setFavoriteDragOver(targetKey);
+				}}
+				onPointerUp={(e) => {
+					if (draggedFavoriteItemRef.current?.key !== key) return;
+					e.stopPropagation();
+					const targetKey =
+						dragTargetFromPoint(sectionId, e.clientX, e.clientY) ??
+						dragOverFavoriteKeyRef.current;
+					if (targetKey) moveFavoriteTo(sectionId, key, targetKey);
+					clearDraggedFavoriteItem();
+					clearFavoriteDragOver();
+					try {
+						e.currentTarget.releasePointerCapture(e.pointerId);
+					} catch {}
+				}}
+				onPointerCancel={(e) => {
+					if (draggedFavoriteItemRef.current?.key !== key) return;
+					e.stopPropagation();
+					clearDraggedFavoriteItem();
+					clearFavoriteDragOver();
+					try {
+						e.currentTarget.releasePointerCapture(e.pointerId);
+					} catch {}
+				}}
+			>
+				<span aria-hidden="true">⋮⋮</span>
+			</button>
+		);
+	}
+
+	function favoriteRowClass(baseClass: string, key: string) {
+		const classes = [baseClass];
+		if (draggedFavoriteItem?.key === key) classes.push("fav-row--dragging");
+		if (
+			dragOverFavoriteKey === key &&
+			draggedFavoriteItem !== null &&
+			draggedFavoriteItem.key !== key
+		) {
+			classes.push("fav-row--drag-over");
+		}
+		return classes.join(" ");
 	}
 
 	const empty =
@@ -161,331 +568,390 @@ function FavoritesModal({
 				</button>
 				<div className="about-modal__scroll">
 					<div className="about-block">
-						<div className="about-block__label">{t("favs.title")}</div>
+						<div className="fav-title-row">
+							<div className="about-block__label">{t("favs.title")}</div>
+							{visibleSectionIds.length > 1 && (
+								<button
+									type="button"
+									className={`fav-title-row__edit${isEditingSections ? " is-active" : ""}`}
+									aria-pressed={isEditingSections}
+									onClick={() => setIsEditingSections((editing) => !editing)}
+								>
+									{isEditingSections
+										? t("favs.section.edit.done")
+										: t("favs.section.edit")}
+								</button>
+							)}
+						</div>
 						{empty && <div className="fav-empty">{t("favs.empty")}</div>}
-						{favs.buses.length > 0 && (
-							<>
-								<div className="about-block__label" style={{ marginTop: 8 }}>
-									{t("favs.section.buses")}
-								</div>
-								<ul className="fav-list">
-									{favs.buses.map((b) => {
-										const k = busKey(b);
-										const confirming = isConfirmingRemove("bus", k);
-										return (
-											<li key={k} className={`fav-row fav-row--${b.operator}`}>
-												<button
-													type="button"
-													className="fav-row__main"
-													onClick={() => {
-														onPickBus(b);
-														onClose();
-													}}
+						{visibleSectionIds.map((sectionId, index) => (
+							<section
+								key={sectionId}
+								className="fav-section"
+								style={{ marginTop: index === 0 ? 8 : 16 }}
+							>
+								{renderSectionHeader(
+									sectionId,
+									index,
+									visibleSectionIds.length,
+								)}
+								{sectionId === "buses" && (
+									<ul className="fav-list">
+										{favs.buses.map((b) => {
+											const k = busKey(b);
+											const confirming = isConfirmingRemove("bus", k);
+											return (
+												<li
+													key={k}
+													data-fav-section="buses"
+													data-fav-key={k}
+													className={favoriteRowClass(
+														`fav-row fav-row--${b.operator}`,
+														k,
+													)}
 												>
-													<strong>{b.shortName}</strong>
-													<span>&rarr; {b.headsign}</span>
-													<span className="route-operator-badge">
-														{OPERATOR_LABEL[b.operator]}
-													</span>
-												</button>
-												<button
-													ref={(node) => setRemoveButtonRef("bus", k, node)}
-													type="button"
-													className="fav-row__remove"
-													tabIndex={confirming ? -1 : undefined}
-													aria-hidden={confirming ? true : undefined}
-													aria-label={t("favs.remove.bus.aria", {
-														name: b.shortName,
-													})}
-													title={t("favs.remove.title")}
-													onClick={(e) => {
-														e.stopPropagation();
-														requestRemove("bus", k);
-													}}
-												>
-													{"\u00d7"}
-												</button>
-												{confirming && (
-													<div className="fav-row__confirm">
+													<button
+														type="button"
+														className="fav-row__main"
+														onClick={() => {
+															onPickBus(b);
+															onClose();
+														}}
+													>
+														<strong>{b.shortName}</strong>
+														<span>&rarr; {b.headsign}</span>
+														<span className="route-operator-badge">
+															{OPERATOR_LABEL[b.operator]}
+														</span>
+													</button>
+													{renderDragHandle(
+														"buses",
+														k,
+														b.shortName,
+														favs.buses.length,
+													)}
+													{!isEditingSections && (
 														<button
+															ref={(node) => setRemoveButtonRef("bus", k, node)}
 															type="button"
-															className="fav-row__confirm-cancel"
-															onClick={(e) => {
-																e.stopPropagation();
-																cancelRemove("bus", k);
-															}}
-														>
-															{t("favs.remove.cancel")}
-														</button>
-														<button
-															type="button"
-															className="fav-row__confirm-action"
-															aria-label={t("favs.remove.bus.confirm.aria", {
+															className="fav-row__remove"
+															tabIndex={confirming ? -1 : undefined}
+															aria-hidden={confirming ? true : undefined}
+															aria-label={t("favs.remove.bus.aria", {
 																name: b.shortName,
 															})}
+															title={t("favs.remove.title")}
 															onClick={(e) => {
 																e.stopPropagation();
-																removeThenClear(k, onRemoveBus);
+																requestRemove("bus", k);
 															}}
 														>
-															{t("favs.remove.confirm")}
+															{"\u00d7"}
 														</button>
-													</div>
-												)}
-											</li>
-										);
-									})}
-								</ul>
-							</>
-						)}
-						{favs.stops.length > 0 && (
-							<>
-								<div
-									className="about-block__label"
-									style={{ marginTop: favs.buses.length > 0 ? 16 : 8 }}
-								>
-									{t("favs.section.stops")}
-								</div>
-								<ul className="fav-list">
-									{favs.stops.map((s) => {
-										const k = stopKey(s);
-										const confirming = isConfirmingRemove("stop", k);
-										return (
-											<li key={k} className={`fav-row fav-row--${s.operator}`}>
-												<button
-													type="button"
-													className="fav-row__main"
-													onClick={() => {
-														onPickStop(s);
-														onClose();
-													}}
+													)}
+													{confirming && (
+														<div className="fav-row__confirm">
+															<button
+																type="button"
+																className="fav-row__confirm-cancel"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	cancelRemove("bus", k);
+																}}
+															>
+																{t("favs.remove.cancel")}
+															</button>
+															<button
+																type="button"
+																className="fav-row__confirm-action"
+																aria-label={t("favs.remove.bus.confirm.aria", {
+																	name: b.shortName,
+																})}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	removeThenClear(k, onRemoveBus);
+																}}
+															>
+																{t("favs.remove.confirm")}
+															</button>
+														</div>
+													)}
+												</li>
+											);
+										})}
+									</ul>
+								)}
+								{sectionId === "stops" && (
+									<ul className="fav-list">
+										{favs.stops.map((s) => {
+											const k = stopKey(s);
+											const confirming = isConfirmingRemove("stop", k);
+											return (
+												<li
+													key={k}
+													data-fav-section="stops"
+													data-fav-key={k}
+													className={favoriteRowClass(
+														`fav-row fav-row--${s.operator}`,
+														k,
+													)}
 												>
-													<strong>{s.stopCode || s.stopId}</strong>
-													<span>{s.stopName}</span>
-													<span className="route-operator-badge">
-														{OPERATOR_LABEL[s.operator]}
-													</span>
-												</button>
-												<button
-													ref={(node) => setRemoveButtonRef("stop", k, node)}
-													type="button"
-													className="fav-row__remove"
-													tabIndex={confirming ? -1 : undefined}
-													aria-hidden={confirming ? true : undefined}
-													aria-label={t("favs.remove.stop.aria", {
-														name: s.stopName,
-													})}
-													title={t("favs.remove.title")}
-													onClick={(e) => {
-														e.stopPropagation();
-														requestRemove("stop", k);
-													}}
-												>
-													{"\u00d7"}
-												</button>
-												{confirming && (
-													<div className="fav-row__confirm">
+													<button
+														type="button"
+														className="fav-row__main"
+														onClick={() => {
+															onPickStop(s);
+															onClose();
+														}}
+													>
+														<strong>{s.stopCode || s.stopId}</strong>
+														<span>{s.stopName}</span>
+														<span className="route-operator-badge">
+															{OPERATOR_LABEL[s.operator]}
+														</span>
+													</button>
+													{renderDragHandle(
+														"stops",
+														k,
+														s.stopName,
+														favs.stops.length,
+													)}
+													{!isEditingSections && (
 														<button
+															ref={(node) =>
+																setRemoveButtonRef("stop", k, node)
+															}
 															type="button"
-															className="fav-row__confirm-cancel"
-															onClick={(e) => {
-																e.stopPropagation();
-																cancelRemove("stop", k);
-															}}
-														>
-															{t("favs.remove.cancel")}
-														</button>
-														<button
-															type="button"
-															className="fav-row__confirm-action"
-															aria-label={t("favs.remove.stop.confirm.aria", {
+															className="fav-row__remove"
+															tabIndex={confirming ? -1 : undefined}
+															aria-hidden={confirming ? true : undefined}
+															aria-label={t("favs.remove.stop.aria", {
 																name: s.stopName,
 															})}
+															title={t("favs.remove.title")}
 															onClick={(e) => {
 																e.stopPropagation();
-																removeThenClear(k, onRemoveStop);
+																requestRemove("stop", k);
 															}}
 														>
-															{t("favs.remove.confirm")}
+															{"\u00d7"}
 														</button>
-													</div>
-												)}
-											</li>
-										);
-									})}
-								</ul>
-							</>
-						)}
-						{favs.trains.length > 0 && (
-							<>
-								<div
-									className="about-block__label"
-									style={{
-										marginTop:
-											favs.buses.length > 0 || favs.stops.length > 0 ? 16 : 8,
-									}}
-								>
-									{t("favs.section.trains")}
-								</div>
-								<ul className="fav-list">
-									{favs.trains.map((tr) => {
-										const k = trainKey(tr);
-										const confirming = isConfirmingRemove("train", k);
-										return (
-											<li key={k} className="fav-row fav-row--train">
-												<button
-													type="button"
-													className="fav-row__main"
-													onClick={() => {
-														onPickTrain(tr);
-														onClose();
-													}}
+													)}
+													{confirming && (
+														<div className="fav-row__confirm">
+															<button
+																type="button"
+																className="fav-row__confirm-cancel"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	cancelRemove("stop", k);
+																}}
+															>
+																{t("favs.remove.cancel")}
+															</button>
+															<button
+																type="button"
+																className="fav-row__confirm-action"
+																aria-label={t("favs.remove.stop.confirm.aria", {
+																	name: s.stopName,
+																})}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	removeThenClear(k, onRemoveStop);
+																}}
+															>
+																{t("favs.remove.confirm")}
+															</button>
+														</div>
+													)}
+												</li>
+											);
+										})}
+									</ul>
+								)}
+								{sectionId === "trains" && (
+									<ul className="fav-list">
+										{favs.trains.map((tr) => {
+											const k = trainKey(tr);
+											const confirming = isConfirmingRemove("train", k);
+											return (
+												<li
+													key={k}
+													data-fav-section="trains"
+													data-fav-key={k}
+													className={favoriteRowClass(
+														"fav-row fav-row--train",
+														k,
+													)}
 												>
-													<span>
-														{tr.fromName} &rarr; {tr.toName}
-													</span>
-												</button>
-												<button
-													ref={(node) => setRemoveButtonRef("train", k, node)}
-													type="button"
-													className="fav-row__remove"
-													tabIndex={confirming ? -1 : undefined}
-													aria-hidden={confirming ? true : undefined}
-													aria-label={t("favs.remove.train.aria", {
-														from: tr.fromName,
-														to: tr.toName,
-													})}
-													title={t("favs.remove.title")}
-													onClick={(e) => {
-														e.stopPropagation();
-														requestRemove("train", k);
-													}}
-												>
-													{"\u00d7"}
-												</button>
-												{confirming && (
-													<div className="fav-row__confirm">
+													<button
+														type="button"
+														className="fav-row__main"
+														onClick={() => {
+															onPickTrain(tr);
+															onClose();
+														}}
+													>
+														<span>
+															{tr.fromName} &rarr; {tr.toName}
+														</span>
+													</button>
+													{renderDragHandle(
+														"trains",
+														k,
+														`${tr.fromName} to ${tr.toName}`,
+														favs.trains.length,
+													)}
+													{!isEditingSections && (
 														<button
+															ref={(node) =>
+																setRemoveButtonRef("train", k, node)
+															}
 															type="button"
-															className="fav-row__confirm-cancel"
-															onClick={(e) => {
-																e.stopPropagation();
-																cancelRemove("train", k);
-															}}
-														>
-															{t("favs.remove.cancel")}
-														</button>
-														<button
-															type="button"
-															className="fav-row__confirm-action"
-															aria-label={t("favs.remove.train.confirm.aria", {
+															className="fav-row__remove"
+															tabIndex={confirming ? -1 : undefined}
+															aria-hidden={confirming ? true : undefined}
+															aria-label={t("favs.remove.train.aria", {
 																from: tr.fromName,
 																to: tr.toName,
 															})}
+															title={t("favs.remove.title")}
 															onClick={(e) => {
 																e.stopPropagation();
-																removeThenClear(k, onRemoveTrain);
+																requestRemove("train", k);
 															}}
 														>
-															{t("favs.remove.confirm")}
+															{"\u00d7"}
 														</button>
-													</div>
-												)}
-											</li>
-										);
-									})}
-								</ul>
-							</>
-						)}
-						{favs.luasStops.length > 0 && (
-							<>
-								<div
-									className="about-block__label"
-									style={{
-										marginTop:
-											favs.buses.length > 0 ||
-											favs.stops.length > 0 ||
-											favs.trains.length > 0
-												? 16
-												: 8,
-									}}
-								>
-									{t("favs.section.luasStops")}
-								</div>
-								<ul className="fav-list">
-									{favs.luasStops.map((s) => {
-										const k = luasStopKey(s);
-										const confirming = isConfirmingRemove("luas-stop", k);
-										return (
-											<li key={k} className={`fav-row fav-row--luas-${s.line}`}>
-												<button
-													type="button"
-													className="fav-row__main"
-													onClick={() => {
-														onPickLuasStop(s);
-														onClose();
-													}}
+													)}
+													{confirming && (
+														<div className="fav-row__confirm">
+															<button
+																type="button"
+																className="fav-row__confirm-cancel"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	cancelRemove("train", k);
+																}}
+															>
+																{t("favs.remove.cancel")}
+															</button>
+															<button
+																type="button"
+																className="fav-row__confirm-action"
+																aria-label={t(
+																	"favs.remove.train.confirm.aria",
+																	{
+																		from: tr.fromName,
+																		to: tr.toName,
+																	},
+																)}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	removeThenClear(k, onRemoveTrain);
+																}}
+															>
+																{t("favs.remove.confirm")}
+															</button>
+														</div>
+													)}
+												</li>
+											);
+										})}
+									</ul>
+								)}
+								{sectionId === "luasStops" && (
+									<ul className="fav-list">
+										{favs.luasStops.map((s) => {
+											const k = luasStopKey(s);
+											const confirming = isConfirmingRemove("luas-stop", k);
+											return (
+												<li
+													key={k}
+													data-fav-section="luasStops"
+													data-fav-key={k}
+													className={favoriteRowClass(
+														`fav-row fav-row--luas-${s.line}`,
+														k,
+													)}
 												>
-													<strong>{s.stopName}</strong>
-													<span className="route-operator-badge">
-														{t(`luas.line.${s.line}`)}
-													</span>
-												</button>
-												<button
-													ref={(node) =>
-														setRemoveButtonRef("luas-stop", k, node)
-													}
-													type="button"
-													className="fav-row__remove"
-													tabIndex={confirming ? -1 : undefined}
-													aria-hidden={confirming ? true : undefined}
-													aria-label={t("favs.remove.luasStop.aria", {
-														name: s.stopName,
-													})}
-													title={t("favs.remove.title")}
-													onClick={(e) => {
-														e.stopPropagation();
-														requestRemove("luas-stop", k);
-													}}
-												>
-													{"\u00d7"}
-												</button>
-												{confirming && (
-													<div className="fav-row__confirm">
+													<button
+														type="button"
+														className="fav-row__main fav-row__main--luas"
+														onClick={() => {
+															onPickLuasStop(s);
+															onClose();
+														}}
+													>
+														<span className="fav-row__luas-title">
+															<strong>{s.stopName}</strong>
+														</span>
+														{luasArrivalContent(s.stopId)}
+													</button>
+													{renderDragHandle(
+														"luasStops",
+														k,
+														s.stopName,
+														favs.luasStops.length,
+													)}
+													{!isEditingSections && (
 														<button
+															ref={(node) =>
+																setRemoveButtonRef("luas-stop", k, node)
+															}
 															type="button"
-															className="fav-row__confirm-cancel"
+															className="fav-row__remove"
+															tabIndex={confirming ? -1 : undefined}
+															aria-hidden={confirming ? true : undefined}
+															aria-label={t("favs.remove.luasStop.aria", {
+																name: s.stopName,
+															})}
+															title={t("favs.remove.title")}
 															onClick={(e) => {
 																e.stopPropagation();
-																cancelRemove("luas-stop", k);
+																requestRemove("luas-stop", k);
 															}}
 														>
-															{t("favs.remove.cancel")}
+															{"\u00d7"}
 														</button>
-														<button
-															type="button"
-															className="fav-row__confirm-action"
-															aria-label={t(
-																"favs.remove.luasStop.confirm.aria",
-																{
-																	name: s.stopName,
-																},
-															)}
-															onClick={(e) => {
-																e.stopPropagation();
-																removeThenClear(k, onRemoveLuasStop);
-															}}
-														>
-															{t("favs.remove.confirm")}
-														</button>
-													</div>
-												)}
-											</li>
-										);
-									})}
-								</ul>
-							</>
-						)}
+													)}
+													{confirming && (
+														<div className="fav-row__confirm">
+															<button
+																type="button"
+																className="fav-row__confirm-cancel"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	cancelRemove("luas-stop", k);
+																}}
+															>
+																{t("favs.remove.cancel")}
+															</button>
+															<button
+																type="button"
+																className="fav-row__confirm-action"
+																aria-label={t(
+																	"favs.remove.luasStop.confirm.aria",
+																	{
+																		name: s.stopName,
+																	},
+																)}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	removeThenClear(k, onRemoveLuasStop);
+																}}
+															>
+																{t("favs.remove.confirm")}
+															</button>
+														</div>
+													)}
+												</li>
+											);
+										})}
+									</ul>
+								)}
+							</section>
+						))}
 					</div>
 				</div>
 			</div>

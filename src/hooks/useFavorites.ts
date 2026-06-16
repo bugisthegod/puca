@@ -5,6 +5,10 @@ import {
 	type Favorites,
 	type LuasStopFavorite,
 	loadFavorites,
+	moveBusFavorite,
+	moveLuasStopFavorite,
+	moveStopFavorite,
+	moveTrainFavorite,
 	removeBus,
 	removeLuasStop,
 	removeStop,
@@ -81,6 +85,26 @@ export function useFavorites() {
 		),
 		removeLuasStop: useCallback(
 			(k: string) => setFavs((s) => removeLuasStop(s, k)),
+			[],
+		),
+		moveBus: useCallback(
+			(k: string, direction: -1 | 1) =>
+				setFavs((s) => moveBusFavorite(s, k, direction)),
+			[],
+		),
+		moveTrain: useCallback(
+			(k: string, direction: -1 | 1) =>
+				setFavs((s) => moveTrainFavorite(s, k, direction)),
+			[],
+		),
+		moveStop: useCallback(
+			(k: string, direction: -1 | 1) =>
+				setFavs((s) => moveStopFavorite(s, k, direction)),
+			[],
+		),
+		moveLuasStop: useCallback(
+			(k: string, direction: -1 | 1) =>
+				setFavs((s) => moveLuasStopFavorite(s, k, direction)),
 			[],
 		),
 	};

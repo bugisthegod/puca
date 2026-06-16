@@ -207,6 +207,55 @@ export function removeLuasStop(favs: Favorites, key: string): Favorites {
 	};
 }
 
+function moveByKey<T>(
+	items: T[],
+	key: string,
+	direction: -1 | 1,
+	keyOf: (item: T) => string,
+): T[] {
+	const from = items.findIndex((item) => keyOf(item) === key);
+	const to = from + direction;
+	if (from < 0 || to < 0 || to >= items.length) return items;
+	const next = [...items];
+	[next[from], next[to]] = [next[to] as T, next[from] as T];
+	return next;
+}
+
+export function moveBusFavorite(
+	favs: Favorites,
+	key: string,
+	direction: -1 | 1,
+): Favorites {
+	return { ...favs, buses: moveByKey(favs.buses, key, direction, busKey) };
+}
+
+export function moveTrainFavorite(
+	favs: Favorites,
+	key: string,
+	direction: -1 | 1,
+): Favorites {
+	return { ...favs, trains: moveByKey(favs.trains, key, direction, trainKey) };
+}
+
+export function moveStopFavorite(
+	favs: Favorites,
+	key: string,
+	direction: -1 | 1,
+): Favorites {
+	return { ...favs, stops: moveByKey(favs.stops, key, direction, stopKey) };
+}
+
+export function moveLuasStopFavorite(
+	favs: Favorites,
+	key: string,
+	direction: -1 | 1,
+): Favorites {
+	return {
+		...favs,
+		luasStops: moveByKey(favs.luasStops, key, direction, luasStopKey),
+	};
+}
+
 function isBusFav(v: unknown): v is BusFavorite {
 	if (!v || typeof v !== "object") return false;
 	const b = v as Partial<BusFavorite>;

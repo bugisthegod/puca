@@ -34,6 +34,10 @@ import {
 	hasTrain,
 	loadFavorites,
 	luasStopKey,
+	moveBusFavorite,
+	moveLuasStopFavorite,
+	moveStopFavorite,
+	moveTrainFavorite,
 	removeBus,
 	removeLuasStop,
 	removeStop,
@@ -280,6 +284,41 @@ describe("remove*", () => {
 		expect(afterStop.stops).toHaveLength(0);
 		const afterLuasStop = removeLuasStop(favs, luasStopKey(luasStopPoint));
 		expect(afterLuasStop.luasStops).toHaveLength(0);
+	});
+});
+
+describe("move*", () => {
+	test("moveBusFavorite reorders within the bus section only", () => {
+		const favs: Favorites = {
+			buses: [bus39A, bus39AReverse],
+			trains: [trainMalGrey],
+			stops: [stopOConn],
+			luasStops: [luasStopPoint],
+		};
+		const after = moveBusFavorite(favs, busKey(bus39AReverse), -1);
+		expect(after.buses).toEqual([bus39AReverse, bus39A]);
+		expect(after.trains).toBe(favs.trains);
+		expect(after.stops).toBe(favs.stops);
+		expect(after.luasStops).toBe(favs.luasStops);
+	});
+
+	test("move functions are no-ops at section boundaries", () => {
+		const favs: Favorites = {
+			buses: [bus39A, bus39AReverse],
+			trains: [trainMalGrey],
+			stops: [stopOConn],
+			luasStops: [luasStopPoint],
+		};
+		expect(moveBusFavorite(favs, busKey(bus39A), -1).buses).toBe(favs.buses);
+		expect(moveTrainFavorite(favs, trainKey(trainMalGrey), 1).trains).toBe(
+			favs.trains,
+		);
+		expect(moveStopFavorite(favs, stopKey(stopOConn), -1).stops).toBe(
+			favs.stops,
+		);
+		expect(
+			moveLuasStopFavorite(favs, luasStopKey(luasStopPoint), 1).luasStops,
+		).toBe(favs.luasStops);
 	});
 });
 
