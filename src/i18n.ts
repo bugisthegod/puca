@@ -232,7 +232,6 @@ const EN = {
 	"favs.item.drag.title": "Drag to reorder",
 	"favs.item.drag.aria": "Drag {name} to reorder",
 	"favs.luas.next.loading": "Checking next tram…",
-	"favs.luas.next.ready": "{dest} · {eta}",
 	"favs.luas.next.timing": "{eta}",
 	"favs.luas.next.empty": "No upcoming trams",
 	"favs.luas.next.error": "Could not load next tram",
@@ -377,7 +376,7 @@ const ZH: Record<Key, string> = {
 	"tour.welcome.body":
 		"爱尔兰列车与公交实时地图，支持线路、站点、到站与收藏。快速引导，20 秒搞定。",
 	"tour.mode.title": "切换模式",
-	"tour.mode.body": "在列车、公交和 Luas 间切换。",
+	"tour.mode.body": "在列车、公交和电车间切换。",
 	"tour.search.title": "搜索",
 	"tour.search.body": "查找两站之间的列车，或按线路、站号、站名搜索公交。",
 	"tour.tap.title": "点击车辆",
@@ -393,7 +392,7 @@ const ZH: Record<Key, string> = {
 	// InfoPanel
 	"info.mode.train": "列车",
 	"info.mode.bus": "公交",
-	"info.mode.luas": "Luas",
+	"info.mode.luas": "电车",
 	"info.running.bus": "{n} 辆公交运行中",
 	"info.kip": "Púca 在打盹",
 	"info.offhours.status": "非营运",
@@ -405,7 +404,7 @@ const ZH: Record<Key, string> = {
 	"info.stop.noarrivals": "暂无即将到站的公交",
 	"luas.line.green": "绿线",
 	"luas.line.red": "红线",
-	"luas.line.both": "Luas",
+	"luas.line.both": "电车",
 
 	// Map overlays
 	"map.empty.trains.title": "暂无实时列车位置",
@@ -458,13 +457,13 @@ const ZH: Record<Key, string> = {
 	"bus.search.toast.notonmap.title": "暂未上图",
 
 	// LuasSearchPanel
-	"luas.search.placeholder": "Luas 站点...",
-	"luas.search.empty": "未找到匹配 Luas 站点",
-	"luas.search.fab.aria": "搜索 Luas 站点",
+	"luas.search.placeholder": "电车站...",
+	"luas.search.empty": "未找到匹配电车站",
+	"luas.search.fab.aria": "搜索电车站",
 	"luas.search.btn.change": "更改",
 	"luas.search.arrivals.loading": "加载中…",
-	"luas.search.arrivals.error": "无法加载 Luas 到站信息",
-	"luas.search.arrivals.empty": "暂无即将到站的 Luas。",
+	"luas.search.arrivals.error": "无法加载电车到站信息",
+	"luas.search.arrivals.empty": "暂无即将到站的电车。",
 	"luas.search.eta.due": "即将到站",
 	"luas.search.eta.min": "{n} 分钟",
 
@@ -472,10 +471,10 @@ const ZH: Record<Key, string> = {
 	"favs.dialog.aria": "收藏",
 	"favs.title": "收藏",
 	"favs.empty":
-		"还没有收藏。点击公交方向、列车搜索、公交站或 Luas 站点旁的星标即可保存。",
+		"还没有收藏。点击公交方向、列车搜索、公交站或电车站旁的星标即可保存。",
 	"favs.section.buses": "公交",
 	"favs.section.stops": "公交站",
-	"favs.section.luasStops": "Luas 站点",
+	"favs.section.luasStops": "电车站",
 	"favs.section.trains": "列车",
 	"favs.section.moveUp.title": "上移",
 	"favs.section.moveDown.title": "下移",
@@ -486,9 +485,8 @@ const ZH: Record<Key, string> = {
 	"favs.item.drag.title": "拖动排序",
 	"favs.item.drag.aria": "拖动{name}排序",
 	"favs.luas.next.loading": "正在查看下一班…",
-	"favs.luas.next.ready": "{dest} · {eta}",
 	"favs.luas.next.timing": "{eta}",
-	"favs.luas.next.empty": "暂无即将到站的 Luas",
+	"favs.luas.next.empty": "暂无即将到站的电车",
 	"favs.luas.next.error": "无法加载下一班",
 	"favs.remove.title": "移除",
 	"favs.remove.confirm": "移除",

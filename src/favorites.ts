@@ -221,6 +221,25 @@ function moveByKey<T>(
 	return next;
 }
 
+function reorderByKeys<T>(
+	items: T[],
+	keys: string[],
+	keyOf: (item: T) => string,
+): T[] {
+	const itemByKey = new Map(items.map((item) => [keyOf(item), item]));
+	const ordered = keys.flatMap((key) => {
+		const item = itemByKey.get(key);
+		return item ? [item] : [];
+	});
+	const orderedKeys = new Set(keys);
+	const next = [
+		...ordered,
+		...items.filter((item) => !orderedKeys.has(keyOf(item))),
+	];
+	if (next.length !== items.length) return items;
+	return next.every((item, index) => item === items[index]) ? items : next;
+}
+
 export function moveBusFavorite(
 	favs: Favorites,
 	key: string,
@@ -253,6 +272,37 @@ export function moveLuasStopFavorite(
 	return {
 		...favs,
 		luasStops: moveByKey(favs.luasStops, key, direction, luasStopKey),
+	};
+}
+
+export function reorderBusFavorites(
+	favs: Favorites,
+	keys: string[],
+): Favorites {
+	return { ...favs, buses: reorderByKeys(favs.buses, keys, busKey) };
+}
+
+export function reorderTrainFavorites(
+	favs: Favorites,
+	keys: string[],
+): Favorites {
+	return { ...favs, trains: reorderByKeys(favs.trains, keys, trainKey) };
+}
+
+export function reorderStopFavorites(
+	favs: Favorites,
+	keys: string[],
+): Favorites {
+	return { ...favs, stops: reorderByKeys(favs.stops, keys, stopKey) };
+}
+
+export function reorderLuasStopFavorites(
+	favs: Favorites,
+	keys: string[],
+): Favorites {
+	return {
+		...favs,
+		luasStops: reorderByKeys(favs.luasStops, keys, luasStopKey),
 	};
 }
 
