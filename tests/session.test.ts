@@ -301,6 +301,13 @@ describe("persistence split: search â†’ sessionStorage, app state & favorites â†
 					stopName: "X Stop",
 				},
 			],
+			luasStops: [
+				{
+					stopId: "8220GA00436",
+					stopName: "The Point",
+					line: "red",
+				},
+			],
 		};
 		saveFavorites(favs);
 		const lsRaw = lsStore.get(FAV_KEY);

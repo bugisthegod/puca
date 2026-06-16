@@ -3,9 +3,10 @@ import type {
 	BusFavorite,
 	BusStopFavorite,
 	Favorites,
+	LuasStopFavorite,
 	TrainFavorite,
 } from "../favorites";
-import { busKey, stopKey, trainKey } from "../favorites";
+import { busKey, luasStopKey, stopKey, trainKey } from "../favorites";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useLocale } from "../i18n";
 import type { BusOperator } from "../types";
@@ -16,9 +17,11 @@ type Props = {
 	onPickBus: (f: BusFavorite) => void;
 	onPickTrain: (f: TrainFavorite) => void;
 	onPickStop: (f: BusStopFavorite) => void;
+	onPickLuasStop: (f: LuasStopFavorite) => void;
 	onRemoveBus: (key: string) => void;
 	onRemoveTrain: (key: string) => void;
 	onRemoveStop: (key: string) => void;
+	onRemoveLuasStop: (key: string) => void;
 };
 
 const OPERATOR_LABEL: Record<BusOperator, string> = {
@@ -27,7 +30,7 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
 	goahead: "Go-Ahead",
 };
 
-type RemoveType = "bus" | "stop" | "train";
+type RemoveType = "bus" | "stop" | "luas-stop" | "train";
 type PendingRemove = { type: RemoveType; key: string } | null;
 
 function FavoritesModal({
@@ -36,9 +39,11 @@ function FavoritesModal({
 	onPickBus,
 	onPickTrain,
 	onPickStop,
+	onPickLuasStop,
 	onRemoveBus,
 	onRemoveTrain,
 	onRemoveStop,
+	onRemoveLuasStop,
 }: Props) {
 	const { t } = useLocale();
 	const [pendingRemove, setPendingRemove] = useState<PendingRemove>(null);
@@ -112,7 +117,8 @@ function FavoritesModal({
 	const empty =
 		favs.buses.length === 0 &&
 		favs.trains.length === 0 &&
-		favs.stops.length === 0;
+		favs.stops.length === 0 &&
+		favs.luasStops.length === 0;
 
 	return (
 		<div
@@ -379,6 +385,95 @@ function FavoritesModal({
 															onClick={(e) => {
 																e.stopPropagation();
 																removeThenClear(k, onRemoveTrain);
+															}}
+														>
+															{t("favs.remove.confirm")}
+														</button>
+													</div>
+												)}
+											</li>
+										);
+									})}
+								</ul>
+							</>
+						)}
+						{favs.luasStops.length > 0 && (
+							<>
+								<div
+									className="about-block__label"
+									style={{
+										marginTop:
+											favs.buses.length > 0 ||
+											favs.stops.length > 0 ||
+											favs.trains.length > 0
+												? 16
+												: 8,
+									}}
+								>
+									{t("favs.section.luasStops")}
+								</div>
+								<ul className="fav-list">
+									{favs.luasStops.map((s) => {
+										const k = luasStopKey(s);
+										const confirming = isConfirmingRemove("luas-stop", k);
+										return (
+											<li key={k} className={`fav-row fav-row--luas-${s.line}`}>
+												<button
+													type="button"
+													className="fav-row__main"
+													onClick={() => {
+														onPickLuasStop(s);
+														onClose();
+													}}
+												>
+													<strong>{s.stopName}</strong>
+													<span className="route-operator-badge">
+														{t(`luas.line.${s.line}`)}
+													</span>
+												</button>
+												<button
+													ref={(node) =>
+														setRemoveButtonRef("luas-stop", k, node)
+													}
+													type="button"
+													className="fav-row__remove"
+													tabIndex={confirming ? -1 : undefined}
+													aria-hidden={confirming ? true : undefined}
+													aria-label={t("favs.remove.luasStop.aria", {
+														name: s.stopName,
+													})}
+													title={t("favs.remove.title")}
+													onClick={(e) => {
+														e.stopPropagation();
+														requestRemove("luas-stop", k);
+													}}
+												>
+													{"\u00d7"}
+												</button>
+												{confirming && (
+													<div className="fav-row__confirm">
+														<button
+															type="button"
+															className="fav-row__confirm-cancel"
+															onClick={(e) => {
+																e.stopPropagation();
+																cancelRemove("luas-stop", k);
+															}}
+														>
+															{t("favs.remove.cancel")}
+														</button>
+														<button
+															type="button"
+															className="fav-row__confirm-action"
+															aria-label={t(
+																"favs.remove.luasStop.confirm.aria",
+																{
+																	name: s.stopName,
+																},
+															)}
+															onClick={(e) => {
+																e.stopPropagation();
+																removeThenClear(k, onRemoveLuasStop);
 															}}
 														>
 															{t("favs.remove.confirm")}
