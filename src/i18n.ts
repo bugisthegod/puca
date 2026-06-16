@@ -117,7 +117,7 @@ const EN = {
 	"tour.welcome.body":
 		"A live map for Ireland's trains and buses, with routes, stops, arrivals, and favourites. Quick tour — takes 20 seconds.",
 	"tour.mode.title": "Switch mode",
-	"tour.mode.body": "Switch between Train and Bus.",
+	"tour.mode.body": "Switch between Train, Bus, and Luas.",
 	"tour.search.title": "Search",
 	"tour.search.body":
 		"Search trains between stations, or find buses by route, stop number, or stop name.",
@@ -137,6 +137,7 @@ const EN = {
 	// InfoPanel
 	"info.mode.train": "Train",
 	"info.mode.bus": "Bus",
+	"info.mode.luas": "Luas",
 	"info.running.bus": "{n} buses running",
 	"info.kip": "Púca's having a kip",
 	"info.offhours.status": "Out of service",
@@ -144,7 +145,11 @@ const EN = {
 	"info.updated.justnow": "just now",
 	"info.updated.seconds": "{n}s ago",
 	"info.updated.empty": "Updated: —",
+	"info.updated.timetable": "Timetable",
 	"info.stop.noarrivals": "No upcoming buses",
+	"luas.line.green": "Green Line",
+	"luas.line.red": "Red Line",
+	"luas.line.both": "Luas",
 
 	// Map overlays
 	"map.empty.trains.title": "No live train positions",
@@ -175,6 +180,7 @@ const EN = {
 	// App — back-to-all-buses button
 	"bus.back.all": "All buses",
 	"train.back.all": "All trains",
+	"luas.back.all": "All stops",
 
 	// BusSearchPanel
 	"bus.search.placeholder.any": "Route or stop...",
@@ -197,14 +203,32 @@ const EN = {
 	"bus.search.stops.away": "{n} stops away",
 	"bus.search.toast.notonmap.title": "Not mapped yet",
 
+	// LuasSearchPanel
+	"luas.search.placeholder": "Luas stop...",
+	"luas.search.empty": "No matching Luas stops",
+	"luas.search.fab.aria": "Search Luas stops",
+	"luas.search.btn.change": "Change",
+	"luas.search.arrivals.loading": "Loading…",
+	"luas.search.arrivals.error": "Could not load Luas arrivals",
+	"luas.search.arrivals.empty": "No upcoming Luas trams.",
+	"luas.search.eta.due": "Due",
+	"luas.search.eta.min": "{n} min",
+
 	// FavoritesModal
 	"favs.dialog.aria": "Favorites",
 	"favs.title": "Favorites",
 	"favs.empty":
-		"No favorites yet. Tap the star next to a bus direction, train search, or bus stop to save it.",
+		"No favorites yet. Tap the star next to a bus direction, train search, bus stop, or Luas stop to save it.",
 	"favs.section.buses": "Buses",
 	"favs.section.stops": "Bus stops",
+	"favs.section.luasStops": "Luas stops",
 	"favs.section.trains": "Trains",
+	"favs.section.moveUp.title": "Move up",
+	"favs.section.moveDown.title": "Move down",
+	"favs.section.moveUp.aria": "Move {name} section up",
+	"favs.section.moveDown.aria": "Move {name} section down",
+	"favs.section.edit": "Edit",
+	"favs.section.edit.done": "Done",
 	"favs.remove.title": "Remove",
 	"favs.remove.confirm": "Remove",
 	"favs.remove.cancel": "Cancel",
@@ -212,6 +236,8 @@ const EN = {
 	"favs.remove.bus.confirm.aria": "Confirm removing {name} from favorites",
 	"favs.remove.stop.aria": "Remove {name} from favorites",
 	"favs.remove.stop.confirm.aria": "Confirm removing {name} from favorites",
+	"favs.remove.luasStop.aria": "Remove {name} from favorites",
+	"favs.remove.luasStop.confirm.aria": "Confirm removing {name} from favorites",
 	"favs.remove.train.aria": "Remove {from} to {to} from favorites",
 	"favs.remove.train.confirm.aria":
 		"Confirm removing {from} to {to} from favorites",
@@ -344,7 +370,7 @@ const ZH: Record<Key, string> = {
 	"tour.welcome.body":
 		"爱尔兰列车与公交实时地图，支持线路、站点、到站与收藏。快速引导，20 秒搞定。",
 	"tour.mode.title": "切换模式",
-	"tour.mode.body": "在列车和公交间切换。",
+	"tour.mode.body": "在列车、公交和电车间切换。",
 	"tour.search.title": "搜索",
 	"tour.search.body": "查找两站之间的列车，或按线路、站号、站名搜索公交。",
 	"tour.tap.title": "点击车辆",
@@ -360,6 +386,7 @@ const ZH: Record<Key, string> = {
 	// InfoPanel
 	"info.mode.train": "列车",
 	"info.mode.bus": "公交",
+	"info.mode.luas": "电车",
 	"info.running.bus": "{n} 辆公交运行中",
 	"info.kip": "Púca 在打盹",
 	"info.offhours.status": "非营运",
@@ -367,7 +394,11 @@ const ZH: Record<Key, string> = {
 	"info.updated.justnow": "刚刚",
 	"info.updated.seconds": "{n} 秒前",
 	"info.updated.empty": "更新于 —",
+	"info.updated.timetable": "时刻表",
 	"info.stop.noarrivals": "暂无即将到站的公交",
+	"luas.line.green": "绿线",
+	"luas.line.red": "红线",
+	"luas.line.both": "电车",
 
 	// Map overlays
 	"map.empty.trains.title": "暂无实时列车位置",
@@ -397,6 +428,7 @@ const ZH: Record<Key, string> = {
 	// App — back-to-all-buses button
 	"bus.back.all": "全部公交",
 	"train.back.all": "全部列车",
+	"luas.back.all": "全部站点",
 
 	// BusSearchPanel
 	"bus.search.placeholder.any": "线路或站点...",
@@ -418,13 +450,32 @@ const ZH: Record<Key, string> = {
 	"bus.search.stops.away": "还有 {n} 站",
 	"bus.search.toast.notonmap.title": "暂未上图",
 
+	// LuasSearchPanel
+	"luas.search.placeholder": "电车站...",
+	"luas.search.empty": "未找到匹配电车站",
+	"luas.search.fab.aria": "搜索电车站",
+	"luas.search.btn.change": "更改",
+	"luas.search.arrivals.loading": "加载中…",
+	"luas.search.arrivals.error": "无法加载电车到站信息",
+	"luas.search.arrivals.empty": "暂无即将到站的电车。",
+	"luas.search.eta.due": "即将到站",
+	"luas.search.eta.min": "{n} 分钟",
+
 	// FavoritesModal
 	"favs.dialog.aria": "收藏",
 	"favs.title": "收藏",
-	"favs.empty": "还没有收藏。点击公交方向、列车搜索或公交站旁的星标即可保存。",
+	"favs.empty":
+		"还没有收藏。点击公交方向、列车搜索、公交站或电车站旁的星标即可保存。",
 	"favs.section.buses": "公交",
 	"favs.section.stops": "公交站",
+	"favs.section.luasStops": "电车站",
 	"favs.section.trains": "列车",
+	"favs.section.moveUp.title": "上移",
+	"favs.section.moveDown.title": "下移",
+	"favs.section.moveUp.aria": "上移{name}模块",
+	"favs.section.moveDown.aria": "下移{name}模块",
+	"favs.section.edit": "编辑",
+	"favs.section.edit.done": "完成",
 	"favs.remove.title": "移除",
 	"favs.remove.confirm": "移除",
 	"favs.remove.cancel": "取消",
@@ -432,6 +483,8 @@ const ZH: Record<Key, string> = {
 	"favs.remove.bus.confirm.aria": "确认从收藏中移除 {name}",
 	"favs.remove.stop.aria": "从收藏中移除 {name}",
 	"favs.remove.stop.confirm.aria": "确认从收藏中移除 {name}",
+	"favs.remove.luasStop.aria": "从收藏中移除 {name}",
+	"favs.remove.luasStop.confirm.aria": "确认从收藏中移除 {name}",
 	"favs.remove.train.aria": "从收藏中移除 {from} 到 {to}",
 	"favs.remove.train.confirm.aria": "确认从收藏中移除 {from} 到 {to}",
 

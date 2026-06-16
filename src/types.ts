@@ -144,3 +144,23 @@ export type TrainMovement = {
 	departure: string;
 	stopType: string; // C=Current, O=Origin, S=Stop, T=Terminus, D=Destination
 };
+
+export type LuasLine = "green" | "red" | "both";
+
+export type LuasStop = {
+	id: string;
+	platformIds: string[];
+	name: string;
+	lat: number;
+	lng: number;
+	line: LuasLine;
+};
+
+export type LuasArrival = {
+	stopId: string;
+	routeShortName: string;
+	headsign: string;
+	etaSeconds: number;
+	departureSec: number;
+	departureTime: string;
+};

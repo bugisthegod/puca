@@ -5,6 +5,7 @@ import type {
 	BusShape,
 	BusVehicle,
 	FocusContext,
+	LuasStop,
 	RealtimeHealth,
 	Train,
 	TrainFocusSummary,
@@ -18,7 +19,7 @@ import { useMapInstance } from "./useMapInstance";
 import type { FocusTrainResult } from "./useTrainMarkers";
 import { useTrainMarkers } from "./useTrainMarkers";
 
-export type Mode = "train" | "bus";
+export type Mode = "train" | "bus" | "luas";
 
 const ROUTE_MIN_ANIM_DURATION_MS = 5_000;
 const ROUTE_MAX_ANIM_DURATION_MS = 60_000;
@@ -97,6 +98,9 @@ interface UseVehicleMapOptions {
 	onBusFocusStopsAway?: (stopsAway: number | null) => void;
 	onTrainFocusSummary?: (summary: TrainFocusSummary | null) => void;
 	onBusViewportBoundsChange?: (bounds: VehicleBounds | null) => void;
+	luasStops?: LuasStop[];
+	selectedLuasStopId?: string | null;
+	onSelectLuasStop?: (stop: LuasStop) => void;
 }
 
 export function useVehicleMap(
@@ -135,18 +139,25 @@ export function useVehicleMap(
 		onBusFocusStopsAway,
 		onTrainFocusSummary,
 		onBusViewportBoundsChange,
+		luasStops = [],
+		selectedLuasStopId = null,
+		onSelectLuasStop,
 	} = options;
 
 	const onSelectBusRouteRef = useRef(onSelectBusRoute);
 	onSelectBusRouteRef.current = onSelectBusRoute;
 	const onRouteJumpRef = useRef(onRouteJump);
 	onRouteJumpRef.current = onRouteJump;
+	const onSelectLuasStopRef = useRef(onSelectLuasStop);
+	onSelectLuasStopRef.current = onSelectLuasStop;
 
 	const rafId = useRef<number>(0);
 	const lastTickTime = useRef<number>(0);
 	const busClusterLayer = useRef<L.MarkerClusterGroup | L.LayerGroup | null>(
 		null,
 	);
+	const luasLayerRef = useRef<L.LayerGroup | null>(null);
+	const luasMarkersRef = useRef<Map<string, L.Marker>>(new Map());
 
 	// Single-route view (e.g. user searched 38A and picked a direction) holds
 	// <20 buses — clustering adds visual noise and is unnecessary. Swap to a
@@ -220,6 +231,58 @@ export function useVehicleMap(
 		onSegmentStatus: onFocusSegmentStatus,
 		onStopsAwayChange: onBusFocusStopsAway,
 	});
+
+	useEffect(() => {
+		const map = leafletMap.current;
+		if (!map) return;
+		if (!luasLayerRef.current) luasLayerRef.current = L.layerGroup();
+		const layer = luasLayerRef.current;
+		if (mode !== "luas") {
+			if (map.hasLayer(layer)) map.removeLayer(layer);
+			return;
+		}
+		if (!map.hasLayer(layer)) layer.addTo(map);
+
+		const nextIds = new Set(luasStops.map((stop) => stop.id));
+		for (const [id, marker] of luasMarkersRef.current) {
+			if (nextIds.has(id)) continue;
+			layer.removeLayer(marker);
+			luasMarkersRef.current.delete(id);
+		}
+
+		for (const stop of luasStops) {
+			const selected = stop.id === selectedLuasStopId;
+			const className = [
+				"luas-stop-marker",
+				`luas-stop-marker--${stop.line}`,
+				selected ? "luas-stop-marker--selected" : "",
+			]
+				.filter(Boolean)
+				.join(" ");
+			const icon = L.divIcon({
+				className,
+				html: `<span></span>`,
+				iconSize: L.point(selected ? 18 : 14, selected ? 18 : 14),
+				iconAnchor: L.point(selected ? 9 : 7, selected ? 9 : 7),
+			});
+			let marker = luasMarkersRef.current.get(stop.id);
+			if (!marker) {
+				marker = L.marker([stop.lat, stop.lng], {
+					icon,
+					title: stop.name,
+					zIndexOffset: selected ? 500 : 0,
+				});
+				marker.addTo(layer);
+				luasMarkersRef.current.set(stop.id, marker);
+			} else {
+				marker.setLatLng([stop.lat, stop.lng]);
+				marker.setIcon(icon);
+				marker.setZIndexOffset(selected ? 500 : 0);
+			}
+			marker.off("click");
+			marker.on("click", () => onSelectLuasStopRef.current?.(stop));
+		}
+	}, [leafletMap, luasStops, mode, selectedLuasStopId]);
 
 	useEffect(() => {
 		const map = leafletMap.current;

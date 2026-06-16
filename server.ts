@@ -24,6 +24,12 @@ import {
 } from "./src/gtfsr.ts";
 import { errToMeta, log } from "./src/logger.ts";
 import {
+	getLuasStop,
+	getLuasStopArrivals,
+	getLuasStops,
+	searchLuasStops,
+} from "./src/luas.ts";
+import {
 	REALTIME_MATCHED_VEHICLE_COUNT_HEADER,
 	REALTIME_RAW_VEHICLE_COUNT_HEADER,
 	REALTIME_STATUS_HEADER,
@@ -591,6 +597,43 @@ Bun.serve({
 					status: 502,
 					headers: withServerTiming(getBusTripUpdateRealtimeHeaders(), timer),
 				});
+			}
+		}),
+		"/api/luas/stops": rateLimit(() => {
+			try {
+				return Response.json(getLuasStops(), {
+					headers: { "Cache-Control": "public, max-age=86400" },
+				});
+			} catch (err) {
+				log.error("http.luas_stops.failed", errToMeta(err));
+				return Response.json([], { status: 502 });
+			}
+		}),
+		"/api/luas/stops/search": rateLimit((req) => {
+			try {
+				const url = new URL(req.url);
+				return Response.json(searchLuasStops(url.searchParams.get("q") ?? ""), {
+					headers: { "Cache-Control": "public, max-age=3600" },
+				});
+			} catch (err) {
+				log.error("http.luas_stops_search.failed", errToMeta(err));
+				return Response.json([], { status: 502 });
+			}
+		}),
+		"/api/luas/stop/:stopId/arrivals": rateLimit((req) => {
+			try {
+				const stopId = routeParam(req, "stopId");
+				if (!getLuasStop(stopId)) {
+					return Response.json({ error: "unknown stopId" }, { status: 404 });
+				}
+				return Response.json(getLuasStopArrivals(stopId), {
+					headers: {
+						"Cache-Control": "public, max-age=30, stale-while-revalidate=60",
+					},
+				});
+			} catch (err) {
+				log.error("http.luas_arrivals.failed", errToMeta(err));
+				return Response.json([], { status: 502 });
 			}
 		}),
 		"/api/train/shapes": rateLimit(() => {

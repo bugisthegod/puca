@@ -88,9 +88,7 @@ Open [http://localhost:3000](http://localhost:3000).
 Useful checks:
 
 ```bash
-bun run typecheck
-bun run lint
-bun test
+bun run check
 ```
 
 Build:
@@ -107,7 +105,7 @@ Schedule data is generated from GTFS static feeds (stored in `gtfs/`, gitignored
 |---------|-------------|
 | `bun run db:check` | Download the latest NTA GTFS zip and validate feed versions |
 | `bun run db:generate` | Build SQLite schedule DBs from GTFS for all operators |
-| `bun run json:generate` | Generate route geometry and stop lookup JSON for the frontend |
+| `bun run json:generate` | Generate route geometry, stop lookup, train shape, and Luas timetable JSON for the frontend |
 
 Generated files land in `src/data/` — JSON is committed to the repo, SQLite DBs
 are gitignored and stored on a Fly volume at `/data` in production.

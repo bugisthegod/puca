@@ -1,8 +1,9 @@
-// User-saved favorites: bus route+direction pairs, bus stops, and train
+// User-saved favorites: bus route+direction pairs, bus stops, Luas stops, and train
 // station→station searches. Separate from session (which remembers the
 // last-viewed state) — favorites are explicit bookmarks the user curates.
 // Persisted to localStorage under its own versioned key.
 
+import type { LuasLine } from "./types";
 import { type BusOperator, OPERATORS } from "./types";
 
 const KEY = "puca-favorites-v1";
@@ -12,7 +13,12 @@ const KEY = "puca-favorites-v1";
 export const MAX_FAVORITES = 15;
 
 export function totalFavorites(favs: Favorites): number {
-	return favs.buses.length + favs.trains.length + favs.stops.length;
+	return (
+		favs.buses.length +
+		favs.trains.length +
+		favs.stops.length +
+		favs.luasStops.length
+	);
 }
 
 export interface BusFavorite {
@@ -36,14 +42,21 @@ export interface BusStopFavorite {
 	stopName: string; // "O'Connell Street Upper"
 }
 
+export interface LuasStopFavorite {
+	stopId: string;
+	stopName: string;
+	line: LuasLine;
+}
+
 export interface Favorites {
 	buses: BusFavorite[];
 	trains: TrainFavorite[];
 	stops: BusStopFavorite[];
+	luasStops: LuasStopFavorite[];
 }
 
 export function emptyFavorites(): Favorites {
-	return { buses: [], trains: [], stops: [] };
+	return { buses: [], trains: [], stops: [], luasStops: [] };
 }
 
 export function busKey(
@@ -60,6 +73,10 @@ export function stopKey(
 	f: Pick<BusStopFavorite, "stopId" | "operator">,
 ): string {
 	return `${f.operator}:${f.stopId}`;
+}
+
+export function luasStopKey(f: Pick<LuasStopFavorite, "stopId">): string {
+	return `luas:${f.stopId}`;
 }
 
 function cleanKeyPart(v: string | undefined): string {
@@ -128,6 +145,14 @@ export function hasStop(
 	return favs.stops.some((s) => stopMatches(s, f));
 }
 
+export function hasLuasStop(
+	favs: Favorites,
+	f: Pick<LuasStopFavorite, "stopId">,
+): boolean {
+	const k = luasStopKey(f);
+	return favs.luasStops.some((s) => luasStopKey(s) === k);
+}
+
 export function toggleBus(favs: Favorites, f: BusFavorite): Favorites {
 	return hasBus(favs, f)
 		? { ...favs, buses: favs.buses.filter((b) => !busMatches(b, f)) }
@@ -149,6 +174,20 @@ export function toggleStop(favs: Favorites, f: BusStopFavorite): Favorites {
 		: { ...favs, stops: [...favs.stops, f] };
 }
 
+export function toggleLuasStop(
+	favs: Favorites,
+	f: LuasStopFavorite,
+): Favorites {
+	return hasLuasStop(favs, f)
+		? {
+				...favs,
+				luasStops: favs.luasStops.filter(
+					(s) => luasStopKey(s) !== luasStopKey(f),
+				),
+			}
+		: { ...favs, luasStops: [...favs.luasStops, f] };
+}
+
 export function removeBus(favs: Favorites, key: string): Favorites {
 	return { ...favs, buses: favs.buses.filter((b) => busKey(b) !== key) };
 }
@@ -159,6 +198,13 @@ export function removeTrain(favs: Favorites, key: string): Favorites {
 
 export function removeStop(favs: Favorites, key: string): Favorites {
 	return { ...favs, stops: favs.stops.filter((s) => stopKey(s) !== key) };
+}
+
+export function removeLuasStop(favs: Favorites, key: string): Favorites {
+	return {
+		...favs,
+		luasStops: favs.luasStops.filter((s) => luasStopKey(s) !== key),
+	};
 }
 
 function isBusFav(v: unknown): v is BusFavorite {
@@ -202,6 +248,18 @@ function isStopFav(v: unknown): v is BusStopFavorite {
 	);
 }
 
+function isLuasStopFav(v: unknown): v is LuasStopFavorite {
+	if (!v || typeof v !== "object") return false;
+	const s = v as Partial<LuasStopFavorite>;
+	return (
+		typeof s.stopId === "string" &&
+		s.stopId.length > 0 &&
+		typeof s.stopName === "string" &&
+		s.stopName.length > 0 &&
+		(s.line === "green" || s.line === "red" || s.line === "both")
+	);
+}
+
 export function loadFavorites(): Favorites {
 	try {
 		const raw = localStorage.getItem(KEY);
@@ -212,7 +270,10 @@ export function loadFavorites(): Favorites {
 		// Pre-existing v1 records won't have `stops` — default to empty and keep
 		// sharing the same localStorage key, so no migration dance.
 		const stops = Array.isArray(s.stops) ? s.stops.filter(isStopFav) : [];
-		return { buses, trains, stops };
+		const luasStops = Array.isArray(s.luasStops)
+			? s.luasStops.filter(isLuasStopFav)
+			: [];
+		return { buses, trains, stops, luasStops };
 	} catch {
 		return emptyFavorites();
 	}

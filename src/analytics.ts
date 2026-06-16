@@ -18,8 +18,6 @@ declare global {
 const EVENT_TITLES: Record<string, string> = {
 	"event/app/open": "App open",
 	"event/app/standalone-open": "App open as PWA",
-	"event/mode/train": "Switch to train mode",
-	"event/mode/bus": "Switch to bus mode",
 	"event/search/train": "Train search",
 	"event/search/bus-route": "Bus route search",
 	"event/search/bus-stop": "Bus stop search",
@@ -29,6 +27,8 @@ const EVENT_TITLES: Record<string, string> = {
 	"event/favorite/remove-bus-route": "Remove bus route favorite",
 	"event/favorite/add-bus-stop": "Add bus stop favorite",
 	"event/favorite/remove-bus-stop": "Remove bus stop favorite",
+	"event/favorite/add-luas-stop": "Add Luas stop favorite",
+	"event/favorite/remove-luas-stop": "Remove Luas stop favorite",
 	"event/location/request": "Request location",
 	"event/pwa/installed": "PWA installed",
 	"event/about/feedback": "Feedback click",

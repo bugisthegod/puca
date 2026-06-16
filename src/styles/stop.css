@@ -153,7 +153,7 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
-	padding: 6px 10px;
+	padding: 6px 6px 6px 10px;
 	border-radius: 6px;
 	background: rgba(37, 168, 100, 0.18);
 	border: 1px solid rgba(37, 168, 100, 0.35);
@@ -176,8 +176,80 @@
 	border-left-color: var(--op-goahead);
 }
 
+.luas-stop-selected {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 6px 6px 10px;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-left: 4px solid #26a65b;
+}
+
+.luas-stop-selected--red {
+	border-left-color: #d71920;
+}
+
+.luas-stop-selected--both {
+	border-left-color: #fff;
+}
+
+.luas-stop-selected__text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+	min-width: 0;
+}
+
+.luas-stop-selected__text strong {
+	color: #fff;
+	font-size: 0.8rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.luas-stop-selected .fav-star {
+	flex: 0 0 32px;
+}
+
+.luas-stop-selected .search-btn {
+	flex: 0 0 auto;
+	min-width: 0;
+	padding-inline: 12px;
+}
+
+.stop-selected .fav-star,
+.direction-status .fav-star {
+	flex: 0 0 32px;
+}
+
+.stop-selected .search-btn,
+.direction-status .search-btn {
+	flex: 0 0 auto;
+	min-width: 0;
+	padding-inline: 12px;
+}
+
+.direction-status > span {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.luas-stop-selected__text span {
+	color: #ccc;
+	font-size: 0.72rem;
+}
+
 .stop-result,
-.route-result {
+.route-result,
+.luas-stop-result {
 	border-left: 3px solid transparent;
 	padding-left: 9px;
 }
@@ -193,6 +265,39 @@
 .stop-result--goahead,
 .route-result--goahead {
 	border-left-color: var(--op-goahead);
+}
+
+.luas-stop-result {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.luas-stop-result--green {
+	border-left-color: #26a65b;
+}
+
+.luas-stop-result--red {
+	border-left-color: #d71920;
+}
+
+.luas-stop-result--both {
+	border-left-color: #fff;
+}
+
+.luas-stop-result strong {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.luas-stop-result span {
+	margin-left: auto;
+	color: rgba(255, 255, 255, 0.58);
+	font-size: 0.68rem;
+	font-weight: 700;
+	white-space: nowrap;
 }
 
 .operator-badge {
@@ -349,6 +454,10 @@
 .stop-arrival--scheduled {
 	opacity: 0.55;
 	cursor: default;
+}
+
+.stop-arrival--luas {
+	cursor: pointer;
 }
 
 .stop-arrival--selected {

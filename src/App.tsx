@@ -13,6 +13,9 @@ import BusSearchPanel, {
 import ErrorBoundary from "./components/ErrorBoundary";
 import FavoritesModal from "./components/FavoritesModal";
 import InfoPanel from "./components/InfoPanel";
+import LuasSearchPanel, {
+	type LuasStopSummary,
+} from "./components/LuasSearchPanel";
 import OfflineBanner from "./components/OfflineBanner";
 import OnboardingTour, { type TourStep } from "./components/OnboardingTour";
 import PucaMark from "./components/PucaMark";
@@ -22,8 +25,10 @@ import {
 	type BusFavorite,
 	type BusStopFavorite,
 	hasBus,
+	hasLuasStop,
 	hasStop,
 	hasTrain,
+	type LuasStopFavorite,
 	MAX_FAVORITES,
 	type TrainFavorite,
 	totalFavorites,
@@ -42,7 +47,9 @@ import { useLocale } from "./i18n";
 import {
 	type BusSearchTab,
 	clearBusSearchSession,
+	clearLuasSearchSession,
 	loadBusSearchSession,
+	loadLuasSearchSession,
 	loadSession,
 	saveSession,
 } from "./session";
@@ -52,6 +59,7 @@ import type {
 	BusShape,
 	BusVehicle,
 	FocusContext,
+	LuasStop,
 	TrainFocusSummary,
 	VehicleBounds,
 } from "./types";
@@ -61,6 +69,7 @@ const LOW_LOCATION_ACCURACY_M = 500;
 
 const savedSession = loadSession();
 const savedBusSearch = loadBusSearchSession();
+const savedLuasSearch = loadLuasSearchSession();
 const ABOUT_SEEN_KEY = "puca:about-seen";
 const TOUR_SEEN_KEY = "puca:tour-seen-v1";
 
@@ -180,6 +189,12 @@ function App() {
 	);
 	const [trainFocusSummary, setTrainFocusSummary] =
 		useState<TrainFocusSummary | null>(null);
+	const [luasStops, setLuasStops] = useState<LuasStop[]>([]);
+	const [luasStopId, setLuasStopId] = useState<string | null>(
+		savedLuasSearch.stopId ?? null,
+	);
+	const [luasStopSummary, setLuasStopSummary] =
+		useState<LuasStopSummary | null>(null);
 	const lastUpdated =
 		lastUpdatedAgeSec === null
 			? t("info.updated.empty")
@@ -305,6 +320,12 @@ function App() {
 					focusContext ? { tripId: focusContext.tripId, stopsAway } : null,
 				);
 			},
+			luasStops,
+			selectedLuasStopId: luasStopId,
+			onSelectLuasStop: (stop) => {
+				setLuasStopId(stop.id);
+				setPanelCollapsed(false);
+			},
 		},
 	);
 	const [locating, setLocating] = useState(false);
@@ -336,9 +357,11 @@ function App() {
 	const {
 		favs,
 		toggleBus,
+		toggleLuasStop,
 		toggleTrain,
 		toggleStop,
 		removeBus,
+		removeLuasStop,
 		removeTrain,
 		removeStop,
 	} = useFavorites();
@@ -366,6 +389,10 @@ function App() {
 				operator: stop.operator,
 				stopCode: stop.code,
 			}),
+		[favs],
+	);
+	const isLuasStopFav = useCallback(
+		(stop: Pick<LuasStop, "id">) => hasLuasStop(favs, { stopId: stop.id }),
 		[favs],
 	);
 	const showFavLimitToast = useCallback(() => {
@@ -434,6 +461,30 @@ function App() {
 			toggleStop(fav);
 		},
 		[showFavLimitToast, toggleStop],
+	);
+	const onToggleLuasStopFav = useCallback(
+		(stop: LuasStop) => {
+			const fav: LuasStopFavorite = {
+				stopId: stop.id,
+				stopName: stop.name,
+				line: stop.line,
+			};
+			const latestFavs = favsRef.current;
+			if (
+				!hasLuasStop(latestFavs, fav) &&
+				totalFavorites(latestFavs) >= MAX_FAVORITES
+			) {
+				showFavLimitToast();
+				return;
+			}
+			trackEvent(
+				hasLuasStop(latestFavs, fav)
+					? "event/favorite/remove-luas-stop"
+					: "event/favorite/add-luas-stop",
+			);
+			toggleLuasStop(fav);
+		},
+		[showFavLimitToast, toggleLuasStop],
 	);
 
 	function openAbout() {
@@ -537,6 +588,21 @@ function App() {
 		};
 	}, [busRoute, busOperator]);
 
+	useEffect(() => {
+		let cancelled = false;
+		fetch("/api/luas/stops")
+			.then((r) => (r.ok ? r.json() : []))
+			.then((data: LuasStop[]) => {
+				if (!cancelled) setLuasStops(data);
+			})
+			.catch(() => {
+				if (!cancelled) setLuasStops([]);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
 	const handlePickBusFavorite = useCallback(
 		(f: BusFavorite) => {
 			setMode("bus");
@@ -606,6 +672,19 @@ function App() {
 		setBusSearchTab("stop");
 		setBusStopId(s.stopId);
 		setBusStopOperator(s.operator);
+		setPanelCollapsed(false);
+	}, []);
+
+	const handlePickLuasStopFavorite = useCallback((s: LuasStopFavorite) => {
+		setMode((current) => (current === "luas" ? current : "luas"));
+		setBusRoute(null);
+		setBusDirection(null);
+		setBusStopId(null);
+		setBusStopOperator(null);
+		setBusStopSummary(null);
+		setFocusContext(null);
+		setArrivalFocusStatus("idle");
+		setLuasStopId(s.stopId);
 		setPanelCollapsed(false);
 	}, []);
 
@@ -711,9 +790,15 @@ function App() {
 		[],
 	);
 
+	const handleDismissLuasStop = useCallback(() => {
+		setLuasStopId(null);
+		setLuasStopSummary(null);
+		setPanelCollapsed(true);
+		clearLuasSearchSession();
+	}, []);
+
 	const handleModeChange = useCallback(
 		(m: Mode) => {
-			trackEvent(m === "bus" ? "event/mode/bus" : "event/mode/train");
 			setMode(m);
 			setSearchCodes(null);
 			clearTrainFocus();
@@ -722,17 +807,20 @@ function App() {
 			setBusStopId(null);
 			setBusStopOperator(null);
 			setBusStopSummary(null);
+			setLuasStopId(null);
+			setLuasStopSummary(null);
 			setBusSearchTab(m === "bus" ? "stop" : "route");
 			setFocusContext(null);
 			setArrivalFocusStatus("idle");
 			setPanelCollapsed(true);
-			clearBusSearchSession();
 			// SearchPanel rehydrates from/to queries from this sessionStorage key
 			// on mount, so App-state clearing alone isn't enough — clear the
 			// persisted copy too or remounting restores the train search.
 			try {
 				sessionStorage.removeItem("search");
 			} catch {}
+			if (m !== "bus") clearBusSearchSession();
+			if (m !== "luas") clearLuasSearchSession();
 		},
 		[clearTrainFocus],
 	);
@@ -880,9 +968,11 @@ function App() {
 					onPickBus={handlePickBusFavorite}
 					onPickTrain={handlePickTrainFavorite}
 					onPickStop={handlePickStopFavorite}
+					onPickLuasStop={handlePickLuasStopFavorite}
 					onRemoveBus={removeBus}
 					onRemoveTrain={removeTrain}
 					onRemoveStop={removeStop}
+					onRemoveLuasStop={removeLuasStop}
 				/>
 			)}
 			{mode === "train" ? (
@@ -898,7 +988,7 @@ function App() {
 					onShowToast={showToast}
 					onSearchIntent={showTrainEmptyNoticeIfUnavailable}
 				/>
-			) : (
+			) : mode === "bus" ? (
 				<BusSearchPanel
 					onSelectRoute={handleSelectBusRoute}
 					selectedRoute={busRoute}
@@ -923,6 +1013,17 @@ function App() {
 					arrivalFocusStatus={arrivalFocusStatus}
 					onPickArrival={handlePickArrival}
 				/>
+			) : (
+				<LuasSearchPanel
+					stops={luasStops}
+					selectedStopId={luasStopId}
+					onStopIdChange={setLuasStopId}
+					onStopSummaryChange={setLuasStopSummary}
+					collapsed={panelCollapsed}
+					onCollapsedChange={handlePanelCollapsedChange}
+					isStopFavorite={isLuasStopFav}
+					onToggleStopFavorite={onToggleLuasStopFav}
+				/>
 			)}
 			{mode === "bus" && (busRoute !== null || focusContext !== null) && (
 				<button
@@ -946,6 +1047,15 @@ function App() {
 					&larr; {t("train.back.all")}
 				</button>
 			)}
+			{mode === "luas" && luasStopId !== null && (
+				<button
+					type="button"
+					className="back-to-all-btn"
+					onClick={handleDismissLuasStop}
+				>
+					&larr; {t("luas.back.all")}
+				</button>
+			)}
 			<InfoPanel
 				lastUpdated={lastUpdated}
 				mode={mode}
@@ -955,6 +1065,7 @@ function App() {
 				busRouteSummary={busRouteSummary}
 				busStopSummary={busStopSummary}
 				trainFocusSummary={trainFocusSummary}
+				luasStopSummary={luasStopSummary}
 			/>
 		</>
 	);
