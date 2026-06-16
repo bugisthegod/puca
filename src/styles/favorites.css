@@ -210,55 +210,6 @@
 	flex-wrap: wrap;
 }
 
-.fav-row__main--luas {
-	align-items: baseline;
-	flex-direction: row;
-	flex-wrap: nowrap;
-	gap: 10px;
-	min-height: 28px;
-}
-
-.fav-row__luas-title {
-	flex: 0 1 auto;
-	max-width: 48%;
-	min-width: 0;
-}
-
-.fav-row__luas-title strong {
-	display: block;
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.fav-row__luas-destination,
-.fav-row__luas-next {
-	flex: 1 1 auto;
-	max-width: none;
-	min-width: 0;
-	overflow: hidden;
-	color: rgba(0, 0, 0, 0.58);
-	font-size: 0.82rem;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.fav-row__luas-next--status {
-	margin-left: auto;
-	text-align: right;
-}
-
-.fav-row__luas-eta {
-	flex: 0 0 auto;
-	margin-left: auto;
-	color: var(--brand-light);
-	font-size: 0.78rem;
-	font-weight: 700;
-	text-align: right;
-	white-space: nowrap;
-}
-
 .fav-row__remove {
 	min-width: 24px;
 	height: 24px;

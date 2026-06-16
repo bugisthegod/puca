@@ -9,7 +9,7 @@ import type {
 import { busKey, luasStopKey, stopKey, trainKey } from "../favorites";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useLocale } from "../i18n";
-import type { BusOperator, LuasArrival } from "../types";
+import type { BusOperator } from "../types";
 
 type Props = {
 	onClose: () => void;
@@ -33,11 +33,6 @@ const OPERATOR_LABEL: Record<BusOperator, string> = {
 type RemoveType = "bus" | "stop" | "luas-stop" | "train";
 type PendingRemove = { type: RemoveType; key: string } | null;
 type FavoriteSectionId = "buses" | "stops" | "trains" | "luasStops";
-type LuasFavoriteArrival =
-	| { status: "loading" }
-	| { status: "error" }
-	| { status: "empty" }
-	| { status: "ready"; arrival: LuasArrival; fetchedAt: number };
 
 const SECTION_ORDER_KEY = "puca-favorite-section-order-v1";
 const DEFAULT_SECTION_ORDER: FavoriteSectionId[] = [
@@ -74,11 +69,6 @@ function saveSectionOrder(order: FavoriteSectionId[]) {
 	}
 }
 
-function etaLabel(etaSeconds: number, t: ReturnType<typeof useLocale>["t"]) {
-	if (etaSeconds < 60) return t("luas.search.eta.due");
-	return t("luas.search.eta.min", { n: Math.round(etaSeconds / 60) });
-}
-
 function FavoritesModal({
 	onClose,
 	favs,
@@ -93,10 +83,6 @@ function FavoritesModal({
 }: Props) {
 	const { t } = useLocale();
 	const [pendingRemove, setPendingRemove] = useState<PendingRemove>(null);
-	const [luasArrivals, setLuasArrivals] = useState<
-		Record<string, LuasFavoriteArrival>
-	>({});
-	const [luasClockNow, setLuasClockNow] = useState(() => Date.now());
 	const [sectionOrder, setSectionOrder] = useState(loadSectionOrder);
 	const [isEditingSections, setIsEditingSections] = useState(false);
 	const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -124,78 +110,6 @@ function FavoritesModal({
 				?.focus();
 		});
 	}, [pendingRemove]);
-
-	useEffect(() => {
-		if (favs.luasStops.length === 0) {
-			setLuasArrivals({});
-			return;
-		}
-		const stopIds = favs.luasStops.map((stop) => stop.stopId);
-		const ac = new AbortController();
-		let cancelled = false;
-
-		async function fetchAllArrivals() {
-			setLuasArrivals((state) => {
-				const next: Record<string, LuasFavoriteArrival> = {};
-				for (const stopId of stopIds) {
-					next[stopId] = state[stopId] ?? { status: "loading" };
-				}
-				return next;
-			});
-			try {
-				const res = await fetch(
-					`/api/luas/stops/arrivals?ids=${stopIds.map(encodeURIComponent).join(",")}`,
-					{ signal: ac.signal },
-				);
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				const data: Record<string, LuasArrival[]> = await res.json();
-				if (cancelled || ac.signal.aborted) return;
-				const now = Date.now();
-				setLuasClockNow(now);
-				const nextReady: Record<string, LuasFavoriteArrival> = {};
-				for (const stopId of stopIds) {
-					const arrivals = data[stopId];
-					nextReady[stopId] =
-						arrivals && arrivals.length > 0
-							? {
-									status: "ready",
-									arrival: arrivals[0] as LuasArrival,
-									fetchedAt: now,
-								}
-							: { status: "empty" };
-				}
-				setLuasArrivals(nextReady);
-			} catch (err) {
-				if ((err as Error).name === "AbortError" || cancelled) return;
-				setLuasArrivals((state) => {
-					const next: Record<string, LuasFavoriteArrival> = {};
-					for (const stopId of stopIds) {
-						// Preserve previously-loaded data on transient network errors
-						// — showing a stale ETA is better than showing "error".
-						const prev = state[stopId];
-						next[stopId] =
-							prev?.status === "ready" ? prev : { status: "error" };
-					}
-					return next;
-				});
-			}
-		}
-
-		void fetchAllArrivals();
-		const id = setInterval(fetchAllArrivals, 30_000);
-
-		return () => {
-			cancelled = true;
-			clearInterval(id);
-			ac.abort();
-		};
-	}, [favs.luasStops]);
-
-	useEffect(() => {
-		if (favs.luasStops.length === 0) return;
-		const id = setInterval(() => setLuasClockNow(Date.now()), 10_000);
-		return () => clearInterval(id);
-	}, [favs.luasStops.length]);
 
 	function refKey(type: RemoveType, key: string) {
 		return `${type}:${key}`;
@@ -236,45 +150,6 @@ function FavoritesModal({
 		requestAnimationFrame(() => {
 			closeButtonRef.current?.focus();
 		});
-	}
-
-	function luasArrivalContent(stopId: string): React.ReactNode {
-		const state = luasArrivals[stopId];
-		if (!state || state.status === "loading")
-			return (
-				<span className="fav-row__luas-next fav-row__luas-next--status">
-					{t("favs.luas.next.loading")}
-				</span>
-			);
-		if (state.status === "error")
-			return (
-				<span className="fav-row__luas-next fav-row__luas-next--status">
-					{t("favs.luas.next.error")}
-				</span>
-			);
-		if (state.status === "empty")
-			return (
-				<span className="fav-row__luas-next fav-row__luas-next--status">
-					{t("favs.luas.next.empty")}
-				</span>
-			);
-		const elapsed = Math.floor((luasClockNow - state.fetchedAt) / 1000);
-		const etaText = etaLabel(
-			Math.max(0, state.arrival.etaSeconds - elapsed),
-			t,
-		);
-		return (
-			<>
-				<span className="fav-row__luas-destination">
-					{state.arrival.headsign}
-				</span>
-				<span className="fav-row__luas-eta">
-					{t("favs.luas.next.timing", {
-						eta: etaText,
-					})}
-				</span>
-			</>
-		);
 	}
 
 	function sectionHasItems(sectionId: FavoriteSectionId) {
@@ -696,16 +571,16 @@ function FavoritesModal({
 												>
 													<button
 														type="button"
-														className="fav-row__main fav-row__main--luas"
+														className="fav-row__main"
 														onClick={() => {
 															onPickLuasStop(s);
 															closeModal();
 														}}
 													>
-														<span className="fav-row__luas-title">
-															<strong>{s.stopName}</strong>
+														<strong>{s.stopName}</strong>
+														<span className="route-operator-badge">
+															{t(`luas.line.${s.line}`)}
 														</span>
-														{luasArrivalContent(s.stopId)}
 													</button>
 													{!isEditingSections && (
 														<button
