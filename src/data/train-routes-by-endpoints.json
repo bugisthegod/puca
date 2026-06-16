@@ -3,15 +3,11 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "cobh|cork (kent)": {
-    "routeId": "MAL-COBH-O",
-    "directionId": 1
-  },
-  "cork (kent)|mallow": {
-    "routeId": "MAL-COBH-O",
-    "directionId": 1
-  },
   "midleton|cork (kent)": {
+    "routeId": "MAL-COBH-O",
+    "directionId": 1
+  },
+  "cobh|cork (kent)": {
     "routeId": "MAL-COBH-O",
     "directionId": 1
   },
@@ -35,12 +31,12 @@
     "routeId": "MAL-COBH-O",
     "directionId": 1
   },
-  "fota|cork (kent)": {
-    "routeId": "MAL-COBH-O",
-    "directionId": 1
-  },
   "malahide|greystones": {
     "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "cork (kent)|mallow": {
+    "routeId": "DUB-CORK-O",
     "directionId": 1
   },
   "cork (kent)|cobh": {
@@ -143,19 +139,7 @@
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
-  "mallow|dublin heuston": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 1
-  },
-  "portarlington|dublin heuston": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 1
-  },
   "dublin heuston|cork (kent)": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
-  "dublin heuston|mallow": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
@@ -166,6 +150,10 @@
   "connolly|bray (daly)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
+  },
+  "dublin heuston|mallow": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 0
   },
   "dundalk (clarke)|grand canal dock": {
     "routeId": "DUB-DRO/DUN-O",
@@ -263,10 +251,6 @@
     "routeId": "DUB-GALWAY-O",
     "directionId": 1
   },
-  "athlone|dublin heuston": {
-    "routeId": "DUB-WESTPORT-I",
-    "directionId": 1
-  },
   "dublin heuston|galway (ceannt)": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 0
@@ -280,14 +264,6 @@
     "directionId": 0
   },
   "athlone|galway (ceannt)": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 0
-  },
-  "dublin heuston|athlone": {
-    "routeId": "DUB-WESTPORT-I",
-    "directionId": 0
-  },
-  "portarlington|athlone": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 0
   },
@@ -455,11 +431,11 @@
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "mallow|tralee casement station": {
+  "dublin heuston|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "dublin heuston|tralee casement station": {
+  "mallow|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
@@ -503,6 +479,10 @@
     "routeId": "DUB-WESTPORT-I",
     "directionId": 1
   },
+  "athlone|dublin heuston": {
+    "routeId": "DUB-WESTPORT-I",
+    "directionId": 1
+  },
   "westport|dublin heuston": {
     "routeId": "DUB-WESTPORT-I",
     "directionId": 1
@@ -520,6 +500,10 @@
     "directionId": 0
   },
   "dublin heuston|westport": {
+    "routeId": "DUB-WESTPORT-I",
+    "directionId": 0
+  },
+  "dublin heuston|athlone": {
     "routeId": "DUB-WESTPORT-I",
     "directionId": 0
   },
