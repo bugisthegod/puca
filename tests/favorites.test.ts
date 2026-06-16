@@ -29,16 +29,20 @@ import {
 	emptyFavorites,
 	type Favorites,
 	hasBus,
+	hasLuasStop,
 	hasStop,
 	hasTrain,
 	loadFavorites,
+	luasStopKey,
 	removeBus,
+	removeLuasStop,
 	removeStop,
 	removeTrain,
 	saveFavorites,
 	stopKey,
 	type TrainFavorite,
 	toggleBus,
+	toggleLuasStop,
 	toggleStop,
 	toggleTrain,
 	totalFavorites,
@@ -73,6 +77,12 @@ const stopOConn: BusStopFavorite = {
 	stopName: "O'Connell Street Upper",
 };
 
+const luasStopPoint = {
+	stopId: "8220GA00436",
+	stopName: "The Point",
+	line: "red" as const,
+};
+
 beforeEach(() => {
 	lsStore.clear();
 });
@@ -95,17 +105,31 @@ describe("key functions", () => {
 		const b = stopKey({ stopId: "SAME", operator: "buseireann" });
 		expect(a).not.toBe(b);
 	});
+
+	test("luasStopKey namespaces Luas stops separately", () => {
+		expect(luasStopKey(luasStopPoint)).toBe("luas:8220GA00436");
+	});
 });
 
 describe("has*", () => {
 	test("hasBus matches on the composite key, not reference equality", () => {
-		const favs: Favorites = { buses: [bus39A], trains: [], stops: [] };
+		const favs: Favorites = {
+			buses: [bus39A],
+			trains: [],
+			stops: [],
+			luasStops: [],
+		};
 		expect(hasBus(favs, { ...bus39A })).toBe(true);
 		expect(hasBus(favs, bus39AReverse)).toBe(false);
 	});
 
 	test("hasBus can match a saved route after direction ids change", () => {
-		const favs: Favorites = { buses: [bus39A], trains: [], stops: [] };
+		const favs: Favorites = {
+			buses: [bus39A],
+			trains: [],
+			stops: [],
+			luasStops: [],
+		};
 		expect(
 			hasBus(favs, {
 				shortName: "39A",
@@ -121,6 +145,7 @@ describe("has*", () => {
 			buses: [],
 			trains: [trainMalGrey],
 			stops: [stopOConn],
+			luasStops: [luasStopPoint],
 		};
 		expect(
 			hasTrain(favs, { from: "MHIDE", to: "GRYST" } as TrainFavorite),
@@ -131,6 +156,7 @@ describe("has*", () => {
 				operator: stopOConn.operator,
 			} as BusStopFavorite),
 		).toBe(true);
+		expect(hasLuasStop(favs, { stopId: luasStopPoint.stopId })).toBe(true);
 	});
 
 	test("hasStop can match a saved stop after stop ids change", () => {
@@ -138,6 +164,7 @@ describe("has*", () => {
 			buses: [],
 			trains: [],
 			stops: [stopOConn],
+			luasStops: [],
 		};
 		expect(
 			hasStop(favs, {
@@ -166,7 +193,12 @@ describe("toggle*", () => {
 	});
 
 	test("toggle functions do not mutate the input favorites object", () => {
-		const before: Favorites = { buses: [bus39A], trains: [], stops: [] };
+		const before: Favorites = {
+			buses: [bus39A],
+			trains: [],
+			stops: [],
+			luasStops: [],
+		};
 		const after = toggleBus(before, bus39A);
 		// Original array untouched — frozen snapshot of behavior for React state use.
 		expect(before.buses).toHaveLength(1);
@@ -174,20 +206,29 @@ describe("toggle*", () => {
 		expect(after.buses).not.toBe(before.buses);
 	});
 
-	test("toggleTrain / toggleStop round-trip the same way as toggleBus", () => {
+	test("toggleTrain / toggleStop / toggleLuasStop round-trip like toggleBus", () => {
 		let favs = emptyFavorites();
 		favs = toggleTrain(favs, trainMalGrey);
 		favs = toggleStop(favs, stopOConn);
+		favs = toggleLuasStop(favs, luasStopPoint);
 		expect(favs.trains).toHaveLength(1);
 		expect(favs.stops).toHaveLength(1);
+		expect(favs.luasStops).toHaveLength(1);
 		favs = toggleTrain(favs, trainMalGrey);
 		favs = toggleStop(favs, stopOConn);
+		favs = toggleLuasStop(favs, luasStopPoint);
 		expect(favs.trains).toHaveLength(0);
 		expect(favs.stops).toHaveLength(0);
+		expect(favs.luasStops).toHaveLength(0);
 	});
 
 	test("toggleBus removes an existing favorite matched by route headsign", () => {
-		const favs: Favorites = { buses: [bus39A], trains: [], stops: [] };
+		const favs: Favorites = {
+			buses: [bus39A],
+			trains: [],
+			stops: [],
+			luasStops: [],
+		};
 		const after = toggleBus(favs, {
 			shortName: "39A",
 			operator: "dublinbus",
@@ -198,7 +239,12 @@ describe("toggle*", () => {
 	});
 
 	test("toggleStop removes an existing favorite matched by public stop code", () => {
-		const favs: Favorites = { buses: [], trains: [], stops: [stopOConn] };
+		const favs: Favorites = {
+			buses: [],
+			trains: [],
+			stops: [stopOConn],
+			luasStops: [],
+		};
 		const after = toggleStop(favs, {
 			stopId: "8220DB999270",
 			operator: "dublinbus",
@@ -211,32 +257,41 @@ describe("toggle*", () => {
 
 describe("remove*", () => {
 	test("removeBus by key is a no-op when the key does not exist", () => {
-		const favs: Favorites = { buses: [bus39A], trains: [], stops: [] };
+		const favs: Favorites = {
+			buses: [bus39A],
+			trains: [],
+			stops: [],
+			luasStops: [],
+		};
 		const after = removeBus(favs, "nope:NONE:0");
 		expect(after.buses).toHaveLength(1);
 	});
 
-	test("removeTrain / removeStop remove the right entry by key", () => {
+	test("removeTrain / removeStop / removeLuasStop remove the right entry", () => {
 		const favs: Favorites = {
 			buses: [],
 			trains: [trainMalGrey],
 			stops: [stopOConn],
+			luasStops: [luasStopPoint],
 		};
 		const afterTrain = removeTrain(favs, trainKey(trainMalGrey));
 		expect(afterTrain.trains).toHaveLength(0);
 		const afterStop = removeStop(favs, stopKey(stopOConn));
 		expect(afterStop.stops).toHaveLength(0);
+		const afterLuasStop = removeLuasStop(favs, luasStopKey(luasStopPoint));
+		expect(afterLuasStop.luasStops).toHaveLength(0);
 	});
 });
 
 describe("totalFavorites", () => {
-	test("sums across all three categories", () => {
+	test("sums across all favorite categories", () => {
 		const favs: Favorites = {
 			buses: [bus39A, bus39AReverse],
 			trains: [trainMalGrey],
 			stops: [stopOConn],
+			luasStops: [luasStopPoint],
 		};
-		expect(totalFavorites(favs)).toBe(4);
+		expect(totalFavorites(favs)).toBe(5);
 	});
 
 	test("empty favorites yields 0", () => {
@@ -254,6 +309,7 @@ describe("loadFavorites / saveFavorites (localStorage round-trip)", () => {
 			buses: [bus39A],
 			trains: [trainMalGrey],
 			stops: [stopOConn],
+			luasStops: [luasStopPoint],
 		};
 		saveFavorites(original);
 		expect(loadFavorites()).toEqual(original);
@@ -299,12 +355,18 @@ describe("loadFavorites / saveFavorites (localStorage round-trip)", () => {
 					stopOConn,
 					{ stopId: "", operator: "dublinbus", stopCode: "1", stopName: "" },
 				],
+				luasStops: [
+					luasStopPoint,
+					{ stopId: "", stopName: "", line: "green" },
+					{ stopId: "x", stopName: "Bad line", line: "blue" },
+				],
 			}),
 		);
 		const out = loadFavorites();
 		expect(out.buses).toHaveLength(1);
 		expect(out.trains).toHaveLength(1);
 		expect(out.stops).toHaveLength(1);
+		expect(out.luasStops).toHaveLength(1);
 	});
 
 	test("v1 records without a `stops` field deserialize to empty stops (no migration needed)", () => {
@@ -321,6 +383,7 @@ describe("loadFavorites / saveFavorites (localStorage round-trip)", () => {
 		expect(out.buses).toHaveLength(1);
 		expect(out.trains).toHaveLength(1);
 		expect(out.stops).toEqual([]);
+		expect(out.luasStops).toEqual([]);
 	});
 
 	test("non-array field values are ignored without throwing", () => {
@@ -330,6 +393,7 @@ describe("loadFavorites / saveFavorites (localStorage round-trip)", () => {
 				buses: "not an array",
 				trains: null,
 				stops: 42,
+				luasStops: {},
 			}),
 		);
 		expect(loadFavorites()).toEqual(emptyFavorites());

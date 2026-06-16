@@ -143,3 +143,47 @@
 	height: 100%;
 	display: block;
 }
+
+/* ============================================================
+   Luas stop markers
+   ============================================================ */
+
+.luas-stop-marker {
+	background: transparent;
+	border: none;
+}
+
+.luas-stop-marker span {
+	display: block;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	border: 2px solid #fff;
+	background: #26a65b;
+	box-shadow:
+		0 1px 3px rgba(0, 0, 0, 0.42),
+		0 0 0 3px rgba(38, 166, 91, 0.2);
+}
+
+.luas-stop-marker--red span {
+	background: #d71920;
+	box-shadow:
+		0 1px 3px rgba(0, 0, 0, 0.42),
+		0 0 0 3px rgba(215, 25, 32, 0.2);
+}
+
+.luas-stop-marker--both span {
+	background: linear-gradient(90deg, #26a65b 0 50%, #d71920 50% 100%);
+	box-shadow:
+		0 1px 3px rgba(0, 0, 0, 0.42),
+		0 0 0 3px rgba(255, 255, 255, 0.16);
+}
+
+.luas-stop-marker--selected span {
+	width: 18px;
+	height: 18px;
+	border-width: 3px;
+	box-shadow:
+		0 2px 7px rgba(0, 0, 0, 0.5),
+		0 0 0 5px rgba(255, 255, 255, 0.22);
+}

@@ -83,11 +83,23 @@
 .fav-row--train {
 	--op-stripe: #25a864;
 }
+.fav-row--luas-green {
+	--op-stripe: #008f5a;
+}
+.fav-row--luas-red {
+	--op-stripe: #ed1b2f;
+}
+.fav-row--luas-both {
+	--op-stripe: #6b6b70;
+}
 
 .fav-row.fav-row--dublinbus,
 .fav-row.fav-row--buseireann,
 .fav-row.fav-row--goahead,
-.fav-row.fav-row--train {
+.fav-row.fav-row--train,
+.fav-row.fav-row--luas-green,
+.fav-row.fav-row--luas-red,
+.fav-row.fav-row--luas-both {
 	box-shadow: inset 4px 0 0 var(--op-stripe);
 }
 
@@ -144,7 +156,10 @@
 .fav-row.fav-row--dublinbus,
 .fav-row.fav-row--buseireann,
 .fav-row.fav-row--goahead,
-.fav-row.fav-row--train {
+.fav-row.fav-row--train,
+.fav-row.fav-row--luas-green,
+.fav-row.fav-row--luas-red,
+.fav-row.fav-row--luas-both {
 	box-shadow:
 		inset 4px 0 0 var(--op-stripe),
 		0 1px 2px rgba(0, 0, 0, 0.04);
@@ -159,7 +174,10 @@
 .fav-row.fav-row--dublinbus:hover,
 .fav-row.fav-row--buseireann:hover,
 .fav-row.fav-row--goahead:hover,
-.fav-row.fav-row--train:hover {
+.fav-row.fav-row--train:hover,
+.fav-row.fav-row--luas-green:hover,
+.fav-row.fav-row--luas-red:hover,
+.fav-row.fav-row--luas-both:hover {
 	box-shadow:
 		inset 4px 0 0 var(--op-stripe),
 		0 2px 6px rgba(0, 0, 0, 0.06);

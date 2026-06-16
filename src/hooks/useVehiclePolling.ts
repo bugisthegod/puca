@@ -57,9 +57,11 @@ export function useVehiclePolling(
 	const resetKeyRef = useRef<string | null>(null);
 
 	useEffect(() => {
+		if (mode === "luas") return;
+		setClockNow(Date.now());
 		const id = setInterval(() => setClockNow(Date.now()), 1000);
 		return () => clearInterval(id);
-	}, []);
+	}, [mode]);
 
 	useEffect(() => {
 		const update = () => setInService(isInServiceHours(mode));
@@ -158,6 +160,7 @@ export function useVehiclePolling(
 			setBusRealtimeHealth(null);
 			setDataChangedAt(null);
 			lastSnapshotSignatureRef.current = null;
+			if (mode !== "train") setTrainsLoaded(false);
 		}
 
 		let poll: (() => void) | null = null;
@@ -165,6 +168,13 @@ export function useVehiclePolling(
 		if (mode === "train") {
 			poll = fetchTrains;
 			intervalMs = 30_000;
+		} else if (mode === "luas") {
+			setTrains([]);
+			setBuses([]);
+			setBusRealtimeHealth(null);
+			setTrainsLoaded(false);
+			setDataChangedAt(null);
+			return;
 		} else if (busRoute && busDirection) {
 			const route = busRoute;
 			const dir = busDirection;

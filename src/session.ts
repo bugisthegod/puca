@@ -7,6 +7,7 @@ import { type BusOperator, OPERATORS } from "./types";
 
 const KEY = "puca-session-v1";
 const BUS_SEARCH_KEY = "puca-bus-search-v1";
+const LUAS_SEARCH_KEY = "puca-luas-search-v1";
 
 export interface MapView {
 	lat: number;
@@ -36,7 +37,7 @@ export interface BusSearchSession {
 	stopQuery: string;
 }
 
-const MODES: readonly Mode[] = ["train", "bus"];
+const MODES: readonly Mode[] = ["train", "bus", "luas"];
 
 function validMapView(v: unknown): MapView | null {
 	if (!v || typeof v !== "object") return null;
@@ -124,6 +125,41 @@ export function saveBusSearchSession(s: BusSearchSession): void {
 export function clearBusSearchSession(): void {
 	try {
 		sessionStorage.removeItem(BUS_SEARCH_KEY);
+	} catch {
+		// disabled — non-critical
+	}
+}
+
+export interface LuasSearchSession {
+	stopId: string | null;
+	query: string;
+}
+
+export function loadLuasSearchSession(): Partial<LuasSearchSession> {
+	try {
+		const raw = sessionStorage.getItem(LUAS_SEARCH_KEY);
+		if (!raw) return {};
+		const s = JSON.parse(raw) as Partial<LuasSearchSession>;
+		const out: Partial<LuasSearchSession> = {};
+		if (typeof s.stopId === "string") out.stopId = s.stopId;
+		if (typeof s.query === "string") out.query = s.query;
+		return out;
+	} catch {
+		return {};
+	}
+}
+
+export function saveLuasSearchSession(s: LuasSearchSession): void {
+	try {
+		sessionStorage.setItem(LUAS_SEARCH_KEY, JSON.stringify(s));
+	} catch {
+		// disabled — non-critical
+	}
+}
+
+export function clearLuasSearchSession(): void {
+	try {
+		sessionStorage.removeItem(LUAS_SEARCH_KEY);
 	} catch {
 		// disabled — non-critical
 	}

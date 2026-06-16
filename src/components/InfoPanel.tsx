@@ -4,6 +4,7 @@ import type { t as translate } from "../i18n";
 import { useLocale } from "../i18n";
 import type { BusOperator, TrainFocusSummary } from "../types";
 import type { BusStopSummary } from "./BusSearchPanel";
+import type { LuasStopSummary } from "./LuasSearchPanel";
 
 type BusRouteSummary = {
 	routeShortName: string;
@@ -21,6 +22,7 @@ type InfoPanelProps = {
 	busRouteSummary: BusRouteSummary | null;
 	busStopSummary: BusStopSummary | null;
 	trainFocusSummary: TrainFocusSummary | null;
+	luasStopSummary: LuasStopSummary | null;
 };
 
 type Translate = typeof translate;
@@ -64,6 +66,7 @@ function InfoPanel({
 	busRouteSummary,
 	busStopSummary,
 	trainFocusSummary,
+	luasStopSummary,
 }: InfoPanelProps) {
 	const { t } = useLocale();
 	const stopSummary =
@@ -71,9 +74,10 @@ function InfoPanel({
 	const routeSummary =
 		mode === "bus" && busSearchTab === "route" ? busRouteSummary : null;
 	const trainSummary = mode === "train" ? trainFocusSummary : null;
+	const luasSummary = mode === "luas" ? luasStopSummary : null;
 	const trainSummaryMeta = trainFocusSummaryMeta(trainSummary, t);
 
-	if (!stopSummary && !routeSummary && !trainSummary) {
+	if (!stopSummary && !routeSummary && !trainSummary && !luasSummary) {
 		if (!inService) {
 			return <OffHoursPanel mode={mode} onModeChange={onModeChange} />;
 		}
@@ -173,6 +177,42 @@ function InfoPanel({
 					</div>
 				</div>
 			)}
+			{luasSummary && (
+				<div
+					key={["luas", luasSummary.line, luasSummary.stopName].join(":")}
+					className={`info-stop-summary info-stop-summary--luas info-stop-summary--luas-${luasSummary.line}`}
+				>
+					<div className="info-stop-summary__updated">
+						{t("info.updated.timetable")}
+					</div>
+					<div className="info-stop-summary__stop">
+						<strong>{luasSummary.stopName}</strong>
+						<span>{t(`luas.line.${luasSummary.line}`)}</span>
+					</div>
+					{luasSummary.nextArrival ? (
+						<div className="info-stop-summary__arrival">
+							<span className="info-stop-summary__route">
+								{luasSummary.nextArrival.routeShortName}
+							</span>
+							<span className="info-stop-summary__headsign">
+								{luasSummary.nextArrival.headsign}
+							</span>
+							<span className="info-stop-summary__meta">
+								{[
+									luasSummary.nextArrival.etaText,
+									luasSummary.nextArrival.departureTime,
+								]
+									.filter(Boolean)
+									.join(" · ")}
+							</span>
+						</div>
+					) : (
+						<div className="info-stop-summary__empty">
+							{luasSummary.emptyText}
+						</div>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
@@ -217,6 +257,14 @@ function OffHoursPanel({
 				>
 					<span>{t("info.mode.bus")}</span>
 				</button>
+				<button
+					type="button"
+					className="off-hours-panel__mode off-hours-panel__mode--luas"
+					aria-pressed={mode === "luas"}
+					onClick={() => onModeChange("luas")}
+				>
+					<span>{t("info.mode.luas")}</span>
+				</button>
 			</div>
 		</div>
 	);
@@ -230,14 +278,13 @@ function ModeSwitch({
 	onModeChange: (m: Mode) => void;
 }) {
 	const { t } = useLocale();
-	const isBus = mode === "bus";
 
 	return (
 		<div id="info-panel" className={`mode-switch mode-switch--${mode}`}>
 			<button
 				type="button"
 				className="mode-switch__option mode-switch__option--train"
-				aria-pressed={!isBus}
+				aria-pressed={mode === "train"}
 				onClick={() => onModeChange("train")}
 			>
 				<span>{t("info.mode.train")}</span>
@@ -245,10 +292,18 @@ function ModeSwitch({
 			<button
 				type="button"
 				className="mode-switch__option mode-switch__option--bus"
-				aria-pressed={isBus}
+				aria-pressed={mode === "bus"}
 				onClick={() => onModeChange("bus")}
 			>
 				<span>{t("info.mode.bus")}</span>
+			</button>
+			<button
+				type="button"
+				className="mode-switch__option mode-switch__option--luas"
+				aria-pressed={mode === "luas"}
+				onClick={() => onModeChange("luas")}
+			>
+				<span>{t("info.mode.luas")}</span>
 			</button>
 		</div>
 	);
