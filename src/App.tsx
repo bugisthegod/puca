@@ -364,10 +364,6 @@ function App() {
 		removeLuasStop,
 		removeTrain,
 		removeStop,
-		reorderBus,
-		reorderLuasStop,
-		reorderTrain,
-		reorderStop,
 	} = useFavorites();
 	const [showFavs, setShowFavs] = useState(false);
 	const [searchResetKey, setSearchResetKey] = useState(0);
@@ -977,10 +973,6 @@ function App() {
 					onRemoveTrain={removeTrain}
 					onRemoveStop={removeStop}
 					onRemoveLuasStop={removeLuasStop}
-					onReorderBus={reorderBus}
-					onReorderTrain={reorderTrain}
-					onReorderStop={reorderStop}
-					onReorderLuasStop={reorderLuasStop}
 				/>
 			)}
 			{mode === "train" ? (

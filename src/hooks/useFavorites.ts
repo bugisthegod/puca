@@ -5,18 +5,10 @@ import {
 	type Favorites,
 	type LuasStopFavorite,
 	loadFavorites,
-	moveBusFavorite,
-	moveLuasStopFavorite,
-	moveStopFavorite,
-	moveTrainFavorite,
 	removeBus,
 	removeLuasStop,
 	removeStop,
 	removeTrain,
-	reorderBusFavorites,
-	reorderLuasStopFavorites,
-	reorderStopFavorites,
-	reorderTrainFavorites,
 	saveFavorites,
 	type TrainFavorite,
 	toggleBus,
@@ -89,42 +81,6 @@ export function useFavorites() {
 		),
 		removeLuasStop: useCallback(
 			(k: string) => setFavs((s) => removeLuasStop(s, k)),
-			[],
-		),
-		moveBus: useCallback(
-			(k: string, direction: -1 | 1) =>
-				setFavs((s) => moveBusFavorite(s, k, direction)),
-			[],
-		),
-		moveTrain: useCallback(
-			(k: string, direction: -1 | 1) =>
-				setFavs((s) => moveTrainFavorite(s, k, direction)),
-			[],
-		),
-		moveStop: useCallback(
-			(k: string, direction: -1 | 1) =>
-				setFavs((s) => moveStopFavorite(s, k, direction)),
-			[],
-		),
-		moveLuasStop: useCallback(
-			(k: string, direction: -1 | 1) =>
-				setFavs((s) => moveLuasStopFavorite(s, k, direction)),
-			[],
-		),
-		reorderBus: useCallback(
-			(keys: string[]) => setFavs((s) => reorderBusFavorites(s, keys)),
-			[],
-		),
-		reorderTrain: useCallback(
-			(keys: string[]) => setFavs((s) => reorderTrainFavorites(s, keys)),
-			[],
-		),
-		reorderStop: useCallback(
-			(keys: string[]) => setFavs((s) => reorderStopFavorites(s, keys)),
-			[],
-		),
-		reorderLuasStop: useCallback(
-			(keys: string[]) => setFavs((s) => reorderLuasStopFavorites(s, keys)),
 			[],
 		),
 	};

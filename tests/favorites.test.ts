@@ -34,18 +34,10 @@ import {
 	hasTrain,
 	loadFavorites,
 	luasStopKey,
-	moveBusFavorite,
-	moveLuasStopFavorite,
-	moveStopFavorite,
-	moveTrainFavorite,
 	removeBus,
 	removeLuasStop,
 	removeStop,
 	removeTrain,
-	reorderBusFavorites,
-	reorderLuasStopFavorites,
-	reorderStopFavorites,
-	reorderTrainFavorites,
 	saveFavorites,
 	stopKey,
 	type TrainFavorite,
@@ -78,13 +70,6 @@ const trainMalGrey: TrainFavorite = {
 	toName: "Greystones",
 };
 
-const trainPearseHowth: TrainFavorite = {
-	from: "PERSE",
-	to: "HOWTH",
-	fromName: "Pearse",
-	toName: "Howth",
-};
-
 const stopOConn: BusStopFavorite = {
 	stopId: "8220DB000270",
 	operator: "dublinbus",
@@ -92,23 +77,10 @@ const stopOConn: BusStopFavorite = {
 	stopName: "O'Connell Street Upper",
 };
 
-const stopRacecourse: BusStopFavorite = {
-	stopId: "8220DB001847",
-	operator: "dublinbus",
-	stopCode: "1847",
-	stopName: "Old Racecourse",
-};
-
 const luasStopPoint = {
 	stopId: "8220GA00436",
 	stopName: "The Point",
 	line: "red" as const,
-};
-
-const luasStopCherrywood = {
-	stopId: "LUAS_CHERRYWOOD",
-	stopName: "Cherrywood",
-	line: "green" as const,
 };
 
 beforeEach(() => {
@@ -308,113 +280,6 @@ describe("remove*", () => {
 		expect(afterStop.stops).toHaveLength(0);
 		const afterLuasStop = removeLuasStop(favs, luasStopKey(luasStopPoint));
 		expect(afterLuasStop.luasStops).toHaveLength(0);
-	});
-});
-
-describe("move*", () => {
-	test("moveBusFavorite reorders within the bus section only", () => {
-		const favs: Favorites = {
-			buses: [bus39A, bus39AReverse],
-			trains: [trainMalGrey],
-			stops: [stopOConn],
-			luasStops: [luasStopPoint],
-		};
-		const after = moveBusFavorite(favs, busKey(bus39AReverse), -1);
-		expect(after.buses).toEqual([bus39AReverse, bus39A]);
-		expect(after.trains).toBe(favs.trains);
-		expect(after.stops).toBe(favs.stops);
-		expect(after.luasStops).toBe(favs.luasStops);
-	});
-
-	test("move functions are no-ops at section boundaries", () => {
-		const favs: Favorites = {
-			buses: [bus39A, bus39AReverse],
-			trains: [trainMalGrey],
-			stops: [stopOConn],
-			luasStops: [luasStopPoint],
-		};
-		expect(moveBusFavorite(favs, busKey(bus39A), -1).buses).toBe(favs.buses);
-		expect(moveTrainFavorite(favs, trainKey(trainMalGrey), 1).trains).toBe(
-			favs.trains,
-		);
-		expect(moveStopFavorite(favs, stopKey(stopOConn), -1).stops).toBe(
-			favs.stops,
-		);
-		expect(
-			moveLuasStopFavorite(favs, luasStopKey(luasStopPoint), 1).luasStops,
-		).toBe(favs.luasStops);
-	});
-});
-
-describe("reorder*", () => {
-	test("reorderBusFavorites applies a final dragged order in one section only", () => {
-		const favs: Favorites = {
-			buses: [bus39A, bus39AReverse],
-			trains: [trainMalGrey],
-			stops: [stopOConn],
-			luasStops: [luasStopPoint],
-		};
-		const after = reorderBusFavorites(favs, [
-			busKey(bus39AReverse),
-			busKey(bus39A),
-		]);
-		expect(after.buses).toEqual([bus39AReverse, bus39A]);
-		expect(after.trains).toBe(favs.trains);
-		expect(after.stops).toBe(favs.stops);
-		expect(after.luasStops).toBe(favs.luasStops);
-	});
-
-	test("reorder functions preserve unmentioned favorites at the end", () => {
-		const favs: Favorites = {
-			buses: [bus39A, bus39AReverse],
-			trains: [trainMalGrey, trainPearseHowth],
-			stops: [stopOConn, stopRacecourse],
-			luasStops: [luasStopPoint, luasStopCherrywood],
-		};
-		expect(
-			reorderTrainFavorites(favs, [trainKey(trainPearseHowth)]).trains,
-		).toEqual([trainPearseHowth, trainMalGrey]);
-		expect(reorderStopFavorites(favs, [stopKey(stopRacecourse)]).stops).toEqual(
-			[stopRacecourse, stopOConn],
-		);
-		expect(
-			reorderLuasStopFavorites(favs, [luasStopKey(luasStopCherrywood)])
-				.luasStops,
-		).toEqual([luasStopCherrywood, luasStopPoint]);
-	});
-
-	test("reorder functions ignore unknown keys and keep unchanged arrays stable", () => {
-		const favs: Favorites = {
-			buses: [bus39A, bus39AReverse],
-			trains: [trainMalGrey],
-			stops: [stopOConn],
-			luasStops: [luasStopPoint],
-		};
-		const sameBusOrder = reorderBusFavorites(favs, [
-			"missing",
-			busKey(bus39A),
-			busKey(bus39AReverse),
-		]);
-		expect(sameBusOrder.buses).toBe(favs.buses);
-		const sameLuasOrder = reorderLuasStopFavorites(favs, [
-			"missing",
-			luasStopKey(luasStopPoint),
-		]);
-		expect(sameLuasOrder.luasStops).toBe(favs.luasStops);
-	});
-
-	test("reorder functions reject duplicate keys rather than duplicating favorites", () => {
-		const favs: Favorites = {
-			buses: [bus39A, bus39AReverse],
-			trains: [trainMalGrey],
-			stops: [stopOConn],
-			luasStops: [luasStopPoint],
-		};
-		const after = reorderBusFavorites(favs, [
-			busKey(bus39AReverse),
-			busKey(bus39AReverse),
-		]);
-		expect(after.buses).toBe(favs.buses);
 	});
 });
 

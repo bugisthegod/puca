@@ -27,6 +27,7 @@ import {
 	getLuasStop,
 	getLuasStopArrivals,
 	getLuasStops,
+	getLuasStopsArrivals,
 	searchLuasStops,
 } from "./src/luas.ts";
 import {
@@ -634,6 +635,24 @@ Bun.serve({
 			} catch (err) {
 				log.error("http.luas_arrivals.failed", errToMeta(err));
 				return Response.json([], { status: 502 });
+			}
+		}),
+		"/api/luas/stops/arrivals": rateLimit((req) => {
+			try {
+				const raw = new URL(req.url).searchParams.get("ids") ?? "";
+				const ids = raw
+					.split(",")
+					.map((id) => id.trim())
+					.filter(Boolean);
+				if (ids.length === 0) return Response.json({}, { status: 400 });
+				return Response.json(getLuasStopsArrivals(ids), {
+					headers: {
+						"Cache-Control": "public, max-age=30, stale-while-revalidate=60",
+					},
+				});
+			} catch (err) {
+				log.error("http.luas_stops_arrivals.failed", errToMeta(err));
+				return Response.json({}, { status: 502 });
 			}
 		}),
 		"/api/train/shapes": rateLimit(() => {

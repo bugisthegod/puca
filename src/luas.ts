@@ -173,6 +173,17 @@ export function searchLuasStops(query: string): LuasStop[] {
 		.slice(0, 12);
 }
 
+export function getLuasStopsArrivals(
+	stopIds: string[],
+	now = new Date(),
+): Record<string, LuasArrival[]> {
+	const result: Record<string, LuasArrival[]> = {};
+	for (const stopId of stopIds) {
+		result[stopId] = getLuasStopArrivals(stopId, now);
+	}
+	return result;
+}
+
 export function getLuasStopArrivals(
 	stopId: string,
 	now = new Date(),

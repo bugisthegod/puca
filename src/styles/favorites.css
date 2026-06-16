@@ -47,7 +47,6 @@
 }
 
 .fav-list {
-	--fav-sort-motion: 150ms cubic-bezier(0.2, 0, 0, 1);
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -143,37 +142,6 @@
 	cursor: default;
 }
 
-.fav-row__drag {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	flex: 0 0 auto;
-	min-width: 24px;
-	height: 28px;
-	padding: 0;
-	border: 0;
-	border-radius: 6px;
-	background: transparent;
-	color: rgba(0, 0, 0, 0.42);
-	cursor: grab;
-	font: inherit;
-	font-size: 1.05rem;
-	font-weight: 800;
-	line-height: 1;
-	letter-spacing: 0;
-	touch-action: none;
-	user-select: none;
-}
-
-.fav-row__drag:hover {
-	background: rgba(0, 0, 0, 0.04);
-	color: rgba(0, 0, 0, 0.68);
-}
-
-.fav-row__drag:active {
-	cursor: grabbing;
-}
-
 .fav-row {
 	position: relative;
 	display: flex;
@@ -185,7 +153,6 @@
 	border-radius: 10px;
 	overflow: hidden;
 	transition:
-		transform var(--fav-sort-motion),
 		box-shadow 140ms ease,
 		border-color 140ms ease,
 		background 140ms ease;
@@ -193,28 +160,6 @@
 
 .fav-row:hover {
 	background: rgba(255, 255, 255, 0.07);
-}
-
-.fav-row--dragging {
-	opacity: 0;
-	pointer-events: none;
-	transition:
-		box-shadow 120ms ease,
-		border-color 120ms ease,
-		background 120ms ease;
-	user-select: none;
-	z-index: 2;
-}
-
-.fav-row--drag-clone {
-	position: fixed;
-	box-sizing: border-box;
-	margin: 0;
-	pointer-events: none;
-	transition: none;
-	user-select: none;
-	will-change: transform;
-	z-index: 10000;
 }
 
 .fav-row--dublinbus {
@@ -378,22 +323,6 @@
 		0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.fav-row.fav-row--dragging {
-	background: #fff;
-	border-color: rgba(37, 168, 100, 0.48);
-	box-shadow:
-		inset 4px 0 0 var(--op-stripe),
-		0 14px 30px rgba(0, 0, 0, 0.18);
-}
-
-.fav-row.fav-row--drag-clone {
-	background: #fff;
-	border-color: rgba(37, 168, 100, 0.48);
-	box-shadow:
-		inset 4px 0 0 var(--op-stripe),
-		0 18px 36px rgba(0, 0, 0, 0.18);
-}
-
 .fav-row__remove {
 	border-color: rgba(0, 0, 0, 0.15);
 	color: rgba(0, 0, 0, 0.5);
@@ -472,10 +401,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.fav-list {
-		--fav-sort-motion: 1ms linear;
-	}
-
 	.fav-row__confirm {
 		animation: none;
 	}
