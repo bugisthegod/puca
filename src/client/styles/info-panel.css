@@ -68,14 +68,17 @@
 }
 
 .info-stop-summary--luas-green {
+	--summary-side-col: clamp(112px, 28%, 132px);
 	border-left-color: #26a65b;
 }
 
 .info-stop-summary--luas-red {
+	--summary-side-col: clamp(112px, 28%, 132px);
 	border-left-color: #d71920;
 }
 
 .info-stop-summary--luas-both {
+	--summary-side-col: clamp(112px, 28%, 132px);
 	border-left-color: #fff;
 }
 
