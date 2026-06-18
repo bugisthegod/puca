@@ -354,11 +354,15 @@ function LuasSearchPanel({
 												selectedArrivalKey === null
 													? arrival === arrivals[0]
 													: selectedArrivalKey === key;
+											const lineClass =
+												arrival.routeShortName.toLowerCase() === "red"
+													? " stop-arrival--luas-red"
+													: "";
 											return (
 												<li key={key}>
 													<button
 														type="button"
-														className={`stop-arrival stop-arrival--luas${isSelected ? " stop-arrival--selected" : ""}`}
+														className={`stop-arrival stop-arrival--luas${lineClass}${isSelected ? " stop-arrival--selected" : ""}`}
 														aria-current={isSelected ? "true" : undefined}
 														onClick={() => setSelectedArrivalKey(key)}
 													>

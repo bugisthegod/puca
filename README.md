@@ -5,7 +5,7 @@
 <h1 align="center">Púca</h1>
 
 <p align="center">
-  Real-time bus and train tracker for Ireland — a shapeshifting spirit of Irish folklore watching vehicles flit across the island in real time.
+  Real-time bus, train, and Luas tracker for Ireland — a shapeshifting spirit of Irish folklore watching services flit across the island.
 </p>
 
 <p align="center">
@@ -18,22 +18,25 @@
 </p>
 
 <p align="center">
-  <img src="docs/puca-mobile-bus.png" alt="Púca mobile map showing live buses in Dublin" width="360">
+  <img src="docs/puca-mobile-train.png" alt="Púca mobile map showing live trains around Dublin" width="260">
+  <img src="docs/puca-mobile-bus.png" alt="Púca mobile map showing live buses in Dublin" width="260">
+  <img src="docs/puca-mobile-luas.png" alt="Púca mobile map showing Luas stops in Dublin" width="260">
 </p>
 
-Púca is a vehicle-centric PWA for Irish public transport. It shows live positions for Dublin Bus, Bus Éireann, Go-Ahead, and Irish Rail trains on a map, with stop and arrival context for the moment you are already waiting nearby.
+Púca is a vehicle-centric PWA for Irish public transport. It shows live positions for Dublin Bus, Bus Éireann, Go-Ahead, and Irish Rail trains on a map, plus Luas stop search and timetable-based arrivals for the moment you are already waiting nearby.
 
 It is not a journey planner, ticketing product, or transport marketplace. The core question is simple:
 
-> Where is my bus or train right now?
+> Where is my bus, train, or tram right now?
 
 ## Features
 
 - Live bus positions from NTA GTFS-Realtime feeds.
 - Live train positions and station movement data from Irish Rail.
+- Luas stop search and timetable-based arrivals for Green and Red Line stops.
 - Route filtering, stop search, stop arrivals, and focused bus tracking.
 - Train station-to-station search with focused train tracking where live position data exists.
-- Favorites for bus routes, bus stops, and train searches.
+- Favorites for bus routes, bus stops, train searches, and Luas stops.
 - Offline/PWA shell with English and Chinese UI.
 
 ## How it works
@@ -45,7 +48,8 @@ cache of live vehicle positions and arrival predictions.
 
 The browser fetches this cache and renders bus and train markers on a Leaflet map,
 computing route projections and stop arrival estimates client-side from the
-pre-generated GTFS schedule data.
+pre-generated GTFS schedule data. Luas uses generated static timetable and stop
+data for arrival context; it is not presented as GPS-tracked vehicle movement.
 
 ## Stack
 

@@ -456,8 +456,25 @@
 	cursor: default;
 }
 
+.stop-arrival--dublinbus .stop-arrival__route {
+	background: var(--op-dublinbus);
+	color: var(--op-dublinbus-text);
+}
+
+.stop-arrival--buseireann .stop-arrival__route {
+	background: var(--op-buseireann);
+}
+
+.stop-arrival--goahead .stop-arrival__route {
+	background: var(--op-goahead);
+}
+
 .stop-arrival--luas {
 	cursor: pointer;
+}
+
+.stop-arrival--luas-red .stop-arrival__route {
+	background: #c5161d;
 }
 
 .stop-arrival--selected {

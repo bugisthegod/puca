@@ -1,8 +1,8 @@
-# Puca: Live Dublin Bus and Train Map
+# Puca: Live Dublin Bus, Train, and Luas Map
 
-Puca is a live public transport map for Dublin and Ireland-focused services. It helps people standing at a stop, platform, or nearby street corner answer a simple question: "Where is my bus or train right now?"
+Puca is a live public transport map for Dublin and Ireland-focused services. It helps people standing at a stop, platform, or nearby street corner answer a simple question: "Where is my bus, train, or tram right now?"
 
-The product is intentionally vehicle-centric. The map shows moving buses and trains first, then adds stop, route, arrival, and favorite context around that live map experience. Puca is designed for the moment of waiting, not for planning an entire journey days in advance.
+The product is intentionally vehicle-centric. The map shows moving buses and trains first, then adds stop, route, arrival, Luas timetable, and favorite context around that live map experience. Puca is designed for the moment of waiting, not for planning an entire journey days in advance.
 
 Live app: https://puca.dev/
 
@@ -10,20 +10,21 @@ Markdown overview: https://puca.dev/about.md
 
 ## Summary
 
-Puca shows live positions for Dublin Bus, Bus Eireann, Go-Ahead, and Irish Rail trains. It combines realtime feeds, static route geometry, stop data, and schedule context so users can inspect moving vehicles, search routes or stops, and focus on a selected arrival.
+Puca shows live positions for Dublin Bus, Bus Eireann, Go-Ahead, and Irish Rail trains. It also supports Luas Green Line and Red Line stop search with timetable-based arrivals. It combines realtime feeds, static route geometry, stop data, and schedule context so users can inspect moving vehicles, search routes or stops, and focus on a selected arrival.
 
-Puca is useful when someone already knows the bus route, train station, or stop they care about and wants fast live context. It does not try to replace full journey planners, ticketing apps, or official operator information.
+Puca is useful when someone already knows the bus route, train station, Luas stop, or bus stop they care about and wants fast live or timetable context. It does not try to replace full journey planners, ticketing apps, or official operator information.
 
 ## Core Features
 
 - Live bus positions from the NTA GTFS-Realtime Vehicles feed.
 - Live train positions and station movement data from Irish Rail.
+- Luas Green Line and Red Line stop search with timetable-based arrivals.
 - Bus route filtering by operator, route, and direction.
 - Bus stop search by stop number or name across Dublin Bus, Bus Eireann, and Go-Ahead.
 - Stop arrival boards with scheduled-versus-running distinction where the data supports it.
 - Focus mode for a selected bus arrival, showing only that bus, drawing the segment to the target stop, and keeping stops-away context updated.
 - Train station-to-station search, with focus on a selected train where a live position exists.
-- Favorites for bus routes, bus stops, and train searches.
+- Favorites for bus routes, bus stops, train searches, and Luas stops.
 - Offline-capable PWA shell with install prompts and app icons.
 - English and Chinese UI.
 - Realtime health banners when upstream bus data is stale or unavailable.
@@ -32,19 +33,19 @@ Puca is useful when someone already knows the bus route, train station, or stop 
 
 Puca is deliberately not a journey planner, ticketing product, fare calculator, transport marketplace, or account-based service.
 
-It has no accounts, no server-side user profiles, no payments, no ticketing, and no multi-leg trip planning. It does not add schedule-only operators unless they support the live map experience.
+It has no accounts, no server-side user profiles, no payments, no ticketing, and no multi-leg trip planning. It does not add schedule-only operators unless the UI clearly communicates the limits of that data.
 
-Luas support is not included for now because Luas does not currently provide vehicle GPS positions in the same way bus and train feeds do. A future Luas implementation would need to be clearly presented as estimated or interpolated, not GPS-tracked.
+Luas does not currently provide vehicle GPS positions in the same way bus and train feeds do, so Puca presents Luas as stop search and timetable-based arrival context, not GPS-tracked tram movement.
 
 ## Data Sources
 
-Puca uses NTA GTFS-Realtime feeds for bus vehicle positions and trip updates. It uses TFI/NTA GTFS static data for bus routes, stops, shapes, variants, and schedules. It uses Irish Rail APIs for train realtime data and station movement information. Generated train shape JSON supports rail route drawing.
+Puca uses NTA GTFS-Realtime feeds for bus vehicle positions and trip updates. It uses TFI/NTA GTFS static data for bus routes, stops, shapes, variants, schedules, and Luas timetable data. It uses Irish Rail APIs for train realtime data and station movement information. Generated train shape JSON supports rail route drawing.
 
-The app combines static shapes, static schedule data, realtime vehicle positions, realtime trip updates, and Irish Rail train APIs to produce map and arrival views.
+The app combines static shapes, static schedule data, realtime vehicle positions, realtime trip updates, Irish Rail train APIs, and generated Luas timetable JSON to produce map and arrival views.
 
 ## Supported Operators
 
-Puca currently focuses on Dublin Bus, Bus Eireann, Go-Ahead, and Irish Rail trains where live or useful realtime context is available.
+Puca currently focuses on Dublin Bus, Bus Eireann, Go-Ahead, Irish Rail trains, and Luas Green Line/Red Line stops where live or useful arrival context is available.
 
 ## Technical Stack
 
@@ -54,6 +55,7 @@ Puca currently focuses on Dublin Bus, Bus Eireann, Go-Ahead, and Irish Rail trai
 - Bus realtime: NTA GTFS-Realtime Vehicles and TripUpdates.
 - Bus static data: TFI/NTA GTFS generated into JSON and SQLite artifacts.
 - Train realtime: Irish Rail API.
+- Luas data: generated TFI/NTA GTFS stop and timetable JSON.
 - Hosting: Fly.io.
 - Persistence: local browser storage for user-facing state.
 
@@ -65,10 +67,10 @@ The product does not require accounts or server-side user profiles.
 
 ## Positioning
 
-Puca is best described as a live Dublin bus and train tracker, a realtime Irish public transport map, or a vehicle-centric public transport PWA. Its main value is fast situational awareness: showing what is actually moving and how it relates to nearby stops or selected routes.
+Puca is best described as a live Dublin bus, train, and Luas tracker, a realtime Irish public transport map, or a vehicle-centric public transport PWA. Its main value is fast situational awareness: showing what is actually moving and how it relates to nearby stops or selected routes, with Luas timetable context where GPS vehicle tracking is not available.
 
 Puca should not be described as a full travel planner, ticketing app, fare app, official operator service, or replacement for transport authority alerts.
 
 ## Recommended Citation
 
-Puca is a live Dublin public transport map for buses and trains. It shows realtime vehicle positions, nearby stops, route search, train station arrivals, favorites, and map-based journey context for people waiting at a stop.
+Puca is a live Dublin public transport map for buses, trains, and Luas. It shows realtime vehicle positions, nearby stops, route search, train station arrivals, Luas timetable arrivals, favorites, and map-based journey context for people waiting at a stop or platform.

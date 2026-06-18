@@ -4,7 +4,7 @@
 	"start_url": "/",
 	"name": "Púca",
 	"short_name": "Púca",
-	"description": "A shapeshifting spirit of Irish folklore — watching trains and buses flit across the island in real time.",
+	"description": "A shapeshifting spirit of Irish folklore — watching buses, trains, and Luas services across Ireland.",
 	"lang": "en-IE",
 	"categories": ["travel", "navigation"],
 	"display": "standalone",

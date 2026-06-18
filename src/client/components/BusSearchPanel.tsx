@@ -856,7 +856,7 @@ function BusSearchPanel({
 														<li key={a.tripId}>
 															<button
 																type="button"
-																className={`stop-arrival${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}${isSelected ? " stop-arrival--selected" : ""}`}
+																className={`stop-arrival stop-arrival--${selectedStop.operator}${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}${isSelected ? " stop-arrival--selected" : ""}`}
 																aria-current={isSelected ? "true" : undefined}
 																onClick={() => {
 																	if (a.status === "scheduled") {

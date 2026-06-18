@@ -8,10 +8,12 @@ intended to be safe for a public repository.
 - Puca is a real-time public transport tracking app for Ireland, centered on
   live vehicle positions on a map.
 - It is vehicle-centric, not stop-centric. Arrival/countdown features may exist,
-  but the core value is seeing where the bus or train is right now.
+  but the core value is seeing where the bus or train is right now, with Luas
+  presented as timetable-based stop context.
 - The main user context is being physically at a stop, platform, or nearby
   street corner and wanting to know what is actually moving.
-- Puca currently supports bus and Irish Rail/DART. Luas is not supported yet.
+- Puca currently supports bus, Irish Rail/DART, and Luas. Luas support is
+  timetable/arrival-context only, not GPS-tracked tram movement.
 - Do not add schedule-only operators that lack realtime vehicle/trip data unless
   the UI clearly communicates that they are not GPS-tracked.
 
@@ -37,7 +39,7 @@ intended to be safe for a public repository.
 ## State Rules
 
 - Search state lives in `sessionStorage`.
-  Train searches and bus search state should disappear when the tab closes.
+  Train, bus, and Luas search state should disappear when the tab closes.
 - Favorites live in `localStorage`.
   They are explicit bookmarks curated by the user.
 - Long-lived app state lives in `localStorage`.
@@ -107,15 +109,16 @@ intended to be safe for a public repository.
   helper, and splash generation.
 - `docs/`: operational notes and feed history.
 
-## Luas Future Work
+## Luas Notes
 
 - Luas agency prefix observed in NTA data: `5242`.
 - Luas appears in TripUpdates but not Vehicles, so there are no live GPS pings
   for trams.
-- A future Luas implementation should use TripUpdates-driven interpolation:
+- Current Luas UI uses generated static stop and timetable JSON for stop search
+  and arrival context.
+- Future Luas movement on the map would need TripUpdates-driven interpolation:
   combine scheduled stop times with delays, find the current segment, then
   interpolate along the Luas shape.
-- A small precomputed Luas schedule DB will be needed for stop times.
 
 ## Geolocation Notes
 

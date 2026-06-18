@@ -1,6 +1,6 @@
 {
 	"name": "puca",
-	"description": "Real-time bus and train tracker for Ireland.",
+	"description": "Real-time bus, train, and Luas tracker for Ireland.",
 	"type": "module",
 	"private": true,
 	"license": "AGPL-3.0-only",
