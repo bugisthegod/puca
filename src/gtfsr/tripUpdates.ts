@@ -231,8 +231,6 @@ export function getCachedTripUpdates({
 	refreshIfStale?: boolean;
 } = {}): RawTripUpdateMap {
 	if (!isInServiceHours("bus")) {
-		tripUpdateCache = null;
-		tripUpdateCacheUpdatedAt = 0;
 		return new Map();
 	}
 	if (refreshIfStale) triggerTripUpdatesRefreshIfStale();

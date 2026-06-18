@@ -1,3 +1,4 @@
 src/data/*-shapes.json   -diff
 src/data/*-variants.json -diff
 src/data/*-stops.json   -diff
+*.json                   -diff

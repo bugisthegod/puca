@@ -59,9 +59,13 @@ export function getPropagatedDelay(
 	stopTimeUpdates: LiveTripData["stopTimeUpdates"],
 	sequence: number,
 	fallbackMode: DelayFallbackMode,
+	stopTimeUpdatesSorted = false,
 ): number | null {
 	let propagated: number | null = null;
-	for (const stu of sortedStopTimeUpdates(stopTimeUpdates)) {
+	const updates = stopTimeUpdatesSorted
+		? stopTimeUpdates
+		: sortedStopTimeUpdates(stopTimeUpdates);
+	for (const stu of updates) {
 		if (stu.arrivalDelaySec === null) continue;
 		if (stu.sequence <= sequence) propagated = stu.arrivalDelaySec;
 		else if (fallbackMode === "forward-if-no-prior" && propagated === null) {
@@ -79,6 +83,7 @@ export function computeArrivalTiming({
 	gpsInferredDelay,
 	nowSec,
 	delayFallbackMode,
+	stopTimeUpdatesSorted = false,
 }: {
 	arrivalSec: number;
 	sequence: number;
@@ -86,9 +91,15 @@ export function computeArrivalTiming({
 	gpsInferredDelay: GpsInferredDelay | null;
 	nowSec: number | null;
 	delayFallbackMode: DelayFallbackMode;
+	stopTimeUpdatesSorted?: boolean;
 }): ArrivalTiming {
 	const ntaDelay = live
-		? getPropagatedDelay(live.stopTimeUpdates, sequence, delayFallbackMode)
+		? getPropagatedDelay(
+				live.stopTimeUpdates,
+				sequence,
+				delayFallbackMode,
+				stopTimeUpdatesSorted,
+			)
 		: null;
 	const inferredDelay =
 		gpsInferredDelay && sequence >= gpsInferredDelay.fromSequence

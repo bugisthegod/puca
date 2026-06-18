@@ -19,6 +19,7 @@ import {
 	searchBusStops,
 	shouldConsiderStopArrivalTrip,
 } from "../src/gtfsr";
+import { getTripUpdateCacheMeta } from "../src/gtfsr/tripUpdates";
 
 const stops = {
 	S1: { name: "Stop One", lat: 53.1, lng: -6.1 },
@@ -897,6 +898,7 @@ describe("realtime cache request path", () => {
 		});
 
 		await expect(getBusTripStops("dublinbus", "T1")).resolves.toBeNull();
+		expect(getTripUpdateCacheMeta().count).toBe(1);
 	});
 
 	test("reports vehicle realtime health as stale when the vehicle cache ages out", () => {
