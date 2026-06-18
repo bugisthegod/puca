@@ -25,7 +25,7 @@ import {
 import { errToMeta, log } from "./src/logger.ts";
 import {
 	getLuasStop,
-	getLuasStopArrivals,
+	getLuasStopArrivalsOfficialFirst,
 	getLuasStops,
 	searchLuasStops,
 } from "./src/luas.ts";
@@ -620,15 +620,16 @@ Bun.serve({
 				return Response.json([], { status: 502 });
 			}
 		}),
-		"/api/luas/stop/:stopId/arrivals": rateLimit((req) => {
+		"/api/luas/stop/:stopId/arrivals": rateLimit(async (req) => {
 			try {
 				const stopId = routeParam(req, "stopId");
 				if (!getLuasStop(stopId)) {
 					return Response.json({ error: "unknown stopId" }, { status: 404 });
 				}
-				return Response.json(getLuasStopArrivals(stopId), {
+				return Response.json(await getLuasStopArrivalsOfficialFirst(stopId), {
 					headers: {
-						"Cache-Control": "public, max-age=30, stale-while-revalidate=60",
+						"Cache-Control":
+							"public, max-age=0, s-maxage=10, stale-while-revalidate=10",
 					},
 				});
 			} catch (err) {

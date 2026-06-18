@@ -30,7 +30,7 @@ type LuasSearchPanelProps = {
 
 function etaLabel(etaSeconds: number, t: ReturnType<typeof useLocale>["t"]) {
 	if (etaSeconds < 60) return t("luas.search.eta.due");
-	return t("luas.search.eta.min", { n: Math.round(etaSeconds / 60) });
+	return t("luas.search.eta.min", { n: Math.ceil(etaSeconds / 60) });
 }
 
 function luasArrivalKey(arrival: LuasArrival): string {

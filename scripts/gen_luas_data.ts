@@ -11,8 +11,10 @@ type LuasStop = {
 
 type LuasArrival = {
 	stopId: string;
+	tripId: string;
 	routeShortName: string;
 	headsign: string;
+	stopSequence: number;
 	departureSec: number;
 	serviceId: string;
 };
@@ -22,6 +24,8 @@ type CompactArrival = [
 	headsign: string,
 	departureSec: number,
 	serviceId: string,
+	tripId: string,
+	stopSequence: number,
 ];
 
 const GTFS_DIR = "gtfs";
@@ -145,8 +149,10 @@ for (const stopTime of stopTimes) {
 	).split(":");
 	arrivals.push({
 		stopId,
+		tripId: value(stopTime, "trip_id"),
 		routeShortName: route.shortName,
 		headsign: value(trip, "trip_headsign"),
+		stopSequence: Number(value(stopTime, "stop_sequence")),
 		departureSec: Number(hh) * 3600 + Number(mm) * 60 + Number(ss),
 		serviceId: value(trip, "service_id"),
 	});
@@ -242,6 +248,8 @@ for (const arrival of arrivals.sort(
 		arrival.headsign,
 		arrival.departureSec,
 		arrival.serviceId,
+		arrival.tripId,
+		arrival.stopSequence,
 	];
 	const list = arrivalsByStop.get(arrival.stopId);
 	if (list) list.push(compact);
