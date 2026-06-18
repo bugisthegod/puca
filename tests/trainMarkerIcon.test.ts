@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildTrainIconSpec } from "../src/hooks/trainMarkerIcon";
+import { buildTrainIconSpec } from "../src/client/hooks/trainMarkerIcon";
 
 describe("train marker icon spec", () => {
 	test("builds a train marker div icon spec with color-driven SVG", () => {

@@ -5,13 +5,13 @@ import type {
 	Train,
 	TrainFocusSummary,
 	TrainMovement,
-} from "../types";
+} from "../../types";
 import {
 	dublinMinutesSinceMidnight,
 	markerColor,
 	parseRoute,
 	parseTrainProgress,
-} from "../utils";
+} from "../../utils";
 import {
 	buildRouteLine,
 	buildRouteLookup,

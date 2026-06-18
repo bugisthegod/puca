@@ -3,8 +3,8 @@
 // last-viewed state) — favorites are explicit bookmarks the user curates.
 // Persisted to localStorage under its own versioned key.
 
-import type { LuasLine } from "./types";
-import { type BusOperator, OPERATORS } from "./types";
+import type { LuasLine } from "../types";
+import { type BusOperator, OPERATORS } from "../types";
 
 const KEY = "puca-favorites-v1";
 

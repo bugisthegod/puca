@@ -1,6 +1,6 @@
+import type { BusVehicle } from "../../types";
+import { escapeHtml } from "../../utils";
 import { t as i18n } from "../i18n";
-import type { BusVehicle } from "../types";
-import { escapeHtml } from "../utils";
 
 export const PUCA_IMG_HTML =
 	'<img src="/puca-jack-o.svg?v=transparent-1" alt="" aria-hidden="true" loading="lazy" decoding="async" />';

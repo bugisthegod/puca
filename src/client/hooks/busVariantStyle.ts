@@ -1,4 +1,4 @@
-import type { BusOperator } from "../types";
+import type { BusOperator } from "../../types";
 
 export type VariantStyle = {
 	color: string;

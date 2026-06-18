@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	buildBusIconSpec,
 	busOperatorMarkerClass,
-} from "../src/hooks/busMarkerIcon";
+} from "../src/client/hooks/busMarkerIcon";
 import type { BusVehicle } from "../src/types";
 
 function bus(overrides: Partial<BusVehicle> = {}): BusVehicle {

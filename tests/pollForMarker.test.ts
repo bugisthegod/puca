@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	pollForMarker,
 	type TrainMarkerEntry,
-} from "../src/hooks/useTrainMarkers";
+} from "../src/client/hooks/useTrainMarkers";
 
 function dummyEntry(code: string): TrainMarkerEntry {
 	return {

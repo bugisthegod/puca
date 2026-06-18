@@ -6,8 +6,8 @@ import {
 	buildTrainStatusText,
 	formatTrainPopupMessage,
 	trainPopupStatusClass,
-} from "../src/hooks/trainPopup";
-import { setLocale } from "../src/i18n";
+} from "../src/client/hooks/trainPopup";
+import { setLocale } from "../src/client/i18n";
 import type { Train, TrainMovement } from "../src/types";
 
 beforeAll(() => {

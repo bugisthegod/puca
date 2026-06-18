@@ -1,5 +1,5 @@
-import type { BusOperator, BusVehicle } from "../types";
-import { escapeHtml } from "../utils";
+import type { BusOperator, BusVehicle } from "../../types";
+import { escapeHtml } from "../../utils";
 
 // Side-view bus silhouette for vehicle markers. Body fill uses currentColor so
 // per-operator CSS can drive the color via .bus-marker--*.bus-icon { color: ... }.

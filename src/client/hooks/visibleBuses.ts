@@ -1,4 +1,4 @@
-import type { BusVehicle, VehicleBounds } from "../types";
+import type { BusVehicle, VehicleBounds } from "../../types";
 
 export type VisibleBusCache = {
 	signature: string;

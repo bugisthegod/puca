@@ -148,8 +148,8 @@ Auto-stop (`auto_stop_machines = 'stop'`) watches HTTP idleness, not SSH. Multi-
 ## Persistence rules
 
 - **Search state lives in `sessionStorage` only.** Train search (from/to/queries) and bus search (route/direction/tab/stopId/stopOperator/routeQuery/stopQuery) must never be written to `localStorage`. They die when the tab closes.
-- **Favorites live in `localStorage`.** `src/favorites.ts` persists user-curated bookmarks. Never move favorites to `sessionStorage`.
-- **Long-lived app state lives in `localStorage`.** `src/session.ts` `Session` interface covers mode, filter, bus operator, and map view. Opening the app should restore where the user left off.
+- **Favorites live in `localStorage`.** `src/client/favorites.ts` persists user-curated bookmarks. Never move favorites to `sessionStorage`.
+- **Long-lived app state lives in `localStorage`.** `src/client/session.ts` `Session` interface covers mode, filter, bus operator, and map view. Opening the app should restore where the user left off.
 - When adding new state, decide upfront which bucket it belongs to. If unsure, search state goes to sessionStorage.
 
 ## React patterns

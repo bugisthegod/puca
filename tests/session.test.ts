@@ -42,8 +42,8 @@ let throwOnSessionSet = false;
 	},
 } as Storage;
 
-import type { Favorites } from "../src/favorites";
-import { saveFavorites } from "../src/favorites";
+import type { Favorites } from "../src/client/favorites";
+import { saveFavorites } from "../src/client/favorites";
 import {
 	type BusSearchSession,
 	clearBusSearchSession,
@@ -52,7 +52,7 @@ import {
 	type Session,
 	saveBusSearchSession,
 	saveSession,
-} from "../src/session";
+} from "../src/client/session";
 
 const KEY = "puca-session-v1";
 const BUS_SEARCH_KEY = "puca-bus-search-v1";

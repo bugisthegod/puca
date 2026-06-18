@@ -5,6 +5,15 @@ import "leaflet.markercluster";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import type {
+	BusOperator,
+	BusShape,
+	BusVehicle,
+	FocusContext,
+	LuasStop,
+	TrainFocusSummary,
+	VehicleBounds,
+} from "../types";
 import { isStandalonePwa, trackEvent } from "./analytics";
 import AboutModal from "./components/AboutModal";
 import BusSearchPanel, {
@@ -54,15 +63,6 @@ import {
 	saveSession,
 } from "./session";
 import { registerServiceWorker } from "./sw-register";
-import type {
-	BusOperator,
-	BusShape,
-	BusVehicle,
-	FocusContext,
-	LuasStop,
-	TrainFocusSummary,
-	VehicleBounds,
-} from "./types";
 import "./style.css";
 
 const LOW_LOCATION_ACCURACY_M = 500;

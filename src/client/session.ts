@@ -2,8 +2,8 @@
 // localStorage so closing and reopening the app resumes where they left off.
 // Search state that should die with the tab lives in sessionStorage.
 
+import { type BusOperator, OPERATORS } from "../types";
 import type { Mode } from "./hooks/useVehicleMap";
-import { type BusOperator, OPERATORS } from "./types";
 
 const KEY = "puca-session-v1";
 const BUS_SEARCH_KEY = "puca-bus-search-v1";

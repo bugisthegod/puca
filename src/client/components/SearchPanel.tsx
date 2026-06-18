@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import type { SearchResult, Station } from "../../types";
+import { collapseSelection, fmtTime } from "../../utils";
 import { type Favorites, hasTrain, type TrainFavorite } from "../favorites";
 import type { FocusTrainResult } from "../hooks/useTrainMarkers";
 import { useLocale } from "../i18n";
 import { getStationsOnce } from "../stationsClient";
-import type { SearchResult, Station } from "../types";
-import { collapseSelection, fmtTime } from "../utils";
 import FavStar from "./FavStar";
 
 interface SearchPanelProps {

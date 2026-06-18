@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
+import { readRealtimeHealth } from "../../realtime";
+import type {
+	BusOperator,
+	BusRoute,
+	BusShape,
+	RealtimeHealth,
+} from "../../types";
+import { collapseSelection } from "../../utils";
 import { useLocale } from "../i18n";
-import { readRealtimeHealth } from "../realtime";
 import {
 	type BusSearchTab,
 	loadBusSearchSession,
 	saveBusSearchSession,
 } from "../session";
-import type { BusOperator, BusRoute, BusShape, RealtimeHealth } from "../types";
-import { collapseSelection } from "../utils";
 import FavStar from "./FavStar";
 
 export type RouteWithOperator = BusRoute & { operator: BusOperator };

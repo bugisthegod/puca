@@ -21,7 +21,7 @@
 	},
 	"overrides": [
 		{
-			"includes": ["src/hooks/routeProjection.ts"],
+			"includes": ["src/client/hooks/routeProjection.ts"],
 			"linter": {
 				"rules": {
 					"style": { "noNonNullAssertion": "off" }
@@ -37,7 +37,7 @@
 			}
 		},
 		{
-			"includes": ["src/components/AboutModal.tsx"],
+			"includes": ["src/client/components/AboutModal.tsx"],
 			"linter": {
 				"rules": {
 					"a11y": { "useSemanticElements": "off" }
@@ -45,7 +45,7 @@
 			}
 		},
 		{
-			"includes": ["src/components/BusSearchPanel.tsx"],
+			"includes": ["src/client/components/BusSearchPanel.tsx"],
 			"linter": {
 				"rules": {
 					"complexity": { "noUselessFragments": "off" }
@@ -53,7 +53,7 @@
 			}
 		},
 		{
-			"includes": ["src/components/SearchPanel.tsx"],
+			"includes": ["src/client/components/SearchPanel.tsx"],
 			"linter": {
 				"rules": {
 					"a11y": {
@@ -64,7 +64,7 @@
 			}
 		},
 		{
-			"includes": ["src/hooks/useTrainMarkers.ts"],
+			"includes": ["src/client/hooks/useTrainMarkers.ts"],
 			"linter": {
 				"rules": {
 					"style": { "noNonNullAssertion": "off" }
@@ -72,7 +72,7 @@
 			}
 		},
 		{
-			"includes": ["src/styles/*.css", "src/styles/**/*.css"],
+			"includes": ["src/client/styles/*.css", "src/client/styles/**/*.css"],
 			"linter": {
 				"rules": {
 					"style": { "noDescendingSpecificity": "off" },
@@ -81,7 +81,7 @@
 			}
 		},
 		{
-			"includes": ["src/styles/popup.css"],
+			"includes": ["src/client/styles/popup.css"],
 			"linter": {
 				"rules": {
 					"complexity": { "noImportantStyles": "off" }

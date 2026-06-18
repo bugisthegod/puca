@@ -1,9 +1,5 @@
-import index from "./index.html";
-import {
-	getCurrentTrains,
-	getStationData,
-	getTrainMovements,
-} from "./src/api.ts";
+import index from "../../index.html";
+import { getCurrentTrains, getStationData, getTrainMovements } from "../api.ts";
 import {
 	getAllBusVehicles,
 	getAllOperatorsBusVehicles,
@@ -21,19 +17,21 @@ import {
 	searchAllBusStops,
 	searchBusStops,
 	startBackgroundPolling,
-} from "./src/gtfsr.ts";
-import { errToMeta, log } from "./src/logger.ts";
+} from "../gtfsr.ts";
+import { errToMeta, log } from "../logger.ts";
 import {
 	getLuasStop,
 	getLuasStopArrivalsOfficialFirst,
 	getLuasStops,
 	searchLuasStops,
-} from "./src/luas.ts";
+} from "../luas.ts";
 import {
 	REALTIME_MATCHED_VEHICLE_COUNT_HEADER,
 	REALTIME_RAW_VEHICLE_COUNT_HEADER,
 	REALTIME_STATUS_HEADER,
-} from "./src/realtime.ts";
+} from "../realtime.ts";
+import { OPERATORS } from "../types.ts";
+import { isInServiceHours } from "../utils.ts";
 import {
 	clampMins,
 	createServerTimer,
@@ -46,10 +44,8 @@ import {
 	staticFile,
 	todayFormatted,
 	withServerTiming,
-} from "./src/server/helpers.ts";
-import { hasOriginAccess, rateLimit } from "./src/server/rateLimit.ts";
-import { OPERATORS } from "./src/types.ts";
-import { isInServiceHours } from "./src/utils.ts";
+} from "./helpers.ts";
+import { hasOriginAccess, rateLimit } from "./rateLimit.ts";
 
 // Service worker cache version: bumped automatically per Fly deploy so PWA
 // clients re-precache after each release. Local dev gets a stable "dev" name
