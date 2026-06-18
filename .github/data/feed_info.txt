@@ -1,2 +1,2 @@
 feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email
-National Transport Authority,https://www.nationaltransport.ie/,en,20260616,20270616,7315CDB1-CC29-42F6-93F3-020261BE3BA6,apisupport@nationaltransport.ie
+National Transport Authority,https://www.nationaltransport.ie/,en,20260617,20270617,2701EAE2-2B54-4B1D-8FEB-51602A91042D,apisupport@nationaltransport.ie
