@@ -1,8 +1,8 @@
 import React from "react";
+import type { BusOperator, TrainFocusSummary } from "../../types";
 import type { Mode } from "../hooks/useVehicleMap";
 import type { t as translate } from "../i18n";
 import { useLocale } from "../i18n";
-import type { BusOperator, TrainFocusSummary } from "../types";
 import type { BusStopSummary } from "./BusSearchPanel";
 import type { LuasStopSummary } from "./LuasSearchPanel";
 

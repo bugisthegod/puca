@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
+import type { LuasArrival, LuasStop } from "../../types";
+import { collapseSelection } from "../../utils";
 import { useLocale } from "../i18n";
 import { loadLuasSearchSession, saveLuasSearchSession } from "../session";
-import type { LuasArrival, LuasStop } from "../types";
-import { collapseSelection } from "../utils";
 import FavStar from "./FavStar";
 
 export type LuasStopSummary = {

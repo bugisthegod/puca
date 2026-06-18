@@ -3,7 +3,7 @@ import {
 	busRouteColor,
 	reconcileSelectedVariant,
 	variantStyleForShape,
-} from "../src/hooks/busVariantStyle";
+} from "../src/client/hooks/busVariantStyle";
 
 describe("bus variant styling", () => {
 	test("maps bus operators to route colors", () => {

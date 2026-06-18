@@ -1,5 +1,5 @@
+import type { RealtimeHealth } from "../../types";
 import { useLocale } from "../i18n";
-import type { RealtimeHealth } from "../types";
 
 type RealtimeBannerProps = {
 	health: RealtimeHealth | null;

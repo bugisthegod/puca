@@ -47,7 +47,7 @@ import {
 	toggleTrain,
 	totalFavorites,
 	trainKey,
-} from "../src/favorites";
+} from "../src/client/favorites";
 
 const bus39A: BusFavorite = {
 	shortName: "39A",

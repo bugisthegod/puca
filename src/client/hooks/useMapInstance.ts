@@ -12,9 +12,9 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { Station } from "../../types";
 import type { MapView } from "../session";
 import { getStationsOnce } from "../stationsClient";
-import type { Station } from "../types";
 import {
 	type CachedFix,
 	decideLocationFix,

@@ -1,5 +1,4 @@
 import { type RefObject, useCallback, useEffect, useRef } from "react";
-import type { MapView } from "../session";
 import type {
 	BusOperator,
 	BusShape,
@@ -10,7 +9,8 @@ import type {
 	Train,
 	TrainFocusSummary,
 	VehicleBounds,
-} from "../types";
+} from "../../types";
+import type { MapView } from "../session";
 import { tickBusMarker } from "./busAnimation";
 import { tickTrainMarker } from "./trainAnimation";
 import { useBusMarkers } from "./useBusMarkers";

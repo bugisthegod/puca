@@ -3,7 +3,7 @@ import {
 	busVehicleSignature,
 	snapshotSignature,
 	trainSignature,
-} from "../src/hooks/useVehiclePolling";
+} from "../src/client/hooks/useVehiclePolling";
 import type { BusVehicle, Train } from "../src/types";
 
 function busVehicle(overrides: Partial<BusVehicle> = {}): BusVehicle {

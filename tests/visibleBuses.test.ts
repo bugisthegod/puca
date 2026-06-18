@@ -5,7 +5,7 @@ import {
 	stableVisibleBuses,
 	type VisibleBusCache,
 	visibleBusSnapshotSignature,
-} from "../src/hooks/visibleBuses";
+} from "../src/client/hooks/visibleBuses";
 import type { BusVehicle } from "../src/types";
 
 function bus(overrides: Partial<BusVehicle> = {}): BusVehicle {

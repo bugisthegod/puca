@@ -4,8 +4,8 @@ import {
 	buildBusPopupHTML,
 	busPopupStatusFromDelay,
 	formatBusPopupSec,
-} from "../src/hooks/busPopup";
-import { setLocale } from "../src/i18n";
+} from "../src/client/hooks/busPopup";
+import { setLocale } from "../src/client/i18n";
 import type { BusVehicle } from "../src/types";
 
 beforeAll(() => {

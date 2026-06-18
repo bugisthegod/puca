@@ -4,7 +4,7 @@ import {
 	GEOLOCATION_MAX_AGE_MS,
 	LAST_FIX_TTL_MS,
 	parseCachedFix,
-} from "../src/hooks/locationLogic";
+} from "../src/client/hooks/locationLogic";
 
 describe("location cache parsing", () => {
 	const now = 1_800_000_000_000;

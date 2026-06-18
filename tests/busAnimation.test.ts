@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { clearBusRouteLine, tickBusMarker } from "../src/hooks/busAnimation";
-import { tickTrainMarker } from "../src/hooks/trainAnimation";
-import type { BusMarkerEntry } from "../src/hooks/useBusMarkers";
-import type { TrainMarkerEntry } from "../src/hooks/useTrainMarkers";
-import { busAnimationDurationMs } from "../src/hooks/useVehicleMap";
+import {
+	clearBusRouteLine,
+	tickBusMarker,
+} from "../src/client/hooks/busAnimation";
+import { tickTrainMarker } from "../src/client/hooks/trainAnimation";
+import type { BusMarkerEntry } from "../src/client/hooks/useBusMarkers";
+import type { TrainMarkerEntry } from "../src/client/hooks/useTrainMarkers";
+import { busAnimationDurationMs } from "../src/client/hooks/useVehicleMap";
 
 function markerWithRecorder() {
 	const calls: [number, number][] = [];

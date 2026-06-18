@@ -6,9 +6,9 @@ import {
 	filterBusRoutes,
 	getBusDirections,
 	type RouteWithOperator,
-} from "../src/components/BusSearchPanel";
-import { trainFocusSummaryMeta } from "../src/components/InfoPanel";
-import { t } from "../src/i18n";
+} from "../src/client/components/BusSearchPanel";
+import { trainFocusSummaryMeta } from "../src/client/components/InfoPanel";
+import { t } from "../src/client/i18n";
 
 describe("BusSearchPanel smoke helpers", () => {
 	const routes: RouteWithOperator[] = [

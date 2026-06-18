@@ -1,6 +1,6 @@
 import type { Feature, LineString } from "geojson";
 import { useEffect, useRef } from "react";
-import type { BusOperator, BusShape, BusVehicle } from "../types";
+import type { BusOperator, BusShape, BusVehicle } from "../../types";
 import {
 	type BusAnimationDurationStrategy,
 	computeBusCurrentDistance,

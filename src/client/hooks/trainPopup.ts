@@ -1,12 +1,12 @@
-import { t } from "../i18n";
-import type { Train, TrainMovement } from "../types";
+import type { Train, TrainMovement } from "../../types";
 import {
 	escapeHtml,
 	fmtTime,
 	parseLateMinutes,
 	parseRoute,
 	parseTrainProgress,
-} from "../utils";
+} from "../../utils";
+import { t } from "../i18n";
 
 type TrainRoute = ReturnType<typeof parseRoute>;
 

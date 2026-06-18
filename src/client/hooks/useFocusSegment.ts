@@ -5,7 +5,7 @@ import {
 	useEffect,
 	useRef,
 } from "react";
-import type { BusOperator, FocusContext } from "../types";
+import type { BusOperator, FocusContext } from "../../types";
 import { clearBusRouteLine } from "./busAnimation";
 import { getMapFitPadding } from "./mapFitPadding";
 import {

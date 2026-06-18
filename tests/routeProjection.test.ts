@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { buildRouteLine, projectOntoRoute } from "../src/hooks/routeProjection";
+import {
+	buildRouteLine,
+	projectOntoRoute,
+} from "../src/client/hooks/routeProjection";
 
 // ~6.7km line going east along latitude 53° (Dublin-ish).
 // Enough length that floating-point noise near endpoints doesn't bite, and

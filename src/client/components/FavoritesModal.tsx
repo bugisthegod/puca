@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import type { BusOperator } from "../../types";
 import type {
 	BusFavorite,
 	BusStopFavorite,
@@ -9,7 +10,6 @@ import type {
 import { busKey, luasStopKey, stopKey, trainKey } from "../favorites";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useLocale } from "../i18n";
-import type { BusOperator } from "../types";
 
 type Props = {
 	onClose: () => void;

@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { readRealtimeHealth } from "../realtime";
-import type { BusOperator, BusVehicle, RealtimeHealth, Train } from "../types";
-import { isInServiceHours } from "../utils";
+import { readRealtimeHealth } from "../../realtime";
+import type {
+	BusOperator,
+	BusVehicle,
+	RealtimeHealth,
+	Train,
+} from "../../types";
+import { isInServiceHours } from "../../utils";
 import type { Mode } from "./useVehicleMap";
 
 export function trainSignature(train: Train): string {
