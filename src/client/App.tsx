@@ -1019,6 +1019,7 @@ function App() {
 					selectedStopId={luasStopId}
 					onStopIdChange={setLuasStopId}
 					onStopSummaryChange={setLuasStopSummary}
+					inService={inService}
 					collapsed={panelCollapsed}
 					onCollapsedChange={handlePanelCollapsedChange}
 					isStopFavorite={isLuasStopFav}

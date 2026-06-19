@@ -622,6 +622,14 @@ Bun.serve({
 				if (!getLuasStop(stopId)) {
 					return Response.json({ error: "unknown stopId" }, { status: 404 });
 				}
+				if (!isInServiceHours("luas")) {
+					return Response.json([], {
+						headers: {
+							"Cache-Control":
+								"public, max-age=0, s-maxage=10, stale-while-revalidate=10",
+						},
+					});
+				}
 				return Response.json(await getLuasStopArrivalsOfficialFirst(stopId), {
 					headers: {
 						"Cache-Control":

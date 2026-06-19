@@ -115,9 +115,8 @@ export function dublinSecondsSinceMidnight(now: Date = new Date()): number {
 }
 
 /** Whether the given transit mode is currently within its daily service window.
- *  Train: 05:00 – 01:00 next day (off-hours 01:00–05:00)
- *  Bus:   05:00 – 01:00 next day (off-hours 01:00–05:00)
- *  Both resume at 05:00 Europe/Dublin time.
+ *  Train/Bus/Luas: 05:00–00:00 (off-hours 00:00–05:00)
+ *  All modes resume at 05:00 Europe/Dublin time.
  */
 export function isInServiceHours(
 	_mode: "train" | "bus" | "luas",
@@ -125,8 +124,7 @@ export function isInServiceHours(
 ): boolean {
 	const mins = dublinMinutesSinceMidnight(now);
 	const serviceStart = 5 * 60;
-	const nextDayServiceEnd = 1 * 60;
-	return mins >= serviceStart || mins < nextDayServiceEnd;
+	return mins >= serviceStart;
 }
 
 /** Escape a string for safe interpolation into innerHTML. Popups are built

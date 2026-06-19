@@ -22,6 +22,7 @@ type LuasSearchPanelProps = {
 	selectedStopId: string | null;
 	onStopIdChange: (stopId: string | null) => void;
 	onStopSummaryChange: (summary: LuasStopSummary | null) => void;
+	inService: boolean;
 	collapsed: boolean;
 	onCollapsedChange: (collapsed: boolean) => void;
 	isStopFavorite: (stop: LuasStop) => boolean;
@@ -44,6 +45,7 @@ function LuasSearchPanel({
 	selectedStopId,
 	onStopIdChange,
 	onStopSummaryChange,
+	inService,
 	collapsed,
 	onCollapsedChange,
 	isStopFavorite,
@@ -139,6 +141,17 @@ function LuasSearchPanel({
 	useEffect(() => {
 		if (!selectedStopId) {
 			setArrivals(null);
+			setArrivalsLoading(false);
+			setArrivalsFetchedAt(null);
+			setArrivalsError(null);
+			setSelectedArrivalKey(null);
+			onStopSummaryChange(null);
+			return;
+		}
+		if (!inService) {
+			arrivalsAbortRef.current?.abort();
+			setArrivals(null);
+			setArrivalsLoading(false);
 			setArrivalsFetchedAt(null);
 			setArrivalsError(null);
 			setSelectedArrivalKey(null);
@@ -155,10 +168,10 @@ function LuasSearchPanel({
 			clearInterval(id);
 			arrivalsAbortRef.current?.abort();
 		};
-	}, [selectedStopId, fetchArrivals, onStopSummaryChange]);
+	}, [selectedStopId, fetchArrivals, inService, onStopSummaryChange]);
 
 	useEffect(() => {
-		if (!selectedStop) {
+		if (!selectedStop || !inService) {
 			onStopSummaryChange(null);
 			return;
 		}
@@ -197,6 +210,7 @@ function LuasSearchPanel({
 		arrivalsLoading,
 		clockNow,
 		onStopSummaryChange,
+		inService,
 		selectedArrivalKey,
 		selectedStop,
 		t,
@@ -329,6 +343,11 @@ function LuasSearchPanel({
 								</button>
 							</div>
 							<div className="stop-arrivals">
+								{!inService && (
+									<div className="stop-arrivals__empty">
+										{t("info.offhours.status")}
+									</div>
+								)}
 								{arrivalsLoading && arrivals === null && (
 									<div className="stop-arrivals__empty">
 										{t("luas.search.arrivals.loading")}
