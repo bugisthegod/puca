@@ -151,10 +151,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "dublin heuston|mallow": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
   "dundalk (clarke)|grand canal dock": {
     "routeId": "DUB-DRO/DUN-O",
     "directionId": 1
