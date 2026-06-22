@@ -227,12 +227,16 @@ function triggerTripUpdatesRefreshIfStale(): void {
 
 export function getCachedTripUpdates({
 	refreshIfStale = false,
+	now = new Date(),
 }: {
 	refreshIfStale?: boolean;
+	now?: Date;
 } = {}): RawTripUpdateMap {
-	if (!isInServiceHours("bus")) {
+	if (!isInServiceHours("bus", now)) {
 		return new Map();
 	}
+	// Cache reads may use a lookup time, but upstream refreshes stay tied to the
+	// real wall clock so time-travel queries cannot wake NTA polling off-hours.
 	if (refreshIfStale) triggerTripUpdatesRefreshIfStale();
 	return tripUpdateCache ?? new Map();
 }

@@ -8,12 +8,12 @@ import {
 } from "./gtfsr/tripUpdates.ts";
 import type { LuasArrival, LuasStop } from "./types.ts";
 
-type ServiceCalendar = Record<
+export type LuasServiceCalendar = Record<
 	string,
 	[days: string, startDate: string, endDate: string]
 >;
 
-type ServiceException = [
+export type LuasServiceException = [
 	serviceId: string,
 	date: string,
 	exceptionType: number,
@@ -29,10 +29,10 @@ type StaticArrival = {
 	serviceId: string;
 };
 
-type LuasArrivalsData = {
+export type LuasArrivalsData = {
 	format: 2;
-	services: ServiceCalendar;
-	exceptions: ServiceException[];
+	services: LuasServiceCalendar;
+	exceptions: LuasServiceException[];
 	arrivals: Record<
 		string,
 		[
@@ -589,7 +589,7 @@ export function getLuasStopArrivalsRealtimeFirst(
 	);
 	const nowSec = nowParts.seconds;
 	const currentStopName = normalizeDestinationName(stop.name);
-	const tripUpdates = getCachedTripUpdates({ refreshIfStale: true });
+	const tripUpdates = getCachedTripUpdates({ refreshIfStale: true, now });
 	const candidates: LuasArrival[] = [];
 
 	for (const platformId of stop.platformIds) {
