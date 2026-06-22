@@ -35,10 +35,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "cork (kent)|mallow": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 1
-  },
   "cork (kent)|cobh": {
     "routeId": "MAL-COBH-O",
     "directionId": 0
@@ -63,15 +59,15 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
+  "howth|connolly": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
   "lansdowne road|bray (daly)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
   "lansdowne road|greystones": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "howth|connolly": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -136,6 +132,10 @@
     "directionId": 0
   },
   "cork (kent)|dublin heuston": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 1
+  },
+  "cork (kent)|mallow": {
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
@@ -371,10 +371,6 @@
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 1
   },
-  "hazelhatch and celbridge|dublin pearse": {
-    "routeId": "DUB-PORTLAOIS-O",
-    "directionId": 1
-  },
   "dublin heuston|portlaoise": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
@@ -392,10 +388,6 @@
     "directionId": 0
   },
   "connolly|newbridge": {
-    "routeId": "DUB-PORTLAOIS-O",
-    "directionId": 0
-  },
-  "dublin pearse|hazelhatch and celbridge": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
   },
