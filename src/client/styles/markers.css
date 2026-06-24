@@ -131,6 +131,11 @@
 	border: none;
 }
 
+.train-hit-marker {
+	background: transparent;
+	border: none;
+}
+
 .train-icon {
 	width: 22px;
 	height: 22px;

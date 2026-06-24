@@ -17,7 +17,11 @@ import {
 	buildRouteLookup,
 	projectOntoRoute,
 } from "./routeProjection";
-import { makeTrainIcon } from "./trainMarkerIcon";
+import {
+	makeTrainHitIcon,
+	makeTrainIcon,
+	type TrainMarkerOffset,
+} from "./trainMarkerIcon";
 import {
 	buildTrainPopupErrorHTML,
 	buildTrainPopupHTML,
@@ -124,7 +128,10 @@ function setShapeCache(key: string, value: TrainShapeCacheEntry): void {
 
 export interface TrainMarkerEntry {
 	marker: L.Marker;
+	hitMarker: L.Marker;
 	lastColor: string; // tracks current marker color so we only setIcon on threshold changes
+	iconOffsetX: number; // pixel offset used to separate trains sharing one station coordinate
+	iconOffsetY: number;
 	train: Train;
 	targetLat: number;
 	targetLng: number;
@@ -146,6 +153,30 @@ export interface TrainMarkerEntry {
 }
 
 export type FocusTrainResult = "focused" | "unavailable" | "cancelled";
+
+// Irish Rail's current-trains feed reports coarsely quantized coordinates; trains
+// sitting at the same station often have byte-identical lat/lng. Grouping at
+// 5dp targets that overlap without spreading nearby but distinct vehicles.
+const OVERLAP_COORD_PRECISION = 5;
+
+function trainOverlapKey(train: Train): string {
+	return `${train.lat.toFixed(OVERLAP_COORD_PRECISION)}:${train.lng.toFixed(
+		OVERLAP_COORD_PRECISION,
+	)}`;
+}
+
+function trainOverlapOffset(index: number, total: number): TrainMarkerOffset {
+	if (total <= 1) return { x: 0, y: 0 };
+	const radius = total === 2 ? 14 : total <= 4 ? 16 : 20;
+	const angle =
+		total === 2
+			? index * Math.PI
+			: -Math.PI / 2 + (2 * Math.PI * index) / total;
+	return {
+		x: Math.round(Math.cos(angle) * radius),
+		y: Math.round(Math.sin(angle) * radius),
+	};
+}
 
 function normalizeStationName(name: string): string {
 	return name
@@ -341,9 +372,9 @@ export function useTrainMarkers({
 	}
 
 	function makeTrainMarker(train: Train): L.Marker {
-		// interactive:false so clicks pass through to the oversized invisible
-		// hitMarker — without this, the divIcon (markerPane z=600) sits above the
-		// SVG hitMarker (overlayPane z=400) and swallows the tap.
+		// The visible divIcon is presentation-only. The oversized invisible
+		// hitMarker owns click/tap handling, so overlapped trains can split their
+		// visual marker and hit area together.
 		return L.marker([train.lat, train.lng], {
 			icon: makeTrainIcon(markerColor(train)),
 			interactive: false,
@@ -351,14 +382,50 @@ export function useTrainMarkers({
 	}
 
 	// Invisible oversize hit target that catches taps around the visible marker.
-	// Rendered above (added after) so it receives the click; fully transparent so
-	// the visible marker shows through.
-	function makeHitMarker(train: Train): L.CircleMarker {
-		return L.circleMarker([train.lat, train.lng], {
-			radius: 18,
-			stroke: false,
-			fillOpacity: 0,
+	// It uses the same pixel offset as the visible icon, so trains split apart
+	// on screen are also split apart for click/tap hit testing.
+	function makeHitMarker(train: Train): L.Marker {
+		return L.marker([train.lat, train.lng], {
+			icon: makeTrainHitIcon(),
+			opacity: 0,
 		});
+	}
+
+	function setTrainMarkerOffset(
+		entry: TrainMarkerEntry,
+		offset: TrainMarkerOffset,
+	): void {
+		if (entry.iconOffsetX === offset.x && entry.iconOffsetY === offset.y) {
+			return;
+		}
+		entry.iconOffsetX = offset.x;
+		entry.iconOffsetY = offset.y;
+		entry.marker.setIcon(makeTrainIcon(entry.lastColor, offset));
+		entry.hitMarker.setIcon(makeTrainHitIcon(offset));
+	}
+
+	function applyTrainMarkerOffsets(): void {
+		const groups = new Map<string, TrainMarkerEntry[]>();
+		for (const entry of markers.current.values()) {
+			if (!isVisible(entry.train)) {
+				setTrainMarkerOffset(entry, { x: 0, y: 0 });
+				continue;
+			}
+			const key = trainOverlapKey(entry.train);
+			const group = groups.get(key);
+			if (group) {
+				group.push(entry);
+			} else {
+				groups.set(key, [entry]);
+			}
+		}
+
+		for (const group of groups.values()) {
+			group.sort((a, b) => a.train.code.localeCompare(b.train.code));
+			group.forEach((entry, index) => {
+				setTrainMarkerOffset(entry, trainOverlapOffset(index, group.length));
+			});
+		}
 	}
 
 	// Looks up a train shape from the bulk in-memory map (loaded once on first call).
@@ -496,7 +563,12 @@ export function useTrainMarkers({
 				const now = performance.now();
 				const color = markerColor(train);
 				if (color !== existing.lastColor) {
-					existing.marker.setIcon(makeTrainIcon(color));
+					existing.marker.setIcon(
+						makeTrainIcon(color, {
+							x: existing.iconOffsetX,
+							y: existing.iconOffsetY,
+						}),
+					);
 					existing.lastColor = color;
 				}
 				existing.train = train;
@@ -655,7 +727,10 @@ export function useTrainMarkers({
 
 				markers.current.set(train.code, {
 					marker,
+					hitMarker,
 					lastColor: markerColor(train),
+					iconOffsetX: 0,
+					iconOffsetY: 0,
 					train,
 					targetLat: train.lat,
 					targetLng: train.lng,
@@ -682,9 +757,11 @@ export function useTrainMarkers({
 		for (const [code, entry] of markers.current) {
 			if (!seen.has(code)) {
 				entry.marker.removeFrom(map);
+				entry.hitMarker.removeFrom(map);
 				markers.current.delete(code);
 			}
 		}
+		applyTrainMarkerOffsets();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [trains]);
 
@@ -700,6 +777,7 @@ export function useTrainMarkers({
 				if (map.hasLayer(entry.marker)) entry.marker.removeFrom(map);
 			}
 		}
+		applyTrainMarkerOffsets();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [searchCodes, mode]);
 
