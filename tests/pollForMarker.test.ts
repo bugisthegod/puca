@@ -7,7 +7,10 @@ import {
 function dummyEntry(code: string): TrainMarkerEntry {
 	return {
 		marker: {} as L.Marker,
+		hitMarker: {} as L.Marker,
 		lastColor: "green",
+		iconOffsetX: 0,
+		iconOffsetY: 0,
 		train: {
 			code,
 			lat: 53.3498,

@@ -180,7 +180,10 @@ describe("busAnimationDurationMs", () => {
 		const { marker, calls } = markerWithRecorder();
 		const entry: TrainMarkerEntry = {
 			marker,
+			hitMarker: marker,
 			lastColor: "green",
+			iconOffsetX: 0,
+			iconOffsetY: 0,
 			train: {
 				code: "E123",
 				lat: 1,
@@ -218,7 +221,10 @@ describe("busAnimationDurationMs", () => {
 		const { marker, calls } = markerWithRecorder();
 		const entry: TrainMarkerEntry = {
 			marker,
+			hitMarker: marker,
 			lastColor: "green",
+			iconOffsetX: 0,
+			iconOffsetY: 0,
 			train: {
 				code: "E123",
 				lat: 0,
@@ -256,7 +262,10 @@ describe("busAnimationDurationMs", () => {
 		const { marker, calls } = markerWithRecorder();
 		const entry: TrainMarkerEntry = {
 			marker,
+			hitMarker: marker,
 			lastColor: "green",
+			iconOffsetX: 0,
+			iconOffsetY: 0,
 			train: {
 				code: "E123",
 				lat: 1,
