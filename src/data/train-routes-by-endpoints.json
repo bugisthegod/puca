@@ -23,10 +23,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "connolly|lansdowne road": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "cobh|mallow": {
     "routeId": "MAL-COBH-O",
     "directionId": 1
@@ -63,14 +59,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "lansdowne road|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "lansdowne road|greystones": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "bray (daly)|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
@@ -99,27 +87,15 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
-  "bray (daly)|connolly": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
   "grand canal dock|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
+  "bray (daly)|connolly": {
+    "routeId": "DUB-EUROPORT-I",
+    "directionId": 1
+  },
   "greystones|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "lansdowne road|howth": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "lansdowne road|malahide": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "lansdowne road|connolly": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
@@ -196,10 +172,6 @@
     "directionId": 0
   },
   "bray (daly)|drogheda (macbride)": {
-    "routeId": "DUB-DRO/DUN-O",
-    "directionId": 0
-  },
-  "dublin pearse|dundalk (clarke)": {
     "routeId": "DUB-DRO/DUN-O",
     "directionId": 0
   },
