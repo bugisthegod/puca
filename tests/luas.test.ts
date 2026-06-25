@@ -27,6 +27,19 @@ const sampleOfficialDatePlus1Sec = new Date(`${sampleArrivalsDay}T12:45:01Z`);
 const originalFetch = globalThis.fetch;
 const originalDate = globalThis.Date;
 
+type StaticLuasArrival = LuasArrivalsData["arrivals"][string][number];
+
+type StaticLuasFixture = {
+	platformId: string;
+	routeShortName: string;
+	headsign: string;
+	departureSec: number;
+	serviceId: string;
+	tripId: string;
+	stopSequence: number;
+	routeId: string;
+};
+
 afterEach(() => {
 	resetTripUpdateCacheForTest();
 	resetLuasOfficialForecastCacheForTest();
@@ -92,6 +105,138 @@ function dublinLocalDate(ymd: string, time: string): Date {
 	return new Date(utcGuess.getTime() - (displayedAsUtc - utcGuess.getTime()));
 }
 
+function dublinSeconds(date: Date): number {
+	const parts = Object.fromEntries(
+		new Intl.DateTimeFormat("en-IE", {
+			timeZone: "Europe/Dublin",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: false,
+		})
+			.formatToParts(date)
+			.map((part) => [part.type, part.value]),
+	);
+	return (
+		Number(parts.hour) * 3600 + Number(parts.minute) * 60 + Number(parts.second)
+	);
+}
+
+function formatDeparture(seconds: number): string {
+	const normalized = ((seconds % 86400) + 86400) % 86400;
+	const hh = Math.floor(normalized / 3600);
+	const mm = Math.floor((normalized % 3600) / 60);
+	return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+function toFixture(
+	platformId: string,
+	[
+		routeShortName,
+		headsign,
+		departureSec,
+		serviceId,
+		tripId,
+		stopSequence,
+	]: StaticLuasArrival,
+): StaticLuasFixture {
+	return {
+		platformId,
+		routeShortName,
+		headsign,
+		departureSec,
+		serviceId,
+		tripId,
+		stopSequence,
+		routeId: `10000 ${routeShortName.toUpperCase()} g a`,
+	};
+}
+
+function findLuasFixture({
+	name,
+	platformId,
+	routeShortName,
+	headsign,
+	stopSequence,
+	minDepartureSec = 0,
+	maxDepartureSec = Number.POSITIVE_INFINITY,
+}: {
+	name: string;
+	platformId: string;
+	routeShortName: string;
+	headsign: string;
+	stopSequence?: number;
+	minDepartureSec?: number;
+	maxDepartureSec?: number;
+}): StaticLuasFixture {
+	const row = testLuasArrivalsData.arrivals[platformId]?.find(
+		(arrival) =>
+			arrival[0] === routeShortName &&
+			arrival[1] === headsign &&
+			(stopSequence === undefined || arrival[5] === stopSequence) &&
+			arrival[2] >= minDepartureSec &&
+			arrival[2] <= maxDepartureSec,
+	);
+	if (!row) throw new Error(`Missing Luas test fixture: ${name}`);
+	return toFixture(platformId, row);
+}
+
+function findTripFixtureAtPlatform(
+	tripId: string,
+	platformId: string,
+): StaticLuasFixture {
+	const row = testLuasArrivalsData.arrivals[platformId]?.find(
+		(arrival) => arrival[4] === tripId,
+	);
+	if (!row) {
+		throw new Error(
+			`Missing Luas test fixture for trip ${tripId} at ${platformId}`,
+		);
+	}
+	return toFixture(platformId, row);
+}
+
+const sampleArrivalsNowSec = dublinSeconds(sampleArrivalsDate);
+const sampleMiddayArrivalsNowSec = dublinSeconds(sampleMiddayArrivalsDate);
+const redTallaghtAtThePoint = findLuasFixture({
+	name: "Red Tallaght from The Point",
+	platformId: "8220GA00436",
+	routeShortName: "Red",
+	headsign: "Tallaght",
+	stopSequence: 1,
+	minDepartureSec: sampleArrivalsNowSec,
+	maxDepartureSec: sampleArrivalsNowSec + 90 * 60,
+});
+const redThePointAtSpencerDock = findLuasFixture({
+	name: "Red The Point at Spencer Dock",
+	platformId: "8220GA00434",
+	routeShortName: "Red",
+	headsign: "The Point",
+	stopSequence: 27,
+	minDepartureSec: sampleMiddayArrivalsNowSec,
+	maxDepartureSec: sampleMiddayArrivalsNowSec + 90 * 60,
+});
+const redThePointAtSpencerDockDedupe = findLuasFixture({
+	name: "second Red The Point at Spencer Dock",
+	platformId: "8220GA00434",
+	routeShortName: "Red",
+	headsign: "The Point",
+	stopSequence: 25,
+	minDepartureSec: sampleMiddayArrivalsNowSec,
+	maxDepartureSec: sampleMiddayArrivalsNowSec + 90 * 60,
+});
+const redThePointDedupePreviousStop = findTripFixtureAtPlatform(
+	redThePointAtSpencerDockDedupe.tripId,
+	"8220GA00431",
+);
+const greenBroombridgeAtMarlborough = findLuasFixture({
+	name: "Green Broombridge at Marlborough",
+	platformId: "8220GA00031",
+	routeShortName: "Green",
+	headsign: "Broombridge",
+	stopSequence: 14,
+});
+
 function dateBeforeTripServiceStart({
 	platformId,
 	tripId,
@@ -149,23 +294,24 @@ test("Luas arrivals do not return duplicate display rows", () => {
 });
 
 test("Luas arrivals prefer NTA GTFS-R TripUpdates when available", () => {
+	const departureDelaySec = 180;
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_3825",
+			redTallaghtAtThePoint.tripId,
 			{
-				tripId: "5242_3825",
-				routeId: "10000 RED g a",
+				tripId: redTallaghtAtThePoint.tripId,
+				routeId: redTallaghtAtThePoint.routeId,
 				directionId: 0,
 				stopTimeUpdates: [
 					{
-						sequence: 1,
-						stopId: "8220GA00436",
+						sequence: redTallaghtAtThePoint.stopSequence,
+						stopId: redTallaghtAtThePoint.platformId,
 						arrivalDelaySec: null,
-						departureDelaySec: 180,
+						departureDelaySec,
 						scheduleRelationship: "SCHEDULED",
 					},
 					{
-						sequence: 2,
+						sequence: redTallaghtAtThePoint.stopSequence + 1,
 						stopId: "8220GA00439",
 						arrivalDelaySec: 60,
 						departureDelaySec: 60,
@@ -188,27 +334,33 @@ test("Luas arrivals prefer NTA GTFS-R TripUpdates when available", () => {
 
 	expect(arrivals).toHaveLength(1);
 	expect(arrivals[0]).toMatchObject({
-		headsign: "Tallaght",
-		etaSeconds: 300,
-		departureTime: "18:03",
+		headsign: redTallaghtAtThePoint.headsign,
+		etaSeconds:
+			redTallaghtAtThePoint.departureSec -
+			sampleArrivalsNowSec +
+			departureDelaySec,
+		departureTime: formatDeparture(
+			redTallaghtAtThePoint.departureSec + departureDelaySec,
+		),
 	});
 });
 
 test("Luas realtime arrivals use lookup time when the wall clock is off-hours", () => {
 	mockWallClock("2026-06-18T00:00:00Z");
+	const departureDelaySec = 180;
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_3825",
+			redTallaghtAtThePoint.tripId,
 			{
-				tripId: "5242_3825",
-				routeId: "10000 RED g a",
+				tripId: redTallaghtAtThePoint.tripId,
+				routeId: redTallaghtAtThePoint.routeId,
 				directionId: 0,
 				stopTimeUpdates: [
 					{
-						sequence: 1,
-						stopId: "8220GA00436",
+						sequence: redTallaghtAtThePoint.stopSequence,
+						stopId: redTallaghtAtThePoint.platformId,
 						arrivalDelaySec: null,
-						departureDelaySec: 180,
+						departureDelaySec,
 						scheduleRelationship: "SCHEDULED",
 					},
 				],
@@ -228,8 +380,11 @@ test("Luas realtime arrivals use lookup time when the wall clock is off-hours", 
 
 	expect(arrivals).toHaveLength(1);
 	expect(arrivals[0]).toMatchObject({
-		headsign: "Tallaght",
-		etaSeconds: 300,
+		headsign: redTallaghtAtThePoint.headsign,
+		etaSeconds:
+			redTallaghtAtThePoint.departureSec -
+			sampleArrivalsNowSec +
+			departureDelaySec,
 	});
 });
 
@@ -253,15 +408,15 @@ test("Luas arrivals prefer the official Luas forecast when available", async () 
 
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_5190",
+			redThePointAtSpencerDock.tripId,
 			{
-				tripId: "5242_5190",
-				routeId: "10000 RED g a",
+				tripId: redThePointAtSpencerDock.tripId,
+				routeId: redThePointAtSpencerDock.routeId,
 				directionId: 1,
 				stopTimeUpdates: [
 					{
-						sequence: 27,
-						stopId: "8220GA00434",
+						sequence: redThePointAtSpencerDock.stopSequence,
+						stopId: redThePointAtSpencerDock.platformId,
 						arrivalDelaySec: null,
 						departureDelaySec: 600,
 						scheduleRelationship: "SCHEDULED",
@@ -326,6 +481,7 @@ test("Luas official forecast cache recomputes ETA on later reads", async () => {
 });
 
 test("Luas official empty forecast falls back to NTA TripUpdates", async () => {
+	const departureDelaySec = 180;
 	globalThis.fetch = (async (input: RequestInfo | URL) => {
 		const url = String(input);
 		if (url.includes("action=stops")) {
@@ -339,17 +495,17 @@ test("Luas official empty forecast falls back to NTA TripUpdates", async () => {
 	}) as unknown as typeof globalThis.fetch;
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_3825",
+			redTallaghtAtThePoint.tripId,
 			{
-				tripId: "5242_3825",
-				routeId: "10000 RED g a",
+				tripId: redTallaghtAtThePoint.tripId,
+				routeId: redTallaghtAtThePoint.routeId,
 				directionId: 0,
 				stopTimeUpdates: [
 					{
-						sequence: 1,
-						stopId: "8220GA00436",
+						sequence: redTallaghtAtThePoint.stopSequence,
+						stopId: redTallaghtAtThePoint.platformId,
 						arrivalDelaySec: null,
-						departureDelaySec: 180,
+						departureDelaySec,
 						scheduleRelationship: "SCHEDULED",
 					},
 				],
@@ -369,28 +525,32 @@ test("Luas official empty forecast falls back to NTA TripUpdates", async () => {
 
 	expect(arrivals).toHaveLength(1);
 	expect(arrivals[0]).toMatchObject({
-		headsign: "Tallaght",
-		etaSeconds: 300,
+		headsign: redTallaghtAtThePoint.headsign,
+		etaSeconds:
+			redTallaghtAtThePoint.departureSec -
+			sampleArrivalsNowSec +
+			departureDelaySec,
 	});
 });
 
 test("Luas arrivals fall back from official forecast to NTA TripUpdates", async () => {
+	const departureDelaySec = 180;
 	globalThis.fetch = (async () => {
 		return new Response("upstream failed", { status: 500 });
 	}) as unknown as typeof globalThis.fetch;
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_3825",
+			redTallaghtAtThePoint.tripId,
 			{
-				tripId: "5242_3825",
-				routeId: "10000 RED g a",
+				tripId: redTallaghtAtThePoint.tripId,
+				routeId: redTallaghtAtThePoint.routeId,
 				directionId: 0,
 				stopTimeUpdates: [
 					{
-						sequence: 1,
-						stopId: "8220GA00436",
+						sequence: redTallaghtAtThePoint.stopSequence,
+						stopId: redTallaghtAtThePoint.platformId,
 						arrivalDelaySec: null,
-						departureDelaySec: 180,
+						departureDelaySec,
 						scheduleRelationship: "SCHEDULED",
 					},
 				],
@@ -410,9 +570,14 @@ test("Luas arrivals fall back from official forecast to NTA TripUpdates", async 
 
 	expect(arrivals).toHaveLength(1);
 	expect(arrivals[0]).toMatchObject({
-		headsign: "Tallaght",
-		etaSeconds: 300,
-		departureTime: "18:03",
+		headsign: redTallaghtAtThePoint.headsign,
+		etaSeconds:
+			redTallaghtAtThePoint.departureSec -
+			sampleArrivalsNowSec +
+			departureDelaySec,
+		departureTime: formatDeparture(
+			redTallaghtAtThePoint.departureSec + departureDelaySec,
+		),
 	});
 });
 
@@ -476,21 +641,21 @@ test("Luas arrivals fall back from official forecast and TripUpdates to static G
 
 test("Luas realtime arrivals ignore TripUpdates for inactive service days", () => {
 	const now = dateBeforeTripServiceStart({
-		platformId: "8220GA00031",
-		tripId: "5242_1247",
+		platformId: greenBroombridgeAtMarlborough.platformId,
+		tripId: greenBroombridgeAtMarlborough.tripId,
 		time: "04:53:00",
 	});
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_1247",
+			greenBroombridgeAtMarlborough.tripId,
 			{
-				tripId: "5242_1247",
-				routeId: "10000 GREEN g a",
+				tripId: greenBroombridgeAtMarlborough.tripId,
+				routeId: greenBroombridgeAtMarlborough.routeId,
 				directionId: 1,
 				stopTimeUpdates: [
 					{
-						sequence: 14,
-						stopId: "8220GA00031",
+						sequence: greenBroombridgeAtMarlborough.stopSequence,
+						stopId: greenBroombridgeAtMarlborough.platformId,
 						arrivalDelaySec: null,
 						departureDelaySec: 180,
 						scheduleRelationship: "SCHEDULED",
@@ -524,36 +689,43 @@ test("Luas arrivals fall back to static GTFS when TripUpdates are unavailable", 
 });
 
 test("Luas realtime arrivals dedupe rows with the same displayed minutes", () => {
+	const displayedFiveMinuteEtaSec = 270;
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_5190",
+			redThePointAtSpencerDock.tripId,
 			{
-				tripId: "5242_5190",
-				routeId: "10000 RED g a",
+				tripId: redThePointAtSpencerDock.tripId,
+				routeId: redThePointAtSpencerDock.routeId,
 				directionId: 1,
 				stopTimeUpdates: [
 					{
-						sequence: 27,
-						stopId: "8220GA00434",
+						sequence: redThePointAtSpencerDock.stopSequence,
+						stopId: redThePointAtSpencerDock.platformId,
 						arrivalDelaySec: null,
-						departureDelaySec: 176,
+						departureDelaySec:
+							displayedFiveMinuteEtaSec -
+							(redThePointAtSpencerDock.departureSec -
+								sampleMiddayArrivalsNowSec),
 						scheduleRelationship: "SCHEDULED",
 					},
 				],
 			},
 		],
 		[
-			"5242_5206",
+			redThePointAtSpencerDockDedupe.tripId,
 			{
-				tripId: "5242_5206",
-				routeId: "10000 RED g a",
+				tripId: redThePointAtSpencerDockDedupe.tripId,
+				routeId: redThePointAtSpencerDockDedupe.routeId,
 				directionId: 1,
 				stopTimeUpdates: [
 					{
-						sequence: 25,
-						stopId: "8220GA00434",
+						sequence: redThePointAtSpencerDockDedupe.stopSequence,
+						stopId: redThePointAtSpencerDockDedupe.platformId,
 						arrivalDelaySec: null,
-						departureDelaySec: -140,
+						departureDelaySec:
+							displayedFiveMinuteEtaSec -
+							(redThePointAtSpencerDockDedupe.departureSec -
+								sampleMiddayArrivalsNowSec),
 						scheduleRelationship: "SCHEDULED",
 					},
 				],
@@ -572,7 +744,7 @@ test("Luas realtime arrivals dedupe rows with the same displayed minutes", () =>
 	);
 	const pointFiveMinuteRows = arrivals.filter(
 		(arrival) =>
-			arrival.headsign === "The Point" &&
+			arrival.headsign === redThePointAtSpencerDock.headsign &&
 			Math.ceil(arrival.etaSeconds / 60) === 5,
 	);
 
@@ -580,36 +752,43 @@ test("Luas realtime arrivals dedupe rows with the same displayed minutes", () =>
 });
 
 test("Luas realtime arrivals ignore trips without an update for the selected stop", () => {
+	const displayedFiveMinuteEtaSec = 270;
+	const ignoredTripDelaySec =
+		displayedFiveMinuteEtaSec -
+		(redThePointAtSpencerDockDedupe.departureSec - sampleMiddayArrivalsNowSec);
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
-			"5242_5190",
+			redThePointAtSpencerDock.tripId,
 			{
-				tripId: "5242_5190",
-				routeId: "10000 RED g a",
+				tripId: redThePointAtSpencerDock.tripId,
+				routeId: redThePointAtSpencerDock.routeId,
 				directionId: 1,
 				stopTimeUpdates: [
 					{
-						sequence: 27,
-						stopId: "8220GA00434",
+						sequence: redThePointAtSpencerDock.stopSequence,
+						stopId: redThePointAtSpencerDock.platformId,
 						arrivalDelaySec: null,
-						departureDelaySec: 176,
+						departureDelaySec:
+							displayedFiveMinuteEtaSec -
+							(redThePointAtSpencerDock.departureSec -
+								sampleMiddayArrivalsNowSec),
 						scheduleRelationship: "SCHEDULED",
 					},
 				],
 			},
 		],
 		[
-			"5242_5206",
+			redThePointAtSpencerDockDedupe.tripId,
 			{
-				tripId: "5242_5206",
-				routeId: "10000 RED g a",
+				tripId: redThePointAtSpencerDockDedupe.tripId,
+				routeId: redThePointAtSpencerDockDedupe.routeId,
 				directionId: 1,
 				stopTimeUpdates: [
 					{
-						sequence: 24,
-						stopId: "8220GA00431",
-						arrivalDelaySec: -140,
-						departureDelaySec: -140,
+						sequence: redThePointDedupePreviousStop.stopSequence,
+						stopId: redThePointDedupePreviousStop.platformId,
+						arrivalDelaySec: ignoredTripDelaySec,
+						departureDelaySec: ignoredTripDelaySec,
 						scheduleRelationship: "SCHEDULED",
 					},
 				],
@@ -628,6 +807,8 @@ test("Luas realtime arrivals ignore trips without an update for the selected sto
 	);
 
 	expect(
-		arrivals.filter((arrival) => arrival.headsign === "The Point"),
+		arrivals.filter(
+			(arrival) => arrival.headsign === redThePointAtSpencerDock.headsign,
+		),
 	).toHaveLength(1);
 });
