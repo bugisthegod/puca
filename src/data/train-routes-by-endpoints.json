@@ -1,8 +1,4 @@
 {
-  "malahide|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "midleton|cork (kent)": {
     "routeId": "MAL-COBH-O",
     "directionId": 1
@@ -46,6 +42,10 @@
   "mallow|cork (kent)": {
     "routeId": "MAL-COBH-O",
     "directionId": 0
+  },
+  "malahide|connolly": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
   },
   "mallow|cobh": {
     "routeId": "MAL-COBH-O",
