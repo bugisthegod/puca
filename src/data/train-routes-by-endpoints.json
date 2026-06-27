@@ -43,13 +43,13 @@
     "routeId": "MAL-COBH-O",
     "directionId": 0
   },
-  "malahide|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "mallow|cobh": {
     "routeId": "MAL-COBH-O",
     "directionId": 0
+  },
+  "malahide|connolly": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
   },
   "connolly|greystones": {
     "routeId": "BRAY-HOWTH-I",
