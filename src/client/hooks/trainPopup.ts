@@ -19,6 +19,38 @@ function normalizeStationName(name: string): string {
 		.toLowerCase();
 }
 
+function hasExplicitStopLocationType(movement: TrainMovement): boolean {
+	return (
+		movement.locationType === "O" ||
+		movement.locationType === "S" ||
+		movement.locationType === "D"
+	);
+}
+
+function isUnnamedTimingPoint(movement: TrainMovement): boolean {
+	return movement.locationType === "T" && movement.stationName.trim() === "";
+}
+
+function isDuplicateNamedTimingPoint(
+	movement: TrainMovement,
+	index: number,
+	movements: TrainMovement[],
+): boolean {
+	if (movement.locationType !== "T") return false;
+	if (!movement.stationName || !movement.stationCode) return false;
+
+	const previous = movements[index - 1];
+	const next = movements[index + 1];
+	return [previous, next].some(
+		(other) =>
+			other &&
+			hasExplicitStopLocationType(other) &&
+			other.stationCode === movement.stationCode &&
+			normalizeStationName(other.stationName) ===
+				normalizeStationName(movement.stationName),
+	);
+}
+
 export function trainPopupStatusClass(
 	status: string,
 	late: number | null,
@@ -188,14 +220,43 @@ export function buildTrainPopupWithMovements(
 		N: t("popup.train.stoptype.N"),
 		S: t("popup.train.stoptype.S"),
 		D: t("popup.train.stoptype.D"),
+		P: t("popup.train.stoptype.P"),
+		PC: t("popup.train.stoptype.PC"),
 	};
 
 	const rows = movements
-		.map((m, index) => {
+		.map((movement, index) => ({ movement, index }))
+		.filter(
+			({ movement, index }) =>
+				!isUnnamedTimingPoint(movement) &&
+				!isDuplicateNamedTimingPoint(movement, index, movements),
+		)
+		.map(({ movement: m, index }) => {
 			const normalizedStation = normalizeStationName(m.stationName);
 			const derivedStopType = deriveStopType(m, normalizedStation, index);
 			const isCurrent = derivedStopType === "C";
-			const rowClass = isCurrent ? "movement-current" : "";
+			const isScheduledPassThrough = m.locationType === "T";
+			const isInferredPassThrough =
+				hasProgressCurrentMatch &&
+				hasProgressNextMatch &&
+				index > progressCurrentIndex &&
+				index < progressNextIndex &&
+				!hasExplicitStopLocationType(m);
+			const isPassThrough =
+				isScheduledPassThrough && derivedStopType !== "N"
+					? true
+					: isInferredPassThrough;
+			const displayStopType = isPassThrough
+				? isCurrent
+					? "PC"
+					: "P"
+				: derivedStopType;
+			const rowClass = [
+				isCurrent ? "movement-current" : "",
+				isPassThrough ? "movement-pass-through" : "",
+			]
+				.filter(Boolean)
+				.join(" ");
 			const schArr = fmtTime(m.scheduledArrival);
 			const schDep = fmtTime(m.scheduledDepart);
 			const expArr = fmtTime(m.expectedArrival);
@@ -211,8 +272,8 @@ export function buildTrainPopupWithMovements(
 
 			return `
         <tr class="${rowClass}">
-          <td>${escapeHtml(m.stationName)}${isCurrent ? " ▶" : ""}</td>
-          <td>${escapeHtml(stopTypeLabel[derivedStopType] ?? derivedStopType)}</td>
+          <td><span class="movement-station-name">${escapeHtml(m.stationName)}</span>${isCurrent ? ' <span class="movement-current-marker">▶</span>' : ""}</td>
+          <td>${escapeHtml(stopTypeLabel[displayStopType] ?? displayStopType)}</td>
           <td>${showArr}</td>
           <td>${showDep}</td>
         </tr>
@@ -223,7 +284,7 @@ export function buildTrainPopupWithMovements(
 	const bodyHtml =
 		movements.length > 0
 			? `<div class="popup-table-wrap">
-               <table class="movements-table">
+               <table class="movements-table train-movements-table">
                  <thead>
                    <tr>
                      <th>${t("popup.train.col.station")}</th>

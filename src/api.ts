@@ -130,6 +130,7 @@ export function getTrainMovements(
 			arrival: String(item.Arrival ?? ""),
 			departure: String(item.Departure ?? ""),
 			stopType: String(item.StopType ?? ""),
+			locationType: String(item.LocationType ?? ""),
 		}));
 	});
 }
