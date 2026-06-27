@@ -40,6 +40,7 @@ function movement(overrides: Partial<TrainMovement> = {}): TrainMovement {
 		arrival: "",
 		departure: "",
 		stopType: "S",
+		locationType: "S",
 		...overrides,
 	};
 }
@@ -99,9 +100,9 @@ describe("buildTrainPopupHTML", () => {
 
 		expect(html).toContain("movements-table");
 		expect(html).toContain("Origin");
-		expect(html).toContain("Current &lt;Station&gt; ▶");
+		expect(html).toContain("Current &lt;Station&gt;");
+		expect(html).toContain("movement-current-marker");
 		expect(html).toContain("movement-current");
-		expect(html).toContain("Origin</td>");
 		expect(html).toContain("Current</td>");
 		expect(html).toContain("08:10");
 		expect(html).toContain("08:11");
@@ -150,11 +151,181 @@ describe("buildTrainPopupHTML", () => {
 			],
 		);
 
-		expect(html).toContain("Kilbarrack ▶");
+		expect(html).toContain("Kilbarrack");
+		expect(html).toContain("movement-current-marker");
 		expect(html).toContain("<td>Current</td>");
 		expect(html).toContain("Howth Junction");
 		expect(html).toContain("<td>Next</td>");
-		expect(html).not.toContain("Bray ▶");
+		expect(html).not.toContain(
+			'Bray</span> <span class="movement-current-marker"',
+		);
+	});
+
+	test("marks movement rows between PublicMessage current and next as pass-through", () => {
+		const html = buildTrainPopupWithMovements(
+			train({
+				message:
+					"A612\n16:35 - Dublin Connolly to Rosslare Europort (2 mins late)\nDeparted Sydney Parade next stop Dun Laoghaire",
+			}),
+			[
+				movement({ stationName: "Sydney Parade", stopType: "S" }),
+				movement({
+					stationName: "Booterstown",
+					stopType: "S",
+					locationType: "",
+				}),
+				movement({ stationName: "Blackrock", stopType: "S", locationType: "" }),
+				movement({ stationName: "Dun Laoghaire", stopType: "S" }),
+			],
+		);
+
+		expect(html).toContain("Sydney Parade");
+		expect(html).toContain("movement-current-marker");
+		expect(html).toContain("Dun Laoghaire");
+		expect(html).toContain("<td>Next</td>");
+		expect(html.match(/movement-pass-through/g)?.length).toBe(2);
+		expect(html.match(/<td>Passes<\/td>/g)?.length).toBe(2);
+	});
+
+	test("marks scheduled timing points as pass-through before they are current", () => {
+		const html = buildTrainPopupWithMovements(
+			train({
+				message:
+					"A612\n16:35 - Dublin Connolly to Rosslare Europort (2 mins late)\nDeparted Tara Street",
+			}),
+			[
+				movement({ stationName: "Tara Street", locationType: "S" }),
+				movement({ stationName: "Grand Canal Dock", locationType: "T" }),
+				movement({ stationName: "Lansdowne Road", locationType: "T" }),
+				movement({ stationName: "Dun Laoghaire", locationType: "S" }),
+			],
+		);
+
+		expect(html).toContain("Grand Canal Dock");
+		expect(html).toContain("Lansdowne Road");
+		expect(html.match(/movement-pass-through/g)?.length).toBe(2);
+		expect(html.match(/<td>Passes<\/td>/g)?.length).toBe(2);
+	});
+
+	test("does not infer pass-through over explicit stopping location types", () => {
+		const html = buildTrainPopupWithMovements(
+			train({
+				message:
+					"A612\n16:35 - Dublin Connolly to Rosslare Europort (2 mins late)\nDeparted Tara Street next stop Dun Laoghaire",
+			}),
+			[
+				movement({ stationName: "Tara Street", locationType: "S" }),
+				movement({ stationName: "Grand Canal Dock", locationType: "S" }),
+				movement({ stationName: "Lansdowne Road", locationType: "S" }),
+				movement({ stationName: "Dun Laoghaire", locationType: "S" }),
+			],
+		);
+
+		expect(html).not.toContain("movement-pass-through");
+		expect(html).not.toContain("<td>Passes</td>");
+	});
+
+	test("keeps PublicMessage next label if a feed row is also a timing point", () => {
+		const html = buildTrainPopupWithMovements(
+			train({
+				message:
+					"A612\n16:35 - Dublin Connolly to Rosslare Europort (2 mins late)\nDeparted Tara Street next stop Grand Canal Dock",
+			}),
+			[
+				movement({ stationName: "Tara Street", locationType: "S" }),
+				movement({ stationName: "Grand Canal Dock", locationType: "T" }),
+			],
+		);
+
+		expect(html).toContain("Grand Canal Dock");
+		expect(html).toContain("<td>Next</td>");
+		expect(html).not.toContain("<td>Passes</td>");
+	});
+
+	test("hides duplicate named timing points next to their stopping row", () => {
+		const html = buildTrainPopupWithMovements(
+			train({
+				message:
+					"E213\n11:03 - Malahide to Bray (DART)\nDeparted Tara Street next stop Dublin Pearse",
+			}),
+			[
+				movement({ stationName: "Tara Street", stationCode: "TARA" }),
+				movement({
+					stationName: "Dublin Pearse",
+					stationCode: "PERSE",
+					locationType: "S",
+					expectedArrival: "11:34:48",
+					expectedDepart: "11:35:30",
+				}),
+				movement({
+					stationName: "Dublin Pearse",
+					stationCode: "PERSE",
+					locationType: "T",
+					expectedArrival: "11:36:30",
+					expectedDepart: "11:36:30",
+				}),
+				movement({ stationName: "Grand Canal Dock", stationCode: "GCDK" }),
+			],
+		);
+
+		expect(html.match(/Dublin Pearse/g)?.length).toBe(1);
+		expect(html).toContain("<td>Next</td>");
+		expect(html).not.toContain("<td>Passes</td>");
+	});
+
+	test("hides unnamed timing points instead of showing blank pass-through rows", () => {
+		const html = buildTrainPopupWithMovements(
+			train({
+				message:
+					"E212\n10:25 - Malahide to Bray (DART)\nDeparted Clontarf Road next stop Dublin Connolly",
+			}),
+			[
+				movement({ stationName: "Clontarf Road", stationCode: "CTARF" }),
+				movement({
+					stationName: "",
+					stationCode: "EWALL",
+					locationType: "T",
+					expectedArrival: "10:55:00",
+					expectedDepart: "10:55:00",
+				}),
+				movement({
+					stationName: "",
+					stationCode: "SUBJN",
+					locationType: "T",
+					expectedArrival: "10:56:00",
+					expectedDepart: "10:56:00",
+				}),
+				movement({
+					stationName: "Dublin Connolly",
+					stationCode: "CNLLY",
+				}),
+			],
+		);
+
+		expect(html).toContain("Clontarf Road");
+		expect(html).toContain("Dublin Connolly");
+		expect(html).not.toContain("<td>Passes</td>");
+		expect(html).not.toContain("10:55");
+		expect(html).not.toContain("10:56");
+	});
+
+	test("labels a current timing point as passing instead of a stopping current station", () => {
+		const html = buildTrainPopupWithMovements(
+			train({
+				message:
+					"A612\n16:35 - Dublin Connolly to Rosslare Europort (2 mins late)\nDeparted Sydney Parade next stop Dun Laoghaire",
+			}),
+			[
+				movement({ stationName: "Sydney Parade", locationType: "T" }),
+				movement({ stationName: "Booterstown", locationType: "T" }),
+				movement({ stationName: "Dun Laoghaire", locationType: "S" }),
+			],
+		);
+
+		expect(html).toContain("Sydney Parade");
+		expect(html).toContain("movement-current-marker");
+		expect(html).toContain("movement-current movement-pass-through");
+		expect(html).toContain("<td>Passing</td>");
 	});
 
 	test("clears movement-provided next when it is before the PublicMessage current station", () => {
@@ -171,10 +342,13 @@ describe("buildTrainPopupHTML", () => {
 			],
 		);
 
-		expect(html).toContain("Kilbarrack ▶");
+		expect(html).toContain("Kilbarrack");
+		expect(html).toContain("movement-current-marker");
 		expect(html).toContain("Woodbrook");
 		expect(html).not.toContain("<td>Next</td>");
-		expect(html).not.toContain("Bray ▶");
+		expect(html).not.toContain(
+			'Bray</span> <span class="movement-current-marker"',
+		);
 	});
 
 	test("keeps movement-provided next after PublicMessage current when next stop cannot be matched", () => {
@@ -190,10 +364,13 @@ describe("buildTrainPopupHTML", () => {
 			],
 		);
 
-		expect(html).toContain("Kilbarrack ▶");
+		expect(html).toContain("Kilbarrack");
+		expect(html).toContain("movement-current-marker");
 		expect(html).toContain("Howth Junction");
 		expect(html).toContain("<td>Next</td>");
-		expect(html).not.toContain("Bray ▶");
+		expect(html).not.toContain(
+			'Bray</span> <span class="movement-current-marker"',
+		);
 	});
 
 	test("falls back to formatted train message when movements are empty", () => {

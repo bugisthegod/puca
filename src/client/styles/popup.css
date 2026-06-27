@@ -280,10 +280,11 @@
 	color: var(--text-primary);
 }
 
-/* Stop-name column: cap width so outlier-long names wrap at spaces instead
-   of pushing Sched/Exp off the popup. Normal names (under the cap) stay on
+/* Station/stop-name columns: cap width so outlier-long names wrap at spaces
+   instead of pushing note/time columns off the popup. Normal names stay on
    one line. Other columns keep nowrap. */
-.movements-table td:nth-child(2) {
+.train-movements-table td:first-child,
+.movements-table:not(.train-movements-table) td:nth-child(2) {
 	white-space: normal;
 	overflow-wrap: break-word;
 	max-width: 220px;
@@ -304,6 +305,25 @@
 
 .movements-table tbody tr.movement-current:nth-child(even) {
 	background: var(--bg-highlight);
+}
+
+.movements-table tbody tr.movement-pass-through {
+	background: #f2f2f2;
+}
+
+.movements-table tbody tr.movement-pass-through:nth-child(even) {
+	background: #eeeeee;
+}
+
+.movements-table tbody tr.movement-current.movement-pass-through,
+.movements-table
+	tbody
+	tr.movement-current.movement-pass-through:nth-child(even) {
+	background: var(--bg-highlight);
+}
+
+.movements-table tbody tr.movement-pass-through td {
+	color: var(--text-muted);
 }
 
 /* ============================================================

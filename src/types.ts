@@ -143,6 +143,7 @@ export type TrainMovement = {
 	arrival: string;
 	departure: string;
 	stopType: string; // C=Current, O=Origin, S=Stop, T=Terminus, D=Destination
+	locationType: string; // O=Origin, S=Stop, T=Timing/pass-through point, D=Destination
 };
 
 export type LuasLine = "green" | "red" | "both";

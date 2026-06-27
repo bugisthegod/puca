@@ -283,6 +283,8 @@ const EN = {
 	"popup.train.stoptype.N": "Next",
 	"popup.train.stoptype.S": "Stop",
 	"popup.train.stoptype.D": "Destination",
+	"popup.train.stoptype.P": "Passes",
+	"popup.train.stoptype.PC": "Passing",
 
 	// Popup — bus
 	"popup.bus.loading": "Loading stops…",
@@ -528,6 +530,8 @@ const ZH: Record<Key, string> = {
 	"popup.train.stoptype.N": "下站",
 	"popup.train.stoptype.S": "经停",
 	"popup.train.stoptype.D": "终到",
+	"popup.train.stoptype.P": "通过不停",
+	"popup.train.stoptype.PC": "正在通过",
 
 	// Popup — bus
 	"popup.bus.loading": "加载站点…",
