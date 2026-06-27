@@ -24,10 +24,26 @@ const sampleMiddayArrivalsDate = new Date(`${sampleArrivalsDay}T12:33:30Z`);
 const sampleOfficialDate = new Date(`${sampleArrivalsDay}T12:45:00Z`);
 const sampleOfficialDatePlus15Sec = new Date(`${sampleArrivalsDay}T12:45:15Z`);
 const sampleOfficialDatePlus1Sec = new Date(`${sampleArrivalsDay}T12:45:01Z`);
+const sampleArrivalsYmd = sampleArrivalsDay.replaceAll("-", "");
+const sampleArrivalsWeekday = new Intl.DateTimeFormat("en-IE", {
+	timeZone: "Europe/Dublin",
+	weekday: "long",
+})
+	.format(sampleArrivalsDate)
+	.toLowerCase();
 const originalFetch = globalThis.fetch;
 const originalDate = globalThis.Date;
 
 type StaticLuasArrival = LuasArrivalsData["arrivals"][string][number];
+const SERVICE_DAY_INDEX: Record<string, number> = {
+	monday: 0,
+	tuesday: 1,
+	wednesday: 2,
+	thursday: 3,
+	friday: 4,
+	saturday: 5,
+	sunday: 6,
+};
 
 type StaticLuasFixture = {
 	platformId: string;
@@ -129,6 +145,24 @@ function formatDeparture(seconds: number): string {
 	return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
+function isServiceActiveOnSampleDay(serviceId: string): boolean {
+	const exception = testLuasArrivalsData.exceptions.find(
+		([exceptionServiceId, date]) =>
+			exceptionServiceId === serviceId && date === sampleArrivalsYmd,
+	);
+	if (exception?.[2] === 1) return true;
+	if (exception?.[2] === 2) return false;
+
+	const service = testLuasArrivalsData.services[serviceId];
+	if (!service) return false;
+	const [days, startDate, endDate] = service;
+	if (sampleArrivalsYmd < startDate || sampleArrivalsYmd > endDate) {
+		return false;
+	}
+	const dayIndex = SERVICE_DAY_INDEX[sampleArrivalsWeekday];
+	return dayIndex !== undefined && days[dayIndex] === "1";
+}
+
 function toFixture(
 	platformId: string,
 	[
@@ -175,7 +209,8 @@ function findLuasFixture({
 			arrival[1] === headsign &&
 			(stopSequence === undefined || arrival[5] === stopSequence) &&
 			arrival[2] >= minDepartureSec &&
-			arrival[2] <= maxDepartureSec,
+			arrival[2] <= maxDepartureSec &&
+			isServiceActiveOnSampleDay(arrival[3]),
 	);
 	if (!row) throw new Error(`Missing Luas test fixture: ${name}`);
 	return toFixture(platformId, row);
