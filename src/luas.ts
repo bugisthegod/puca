@@ -47,9 +47,10 @@ export type LuasArrivalsData = {
 };
 
 const stops = luasStopsData as LuasStop[];
-const arrivalData = luasArrivalsData as unknown as LuasArrivalsData;
+const defaultArrivalData = luasArrivalsData as unknown as LuasArrivalsData;
+let arrivalData = defaultArrivalData;
 const stopsById = new Map(stops.map((stop) => [stop.id, stop]));
-const arrivalsByPlatformId = new Map<string, StaticArrival[]>();
+let arrivalsByPlatformId = buildArrivalsByPlatformId(arrivalData);
 const LUAS_FORECAST_BASE_URL = "https://luasforecasts.rpa.ie/xml/get.ashx";
 const OFFICIAL_STOPS_TTL_MS = 24 * 60 * 60 * 1000;
 const OFFICIAL_FORECAST_TTL_MS = 20_000;
@@ -86,28 +87,34 @@ const officialXmlParser = new XMLParser({
 	parseTagValue: true,
 });
 
-for (const [stopId, arrivals] of Object.entries(arrivalData.arrivals)) {
-	arrivalsByPlatformId.set(
-		stopId,
-		arrivals.map(
-			([
-				routeShortName,
-				headsign,
-				departureSec,
-				serviceId,
-				tripId,
-				stopSequence,
-			]) => ({
-				stopId,
-				tripId,
-				routeShortName,
-				headsign,
-				stopSequence,
-				departureSec,
-				serviceId,
-			}),
-		),
-	);
+function buildArrivalsByPlatformId(
+	data: LuasArrivalsData,
+): Map<string, StaticArrival[]> {
+	const result = new Map<string, StaticArrival[]>();
+	for (const [stopId, arrivals] of Object.entries(data.arrivals)) {
+		result.set(
+			stopId,
+			arrivals.map(
+				([
+					routeShortName,
+					headsign,
+					departureSec,
+					serviceId,
+					tripId,
+					stopSequence,
+				]) => ({
+					stopId,
+					tripId,
+					routeShortName,
+					headsign,
+					stopSequence,
+					departureSec,
+					serviceId,
+				}),
+			),
+		);
+	}
+	return result;
 }
 
 const dublinDateFormatter = new Intl.DateTimeFormat("en-IE", {
@@ -695,4 +702,13 @@ export function resetLuasOfficialForecastCacheForTest(): void {
 	officialStopsInFlight = null;
 	officialForecastCache.clear();
 	officialForecastInFlight.clear();
+}
+
+export function replaceLuasArrivalsDataForTest(data: LuasArrivalsData): void {
+	arrivalData = data;
+	arrivalsByPlatformId = buildArrivalsByPlatformId(data);
+}
+
+export function resetLuasArrivalsDataForTest(): void {
+	replaceLuasArrivalsDataForTest(defaultArrivalData);
 }
