@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, expect, test } from "bun:test";
 import luasArrivalsData from "../src/data/luas-arrivals.json" with {
 	type: "json",
 };
@@ -12,13 +12,45 @@ import {
 	getLuasStopArrivalsOfficialFirst,
 	getLuasStopArrivalsRealtimeFirst,
 	type LuasArrivalsData,
+	replaceLuasArrivalsDataForTest,
+	resetLuasArrivalsDataForTest,
 	resetLuasOfficialForecastCacheForTest,
 } from "../src/luas";
 
-const testLuasArrivalsData = luasArrivalsData as unknown as LuasArrivalsData & {
-	generatedAt: string;
+const testLuasArrivalsData: LuasArrivalsData = {
+	format: 2,
+	services: {
+		red_sat: ["0000010", "20260627", "20261205"],
+		red_hidden: ["0000010", "20260627", "20261205"],
+		green_sat: ["0000010", "20260627", "20261205"],
+	},
+	exceptions: [],
+	arrivals: {
+		"8220GA00431": [
+			["Red", "The Point", 48840, "red_sat", "red_point_2", 24],
+			["Red", "Saggart", 48840, "red_sat", "red_saggart_ignored", 24],
+		],
+		"8220GA00434": [
+			["Red", "The Point", 48904, "red_sat", "red_point_1", 27],
+			["Red", "The Point", 48944, "red_sat", "red_point_2", 25],
+			["Red", "Saggart", 48944, "red_sat", "red_saggart_ignored", 25],
+			["Red", "The Point", 49620, "red_sat", "red_point_later", 27],
+		],
+		"8220GA00436": [
+			["Red", "The Point", 64740, "red_hidden", "red_hidden_point", 1],
+			["Red", "Tallaght", 64800, "red_sat", "red_tallaght_1", 1],
+		],
+		"8220GA00437": [
+			["Red", "Tallaght", 64800, "red_sat", "red_tallaght_duplicate", 1],
+		],
+		"8220GA00031": [
+			["Green", "Broombridge", 64800, "green_sat", "green_broombridge_1", 14],
+		],
+	},
 };
-const sampleArrivalsDay = testLuasArrivalsData.generatedAt.slice(0, 10);
+const realLuasArrivalsData = luasArrivalsData as unknown as LuasArrivalsData;
+
+const sampleArrivalsDay = "2026-06-27";
 const sampleArrivalsDate = new Date(`${sampleArrivalsDay}T16:58:00Z`);
 const sampleMiddayArrivalsDate = new Date(`${sampleArrivalsDay}T12:33:30Z`);
 const sampleOfficialDate = new Date(`${sampleArrivalsDay}T12:45:00Z`);
@@ -56,11 +88,20 @@ type StaticLuasFixture = {
 	routeId: string;
 };
 
+beforeEach(() => {
+	replaceLuasArrivalsDataForTest(testLuasArrivalsData);
+});
+
 afterEach(() => {
 	resetTripUpdateCacheForTest();
 	resetLuasOfficialForecastCacheForTest();
+	resetLuasArrivalsDataForTest();
 	globalThis.fetch = originalFetch;
 	globalThis.Date = originalDate;
+});
+
+afterAll(() => {
+	resetLuasArrivalsDataForTest();
 });
 
 function mockWallClock(iso: string): void {
@@ -231,6 +272,46 @@ function findTripFixtureAtPlatform(
 	return toFixture(platformId, row);
 }
 
+test("real Luas arrivals data keeps the expected compact schema", () => {
+	const serviceErrors = Object.entries(realLuasArrivalsData.services).filter(
+		([serviceId, service]) =>
+			!serviceId ||
+			!Array.isArray(service) ||
+			service.length !== 3 ||
+			service.some((value) => typeof value !== "string"),
+	);
+	const exceptionErrors = realLuasArrivalsData.exceptions.filter(
+		(exception) =>
+			!Array.isArray(exception) ||
+			exception.length !== 3 ||
+			typeof exception[0] !== "string" ||
+			typeof exception[1] !== "string" ||
+			typeof exception[2] !== "number",
+	);
+	const arrivalErrors = Object.entries(realLuasArrivalsData.arrivals).flatMap(
+		([platformId, arrivals]) =>
+			arrivals
+				.map((arrival, index) => ({ arrival, index, platformId }))
+				.filter(
+					({ arrival, platformId }) =>
+						!platformId ||
+						!Array.isArray(arrival) ||
+						arrival.length !== 6 ||
+						typeof arrival[0] !== "string" ||
+						typeof arrival[1] !== "string" ||
+						typeof arrival[2] !== "number" ||
+						typeof arrival[3] !== "string" ||
+						typeof arrival[4] !== "string" ||
+						typeof arrival[5] !== "number",
+				),
+	);
+
+	expect(realLuasArrivalsData.format).toBe(2);
+	expect(serviceErrors).toEqual([]);
+	expect(exceptionErrors).toEqual([]);
+	expect(arrivalErrors).toEqual([]);
+});
+
 const sampleArrivalsNowSec = dublinSeconds(sampleArrivalsDate);
 const sampleMiddayArrivalsNowSec = dublinSeconds(sampleMiddayArrivalsDate);
 const redTallaghtAtThePoint = findLuasFixture({
@@ -260,8 +341,17 @@ const redThePointAtSpencerDockDedupe = findLuasFixture({
 	minDepartureSec: sampleMiddayArrivalsNowSec,
 	maxDepartureSec: sampleMiddayArrivalsNowSec + 90 * 60,
 });
-const redThePointDedupePreviousStop = findTripFixtureAtPlatform(
-	redThePointAtSpencerDockDedupe.tripId,
+const redSaggartAtSpencerDockIgnored = findLuasFixture({
+	name: "Red Saggart at Spencer Dock",
+	platformId: "8220GA00434",
+	routeShortName: "Red",
+	headsign: "Saggart",
+	stopSequence: 25,
+	minDepartureSec: sampleMiddayArrivalsNowSec,
+	maxDepartureSec: sampleMiddayArrivalsNowSec + 90 * 60,
+});
+const redSaggartIgnoredPreviousStop = findTripFixtureAtPlatform(
+	redSaggartAtSpencerDockIgnored.tripId,
 	"8220GA00431",
 );
 const greenBroombridgeAtMarlborough = findLuasFixture({
@@ -271,39 +361,6 @@ const greenBroombridgeAtMarlborough = findLuasFixture({
 	headsign: "Broombridge",
 	stopSequence: 14,
 });
-
-function dateBeforeTripServiceStart({
-	platformId,
-	tripId,
-	time,
-}: {
-	platformId: string;
-	tripId: string;
-	time: string;
-}): Date {
-	const arrival = testLuasArrivalsData.arrivals[platformId]?.find(
-		(candidate) => candidate[4] === tripId,
-	);
-	const serviceId = arrival?.[3];
-	const startDate = serviceId
-		? testLuasArrivalsData.services[serviceId]?.[1]
-		: null;
-	if (!startDate)
-		throw new Error(`Missing service start for Luas trip ${tripId}`);
-
-	const startUtcNoon = new Date(
-		Date.UTC(
-			Number(startDate.slice(0, 4)),
-			Number(startDate.slice(4, 6)) - 1,
-			Number(startDate.slice(6, 8)),
-			12,
-		),
-	);
-	const previousDay = new Date(startUtcNoon.getTime() - 24 * 60 * 60 * 1000)
-		.toISOString()
-		.slice(0, 10);
-	return dublinLocalDate(previousDay, time);
-}
 
 test("Luas arrivals hide trips whose destination is the selected stop", () => {
 	const arrivals = getLuasStopArrivals("8220GA00436", sampleArrivalsDate);
@@ -675,11 +732,7 @@ test("Luas arrivals fall back from official forecast and TripUpdates to static G
 });
 
 test("Luas realtime arrivals ignore TripUpdates for inactive service days", () => {
-	const now = dateBeforeTripServiceStart({
-		platformId: greenBroombridgeAtMarlborough.platformId,
-		tripId: greenBroombridgeAtMarlborough.tripId,
-		time: "04:53:00",
-	});
+	const now = dublinLocalDate("2026-06-28", "17:58:00");
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
 			greenBroombridgeAtMarlborough.tripId,
@@ -790,7 +843,7 @@ test("Luas realtime arrivals ignore trips without an update for the selected sto
 	const displayedFiveMinuteEtaSec = 270;
 	const ignoredTripDelaySec =
 		displayedFiveMinuteEtaSec -
-		(redThePointAtSpencerDockDedupe.departureSec - sampleMiddayArrivalsNowSec);
+		(redSaggartAtSpencerDockIgnored.departureSec - sampleMiddayArrivalsNowSec);
 	const tripUpdates: RawTripUpdateMap = new Map([
 		[
 			redThePointAtSpencerDock.tripId,
@@ -813,15 +866,15 @@ test("Luas realtime arrivals ignore trips without an update for the selected sto
 			},
 		],
 		[
-			redThePointAtSpencerDockDedupe.tripId,
+			redSaggartAtSpencerDockIgnored.tripId,
 			{
-				tripId: redThePointAtSpencerDockDedupe.tripId,
-				routeId: redThePointAtSpencerDockDedupe.routeId,
+				tripId: redSaggartAtSpencerDockIgnored.tripId,
+				routeId: redSaggartAtSpencerDockIgnored.routeId,
 				directionId: 1,
 				stopTimeUpdates: [
 					{
-						sequence: redThePointDedupePreviousStop.stopSequence,
-						stopId: redThePointDedupePreviousStop.platformId,
+						sequence: redSaggartIgnoredPreviousStop.stopSequence,
+						stopId: redSaggartIgnoredPreviousStop.platformId,
 						arrivalDelaySec: ignoredTripDelaySec,
 						departureDelaySec: ignoredTripDelaySec,
 						scheduleRelationship: "SCHEDULED",
@@ -846,4 +899,9 @@ test("Luas realtime arrivals ignore trips without an update for the selected sto
 			(arrival) => arrival.headsign === redThePointAtSpencerDock.headsign,
 		),
 	).toHaveLength(1);
+	expect(
+		arrivals.filter(
+			(arrival) => arrival.headsign === redSaggartAtSpencerDockIgnored.headsign,
+		),
+	).toHaveLength(0);
 });
