@@ -305,11 +305,6 @@
     "longName": "South Mall - Fountainstown"
   },
   {
-    "id": "2 220C a",
-    "shortName": "220C",
-    "longName": "MTU - Crosshaven"
-  },
-  {
     "id": "2 220X c d",
     "shortName": "220X",
     "longName": "Ovens - Carrigaline - Crosshaven"
@@ -558,11 +553,6 @@
     "id": "2 323X c a",
     "shortName": "323X",
     "longName": "Limerick - Birr - Athlone"
-  },
-  {
-    "id": "2 324 c a",
-    "shortName": "324",
-    "longName": "Nenagh - Borrisokane - Kilbarron"
   },
   {
     "id": "2 328 d",
@@ -820,11 +810,6 @@
     "longName": "Athlone - Longford"
   },
   {
-    "id": "2 468 c a",
-    "shortName": "468",
-    "longName": "Strokestown - Carrick on Shannon"
-  },
-  {
     "id": "2 469 c a",
     "shortName": "469",
     "longName": "Sligo - Drumkeeran - Longford"
@@ -963,11 +948,6 @@
     "id": "2 D5 c a",
     "shortName": "D5",
     "longName": "Colpe Road - Termonabbey"
-  },
-  {
-    "id": "2 EK1 a",
-    "shortName": "EK1",
-    "longName": "Kells - Virginia"
   },
   {
     "id": "2 NV1 a",
