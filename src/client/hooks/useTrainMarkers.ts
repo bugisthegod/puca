@@ -12,11 +12,7 @@ import {
 	parseRoute,
 	parseTrainProgress,
 } from "../../utils";
-import {
-	buildRouteLine,
-	buildRouteLookup,
-	projectOntoRoute,
-} from "./routeProjection";
+import { projectOntoRoute } from "./routeProjection";
 import {
 	makeTrainHitIcon,
 	makeTrainIcon,
@@ -27,100 +23,13 @@ import {
 	buildTrainPopupHTML,
 	buildTrainPopupWithMovements,
 } from "./trainPopup";
+import {
+	fetchCachedTrainShape,
+	getCachedTrainShapeByKey,
+	normalizedEndpointKey,
+	type TrainShapeLineInfo,
+} from "./trainShapeCache";
 import type { Mode } from "./useVehicleMap";
-
-// ---------------------------------------------------------------------------
-// Module-level train shape cache (survives across renders / updates)
-// ---------------------------------------------------------------------------
-
-type TrainShapeCacheEntry =
-	| {
-			routeLine: Feature<LineString>;
-			routeLookup: Float64Array | null;
-			routeLengthMeters: number;
-	  }
-	| "not-found";
-
-const TRAIN_SHAPE_CACHE_MAX = 200;
-const trainShapeCache = new Map<string, TrainShapeCacheEntry>();
-
-// Single-flight bulk loader: one /api/train/shapes request shared across the
-// whole app. Avoids the previous N-parallel-request fan-out that triggered CF
-// rate limits when many trains were active.
-//
-// Failure handling: on 5xx / network error / non-OK, the cached promise is
-// cleared so the next caller can retry. The promise itself rejects, letting
-// fetchTrainShape() distinguish "bulk failed" (don't poison cache) from
-// "bulk succeeded but pair missing" (cache as not-found).
-type AllShapesData = {
-	endpoints: Record<string, string>; // pair key -> routeKey
-	shapes: Record<string, { coords?: [number, number][] }>; // routeKey -> shape
-};
-let allTrainShapesPromise: Promise<AllShapesData> | null = null;
-let normalizedShapeEndpoints: Record<string, string> | null = null;
-function loadAllTrainShapes(): Promise<AllShapesData> {
-	if (allTrainShapesPromise) return allTrainShapesPromise;
-	const p = fetch("/api/train/shapes").then((res) => {
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		return res.json() as Promise<AllShapesData>;
-	});
-	allTrainShapesPromise = p;
-	// Detached: clear ref on failure so next call retries; don't swallow rejection here
-	p.catch(() => {
-		if (allTrainShapesPromise === p) allTrainShapesPromise = null;
-	});
-	return p;
-}
-
-function normalizeEndpointName(name: string): string {
-	return name
-		.toLowerCase()
-		.replace(/\([^)]*\)/g, "")
-		.replace(/\b(casement|ceannt|colbert|kent|plunkett)\b/g, "")
-		.replace(/\bstation\b/g, "")
-		.replace(/[^a-z0-9]+/g, "");
-}
-
-function endpointKey(origin: string, destination: string): string {
-	return `${origin.trim().toLowerCase()}|${destination.trim().toLowerCase()}`;
-}
-
-function normalizedEndpointKey(origin: string, destination: string): string {
-	return `${normalizeEndpointName(origin)}|${normalizeEndpointName(destination)}`;
-}
-
-function getShapeRouteKey(
-	allShapes: AllShapesData,
-	origin: string,
-	destination: string,
-): string | undefined {
-	const exact = allShapes.endpoints[endpointKey(origin, destination)];
-	if (exact) return exact;
-
-	if (!normalizedShapeEndpoints) {
-		const next: Record<string, string> = {};
-		for (const [pairKey, routeKey] of Object.entries(allShapes.endpoints)) {
-			const [from, to] = pairKey.split("|");
-			if (!from || !to) continue;
-			const normalized = normalizedEndpointKey(from, to);
-			if (!next[normalized]) next[normalized] = routeKey;
-		}
-		normalizedShapeEndpoints = next;
-	}
-
-	return normalizedShapeEndpoints[normalizedEndpointKey(origin, destination)];
-}
-
-// Insertion-order LRU cap: drop oldest entries once the cache exceeds the limit.
-function setShapeCache(key: string, value: TrainShapeCacheEntry): void {
-	trainShapeCache.delete(key); // ensure re-insertion moves key to the end of insertion order
-	trainShapeCache.set(key, value);
-	while (trainShapeCache.size > TRAIN_SHAPE_CACHE_MAX) {
-		const oldest = trainShapeCache.keys().next().value;
-		if (oldest === undefined) break;
-		trainShapeCache.delete(oldest);
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Interpolation entry type
@@ -428,46 +337,6 @@ export function useTrainMarkers({
 		}
 	}
 
-	// Looks up a train shape from the bulk in-memory map (loaded once on first call).
-	// Caches the derived routeLine/routeLookup per (origin, destination) pair.
-	// On bulk-load failure, returns null without caching — next call retries.
-	async function fetchTrainShape(
-		origin: string,
-		destination: string,
-	): Promise<{
-		routeLine: Feature<LineString>;
-		routeLookup: Float64Array | null;
-		routeLengthMeters: number;
-	} | null> {
-		const key = normalizedEndpointKey(origin, destination);
-		const cached = trainShapeCache.get(key);
-		if (cached !== undefined) {
-			return cached === "not-found" ? null : cached;
-		}
-		let allShapes: AllShapesData;
-		try {
-			allShapes = await loadAllTrainShapes();
-		} catch {
-			// Transient: don't poison cache so next tick can retry once promise is reset
-			return null;
-		}
-		const routeKey = getShapeRouteKey(allShapes, origin, destination);
-		const data = routeKey ? allShapes.shapes[routeKey] : undefined;
-		if (data?.coords && data.coords.length >= 2) {
-			const built = buildRouteLine(data.coords);
-			if (built) {
-				const entry = {
-					...built,
-					routeLookup: buildRouteLookup(built.routeLine),
-				};
-				setShapeCache(key, entry);
-				return entry;
-			}
-		}
-		setShapeCache(key, "not-found");
-		return null;
-	}
-
 	async function onMarkerClick(
 		trainCode: string,
 		options?: { preserveSummary?: boolean },
@@ -542,17 +411,13 @@ export function useTrainMarkers({
 				: null;
 
 			// Look up shape from cache (synchronously)
-			let lineInfo: {
-				routeLine: Feature<LineString>;
-				routeLookup: Float64Array | null;
-				routeLengthMeters: number;
-			} | null = null;
-			if (newKey !== null) {
-				const cached = trainShapeCache.get(newKey);
+			let lineInfo: TrainShapeLineInfo | null = null;
+			if (route && newKey !== null) {
+				const cached = getCachedTrainShapeByKey(newKey);
 				if (cached === undefined) {
 					// Not yet fetched — kick off async fetch; cache populated on completion
-					route && void fetchTrainShape(route.origin, route.destination);
-				} else if (cached !== "not-found") {
+					void fetchCachedTrainShape(route.origin, route.destination, newKey);
+				} else if (cached !== null) {
 					lineInfo = cached;
 				}
 			}
@@ -762,7 +627,8 @@ export function useTrainMarkers({
 			}
 		}
 		applyTrainMarkerOffsets();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: this reconciles markers from the latest train payload.
+		// Map refs and callback refs are mutable holders, not effect triggers.
 	}, [trains]);
 
 	// Apply search / mode — show or hide existing markers
@@ -778,7 +644,8 @@ export function useTrainMarkers({
 			}
 		}
 		applyTrainMarkerOffsets();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: visibility changes follow search/mode only.
+		// Marker/map refs are read in place to avoid rebuilding marker state.
 	}, [searchCodes, mode]);
 
 	// -------------------------------------------------------------------------

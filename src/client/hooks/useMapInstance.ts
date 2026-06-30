@@ -543,7 +543,8 @@ export function useMapInstance(
 			userIconInnerRef.current = null;
 			accuracyCircleRef.current = null;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: Leaflet map creation is a mount/unmount lifecycle.
+		// Mode changes are handled by the railway overlay effect below.
 	}, []);
 
 	// Railway overlay toggle based on mode
@@ -566,7 +567,8 @@ export function useMapInstance(
 		if (readCompassPref()) {
 			void startCompass();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: restore the saved compass preference once on mount.
+		// Later user changes go through startCompass/stopCompass directly.
 	}, []);
 
 	const getMapView = useCallback((): MapView | null => {

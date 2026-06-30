@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { readRealtimeHealth } from "../../realtime";
-import type {
-	BusOperator,
-	BusRoute,
-	BusShape,
-	RealtimeHealth,
-} from "../../types";
+import type { BusOperator, BusShape, RealtimeHealth } from "../../types";
 import { collapseSelection } from "../../utils";
 import { useLocale } from "../i18n";
 import {
@@ -13,113 +8,37 @@ import {
 	loadBusSearchSession,
 	saveBusSearchSession,
 } from "../session";
+import {
+	BUS_OPERATOR_INITIALS,
+	BUS_OPERATOR_LABEL,
+	type BusStopSummary,
+	displayEtaSeconds,
+	filterBusRoutes,
+	getBusDirections,
+	type RouteWithOperator,
+	rememberStopSearchResults,
+	STOP_SEARCH_DEBOUNCE_MS,
+	type StopArrival,
+	type StopSearchResult,
+	stopSearchCache,
+	stopSearchCacheKey,
+	type UnifiedResult,
+} from "./busSearchModel";
 import FavStar from "./FavStar";
 
-export type RouteWithOperator = BusRoute & { operator: BusOperator };
-
-export type StopSearchResult = {
-	id: string;
-	name: string;
-	code: string;
-	lat: number;
-	lng: number;
-	operator: BusOperator;
-};
-
-export type StopArrival = {
-	tripId: string;
-	routeShortName: string;
-	headsign: string;
-	etaSeconds: number;
-	delaySec: number;
-	stopSequence: number;
-	stopsAway: number | null;
-	direction: string;
-	status: "running" | "scheduled";
-};
-
-export type BusStopSummary = {
-	stopCode: string;
-	stopName: string;
-	operator: BusOperator;
-	selected: boolean;
-	focusKey: string | null;
-	emptyText: string | null;
-	nextArrival: {
-		routeShortName: string;
-		headsign: string;
-		etaText: string;
-		stopsAwayText: string | null;
-	} | null;
-};
-
-export const BUS_OPERATOR_INITIALS: Record<BusOperator, string> = {
-	dublinbus: "DB",
-	buseireann: "BÉ",
-	goahead: "GA",
-};
-export const BUS_OPERATOR_LABEL: Record<BusOperator, string> = {
-	dublinbus: "Dublin Bus",
-	buseireann: "Bus Éireann",
-	goahead: "Go-Ahead",
-};
-
-export function getBusDirections(busShape: BusShape): {
-	[dir: string]: string;
-} {
-	if (!busShape) return {};
-	const heads: { [dir: string]: string } = {};
-	for (const dir of Object.keys(busShape)) {
-		heads[dir] = busShape[dir]?.headsign || dir;
-	}
-	return heads;
-}
-
-export function filterBusRoutes(
-	routes: RouteWithOperator[],
-	query: string,
-): RouteWithOperator[] {
-	const q = query.trim().toLowerCase();
-	if (!q) return routes;
-	return routes.filter(
-		(r) =>
-			r.shortName.toLowerCase().includes(q) ||
-			r.longName.toLowerCase().includes(q),
-	);
-}
-
-type UnifiedResult =
-	| { kind: "route"; route: RouteWithOperator }
-	| { kind: "stop"; stop: StopSearchResult };
-
-const STOP_SEARCH_DEBOUNCE_MS = 150;
-const STOP_SEARCH_CACHE_MAX = 50;
-const stopSearchCache = new Map<string, StopSearchResult[]>();
-
-function stopSearchCacheKey(query: string): string {
-	return query.trim().toLowerCase();
-}
-
-function rememberStopSearchResults(
-	key: string,
-	results: StopSearchResult[],
-): void {
-	if (stopSearchCache.has(key)) stopSearchCache.delete(key);
-	stopSearchCache.set(key, results);
-	if (stopSearchCache.size <= STOP_SEARCH_CACHE_MAX) return;
-	const oldest = stopSearchCache.keys().next().value;
-	if (oldest) stopSearchCache.delete(oldest);
-}
-
-export function displayEtaSeconds(
-	etaSeconds: number,
-	fetchedAt: number | null,
-	clockNow: number,
-): number {
-	if (fetchedAt === null) return etaSeconds;
-	const elapsedSec = Math.floor((clockNow - fetchedAt) / 1000);
-	return Math.max(0, etaSeconds - elapsedSec);
-}
+export type {
+	BusStopSummary,
+	RouteWithOperator,
+	StopArrival,
+	StopSearchResult,
+} from "./busSearchModel";
+export {
+	BUS_OPERATOR_INITIALS,
+	BUS_OPERATOR_LABEL,
+	displayEtaSeconds,
+	filterBusRoutes,
+	getBusDirections,
+} from "./busSearchModel";
 
 type BusSearchPanelProps = {
 	onSelectRoute: (shortName: string | null, operator?: BusOperator) => void;
@@ -426,7 +345,8 @@ function BusSearchPanel({
 				else onStopIdChange(null, null);
 			})
 			.catch(() => onStopIdChange(null, null));
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: this rehydrates only when the persisted stop identity changes.
+		// selectedStop is checked inside to avoid looping on the rehydrated object.
 	}, [busSearchTab, busStopId, busStopOperator]);
 
 	const filtered = filterBusRoutes(routes, query);

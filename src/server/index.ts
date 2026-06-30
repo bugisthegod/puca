@@ -193,13 +193,18 @@ Bun.serve({
 				"Cache-Control": "public, max-age=30, stale-while-revalidate=30",
 			};
 			if (!isInServiceHours("train")) return Response.json([], { headers });
+			const code = routeParam(req, "code");
+			const url = new URL(req.url);
+			const numMins = clampMins(url.searchParams.get("mins"), 90);
 			try {
-				const code = routeParam(req, "code");
-				const url = new URL(req.url);
-				const numMins = clampMins(url.searchParams.get("mins"), 90);
 				const data = await getStationData(code, numMins);
 				return Response.json(data, { headers });
-			} catch {
+			} catch (err) {
+				log.error("http.station.failed", {
+					...errToMeta(err),
+					station_code: code,
+					mins: numMins,
+				});
 				return Response.json([], { status: 502 });
 			}
 		}),
@@ -207,16 +212,16 @@ Bun.serve({
 			const headers = {
 				"Cache-Control": "public, max-age=30, stale-while-revalidate=30",
 			};
+			const url = new URL(req.url);
+			const from = url.searchParams.get("from");
+			const to = url.searchParams.get("to");
+			if (!from || !to) {
+				return Response.json(
+					{ error: "from and to required" },
+					{ status: 400 },
+				);
+			}
 			try {
-				const url = new URL(req.url);
-				const from = url.searchParams.get("from");
-				const to = url.searchParams.get("to");
-				if (!from || !to) {
-					return Response.json(
-						{ error: "from and to required" },
-						{ status: 400 },
-					);
-				}
 				if (!isInServiceHours("train")) return Response.json([], { headers });
 				const [fromData, toData, currentTrains] = await Promise.all([
 					getStationData(from, 120),
@@ -263,7 +268,12 @@ Bun.serve({
 
 				candidates.sort((a, b) => a.fromDep.localeCompare(b.fromDep));
 				return Response.json(candidates.slice(0, 3), { headers });
-			} catch {
+			} catch (err) {
+				log.error("http.trains_search.failed", {
+					...errToMeta(err),
+					from,
+					to,
+				});
 				return Response.json([], { status: 502 });
 			}
 		}),
@@ -275,7 +285,8 @@ Bun.serve({
 						"Cache-Control": "public, max-age=15, stale-while-revalidate=15",
 					},
 				});
-			} catch {
+			} catch (err) {
+				log.error("http.gtfsr_vehicles.failed", errToMeta(err));
 				return Response.json([], { status: 502 });
 			}
 		}),
@@ -284,15 +295,20 @@ Bun.serve({
 				"Cache-Control": "public, max-age=30, stale-while-revalidate=30",
 			};
 			if (!isInServiceHours("train")) return Response.json([], { headers });
+			const trainId = routeParam(req, "id");
+			const url = new URL(req.url);
+			const dateRaw = url.searchParams.get("date");
+			const trainDate =
+				dateRaw && isValidTrainDate(dateRaw) ? dateRaw : todayFormatted();
 			try {
-				const trainId = routeParam(req, "id");
-				const url = new URL(req.url);
-				const dateRaw = url.searchParams.get("date");
-				const trainDate =
-					dateRaw && isValidTrainDate(dateRaw) ? dateRaw : todayFormatted();
 				const movements = await getTrainMovements(trainId, trainDate);
 				return Response.json(movements, { headers });
-			} catch {
+			} catch (err) {
+				log.error("http.train_movements.failed", {
+					...errToMeta(err),
+					train_id: trainId,
+					date: trainDate,
+				});
 				return Response.json([], { status: 502 });
 			}
 		}),
