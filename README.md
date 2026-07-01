@@ -42,9 +42,10 @@ It is not a journey planner, ticketing product, or transport marketplace. The co
 ## How it works
 
 NTA GTFS static feeds are processed offline by Python scripts into route geometry
-JSON and SQLite schedule databases. The Bun server then polls NTA GTFS-Realtime
-(Vehicles, TripUpdates) and Irish Rail every 30 seconds, warming an in-memory
-cache of live vehicle positions and arrival predictions.
+JSON and SQLite schedule databases. The Bun server polls NTA GTFS-Realtime in
+the background (Vehicles every 35s, TripUpdates every 75s), warming an in-memory
+cache of live vehicle positions and arrival predictions; Irish Rail data is
+fetched on demand behind a short-TTL in-memory cache.
 
 The browser fetches this cache and renders bus and train markers on a Leaflet map,
 computing route projections and stop arrival estimates client-side from the

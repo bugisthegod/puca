@@ -86,6 +86,21 @@ describe("api in-flight dedup", () => {
 		expect(more.length).toBe(50);
 	});
 
+	test("Irish Rail fetches carry an abort signal so they cannot hang", async () => {
+		let seenSignal: AbortSignal | null | undefined;
+		globalThis.fetch = (async (
+			input: RequestInfo | URL,
+			init?: RequestInit,
+		) => {
+			fetchCalls.push(typeof input === "string" ? input : input.toString());
+			seenSignal = init?.signal;
+			return new Response(EMPTY_STATION_XML);
+		}) as typeof fetch;
+
+		await getStationData("SIGCHECK", 90);
+		expect(seenSignal).toBeInstanceOf(AbortSignal);
+	});
+
 	test("getCurrentTrains dedupes through the same helper", async () => {
 		mockFetch(50, EMPTY_CURRENT_XML);
 		await Promise.all(Array.from({ length: 200 }, () => getCurrentTrains()));
