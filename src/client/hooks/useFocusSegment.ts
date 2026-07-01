@@ -451,6 +451,7 @@ export function useFocusSegment({
 				if (entry) clearBusRouteLine(entry, entry.bus, performance.now());
 			}
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: bus marker refs and callbacks are read at cleanup time.
+		// Re-running on ref identity would interrupt the focused route animation.
 	}, [focusContext, mode]);
 }

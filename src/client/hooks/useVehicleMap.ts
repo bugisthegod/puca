@@ -408,7 +408,8 @@ export function useVehicleMap(
 
 		rafId.current = requestAnimationFrame(tickAllMarkers);
 		return () => cancelAnimationFrame(rafId.current);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: this RAF loop reads live map and marker state from refs.
+		// Restarting it on vehicle updates would add animation churn without new data.
 	}, []);
 
 	return {

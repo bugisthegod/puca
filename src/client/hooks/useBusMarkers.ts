@@ -594,7 +594,8 @@ export function useBusMarkers({
 			nextActive,
 		);
 		applyVariantStyles();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: marker and layer refs are mutable Leaflet state.
+		// The listed props are the inputs that require reconciliation.
 	}, [
 		buses,
 		mode,
@@ -752,7 +753,8 @@ export function useBusMarkers({
 			if (detailTimer) clearTimeout(detailTimer);
 			clearRouteLayers();
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: route detail layers follow route shape, direction, and mode.
+		// Mutable map/layer refs are read directly during cleanup.
 	}, [busShape, busDirection, mode]);
 
 	// -------------------------------------------------------------------------
@@ -773,7 +775,8 @@ export function useBusMarkers({
 		return () => {
 			map.off("click", onClick);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: listener lifetime follows bus mode and route shape.
+		// The clear function operates on refs and does not need to rebuild the listener.
 	}, [mode, busShape]);
 
 	// -------------------------------------------------------------------------
@@ -794,7 +797,8 @@ export function useBusMarkers({
 		return () => {
 			map.off("zoomend", onZoomEnd);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// Intentional deps: stop marker zoom gating follows bus mode and route shape.
+		// Marker refs are read in place on each zoom event.
 	}, [mode, busShape]);
 
 	return { busMarkers, busShapeLayerRef, busStopMarkersRef };
