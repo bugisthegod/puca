@@ -3,6 +3,11 @@ import type { StationTrain, Train, TrainMovement } from "./types.ts";
 
 const BASE_URL = "https://api.irishrail.ie/realtime/realtime.asmx";
 
+// These fetches are awaited on the user request path (Irish Rail has no
+// background poller), so a hung upstream socket would hold user requests open
+// until the OS gives up. Same bound as the NTA fetches.
+const IRISHRAIL_FETCH_TIMEOUT_MS = 5_000;
+
 // --- Cache layer ---
 const cache = new Map<string, { data: unknown; expires: number }>();
 // Concurrent misses on the same key share one in-flight fetch, so a thundering
@@ -55,7 +60,9 @@ function normalizeArray<T>(value: T | T[] | undefined): T[] {
 
 export function getCurrentTrains(): Promise<Train[]> {
 	return cached("currentTrains", 15_000, async () => {
-		const res = await fetch(`${BASE_URL}/getCurrentTrainsXML`);
+		const res = await fetch(`${BASE_URL}/getCurrentTrainsXML`, {
+			signal: AbortSignal.timeout(IRISHRAIL_FETCH_TIMEOUT_MS),
+		});
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		const xml = await res.text();
 		const parsed = parser.parse(xml);
@@ -79,7 +86,9 @@ export function getStationData(
 ): Promise<StationTrain[]> {
 	return cached(`station:${stationCode}:${numMins}`, 30_000, async () => {
 		const url = `${BASE_URL}/getStationDataByCodeXML_WithNumMins?StationCode=${encodeURIComponent(stationCode)}&NumMins=${numMins}`;
-		const res = await fetch(url);
+		const res = await fetch(url, {
+			signal: AbortSignal.timeout(IRISHRAIL_FETCH_TIMEOUT_MS),
+		});
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		const xml = await res.text();
 		const parsed = parser.parse(xml);
@@ -113,7 +122,9 @@ export function getTrainMovements(
 ): Promise<TrainMovement[]> {
 	return cached(`movements:${trainId}:${trainDate}`, 30_000, async () => {
 		const url = `${BASE_URL}/getTrainMovementsXML?TrainId=${encodeURIComponent(trainId)}&TrainDate=${encodeURIComponent(trainDate)}`;
-		const res = await fetch(url);
+		const res = await fetch(url, {
+			signal: AbortSignal.timeout(IRISHRAIL_FETCH_TIMEOUT_MS),
+		});
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		const xml = await res.text();
 		const parsed = parser.parse(xml);
