@@ -6,6 +6,9 @@ const CACHE_NAME = `puca-${CACHE_VERSION}`;
 // between deploys, so app upgrades shouldn't pay a re-download tax.
 const TILE_CACHE = "puca-tiles-v1";
 const TILE_CACHE_MAX = 1000;
+const TILE_CACHE_TRIM_BUFFER = 100;
+const TILE_CACHE_TRIM_TARGET = 900;
+const TILE_CACHE_TRIM_CHECK_EVERY = 50;
 const TILE_CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const TILE_TOUCH_INTERVAL_MS = 60 * 60 * 1000;
 const TILE_CACHE_AT_HEADER = "x-puca-cache-at";
@@ -161,6 +164,10 @@ async function navigationHandler(event, req) {
 // itself, plus retries from cancelled+re-added layers), each becoming a
 // separate fetch to CartoCDN. Under burst, the CDN returns 502.
 const tileInflight = new Map();
+// Check once on the first successful write after the service worker starts.
+// The counter is in-memory, while CacheStorage survives worker restarts.
+let tileWritesSinceTrimCheck = TILE_CACHE_TRIM_CHECK_EVERY - 1;
+let tileTrimPromise = null;
 const TILE_FETCH_TIMEOUT_MS = 15_000;
 
 async function tileHandler(event, req) {
@@ -214,7 +221,7 @@ async function fetchAndCacheTile(event, cache, req) {
 					event.waitUntil(
 						cache
 							.put(req, cacheable)
-							.then(() => trimTileCache(cache))
+							.then(() => scheduleTileCacheTrim(cache))
 							.catch(() => {}),
 					);
 				}
@@ -258,9 +265,34 @@ async function touchTile(cache, req, cached, accessAt) {
 	await cache.put(req, responseWithTileMetadata(cached, cacheAt, accessAt));
 }
 
+function scheduleTileCacheTrim(cache) {
+	tileWritesSinceTrimCheck += 1;
+	if (tileTrimPromise) return;
+	if (tileWritesSinceTrimCheck < TILE_CACHE_TRIM_CHECK_EVERY) {
+		return;
+	}
+
+	const writesIncludedInCheck = tileWritesSinceTrimCheck;
+	tileTrimPromise = trimTileCache(cache)
+		.then(() => {
+			// Preserve writes that landed while this trim was running. On failure,
+			// keep the full count so the next successful write retries immediately.
+			tileWritesSinceTrimCheck = Math.max(
+				0,
+				tileWritesSinceTrimCheck - writesIncludedInCheck,
+			);
+		})
+		.finally(() => {
+			tileTrimPromise = null;
+		});
+	return tileTrimPromise;
+}
+
 async function trimTileCache(cache) {
 	const keys = await cache.keys();
-	const overflow = keys.length - TILE_CACHE_MAX;
+	const trimThreshold = TILE_CACHE_MAX + TILE_CACHE_TRIM_BUFFER;
+	if (keys.length <= trimThreshold) return;
+	const overflow = keys.length - TILE_CACHE_TRIM_TARGET;
 	if (overflow <= 0) return;
 	const entries = await Promise.all(
 		keys.map(async (req, index) => {
