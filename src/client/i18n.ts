@@ -181,6 +181,14 @@ const EN = {
 	"bus.back.all": "All buses",
 	"train.back.all": "All trains",
 	"luas.back.all": "All stops",
+	"bus.map.view.aria": "Bus map view",
+	"bus.map.view.live": "Buses",
+	"bus.map.view.stops": "Stops",
+	"bus.map.view.close": "Close map focus",
+	"bus.map.view.focus": "Map focus",
+	"bus.map.view.liveStatus": "Live",
+	"bus.map.view.layers": "Map layers",
+	"bus.map.stops.error": "Could not load bus stops",
 
 	// BusSearchPanel
 	"bus.search.placeholder.any": "Route or stop...",
@@ -431,6 +439,14 @@ const ZH: Record<Key, string> = {
 	"bus.back.all": "全部公交",
 	"train.back.all": "全部列车",
 	"luas.back.all": "全部站点",
+	"bus.map.view.aria": "公交地图视图",
+	"bus.map.view.live": "公交车",
+	"bus.map.view.stops": "站点",
+	"bus.map.view.close": "关闭地图焦点",
+	"bus.map.view.focus": "地图焦点",
+	"bus.map.view.liveStatus": "实时",
+	"bus.map.view.layers": "地图图层",
+	"bus.map.stops.error": "无法加载公交站点",
 
 	// BusSearchPanel
 	"bus.search.placeholder.any": "线路或站点...",

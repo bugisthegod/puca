@@ -18,8 +18,12 @@ export interface MapView {
 export interface Session {
 	mode: Mode;
 	busOperator: BusOperator;
+	busMapView: BusMapView;
 	mapView: MapView | null;
 }
+
+export type BusMapView = "live" | "stops";
+const BUS_MAP_VIEWS: readonly BusMapView[] = ["live", "stops"];
 
 export type BusSearchTab = "route" | "stop";
 const BUS_SEARCH_TABS: readonly BusSearchTab[] = ["route", "stop"];
@@ -69,6 +73,8 @@ export function loadSession(): Partial<Session> {
 		if (s.mode && MODES.includes(s.mode)) out.mode = s.mode;
 		if (s.busOperator && OPERATORS.includes(s.busOperator))
 			out.busOperator = s.busOperator;
+		if (s.busMapView && BUS_MAP_VIEWS.includes(s.busMapView))
+			out.busMapView = s.busMapView;
 		const mv = validMapView(s.mapView);
 		if (mv) out.mapView = mv;
 		return out;

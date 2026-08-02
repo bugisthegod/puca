@@ -9,6 +9,15 @@ import type {
 import { isInServiceHours } from "../../utils";
 import type { Mode } from "./useVehicleMap";
 
+export function vehiclePollingResetKey(
+	mode: Mode,
+	operator: BusOperator,
+	route: string | null,
+	direction: string | null,
+): string {
+	return [mode, operator, route ?? "", direction ?? ""].join("|");
+}
+
 export function trainSignature(train: Train): string {
 	return [
 		train.code,
@@ -152,12 +161,15 @@ export function useVehiclePolling(
 			return;
 		}
 
-		const resetKey = [
+		// A focus refresh restarts the effect so it can fetch immediately, but it is
+		// deliberately excluded from this key: the current fleet stays rendered
+		// while the focused vehicle and route segment settle.
+		const resetKey = vehiclePollingResetKey(
 			mode,
 			busOperator,
-			busRoute ?? "",
-			busDirection ?? "",
-		].join("|");
+			busRoute,
+			busDirection,
+		);
 		const shouldReset = resetKeyRef.current !== resetKey;
 		resetKeyRef.current = resetKey;
 		if (shouldReset) {
@@ -182,8 +194,8 @@ export function useVehiclePolling(
 			return;
 		} else if (busRoute && busDirection) {
 			const route = busRoute;
-			const dir = busDirection;
-			poll = () => fetchBuses(busOperator, route, dir);
+			const direction = busDirection;
+			poll = () => fetchBuses(busOperator, route, direction);
 			intervalMs = 15_000;
 		} else if (!busRoute) {
 			poll = fetchAllBuses;

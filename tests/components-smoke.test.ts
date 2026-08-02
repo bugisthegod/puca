@@ -1,11 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import {
+	activeBusSearchQuery,
 	BUS_OPERATOR_INITIALS,
 	BUS_OPERATOR_LABEL,
 	displayEtaSeconds,
 	filterBusRoutes,
 	getBusDirections,
+	initialBusSearchQueries,
+	isCurrentSelectedStop,
 	type RouteWithOperator,
+	runningArrivalTripIds,
 } from "../src/client/components/BusSearchPanel";
 import { trainFocusSummaryMeta } from "../src/client/components/InfoPanel";
 import { t } from "../src/client/i18n";
@@ -80,6 +84,60 @@ describe("BusSearchPanel smoke helpers", () => {
 		expect(displayEtaSeconds(600, null, 31_000)).toBe(600);
 		expect(displayEtaSeconds(600, 1_000, 31_000)).toBe(570);
 		expect(displayEtaSeconds(20, 1_000, 31_000)).toBe(0);
+	});
+
+	test("uses the first five running arrivals for Stops map vehicles", () => {
+		const arrival = (
+			tripId: string,
+			status: "running" | "scheduled",
+		): Parameters<typeof runningArrivalTripIds>[0][number] => ({
+			tripId,
+			routeShortName: "39A",
+			headsign: "UCD",
+			etaSeconds: 300,
+			delaySec: 0,
+			stopSequence: 10,
+			stopsAway: status === "running" ? 2 : null,
+			direction: "1",
+			status,
+		});
+		const arrivals = [
+			arrival("scheduled-1", "scheduled"),
+			...Array.from({ length: 6 }, (_, index) =>
+				arrival(`running-${index + 1}`, "running"),
+			),
+		];
+
+		expect(runningArrivalTripIds(arrivals)).toEqual([
+			"running-1",
+			"running-2",
+			"running-3",
+			"running-4",
+			"running-5",
+		]);
+	});
+
+	test("only allows arrival focus for the navigation-selected stop", () => {
+		const stop = { id: "1847", operator: "dublinbus" as const };
+		expect(isCurrentSelectedStop(stop, "1847", "dublinbus")).toBe(true);
+		expect(isCurrentSelectedStop(stop, null, null)).toBe(false);
+		expect(isCurrentSelectedStop(stop, "1848", "dublinbus")).toBe(false);
+		expect(isCurrentSelectedStop(stop, "1847", "goahead")).toBe(false);
+	});
+
+	test("keeps route and stop queries isolated when restoring a session", () => {
+		const queries = initialBusSearchQueries({
+			busSearchTab: "stop",
+			routeQuery: "39A",
+			stopQuery: "1847",
+		});
+		expect(queries).toEqual({ routeQuery: "39A", stopQuery: "1847" });
+		expect(
+			activeBusSearchQuery("route", queries.routeQuery, queries.stopQuery),
+		).toBe("39A");
+		expect(
+			activeBusSearchQuery("stop", queries.routeQuery, queries.stopQuery),
+		).toBe("1847");
 	});
 });
 

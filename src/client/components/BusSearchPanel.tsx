@@ -9,14 +9,18 @@ import {
 	saveBusSearchSession,
 } from "../session";
 import {
+	activeBusSearchQuery,
 	BUS_OPERATOR_INITIALS,
 	BUS_OPERATOR_LABEL,
 	type BusStopSummary,
 	displayEtaSeconds,
 	filterBusRoutes,
 	getBusDirections,
+	initialBusSearchQueries,
+	isCurrentSelectedStop,
 	type RouteWithOperator,
 	rememberStopSearchResults,
+	runningArrivalTripIds,
 	STOP_SEARCH_DEBOUNCE_MS,
 	type StopArrival,
 	type StopSearchResult,
@@ -33,11 +37,15 @@ export type {
 	StopSearchResult,
 } from "./busSearchModel";
 export {
+	activeBusSearchQuery,
 	BUS_OPERATOR_INITIALS,
 	BUS_OPERATOR_LABEL,
 	displayEtaSeconds,
 	filterBusRoutes,
 	getBusDirections,
+	initialBusSearchQueries,
+	isCurrentSelectedStop,
+	runningArrivalTripIds,
 } from "./busSearchModel";
 
 type BusSearchPanelProps = {
@@ -49,7 +57,6 @@ type BusSearchPanelProps = {
 	isFavorite: boolean;
 	onToggleFavorite: () => void;
 	busSearchTab: BusSearchTab;
-	onTabChange: (tab: BusSearchTab) => void;
 	busStopId: string | null;
 	busStopOperator: BusOperator | null;
 	onStopIdChange: (stopId: string | null, operator: BusOperator | null) => void;
@@ -61,6 +68,7 @@ type BusSearchPanelProps = {
 	isStopFavorite: (stop: StopSearchResult) => boolean;
 	onToggleStopFavorite: (stop: StopSearchResult) => void;
 	onStopSummaryChange: (summary: BusStopSummary | null) => void;
+	onArrivalsChange: (tripIds: string[]) => void;
 	focusedStopsAwayOverride: {
 		tripId: string;
 		stopsAway: number | null;
@@ -81,7 +89,6 @@ function BusSearchPanel({
 	isFavorite,
 	onToggleFavorite,
 	busSearchTab,
-	onTabChange,
 	busStopId,
 	busStopOperator,
 	onStopIdChange,
@@ -89,6 +96,7 @@ function BusSearchPanel({
 	isStopFavorite,
 	onToggleStopFavorite,
 	onStopSummaryChange,
+	onArrivalsChange,
 	focusedStopsAwayOverride,
 	arrivalFocusResetSignal,
 	arrivalFocusStatus,
@@ -98,23 +106,17 @@ function BusSearchPanel({
 }: BusSearchPanelProps) {
 	const { locale, t } = useLocale();
 	const [saved] = useState(() => loadBusSearchSession());
+	const [initialQueries] = useState(() => initialBusSearchQueries(saved));
 	const [routes, setRoutes] = useState<RouteWithOperator[]>([]);
-	const [query, setQuery] = useState(
-		saved.busSearchTab === "stop"
-			? (saved.stopQuery ?? "")
-			: (saved.routeQuery ?? ""),
-	);
+	const [routeQuery, setRouteQuery] = useState(initialQueries.routeQuery);
 	const [focused, setFocused] = useState(false);
 	const [highlightIndex, setHighlightIndex] = useState(-1);
 	const panelRef = useRef<HTMLDivElement>(null);
 	const prevSelectedRouteRef = useRef(selectedRoute);
 
 	// --- Stop-mode state ---
-	const [stopQuery, setStopQuery] = useState(
-		saved.busSearchTab === "stop"
-			? (saved.stopQuery ?? "")
-			: (saved.routeQuery ?? ""),
-	);
+	const [stopQuery, setStopQuery] = useState(initialQueries.stopQuery);
+	const activeQuery = activeBusSearchQuery(busSearchTab, routeQuery, stopQuery);
 	const [stopResults, setStopResults] = useState<StopSearchResult[]>([]);
 	const [selectedStop, setSelectedStop] = useState<StopSearchResult | null>(
 		null,
@@ -132,6 +134,8 @@ function BusSearchPanel({
 		string | null
 	>(null);
 	const stopSearchAbortRef = useRef<AbortController | null>(null);
+	const onStopIdChangeRef = useRef(onStopIdChange);
+	onStopIdChangeRef.current = onStopIdChange;
 
 	useEffect(() => {
 		let cancelled = false;
@@ -150,8 +154,7 @@ function BusSearchPanel({
 
 	useEffect(() => {
 		if (selectedRoute === null && prevSelectedRouteRef.current !== null) {
-			setQuery("");
-			setStopQuery("");
+			setRouteQuery("");
 		}
 		prevSelectedRouteRef.current = selectedRoute;
 	}, [selectedRoute]);
@@ -163,7 +166,7 @@ function BusSearchPanel({
 			busSearchTab,
 			busStopId,
 			busStopOperator,
-			routeQuery: query,
+			routeQuery,
 			stopQuery,
 		});
 	}, [
@@ -172,7 +175,7 @@ function BusSearchPanel({
 		busSearchTab,
 		busStopId,
 		busStopOperator,
-		query,
+		routeQuery,
 		stopQuery,
 	]);
 
@@ -195,11 +198,14 @@ function BusSearchPanel({
 	// Debounced cross-operator stop search. Omits `operator=` so the backend
 	// returns matches from all three fleets in one round-trip.
 	useEffect(() => {
-		if (selectedRoute || selectedStop || busStopId) {
+		if (
+			selectedRoute ||
+			(busSearchTab === "stop" && (selectedStop || busStopId))
+		) {
 			setStopResults([]);
 			return;
 		}
-		const q = stopQuery.trim();
+		const q = activeQuery.trim();
 		if (!q) {
 			setStopResults([]);
 			return;
@@ -236,7 +242,7 @@ function BusSearchPanel({
 			ac.abort();
 			if (stopSearchAbortRef.current === ac) stopSearchAbortRef.current = null;
 		};
-	}, [stopQuery, selectedRoute, selectedStop, busStopId]);
+	}, [activeQuery, selectedRoute, selectedStop, busStopId, busSearchTab]);
 
 	// Abort controller for the in-flight arrivals fetch. Stop-switch + network
 	// jitter can race: stop A's response arriving after stop B's would stamp A's
@@ -262,6 +268,7 @@ function BusSearchPanel({
 					if (!ac.signal.aborted) {
 						const now = Date.now();
 						setArrivals([]);
+						onArrivalsChange([]);
 						setArrivalsRealtimeHealth(realtimeHealth);
 						setArrivalsFetchedAt(now);
 						setArrivalClockNow(now);
@@ -272,21 +279,23 @@ function BusSearchPanel({
 				if (!ac.signal.aborted) {
 					const now = Date.now();
 					setArrivals(data);
+					onArrivalsChange(runningArrivalTripIds(data));
 					setArrivalsRealtimeHealth(realtimeHealth);
 					setArrivalsFetchedAt(now);
 					setArrivalClockNow(now);
 				}
 			} catch (err) {
-				if ((err as Error).name === "AbortError") return;
+				if (ac.signal.aborted || (err as Error).name === "AbortError") return;
 				setArrivals(null);
 				setArrivalsRealtimeHealth(null);
 				setArrivalsFetchedAt(null);
 				setArrivalsError(t("bus.search.arrivals.error"));
+				onArrivalsChange([]);
 			} finally {
 				if (!ac.signal.aborted) setArrivalsLoading(false);
 			}
 		},
-		[],
+		[onArrivalsChange, t],
 	);
 
 	// Keep stop ETAs feeling alive between 30s fetches. The upstream TripUpdates
@@ -324,32 +333,43 @@ function BusSearchPanel({
 		if (!busStopId || !busStopOperator) {
 			setSelectedStop(null);
 			setArrivals(null);
+			onArrivalsChange([]);
 			return;
 		}
-		if (
-			selectedStop &&
-			selectedStop.id === busStopId &&
-			selectedStop.operator === busStopOperator
-		)
-			return;
+		if (isCurrentSelectedStop(selectedStop, busStopId, busStopOperator)) return;
+		// Never let metadata for the new stop coexist with arrivals from the old
+		// one. Otherwise a click can combine trip/sequence A with target stop B.
+		setSelectedStop(null);
+		setArrivals(null);
+		setArrivalsFetchedAt(null);
+		setSelectedArrivalTripId(null);
+		setRouteQuery("");
+		onArrivalsChange([]);
 		// Rehydrate from a saved stopId — searchBusStops does an exact id match
 		// as its first branch, so one tiny fetch round-trips the full metadata.
 		// Clear if the stop no longer exists (e.g. operator removed it from GTFS).
+		const ac = new AbortController();
 		fetch(
 			`/api/bus/stops/search?operator=${encodeURIComponent(busStopOperator)}&q=${encodeURIComponent(busStopId)}`,
+			{ signal: ac.signal },
 		)
 			.then((r) => (r.ok ? r.json() : []))
 			.then((data: StopSearchResult[]) => {
+				if (ac.signal.aborted) return;
 				const match = data.find((s) => s.id === busStopId);
 				if (match) setSelectedStop(match);
-				else onStopIdChange(null, null);
+				else onStopIdChangeRef.current(null, null);
 			})
-			.catch(() => onStopIdChange(null, null));
+			.catch((err) => {
+				if (ac.signal.aborted || (err as Error).name === "AbortError") return;
+				onStopIdChangeRef.current(null, null);
+			});
+		return () => ac.abort();
 		// Intentional deps: this rehydrates only when the persisted stop identity changes.
 		// selectedStop is checked inside to avoid looping on the rehydrated object.
 	}, [busSearchTab, busStopId, busStopOperator]);
 
-	const filtered = filterBusRoutes(routes, query);
+	const filtered = filterBusRoutes(routes, activeQuery);
 	const routeResults = filtered.slice(0, 8);
 	const unifiedResults: UnifiedResult[] = [
 		...routeResults.map((route) => ({ kind: "route" as const, route })),
@@ -357,25 +377,23 @@ function BusSearchPanel({
 	];
 
 	function handleUnifiedQueryChange(value: string) {
-		setQuery(value);
-		setStopQuery(value);
+		if (busSearchTab === "stop") setStopQuery(value);
+		else setRouteQuery(value);
 		setHighlightIndex(-1);
 		if (!value) {
-			onSelectRoute(null);
-			onSelectDirection(null);
-			onStopIdChange(null, null);
+			if (busSearchTab === "stop") onStopIdChange(null, null);
+			else onSelectRoute(null);
+			onArrivalsChange([]);
 		}
 	}
 
 	function selectRoute(r: RouteWithOperator) {
-		setQuery(r.shortName);
-		setStopQuery(r.shortName);
+		setRouteQuery(r.shortName);
 		setSelectedStop(null);
 		setArrivals(null);
 		setArrivalsFetchedAt(null);
 		setSelectedArrivalTripId(null);
-		onStopIdChange(null, null);
-		onTabChange("route");
+		onArrivalsChange([]);
 		onSelectRoute(r.shortName, r.operator);
 		setFocused(false);
 	}
@@ -403,15 +421,15 @@ function BusSearchPanel({
 	}
 
 	function handleClear() {
-		setQuery("");
-		setStopQuery("");
+		if (busSearchTab === "stop") setStopQuery("");
+		else setRouteQuery("");
 		setSelectedStop(null);
 		setArrivals(null);
 		setArrivalsFetchedAt(null);
 		setSelectedArrivalTripId(null);
-		onStopIdChange(null, null);
-		onSelectRoute(null);
-		onSelectDirection(null);
+		onArrivalsChange([]);
+		if (busSearchTab === "stop") onStopIdChange(null, null);
+		else onSelectRoute(null);
 		setFocused(false);
 	}
 
@@ -425,10 +443,10 @@ function BusSearchPanel({
 		setArrivalsFetchedAt(null);
 		setArrivalsError(null);
 		setSelectedArrivalTripId(null);
+		onArrivalsChange([]);
 		setStopQuery("");
-		setQuery("");
+		setRouteQuery("");
 		setStopResults([]);
-		onTabChange("stop");
 		onStopIdChange(s.id, s.operator);
 	}
 
@@ -437,8 +455,8 @@ function BusSearchPanel({
 		setArrivals(null);
 		setArrivalsFetchedAt(null);
 		setSelectedArrivalTripId(null);
+		onArrivalsChange([]);
 		setStopQuery("");
-		setQuery("");
 		onStopIdChange(null, null);
 	}
 
@@ -572,90 +590,92 @@ function BusSearchPanel({
 				</button>
 			) : (
 				<>
-					{!selectedRoute && !selectedStop && !busStopId && (
-						<div className="search-field">
-							<input
-								type="text"
-								autoCorrect="off"
-								autoCapitalize="none"
-								spellcheck={false}
-								inputMode="search"
-								placeholder={t("bus.search.placeholder.any")}
-								value={query}
-								onChange={(e) =>
-									handleUnifiedQueryChange(e.currentTarget.value)
-								}
-								onFocus={() => {
-									setFocused(true);
-									setHighlightIndex(-1);
-								}}
-								onKeyDown={handleKeyDown}
-								onSelect={collapseSelection}
-							/>
-							{focused && (unifiedResults.length > 0 || query.trim()) && (
-								<div className="station-dropdown bus-unified-results">
-									{routeResults.length > 0 && (
-										<div className="bus-result-group">
-											<div className="bus-result-heading">
-												{t("bus.search.group.routes")}
-											</div>
-											<ul>
-												{routeResults.map((r, i) => (
-													<li
-														key={`route:${r.operator}:${r.id}`}
-														className={`route-result route-result--${r.operator}${i === highlightIndex ? " highlighted" : ""}`}
-														onMouseDown={() => selectRoute(r)}
-														onMouseEnter={() => setHighlightIndex(i)}
-													>
-														<strong>{r.shortName}</strong> — {r.longName}
-														<span
-															className={`operator-badge operator-badge--${r.operator}`}
-															title={BUS_OPERATOR_LABEL[r.operator]}
-														>
-															{BUS_OPERATOR_INITIALS[r.operator]}
-														</span>
-													</li>
-												))}
-											</ul>
-										</div>
-									)}
-									{stopResults.length > 0 && (
-										<div className="bus-result-group">
-											<div className="bus-result-heading">
-												{t("bus.search.group.stops")}
-											</div>
-											<ul>
-												{stopResults.map((s, i) => {
-													const index = routeResults.length + i;
-													return (
-														<li
-															key={`stop:${s.operator}:${s.id}`}
-															className={`stop-result stop-result--${s.operator}${index === highlightIndex ? " highlighted" : ""}`}
-															onMouseDown={() => selectStop(s)}
-															onMouseEnter={() => setHighlightIndex(index)}
-														>
-															<strong>{s.code || s.id}</strong> — {s.name}
-															<span
-																className={`operator-badge operator-badge--${s.operator}`}
-																title={BUS_OPERATOR_LABEL[s.operator]}
+					{!selectedRoute &&
+						(busSearchTab === "route" || (!selectedStop && !busStopId)) && (
+							<div className="search-field">
+								<input
+									type="text"
+									autoCorrect="off"
+									autoCapitalize="none"
+									spellcheck={false}
+									inputMode="search"
+									placeholder={t("bus.search.placeholder.any")}
+									value={activeQuery}
+									onChange={(e) =>
+										handleUnifiedQueryChange(e.currentTarget.value)
+									}
+									onFocus={() => {
+										setFocused(true);
+										setHighlightIndex(-1);
+									}}
+									onKeyDown={handleKeyDown}
+									onSelect={collapseSelection}
+								/>
+								{focused &&
+									(unifiedResults.length > 0 || activeQuery.trim()) && (
+										<div className="station-dropdown bus-unified-results">
+											{routeResults.length > 0 && (
+												<div className="bus-result-group">
+													<div className="bus-result-heading">
+														{t("bus.search.group.routes")}
+													</div>
+													<ul>
+														{routeResults.map((r, i) => (
+															<li
+																key={`route:${r.operator}:${r.id}`}
+																className={`route-result route-result--${r.operator}${i === highlightIndex ? " highlighted" : ""}`}
+																onMouseDown={() => selectRoute(r)}
+																onMouseEnter={() => setHighlightIndex(i)}
 															>
-																{BUS_OPERATOR_INITIALS[s.operator]}
-															</span>
-														</li>
-													);
-												})}
-											</ul>
+																<strong>{r.shortName}</strong> — {r.longName}
+																<span
+																	className={`operator-badge operator-badge--${r.operator}`}
+																	title={BUS_OPERATOR_LABEL[r.operator]}
+																>
+																	{BUS_OPERATOR_INITIALS[r.operator]}
+																</span>
+															</li>
+														))}
+													</ul>
+												</div>
+											)}
+											{stopResults.length > 0 && (
+												<div className="bus-result-group">
+													<div className="bus-result-heading">
+														{t("bus.search.group.stops")}
+													</div>
+													<ul>
+														{stopResults.map((s, i) => {
+															const index = routeResults.length + i;
+															return (
+																<li
+																	key={`stop:${s.operator}:${s.id}`}
+																	className={`stop-result stop-result--${s.operator}${index === highlightIndex ? " highlighted" : ""}`}
+																	onMouseDown={() => selectStop(s)}
+																	onMouseEnter={() => setHighlightIndex(index)}
+																>
+																	<strong>{s.code || s.id}</strong> — {s.name}
+																	<span
+																		className={`operator-badge operator-badge--${s.operator}`}
+																		title={BUS_OPERATOR_LABEL[s.operator]}
+																	>
+																		{BUS_OPERATOR_INITIALS[s.operator]}
+																	</span>
+																</li>
+															);
+														})}
+													</ul>
+												</div>
+											)}
+											{unifiedResults.length === 0 && (
+												<div className="search-empty">
+													{t("bus.search.empty.any")}
+												</div>
+											)}
 										</div>
 									)}
-									{unifiedResults.length === 0 && (
-										<div className="search-empty">
-											{t("bus.search.empty.any")}
-										</div>
-									)}
-								</div>
-							)}
-						</div>
-					)}
+							</div>
+						)}
 					{selectedRoute && (
 						<>
 							{selectedRoute && !selectedDirection && (
@@ -704,7 +724,7 @@ function BusSearchPanel({
 							)}
 						</>
 					)}
-					{!selectedRoute && (
+					{!selectedRoute && busSearchTab === "stop" && (
 						<>
 							{!selectedStop && busStopId ? (
 								// Rehydrating from session/favorite — keep the bar occupied
@@ -773,7 +793,9 @@ function BusSearchPanel({
 														a.tripId === selectedArrivalTripId &&
 														a.status !== "scheduled";
 													return (
-														<li key={a.tripId}>
+														<li
+															key={`${a.tripId}:${a.stopSequence}:${a.routeShortName}`}
+														>
 															<button
 																type="button"
 																className={`stop-arrival stop-arrival--${selectedStop.operator}${a.status === "scheduled" ? " stop-arrival--scheduled" : ""}${isSelected ? " stop-arrival--selected" : ""}`}
@@ -785,13 +807,15 @@ function BusSearchPanel({
 																		);
 																		return;
 																	}
+																	if (
+																		!isCurrentSelectedStop(
+																			selectedStop,
+																			busStopId,
+																			busStopOperator,
+																		)
+																	)
+																		return;
 																	setSelectedArrivalTripId(a.tripId);
-																	if (!selectedStop) return;
-																	onStopIdChange(
-																		selectedStop.id,
-																		selectedStop.operator,
-																	);
-																	onTabChange("stop");
 																	if (window.innerWidth <= 600)
 																		onCollapsedChange(true);
 																	onPickArrival(

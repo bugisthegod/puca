@@ -1,4 +1,5 @@
 import type { BusOperator, BusRoute, BusShape } from "../../types";
+import type { BusSearchSession, BusSearchTab } from "../session";
 
 export type RouteWithOperator = BusRoute & { operator: BusOperator };
 
@@ -58,6 +59,24 @@ export const STOP_SEARCH_DEBOUNCE_MS = 150;
 export const STOP_SEARCH_CACHE_MAX = 50;
 export const stopSearchCache = new Map<string, StopSearchResult[]>();
 
+export function initialBusSearchQueries(saved: Partial<BusSearchSession>): {
+	routeQuery: string;
+	stopQuery: string;
+} {
+	return {
+		routeQuery: saved.routeQuery ?? "",
+		stopQuery: saved.stopQuery ?? "",
+	};
+}
+
+export function activeBusSearchQuery(
+	tab: BusSearchTab,
+	routeQuery: string,
+	stopQuery: string,
+): string {
+	return tab === "stop" ? stopQuery : routeQuery;
+}
+
 export function getBusDirections(busShape: BusShape): {
 	[dir: string]: string;
 } {
@@ -105,4 +124,30 @@ export function displayEtaSeconds(
 	if (fetchedAt === null) return etaSeconds;
 	const elapsedSec = Math.floor((clockNow - fetchedAt) / 1000);
 	return Math.max(0, etaSeconds - elapsedSec);
+}
+
+export function runningArrivalTripIds(
+	arrivals: readonly StopArrival[],
+	limit = 5,
+): string[] {
+	return [
+		...new Set(
+			arrivals
+				.filter((arrival) => arrival.status === "running")
+				.slice(0, limit)
+				.map((arrival) => arrival.tripId),
+		),
+	];
+}
+
+export function isCurrentSelectedStop(
+	selectedStop: Pick<StopSearchResult, "id" | "operator"> | null,
+	stopId: string | null,
+	stopOperator: BusOperator | null,
+): boolean {
+	return !!(
+		selectedStop &&
+		selectedStop.id === stopId &&
+		selectedStop.operator === stopOperator
+	);
 }

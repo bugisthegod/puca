@@ -3,6 +3,7 @@ import {
 	busVehicleSignature,
 	snapshotSignature,
 	trainSignature,
+	vehiclePollingResetKey,
 } from "../src/client/hooks/useVehiclePolling";
 import type { BusVehicle, Train } from "../src/types";
 
@@ -71,6 +72,17 @@ describe("vehicle polling signatures", () => {
 		expect(trainSignature(train({ lng: -6.26 }))).not.toBe(base);
 		expect(trainSignature(train({ message: "Arrived Tara Street" }))).not.toBe(
 			base,
+		);
+	});
+});
+
+describe("vehiclePollingResetKey", () => {
+	test("only resets for a transport or route scope change", () => {
+		expect(vehiclePollingResetKey("bus", "dublinbus", null, null)).toBe(
+			vehiclePollingResetKey("bus", "dublinbus", null, null),
+		);
+		expect(vehiclePollingResetKey("bus", "dublinbus", "39A", "1")).not.toBe(
+			vehiclePollingResetKey("bus", "dublinbus", null, null),
 		);
 	});
 });

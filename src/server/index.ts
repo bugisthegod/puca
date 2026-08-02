@@ -1,6 +1,7 @@
 import index from "../../index.html";
 import { getCurrentTrains, getStationData, getTrainMovements } from "../api.ts";
 import {
+	getAllBusStops,
 	getAllBusVehicles,
 	getAllOperatorsBusVehicles,
 	getAllTrainShapes,
@@ -53,6 +54,25 @@ import { hasOriginAccess, rateLimit } from "./rateLimit.ts";
 const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
 const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
+let allBusStopsJsonCache: string | null = null;
+let allBusStopsGzipCache: Uint8Array | null = null;
+
+function allBusStopsResponse(req: Request): Response {
+	allBusStopsJsonCache ??= JSON.stringify(getAllBusStops());
+	const acceptsGzip = /(?:^|,)\s*gzip\s*(?:;|,|$)/i.test(
+		req.headers.get("accept-encoding") ?? "",
+	);
+	const headers: Record<string, string> = {
+		"Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+		"Content-Type": "application/json; charset=utf-8",
+		Vary: "Accept-Encoding",
+	};
+	if (!acceptsGzip) return new Response(allBusStopsJsonCache, { headers });
+
+	allBusStopsGzipCache ??= Bun.gzipSync(allBusStopsJsonCache);
+	headers["Content-Encoding"] = "gzip";
+	return new Response(allBusStopsGzipCache.buffer as ArrayBuffer, { headers });
+}
 
 function routeParam(req: Request, name: string): string {
 	return (
@@ -550,6 +570,7 @@ Bun.serve({
 				return Response.json({ error: "unknown operator" }, { status: 400 });
 			return Response.json(searchBusStops(operator, q), { headers });
 		}),
+		"/api/bus/stops": rateLimit(allBusStopsResponse),
 		"/api/bus/stop/:stopId/arrivals": rateLimit(async (req) => {
 			const timer = createServerTimer();
 			const url = new URL(req.url);
