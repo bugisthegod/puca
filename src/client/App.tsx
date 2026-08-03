@@ -1078,7 +1078,12 @@ function App() {
 						clearBusArrivalFocusState();
 					}}
 				>
-					&larr; {t("bus.back.all")}
+					&larr;{" "}
+					{t(
+						busMapView === "stops" && focusContext !== null
+							? "bus.back.stops"
+							: "bus.back.all",
+					)}
 				</button>
 			)}
 			{mode === "train" && searchCodes !== null && (

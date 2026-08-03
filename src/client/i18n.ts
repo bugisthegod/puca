@@ -179,6 +179,7 @@ const EN = {
 
 	// App — back-to-all-buses button
 	"bus.back.all": "All buses",
+	"bus.back.stops": "All stops",
 	"train.back.all": "All trains",
 	"luas.back.all": "All stops",
 	"bus.map.view.aria": "Bus map view",
@@ -437,6 +438,7 @@ const ZH: Record<Key, string> = {
 
 	// App — back-to-all-buses button
 	"bus.back.all": "全部公交",
+	"bus.back.stops": "全部站点",
 	"train.back.all": "全部列车",
 	"luas.back.all": "全部站点",
 	"bus.map.view.aria": "公交地图视图",

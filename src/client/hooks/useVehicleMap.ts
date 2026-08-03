@@ -244,6 +244,7 @@ export function useVehicleMap(
 		leafletMap,
 		mode,
 		busMapView,
+		hidden: focusContext !== null,
 		stops: busStops,
 		selectedStopId: selectedBusStopId,
 		selectedStopOperator: selectedBusStopOperator,

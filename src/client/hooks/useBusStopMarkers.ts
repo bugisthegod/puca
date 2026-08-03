@@ -11,6 +11,7 @@ type UseBusStopMarkersOptions = {
 	leafletMap: React.MutableRefObject<L.Map | null>;
 	mode: "train" | "bus" | "luas";
 	busMapView: BusMapView;
+	hidden: boolean;
 	stops: StopSearchResult[];
 	selectedStopId: string | null;
 	selectedStopOperator: BusOperator | null;
@@ -44,6 +45,7 @@ export function useBusStopMarkers({
 	leafletMap,
 	mode,
 	busMapView,
+	hidden,
 	stops,
 	selectedStopId,
 	selectedStopOperator,
@@ -112,7 +114,7 @@ export function useBusStopMarkers({
 		if (!map || !cluster) return;
 
 		cluster.clearLayers();
-		if (mode !== "bus" || busMapView !== "stops") {
+		if (mode !== "bus" || busMapView !== "stops" || hidden) {
 			if (map.hasLayer(cluster)) map.removeLayer(cluster);
 			return;
 		}
@@ -144,7 +146,7 @@ export function useBusStopMarkers({
 			cluster.clearLayers();
 			if (map.hasLayer(cluster)) map.removeLayer(cluster);
 		};
-	}, [busMapView, leafletMap, mode, stops]);
+	}, [busMapView, hidden, leafletMap, mode, stops]);
 
 	useEffect(() => {
 		const map = leafletMap.current;
@@ -154,7 +156,7 @@ export function useBusStopMarkers({
 		}
 		selectedMarkerRef.current = null;
 
-		if (mode === "bus" && busMapView === "stops" && selectedKey) {
+		if (mode === "bus" && busMapView === "stops" && !hidden && selectedKey) {
 			const stop = stops.find(
 				(candidate) =>
 					markerKey(candidate.operator, candidate.id) === selectedKey,
@@ -183,5 +185,5 @@ export function useBusStopMarkers({
 		} else {
 			previousSelectedKeyRef.current = null;
 		}
-	}, [busMapView, leafletMap, mode, selectedKey, stops]);
+	}, [busMapView, hidden, leafletMap, mode, selectedKey, stops]);
 }
