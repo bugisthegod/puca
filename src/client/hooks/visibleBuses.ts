@@ -40,21 +40,13 @@ export function selectVisibleBuses(
 		hasRoute: boolean;
 		bounds: VehicleBounds | null;
 		focusTripId: string | null;
-		approachingTripIds: readonly string[];
 	},
 ): BusVehicle[] {
 	if (options.focusTripId) {
 		return buses.filter((bus) => bus.tripId === options.focusTripId);
 	}
 	if (!options.isBusMode) return buses;
-	if (options.mapView === "stops") {
-		const approachingIds = new Set(options.approachingTripIds);
-		return buses.filter(
-			(bus) =>
-				approachingIds.has(bus.tripId) ||
-				(options.bounds ? busInBounds(bus, options.bounds) : false),
-		);
-	}
+	if (options.mapView === "stops") return [];
 	if (!options.hasRoute) {
 		const bounds = options.bounds;
 		return bounds ? buses.filter((bus) => busInBounds(bus, bounds)) : [];

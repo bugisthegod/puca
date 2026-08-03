@@ -174,9 +174,6 @@ function App() {
 	const [focusContext, setFocusContext] = useState<FocusContext | null>(null);
 	const [busViewportBounds, setBusViewportBounds] =
 		useState<VehicleBounds | null>(null);
-	const [approachingStopTripIds, setApproachingStopTripIds] = useState<
-		string[]
-	>([]);
 	const busViewportBoundsSignatureRef = useRef<string | null>(null);
 	const handleBusViewportBoundsChange = useCallback(
 		(bounds: VehicleBounds | null) => {
@@ -253,18 +250,9 @@ function App() {
 			hasRoute: busRoute !== null,
 			bounds: busViewportBounds,
 			focusTripId: focusContext?.tripId ?? null,
-			approachingTripIds: approachingStopTripIds,
 		});
 		return stableVisibleBuses(nextBuses, visibleBusesCacheRef.current);
-	}, [
-		approachingStopTripIds,
-		buses,
-		busMapView,
-		busRoute,
-		busViewportBounds,
-		focusContext,
-		mode,
-	]);
+	}, [buses, busMapView, busRoute, busViewportBounds, focusContext, mode]);
 	const busRouteSummary =
 		mode === "bus" && busRoute && busDirection
 			? {
@@ -284,7 +272,6 @@ function App() {
 
 	const resetBusFocusState = useCallback(() => {
 		setBusStopSummary(null);
-		setApproachingStopTripIds([]);
 		clearBusArrivalFocusState();
 	}, [clearBusArrivalFocusState]);
 
@@ -1064,7 +1051,6 @@ function App() {
 					isStopFavorite={isStopFav}
 					onToggleStopFavorite={onToggleStopFav}
 					onStopSummaryChange={handleStopSummaryChange}
-					onArrivalsChange={setApproachingStopTripIds}
 					focusedStopsAwayOverride={busFocusStopsAway}
 					arrivalFocusResetSignal={arrivalFocusResetSignal}
 					arrivalFocusStatus={arrivalFocusStatus}

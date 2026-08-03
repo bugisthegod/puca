@@ -314,10 +314,9 @@ export function useVehicleMap(
 	useEffect(() => {
 		const map = leafletMap.current;
 		if (!map || !onBusViewportBoundsChange) return;
-		// Stops view still needs viewport bounds so its vehicle layer can show the
-		// nearby fleet and union in approaching trips outside the viewport. Only a
-		// selected live route opts out of viewport filtering.
-		if (mode !== "bus" || (busMapView === "live" && unclusteredBusMode)) {
+		// Viewport filtering is only used by the unfiltered Live fleet. Stops view
+		// remains empty until the user explicitly focuses one arrival.
+		if (mode !== "bus" || busMapView === "stops" || unclusteredBusMode) {
 			onBusViewportBoundsChange(null);
 			return;
 		}
@@ -347,7 +346,7 @@ export function useVehicleMap(
 	}, [mode, busMapView, unclusteredBusMode, onBusViewportBoundsChange]);
 
 	// Bus container lifecycle — recreated on mode/single-route change.
-	// - Default: MarkerClusterGroup for the mixed-operator all-bus view
+	// - Default: MarkerClusterGroup for the Live fleet or an empty Stops layer
 	// - Single-route mode: plain LayerGroup, no clustering for the handful of buses
 	useEffect(() => {
 		const map = leafletMap.current;

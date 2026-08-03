@@ -126,20 +126,6 @@ export function displayEtaSeconds(
 	return Math.max(0, etaSeconds - elapsedSec);
 }
 
-export function runningArrivalTripIds(
-	arrivals: readonly StopArrival[],
-	limit = 5,
-): string[] {
-	return [
-		...new Set(
-			arrivals
-				.filter((arrival) => arrival.status === "running")
-				.slice(0, limit)
-				.map((arrival) => arrival.tripId),
-		),
-	];
-}
-
 export function isCurrentSelectedStop(
 	selectedStop: Pick<StopSearchResult, "id" | "operator"> | null,
 	stopId: string | null,

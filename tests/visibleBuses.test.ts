@@ -55,23 +55,24 @@ describe("visible bus helpers", () => {
 		).toBe("53.40000,53.30000,-6.20000,-6.30000");
 	});
 
-	test("Stops view keeps viewport buses and unions approaching trips outside it", () => {
+	test("Stops view hides buses until an arrival is focused", () => {
 		const inView = bus({ tripId: "in-view" });
-		const approaching = bus({ tripId: "approaching", lat: 53.5 });
-		const unrelated = bus({ tripId: "unrelated", lat: 53.6 });
-		const visible = selectVisibleBuses([inView, approaching, unrelated], {
+		const focused = bus({ tripId: "focused", lat: 53.5 });
+		const options = {
 			isBusMode: true,
-			mapView: "stops",
+			mapView: "stops" as const,
 			hasRoute: false,
 			bounds: { north: 53.4, south: 53.3, east: -6.2, west: -6.3 },
 			focusTripId: null,
-			approachingTripIds: ["approaching"],
-		});
+		};
 
-		expect(visible.map((item) => item.tripId)).toEqual([
-			"in-view",
-			"approaching",
-		]);
+		expect(selectVisibleBuses([inView, focused], options)).toEqual([]);
+		expect(
+			selectVisibleBuses([inView, focused], {
+				...options,
+				focusTripId: "focused",
+			}),
+		).toEqual([focused]);
 	});
 
 	test("visible snapshot signatures are stable across response order changes", () => {

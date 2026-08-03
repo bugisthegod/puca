@@ -20,7 +20,6 @@ import {
 	isCurrentSelectedStop,
 	type RouteWithOperator,
 	rememberStopSearchResults,
-	runningArrivalTripIds,
 	STOP_SEARCH_DEBOUNCE_MS,
 	type StopArrival,
 	type StopSearchResult,
@@ -45,7 +44,6 @@ export {
 	getBusDirections,
 	initialBusSearchQueries,
 	isCurrentSelectedStop,
-	runningArrivalTripIds,
 } from "./busSearchModel";
 
 type BusSearchPanelProps = {
@@ -68,7 +66,6 @@ type BusSearchPanelProps = {
 	isStopFavorite: (stop: StopSearchResult) => boolean;
 	onToggleStopFavorite: (stop: StopSearchResult) => void;
 	onStopSummaryChange: (summary: BusStopSummary | null) => void;
-	onArrivalsChange: (tripIds: string[]) => void;
 	focusedStopsAwayOverride: {
 		tripId: string;
 		stopsAway: number | null;
@@ -96,7 +93,6 @@ function BusSearchPanel({
 	isStopFavorite,
 	onToggleStopFavorite,
 	onStopSummaryChange,
-	onArrivalsChange,
 	focusedStopsAwayOverride,
 	arrivalFocusResetSignal,
 	arrivalFocusStatus,
@@ -268,7 +264,6 @@ function BusSearchPanel({
 					if (!ac.signal.aborted) {
 						const now = Date.now();
 						setArrivals([]);
-						onArrivalsChange([]);
 						setArrivalsRealtimeHealth(realtimeHealth);
 						setArrivalsFetchedAt(now);
 						setArrivalClockNow(now);
@@ -279,7 +274,6 @@ function BusSearchPanel({
 				if (!ac.signal.aborted) {
 					const now = Date.now();
 					setArrivals(data);
-					onArrivalsChange(runningArrivalTripIds(data));
 					setArrivalsRealtimeHealth(realtimeHealth);
 					setArrivalsFetchedAt(now);
 					setArrivalClockNow(now);
@@ -290,12 +284,11 @@ function BusSearchPanel({
 				setArrivalsRealtimeHealth(null);
 				setArrivalsFetchedAt(null);
 				setArrivalsError(t("bus.search.arrivals.error"));
-				onArrivalsChange([]);
 			} finally {
 				if (!ac.signal.aborted) setArrivalsLoading(false);
 			}
 		},
-		[onArrivalsChange, t],
+		[t],
 	);
 
 	// Keep stop ETAs feeling alive between 30s fetches. The upstream TripUpdates
@@ -333,7 +326,6 @@ function BusSearchPanel({
 		if (!busStopId || !busStopOperator) {
 			setSelectedStop(null);
 			setArrivals(null);
-			onArrivalsChange([]);
 			return;
 		}
 		if (isCurrentSelectedStop(selectedStop, busStopId, busStopOperator)) return;
@@ -344,7 +336,6 @@ function BusSearchPanel({
 		setArrivalsFetchedAt(null);
 		setSelectedArrivalTripId(null);
 		setRouteQuery("");
-		onArrivalsChange([]);
 		// Rehydrate from a saved stopId — searchBusStops does an exact id match
 		// as its first branch, so one tiny fetch round-trips the full metadata.
 		// Clear if the stop no longer exists (e.g. operator removed it from GTFS).
@@ -383,7 +374,6 @@ function BusSearchPanel({
 		if (!value) {
 			if (busSearchTab === "stop") onStopIdChange(null, null);
 			else onSelectRoute(null);
-			onArrivalsChange([]);
 		}
 	}
 
@@ -393,7 +383,6 @@ function BusSearchPanel({
 		setArrivals(null);
 		setArrivalsFetchedAt(null);
 		setSelectedArrivalTripId(null);
-		onArrivalsChange([]);
 		onSelectRoute(r.shortName, r.operator);
 		setFocused(false);
 	}
@@ -427,7 +416,6 @@ function BusSearchPanel({
 		setArrivals(null);
 		setArrivalsFetchedAt(null);
 		setSelectedArrivalTripId(null);
-		onArrivalsChange([]);
 		if (busSearchTab === "stop") onStopIdChange(null, null);
 		else onSelectRoute(null);
 		setFocused(false);
@@ -443,7 +431,6 @@ function BusSearchPanel({
 		setArrivalsFetchedAt(null);
 		setArrivalsError(null);
 		setSelectedArrivalTripId(null);
-		onArrivalsChange([]);
 		setStopQuery("");
 		setRouteQuery("");
 		setStopResults([]);
@@ -455,7 +442,6 @@ function BusSearchPanel({
 		setArrivals(null);
 		setArrivalsFetchedAt(null);
 		setSelectedArrivalTripId(null);
-		onArrivalsChange([]);
 		setStopQuery("");
 		onStopIdChange(null, null);
 	}
