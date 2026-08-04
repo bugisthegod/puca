@@ -81,6 +81,11 @@ import "./style.css";
 
 const LOW_LOCATION_ACCURACY_M = 500;
 
+// Stable identity for the Live-view case where no stop snapshot is loaded.
+// An inline `?? []` would hand useBusStopMarkers a fresh array every render
+// and tear its effects down on every poll tick.
+const NO_BUS_STOPS: StopSearchResult[] = [];
+
 const savedSession = loadSession();
 const savedBusSearch = loadBusSearchSession();
 const savedLuasSearch = loadLuasSearchSession();
@@ -334,7 +339,7 @@ function App() {
 			focusContext,
 			onBusViewportBoundsChange: handleBusViewportBoundsChange,
 			busMapView,
-			busStops: busStops ?? [],
+			busStops: busStops ?? NO_BUS_STOPS,
 			selectedBusStopId: busStopId,
 			selectedBusStopOperator: busStopOperator,
 			onSelectBusStop: handleSelectMapBusStop,

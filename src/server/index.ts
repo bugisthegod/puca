@@ -55,7 +55,10 @@ const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
 const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
 let allBusStopsJsonCache: string | null = null;
-let allBusStopsGzipCache: Uint8Array | null = null;
+// Copied into an exact-fit buffer once. Bun.gzipSync returns a view whose
+// byteLength may be smaller than its backing buffer, and handing that raw
+// buffer to Response would append trailing bytes to the gzip stream.
+let allBusStopsGzipCache: Uint8Array<ArrayBuffer> | null = null;
 
 function allBusStopsResponse(req: Request): Response {
 	allBusStopsJsonCache ??= JSON.stringify(getAllBusStops());
@@ -69,9 +72,9 @@ function allBusStopsResponse(req: Request): Response {
 	};
 	if (!acceptsGzip) return new Response(allBusStopsJsonCache, { headers });
 
-	allBusStopsGzipCache ??= Bun.gzipSync(allBusStopsJsonCache);
+	allBusStopsGzipCache ??= new Uint8Array(Bun.gzipSync(allBusStopsJsonCache));
 	headers["Content-Encoding"] = "gzip";
-	return new Response(allBusStopsGzipCache.buffer as ArrayBuffer, { headers });
+	return new Response(allBusStopsGzipCache, { headers });
 }
 
 function routeParam(req: Request, name: string): string {
