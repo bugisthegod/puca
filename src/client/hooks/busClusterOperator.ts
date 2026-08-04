@@ -6,6 +6,17 @@ const OPERATORS: readonly BusOperator[] = [
 	"goahead",
 ];
 
+// Below this zoom the stop layer is only four-digit cluster bubbles — nothing
+// a user standing at a stop can act on. Hiding it outright also caps the burst
+// crossing the layer: markercluster chunks addLayers but removeLayers is a
+// plain synchronous loop, so a zoom-out/zoom-in pair over the full 11k stops
+// would block the main thread in both directions.
+export const BUS_STOP_MIN_ZOOM = 14;
+
+export function shouldRenderBusStopLayer(zoom: number): boolean {
+	return zoom >= BUS_STOP_MIN_ZOOM;
+}
+
 export function busStopClusterRadius(zoom: number): number {
 	if (zoom >= 18) return 0;
 	return zoom < 9 ? 64 : zoom < 14 ? 50 : 34;

@@ -5,6 +5,7 @@ import type { BusMapView } from "../session";
 import {
 	busStopClusterRadius,
 	dominantBusOperatorFromClassNames,
+	shouldRenderBusStopLayer,
 } from "./busClusterOperator";
 
 type UseBusStopMarkersOptions = {
@@ -52,6 +53,7 @@ export function useBusStopMarkers({
 	onSelectStop,
 }: UseBusStopMarkersOptions): void {
 	const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+	const markersRef = useRef<Map<string, L.Marker>>(new Map());
 	const selectedMarkerRef = useRef<L.Marker | null>(null);
 	const onSelectStopRef = useRef(onSelectStop);
 	onSelectStopRef.current = onSelectStop;
@@ -103,6 +105,7 @@ export function useBusStopMarkers({
 			}
 			selectedMarkerRef.current = null;
 			cluster.clearLayers();
+			markersRef.current.clear();
 			if (map.hasLayer(cluster)) map.removeLayer(cluster);
 			clusterRef.current = null;
 		};
@@ -113,38 +116,72 @@ export function useBusStopMarkers({
 		const cluster = clusterRef.current;
 		if (!map || !cluster) return;
 
-		cluster.clearLayers();
-		if (mode !== "bus" || busMapView !== "stops" || hidden) {
+		const markers = markersRef.current;
+		if (mode !== "bus" || busMapView !== "stops") {
+			cluster.clearLayers();
+			markers.clear();
+			if (map.hasLayer(cluster)) map.removeLayer(cluster);
+			return;
+		}
+
+		// Focusing a vehicle hides this layer but must not discard it. Detaching
+		// is enough: markercluster's onRemove only clears the rendered feature
+		// group, leaving the cluster tree intact for onAdd to re-render. Coming
+		// back off a focused arrival — the most-travelled path in Stops view —
+		// then costs one incremental diff instead of rebuilding every marker.
+		if (hidden) {
 			if (map.hasLayer(cluster)) map.removeLayer(cluster);
 			return;
 		}
 
 		if (!map.hasLayer(cluster)) cluster.addTo(map);
-		let cancelled = false;
-		let timer: ReturnType<typeof setTimeout> | null = null;
-		let offset = 0;
-		const addNextBatch = () => {
-			if (cancelled || !map.hasLayer(cluster)) return;
-			const nextOffset = Math.min(offset + 500, stops.length);
-			const markers = stops.slice(offset, nextOffset).map((stop) => {
+		const renderVisibleStops = () => {
+			if (!map.hasLayer(cluster)) return;
+			// Zoomed out past the useful range: drop everything in one wholesale
+			// reset rather than letting the viewport ring pull thousands of
+			// markers through removeLayers one at a time.
+			if (!shouldRenderBusStopLayer(map.getZoom())) {
+				if (markers.size > 0) {
+					cluster.clearLayers();
+					markers.clear();
+				}
+				return;
+			}
+			// Keep a generous off-screen ring so markers are already present while
+			// panning, without making all 11k+ stops participate in every map update.
+			const renderBounds = map.getBounds().pad(0.75);
+			const visibleKeys = new Set<string>();
+			const markersToAdd: L.Marker[] = [];
+
+			for (const stop of stops) {
+				if (!renderBounds.contains([stop.lat, stop.lng])) continue;
+				const key = markerKey(stop.operator, stop.id);
+				visibleKeys.add(key);
+				if (markers.has(key)) continue;
+
 				const marker = L.marker([stop.lat, stop.lng], {
 					icon: stopMarkerIcon(stop, false),
 					title: `${stop.code || stop.id} — ${stop.name}`,
 				});
 				marker.on("click", () => onSelectStopRef.current?.(stop));
-				return marker;
-			});
-			cluster.addLayers(markers);
-			offset = nextOffset;
-			if (offset < stops.length) timer = setTimeout(addNextBatch, 0);
+				markers.set(key, marker);
+				markersToAdd.push(marker);
+			}
+
+			const markersToRemove: L.Marker[] = [];
+			for (const [key, marker] of markers) {
+				if (visibleKeys.has(key)) continue;
+				markers.delete(key);
+				markersToRemove.push(marker);
+			}
+			if (markersToRemove.length > 0) cluster.removeLayers(markersToRemove);
+			if (markersToAdd.length > 0) cluster.addLayers(markersToAdd);
 		};
-		addNextBatch();
+		renderVisibleStops();
+		map.on("moveend resize", renderVisibleStops);
 
 		return () => {
-			cancelled = true;
-			if (timer) clearTimeout(timer);
-			cluster.clearLayers();
-			if (map.hasLayer(cluster)) map.removeLayer(cluster);
+			map.off("moveend resize", renderVisibleStops);
 		};
 	}, [busMapView, hidden, leafletMap, mode, stops]);
 
