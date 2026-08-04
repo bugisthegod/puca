@@ -5,7 +5,6 @@ import type { BusMapView } from "../session";
 import {
 	busStopClusterRadius,
 	dominantBusOperatorFromClassNames,
-	shouldRenderBusStopLayer,
 } from "./busClusterOperator";
 
 type UseBusStopMarkersOptions = {
@@ -53,7 +52,9 @@ export function useBusStopMarkers({
 	onSelectStop,
 }: UseBusStopMarkersOptions): void {
 	const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
-	const markersRef = useRef<Map<string, L.Marker>>(new Map());
+	// The stop array the cluster was populated from, so re-showing the layer
+	// after a focus doesn't rebuild markers that are already in the tree.
+	const populatedStopsRef = useRef<StopSearchResult[] | null>(null);
 	const selectedMarkerRef = useRef<L.Marker | null>(null);
 	const onSelectStopRef = useRef(onSelectStop);
 	onSelectStopRef.current = onSelectStop;
@@ -73,7 +74,9 @@ export function useBusStopMarkers({
 			// while separate poles a few metres apart stay individually clickable.
 			maxClusterRadius: busStopClusterRadius,
 			spiderfyOnMaxZoom: true,
-			chunkedLoading: false,
+			// The whole 11k-stop set goes in at once, so let markercluster break
+			// the build across frames instead of blocking on one long loop.
+			chunkedLoading: true,
 			animate: false,
 			animateAddingMarkers: false,
 			iconCreateFunction: (group) => {
@@ -105,7 +108,7 @@ export function useBusStopMarkers({
 			}
 			selectedMarkerRef.current = null;
 			cluster.clearLayers();
-			markersRef.current.clear();
+			populatedStopsRef.current = null;
 			if (map.hasLayer(cluster)) map.removeLayer(cluster);
 			clusterRef.current = null;
 		};
@@ -116,10 +119,9 @@ export function useBusStopMarkers({
 		const cluster = clusterRef.current;
 		if (!map || !cluster) return;
 
-		const markers = markersRef.current;
 		if (mode !== "bus" || busMapView !== "stops") {
 			cluster.clearLayers();
-			markers.clear();
+			populatedStopsRef.current = null;
 			if (map.hasLayer(cluster)) map.removeLayer(cluster);
 			return;
 		}
@@ -128,61 +130,31 @@ export function useBusStopMarkers({
 		// is enough: markercluster's onRemove only clears the rendered feature
 		// group, leaving the cluster tree intact for onAdd to re-render. Coming
 		// back off a focused arrival — the most-travelled path in Stops view —
-		// then costs one incremental diff instead of rebuilding every marker.
+		// then costs nothing beyond re-attaching.
 		if (hidden) {
 			if (map.hasLayer(cluster)) map.removeLayer(cluster);
 			return;
 		}
 
 		if (!map.hasLayer(cluster)) cluster.addTo(map);
-		const renderVisibleStops = () => {
-			if (!map.hasLayer(cluster)) return;
-			// Zoomed out past the useful range: drop everything in one wholesale
-			// reset rather than letting the viewport ring pull thousands of
-			// markers through removeLayers one at a time.
-			if (!shouldRenderBusStopLayer(map.getZoom())) {
-				if (markers.size > 0) {
-					cluster.clearLayers();
-					markers.clear();
-				}
-				return;
-			}
-			// Keep a generous off-screen ring so markers are already present while
-			// panning, without making all 11k+ stops participate in every map update.
-			const renderBounds = map.getBounds().pad(0.75);
-			const visibleKeys = new Set<string>();
-			const markersToAdd: L.Marker[] = [];
-
-			for (const stop of stops) {
-				if (!renderBounds.contains([stop.lat, stop.lng])) continue;
-				const key = markerKey(stop.operator, stop.id);
-				visibleKeys.add(key);
-				if (markers.has(key)) continue;
-
-				const marker = L.marker([stop.lat, stop.lng], {
-					icon: stopMarkerIcon(stop, false),
-					title: `${stop.code || stop.id} — ${stop.name}`,
-				});
-				marker.on("click", () => onSelectStopRef.current?.(stop));
-				markers.set(key, marker);
-				markersToAdd.push(marker);
-			}
-
-			const markersToRemove: L.Marker[] = [];
-			for (const [key, marker] of markers) {
-				if (visibleKeys.has(key)) continue;
-				markers.delete(key);
-				markersToRemove.push(marker);
-			}
-			if (markersToRemove.length > 0) cluster.removeLayers(markersToRemove);
-			if (markersToAdd.length > 0) cluster.addLayers(markersToAdd);
-		};
-		renderVisibleStops();
-		map.on("moveend resize", renderVisibleStops);
-
-		return () => {
-			map.off("moveend resize", renderVisibleStops);
-		};
+		// markercluster builds its per-zoom grid once and then serves zoom/pan
+		// from that tree, touching only the visible branch. Feeding it the whole
+		// set is cheaper than mutating the tree on every map move, and it keeps
+		// stops on screen at every zoom level.
+		if (populatedStopsRef.current !== stops) {
+			cluster.clearLayers();
+			cluster.addLayers(
+				stops.map((stop) => {
+					const marker = L.marker([stop.lat, stop.lng], {
+						icon: stopMarkerIcon(stop, false),
+						title: `${stop.code || stop.id} — ${stop.name}`,
+					});
+					marker.on("click", () => onSelectStopRef.current?.(stop));
+					return marker;
+				}),
+			);
+			populatedStopsRef.current = stops;
+		}
 	}, [busMapView, hidden, leafletMap, mode, stops]);
 
 	useEffect(() => {
