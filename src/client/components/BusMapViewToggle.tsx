@@ -48,10 +48,16 @@ export default function BusMapViewToggle({
 							onChange={() => chooseView("live")}
 						/>
 						<BusFront aria-hidden="true" />
-						<span>{t("bus.map.view.live")}</span>
-						<span className="bus-map-focus-popover__live">
+						<span className="bus-map-focus-popover__label">
+							{t("bus.map.view.live")}
+						</span>
+						<span
+							className="bus-map-focus-popover__live"
+							role="img"
+							aria-label={t("bus.map.view.liveStatus")}
+							title={t("bus.map.view.liveStatus")}
+						>
 							<Circle aria-hidden="true" />
-							{t("bus.map.view.liveStatus")}
 						</span>
 					</label>
 					<label
@@ -71,7 +77,9 @@ export default function BusMapViewToggle({
 						) : (
 							<MapPin aria-hidden="true" />
 						)}
-						<span>{t("bus.map.view.stops")}</span>
+						<span className="bus-map-focus-popover__label">
+							{t("bus.map.view.stops")}
+						</span>
 					</label>
 				</fieldset>
 			)}
