@@ -155,6 +155,8 @@ const stopSearchIndexes: Record<Operator, StopSearchIndex> = {
 	goahead: buildStopSearchIndex("goahead", operatorStops.goahead),
 };
 
+let allBusStopsCache: StopSearchResult[] | null = null;
+
 function publicStopSearchResult(
 	result: StopSearchResult & { nameLower?: string },
 ): StopSearchResult {
@@ -381,6 +383,14 @@ export function getOperatorStop(
 	stopId: string,
 ): { name: string; lat: number; lng: number; code?: string } | null {
 	return operatorStops[operator][stopId] ?? null;
+}
+
+export function getAllBusStops(): StopSearchResult[] {
+	if (allBusStopsCache) return allBusStopsCache;
+	allBusStopsCache = OPERATORS.flatMap((operator) =>
+		stopSearchIndexes[operator].entries.map(publicStopSearchResult),
+	);
+	return allBusStopsCache;
 }
 
 export function searchBusStops(

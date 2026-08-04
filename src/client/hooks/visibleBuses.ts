@@ -1,9 +1,17 @@
 import type { BusVehicle, VehicleBounds } from "../../types";
+import type { BusMapView } from "../session";
 
 export type VisibleBusCache = {
 	signature: string;
 	buses: BusVehicle[];
 };
+
+export function shouldUseUnclusteredBusLayer(
+	route: string | null,
+	direction: string | null,
+): boolean {
+	return !!(route && direction);
+}
 
 export function busInBounds(
 	bus: Pick<BusVehicle, "lat" | "lng">,
@@ -22,6 +30,28 @@ export function boundsSignature(bounds: VehicleBounds | null): string | null {
 	return [bounds.north, bounds.south, bounds.east, bounds.west]
 		.map((n) => n.toFixed(5))
 		.join(",");
+}
+
+export function selectVisibleBuses(
+	buses: BusVehicle[],
+	options: {
+		isBusMode: boolean;
+		mapView: BusMapView;
+		hasRoute: boolean;
+		bounds: VehicleBounds | null;
+		focusTripId: string | null;
+	},
+): BusVehicle[] {
+	if (options.focusTripId) {
+		return buses.filter((bus) => bus.tripId === options.focusTripId);
+	}
+	if (!options.isBusMode) return buses;
+	if (options.mapView === "stops") return [];
+	if (!options.hasRoute) {
+		const bounds = options.bounds;
+		return bounds ? buses.filter((bus) => busInBounds(bus, bounds)) : [];
+	}
+	return buses;
 }
 
 export function busViewportRenderSignature(bus: BusVehicle): string {

@@ -4,6 +4,7 @@ import {
 	decideScheduleVehicleArrival,
 	decideStopArrival,
 	type GtfsVehiclePosition,
+	getAllBusStops,
 	getAllBusVehicles,
 	getAllOperatorsBusVehicles,
 	getBusRouteShape,
@@ -311,6 +312,30 @@ describe("searchBusStops", () => {
 		const ids = results.map((r) => r.id);
 
 		expect(new Set(ids).size).toBe(ids.length);
+	});
+});
+
+describe("getAllBusStops", () => {
+	test("returns map-ready stops from every operator without private index fields", () => {
+		const results = getAllBusStops();
+
+		expect(results.length).toBeGreaterThan(10_000);
+		expect(new Set(results.map((stop) => stop.operator))).toEqual(
+			new Set(["dublinbus", "buseireann", "goahead"]),
+		);
+		expect(results[0]).toMatchObject({
+			id: expect.any(String),
+			name: expect.any(String),
+			code: expect.any(String),
+			lat: expect.any(Number),
+			lng: expect.any(Number),
+			operator: expect.any(String),
+		});
+		expect(results[0]).not.toHaveProperty("nameLower");
+	});
+
+	test("reuses the immutable schedule snapshot between requests", () => {
+		expect(getAllBusStops()).toBe(getAllBusStops());
 	});
 });
 

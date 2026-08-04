@@ -25,6 +25,7 @@ import {
 } from "./gtfsr/realtimeReaders";
 import {
 	type BusRouteDirectionShape,
+	getAllBusStops,
 	getBusRouteShape,
 	getBusRoutes,
 	getOperatorStop,
@@ -61,6 +62,7 @@ export {
 	__testing,
 	decideScheduleVehicleArrival,
 	decideStopArrival,
+	getAllBusStops,
 	getAllBusVehicles,
 	getAllOperatorsBusVehicles,
 	getAllTrainShapes,

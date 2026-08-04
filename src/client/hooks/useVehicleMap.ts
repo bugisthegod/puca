@@ -1,4 +1,10 @@
-import { type RefObject, useCallback, useEffect, useRef } from "react";
+import {
+	type RefObject,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import type {
 	BusOperator,
 	BusShape,
@@ -10,14 +16,18 @@ import type {
 	TrainFocusSummary,
 	VehicleBounds,
 } from "../../types";
-import type { MapView } from "../session";
+import type { StopSearchResult } from "../components/busSearchModel";
+import type { BusMapView, MapView } from "../session";
 import { tickBusMarker } from "./busAnimation";
+import { dominantBusOperatorFromClassNames } from "./busClusterOperator";
 import { tickTrainMarker } from "./trainAnimation";
 import { useBusMarkers } from "./useBusMarkers";
+import { useBusStopMarkers } from "./useBusStopMarkers";
 import { useFocusSegment } from "./useFocusSegment";
 import { useMapInstance } from "./useMapInstance";
 import type { FocusTrainResult } from "./useTrainMarkers";
 import { useTrainMarkers } from "./useTrainMarkers";
+import { shouldUseUnclusteredBusLayer } from "./visibleBuses";
 
 export type Mode = "train" | "bus" | "luas";
 
@@ -62,22 +72,13 @@ function getPaddedVehicleBounds(map: L.Map): VehicleBounds {
 }
 
 function busClusterOperatorClass(cluster: L.MarkerCluster): string {
-	const counts = {
-		dublinbus: 0,
-		buseireann: 0,
-		goahead: 0,
-	};
-	for (const marker of cluster.getAllChildMarkers()) {
-		const className = marker.getIcon().options.className ?? "";
-		if (className.includes("bus-marker--buseireann")) counts.buseireann++;
-		else if (className.includes("bus-marker--goahead")) counts.goahead++;
-		else counts.dublinbus++;
-	}
-	const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-	const [top, runnerUp] = entries;
-	if (!top || !runnerUp || top[1] === runnerUp[1])
-		return "bus-cluster--dublinbus";
-	return `bus-cluster--${top[0]}`;
+	const operator = dominantBusOperatorFromClassNames(
+		cluster
+			.getAllChildMarkers()
+			.map((marker: L.Marker) => marker.getIcon().options.className ?? ""),
+		"bus-marker--",
+	);
+	return `bus-cluster--${operator}`;
 }
 
 interface UseVehicleMapOptions {
@@ -98,6 +99,11 @@ interface UseVehicleMapOptions {
 	onBusFocusStopsAway?: (stopsAway: number | null) => void;
 	onTrainFocusSummary?: (summary: TrainFocusSummary | null) => void;
 	onBusViewportBoundsChange?: (bounds: VehicleBounds | null) => void;
+	busMapView?: BusMapView;
+	busStops?: StopSearchResult[];
+	selectedBusStopId?: string | null;
+	selectedBusStopOperator?: BusOperator | null;
+	onSelectBusStop?: (stop: StopSearchResult) => void;
 	luasStops?: LuasStop[];
 	selectedLuasStopId?: string | null;
 	onSelectLuasStop?: (stop: LuasStop) => void;
@@ -139,6 +145,11 @@ export function useVehicleMap(
 		onBusFocusStopsAway,
 		onTrainFocusSummary,
 		onBusViewportBoundsChange,
+		busMapView = "live",
+		busStops = [],
+		selectedBusStopId = null,
+		selectedBusStopOperator = null,
+		onSelectBusStop,
 		luasStops = [],
 		selectedLuasStopId = null,
 		onSelectLuasStop,
@@ -148,6 +159,8 @@ export function useVehicleMap(
 	onSelectBusRouteRef.current = onSelectBusRoute;
 	const onRouteJumpRef = useRef(onRouteJump);
 	onRouteJumpRef.current = onRouteJump;
+	const onSelectBusStopRef = useRef(onSelectBusStop);
+	onSelectBusStopRef.current = onSelectBusStop;
 	const onSelectLuasStopRef = useRef(onSelectLuasStop);
 	onSelectLuasStopRef.current = onSelectLuasStop;
 
@@ -156,13 +169,16 @@ export function useVehicleMap(
 	const busClusterLayer = useRef<L.MarkerClusterGroup | L.LayerGroup | null>(
 		null,
 	);
+	const [busLayerGeneration, setBusLayerGeneration] = useState(0);
 	const luasLayerRef = useRef<L.LayerGroup | null>(null);
 	const luasMarkersRef = useRef<Map<string, L.Marker>>(new Map());
 
-	// Single-route view (e.g. user searched 38A and picked a direction) holds
-	// <20 buses — clustering adds visual noise and is unnecessary. Swap to a
-	// plain LayerGroup so each bus renders individually.
-	const singleRouteMode = !!(currentBusRoute && busDirection);
+	// Only a selected route shows a small, meaningful set of vehicles. Stops
+	// view includes the viewport fleet, so it uses the same clustering as Live.
+	const unclusteredBusMode = shouldUseUnclusteredBusLayer(
+		currentBusRoute,
+		busDirection,
+	);
 
 	// Map first — everything else depends on it.
 	const {
@@ -210,8 +226,8 @@ export function useVehicleMap(
 
 	const { busMarkers } = useBusMarkers({
 		buses,
-		busShape,
-		busDirection,
+		busShape: busMapView === "live" ? busShape : null,
+		busDirection: busMapView === "live" ? busDirection : null,
 		busOperator,
 		mode,
 		currentBusRoute,
@@ -221,6 +237,18 @@ export function useVehicleMap(
 		onRouteJump: onRouteJumpRef,
 		leafletMap,
 		busClusterLayer,
+		layerGeneration: busLayerGeneration,
+	});
+
+	useBusStopMarkers({
+		leafletMap,
+		mode,
+		busMapView,
+		hidden: focusContext !== null,
+		stops: busStops,
+		selectedStopId: selectedBusStopId,
+		selectedStopOperator: selectedBusStopOperator,
+		onSelectStop: (stop) => onSelectBusStopRef.current?.(stop),
 	});
 
 	useFocusSegment({
@@ -287,7 +315,9 @@ export function useVehicleMap(
 	useEffect(() => {
 		const map = leafletMap.current;
 		if (!map || !onBusViewportBoundsChange) return;
-		if (mode !== "bus" || singleRouteMode) {
+		// Viewport filtering is only used by the unfiltered Live fleet. Stops view
+		// remains empty until the user explicitly focuses one arrival.
+		if (mode !== "bus" || busMapView === "stops" || unclusteredBusMode) {
 			onBusViewportBoundsChange(null);
 			return;
 		}
@@ -314,10 +344,10 @@ export function useVehicleMap(
 			if (debounceTimer) clearTimeout(debounceTimer);
 			map.off("moveend zoomend resize", onViewChange);
 		};
-	}, [mode, singleRouteMode, onBusViewportBoundsChange]);
+	}, [mode, busMapView, unclusteredBusMode, onBusViewportBoundsChange]);
 
 	// Bus container lifecycle — recreated on mode/single-route change.
-	// - Default: MarkerClusterGroup for the mixed-operator all-bus view
+	// - Default: MarkerClusterGroup for the Live fleet or an empty Stops layer
 	// - Single-route mode: plain LayerGroup, no clustering for the handful of buses
 	useEffect(() => {
 		const map = leafletMap.current;
@@ -332,8 +362,11 @@ export function useVehicleMap(
 		}
 
 		if (mode !== "bus") return;
+		// Keep an empty layer mounted in Stops view. Arrival data is asynchronous;
+		// creating it only after matching buses arrive would make marker
+		// reconciliation run one render too early and miss those vehicles.
 
-		if (singleRouteMode) {
+		if (unclusteredBusMode) {
 			busClusterLayer.current = L.layerGroup();
 		} else {
 			busClusterLayer.current = L.markerClusterGroup({
@@ -358,7 +391,8 @@ export function useVehicleMap(
 			});
 		}
 		busClusterLayer.current.addTo(map);
-	}, [mode, singleRouteMode]);
+		setBusLayerGeneration((generation) => generation + 1);
+	}, [mode, unclusteredBusMode]);
 
 	// RAF tick loop — shared across trains + buses, reads from refs only.
 	useEffect(() => {

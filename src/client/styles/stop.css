@@ -2,6 +2,283 @@
    Bus stop tooltip
    ============================================================ */
 
+.bus-map-view-toggle__spinner {
+	flex: 0 0 auto;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.28);
+	border-top-color: #fff;
+	animation: bus-map-view-spin 0.75s linear infinite;
+}
+
+.bus-map-focus-control {
+	display: block;
+}
+
+@keyframes bus-map-view-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.bus-map-stop-marker {
+	border: 0;
+	background: transparent;
+}
+
+.bus-map-stop-marker__dot {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	border: 2px solid #fff;
+	border-radius: 50%;
+	background: var(--stop-map-color, var(--brand-mid));
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.46);
+	color: #fff;
+	font-size: 0;
+	font-weight: 800;
+}
+
+.bus-map-stop-marker--dublinbus {
+	--stop-map-color: var(--op-dublinbus);
+}
+
+.bus-map-stop-marker--buseireann {
+	--stop-map-color: var(--op-buseireann);
+}
+
+.bus-map-stop-marker--goahead {
+	--stop-map-color: var(--op-goahead);
+}
+
+.bus-map-stop-marker--selected .bus-map-stop-marker__dot {
+	border-width: 3px;
+	font-size: 0.62rem;
+	letter-spacing: -0.04em;
+	box-shadow:
+		0 3px 9px rgba(0, 0, 0, 0.55),
+		0 0 0 4px color-mix(in srgb, var(--stop-map-color) 28%, transparent);
+}
+
+.bus-stop-cluster {
+	--stop-cluster-color: var(--op-dublinbus);
+	--stop-cluster-text: var(--op-dublinbus-text);
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	border: 2px solid rgba(255, 255, 255, 0.88);
+	border-radius: 50%;
+	background: var(--stop-cluster-color);
+	box-shadow:
+		0 3px 10px rgba(0, 0, 0, 0.4),
+		0 0 0 5px color-mix(in srgb, var(--stop-cluster-color) 20%, transparent);
+	color: var(--stop-cluster-text);
+	font-size: 0.72rem;
+	font-weight: 800;
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+}
+
+.bus-stop-cluster span {
+	display: block;
+	line-height: 1;
+}
+
+.bus-stop-cluster--medium {
+	font-size: 0.76rem;
+}
+
+.bus-stop-cluster--large {
+	font-size: 0.8rem;
+}
+
+.bus-stop-cluster--buseireann {
+	--stop-cluster-color: var(--op-buseireann);
+	--stop-cluster-text: #fff;
+}
+
+.bus-stop-cluster--goahead {
+	--stop-cluster-color: var(--op-goahead);
+	--stop-cluster-text: #fff;
+}
+
+.bus-map-focus-fab {
+	position: fixed;
+	right: calc(12px + env(safe-area-inset-right));
+	bottom: calc(48px + env(safe-area-inset-bottom));
+	z-index: 1003;
+}
+
+.bus-map-focus-fab svg {
+	width: 20px;
+	height: 20px;
+	stroke-width: 2;
+}
+
+.bus-map-focus-control__dismiss {
+	position: fixed;
+	inset: 0;
+	z-index: 1001;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: default;
+}
+
+.bus-map-focus-popover {
+	position: fixed;
+	right: calc(78px + env(safe-area-inset-right));
+	bottom: calc(168px + env(safe-area-inset-bottom));
+	z-index: 1002;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 3px;
+	width: min(133px, calc(100vw - 24px));
+	box-sizing: border-box;
+	margin: 0;
+	padding: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 12px;
+	background: rgba(28, 28, 33, 0.9);
+	box-shadow:
+		0 12px 34px rgba(0, 0, 0, 0.38),
+		0 1px 0 rgba(255, 255, 255, 0.08) inset;
+	color: #fff;
+	backdrop-filter: blur(18px) saturate(145%);
+	-webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+.bus-map-focus-popover legend {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.bus-map-focus-popover__option {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	min-width: 0;
+	min-height: 50px;
+	box-sizing: border-box;
+	padding: 5px 3px 4px;
+	border-radius: 8px;
+	color: rgba(255, 255, 255, 0.7);
+	cursor: pointer;
+	font-size: 0.62rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.bus-map-focus-popover__option.is-selected {
+	background: rgba(56, 199, 122, 0.14);
+	color: #fff;
+}
+
+.bus-map-focus-popover__option input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.bus-map-focus-popover__option:has(input:focus-visible) {
+	outline: 2px solid #38c77a;
+	outline-offset: -2px;
+}
+
+.bus-map-focus-popover__option > svg {
+	width: 20px;
+	height: 20px;
+	stroke-width: 2;
+}
+
+.bus-map-focus-popover__label {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.bus-map-focus-popover__live {
+	position: absolute;
+	right: 5px;
+	bottom: 5px;
+	display: flex;
+}
+
+.bus-map-focus-popover__live svg {
+	width: 6px;
+	height: 6px;
+	fill: #42d982;
+	stroke: #42d982;
+}
+
+.bus-map-focus-popover .bus-map-view-toggle__spinner {
+	width: 19px;
+	height: 19px;
+}
+
+@media (max-width: 600px) {
+	.bus-map-focus-fab {
+		top: calc(20px + env(safe-area-inset-top));
+		right: calc(12px + env(safe-area-inset-right));
+		bottom: auto;
+	}
+
+	.bus-map-focus-popover {
+		top: calc(80px + env(safe-area-inset-top));
+		right: calc(12px + env(safe-area-inset-right));
+		bottom: auto;
+	}
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+	.bus-map-focus-fab {
+		top: calc(20dvh - 20px);
+	}
+
+	.bus-map-focus-popover {
+		top: calc(20dvh + 40px);
+	}
+}
+
+@media (min-width: 601px) {
+	.bus-map-focus-control ~ .locate-btn {
+		bottom: calc(96px + env(safe-area-inset-bottom));
+	}
+
+	.bus-map-focus-control ~ .fav-fab {
+		bottom: calc(144px + env(safe-area-inset-bottom));
+	}
+
+	.bus-map-focus-control ~ .about-fab {
+		bottom: calc(192px + env(safe-area-inset-bottom));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bus-map-view-toggle__spinner {
+		animation-duration: 1.5s;
+	}
+}
+
 .stop-tooltip.leaflet-tooltip {
 	background: rgba(22, 22, 28, 0.92);
 	color: #f0f0f0;

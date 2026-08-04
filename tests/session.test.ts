@@ -60,6 +60,7 @@ const BUS_SEARCH_KEY = "puca-bus-search-v1";
 const completeSession: Session = {
 	mode: "bus",
 	busOperator: "dublinbus",
+	busMapView: "stops",
 	mapView: { lat: 53.349, lng: -6.26, zoom: 14 },
 };
 
@@ -113,6 +114,16 @@ describe("loadSession", () => {
 		const out = loadSession();
 		expect(out.busOperator).toBeUndefined();
 		expect(out.mode).toBe("bus"); // unrelated valid fields still rehydrate
+	});
+
+	test("invalid bus map view is dropped", () => {
+		lsStore.set(
+			KEY,
+			JSON.stringify({ ...completeSession, busMapView: "timetables" }),
+		);
+		const out = loadSession();
+		expect(out.busMapView).toBeUndefined();
+		expect(out.mode).toBe("bus");
 	});
 
 	describe("mapView validation", () => {

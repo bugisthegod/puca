@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
 	boundsSignature,
 	busInBounds,
+	selectVisibleBuses,
+	shouldUseUnclusteredBusLayer,
 	stableVisibleBuses,
 	type VisibleBusCache,
 	visibleBusSnapshotSignature,
@@ -28,6 +30,12 @@ function bus(overrides: Partial<BusVehicle> = {}): BusVehicle {
 }
 
 describe("visible bus helpers", () => {
+	test("only a selected route disables bus clustering", () => {
+		expect(shouldUseUnclusteredBusLayer("39A", "1")).toBe(true);
+		expect(shouldUseUnclusteredBusLayer(null, null)).toBe(false);
+		expect(shouldUseUnclusteredBusLayer(null, "1")).toBe(false);
+	});
+
 	test("checks padded viewport bounds inclusively", () => {
 		const bounds = { north: 53.4, south: 53.3, east: -6.2, west: -6.3 };
 
@@ -45,6 +53,26 @@ describe("visible bus helpers", () => {
 				west: -6.300001,
 			}),
 		).toBe("53.40000,53.30000,-6.20000,-6.30000");
+	});
+
+	test("Stops view hides buses until an arrival is focused", () => {
+		const inView = bus({ tripId: "in-view" });
+		const focused = bus({ tripId: "focused", lat: 53.5 });
+		const options = {
+			isBusMode: true,
+			mapView: "stops" as const,
+			hasRoute: false,
+			bounds: { north: 53.4, south: 53.3, east: -6.2, west: -6.3 },
+			focusTripId: null,
+		};
+
+		expect(selectVisibleBuses([inView, focused], options)).toEqual([]);
+		expect(
+			selectVisibleBuses([inView, focused], {
+				...options,
+				focusTripId: "focused",
+			}),
+		).toEqual([focused]);
 	});
 
 	test("visible snapshot signatures are stable across response order changes", () => {

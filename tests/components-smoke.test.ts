@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
+	activeBusSearchQuery,
 	BUS_OPERATOR_INITIALS,
 	BUS_OPERATOR_LABEL,
 	displayEtaSeconds,
 	filterBusRoutes,
 	getBusDirections,
+	initialBusSearchQueries,
+	isCurrentSelectedStop,
 	type RouteWithOperator,
 } from "../src/client/components/BusSearchPanel";
 import { trainFocusSummaryMeta } from "../src/client/components/InfoPanel";
@@ -80,6 +83,29 @@ describe("BusSearchPanel smoke helpers", () => {
 		expect(displayEtaSeconds(600, null, 31_000)).toBe(600);
 		expect(displayEtaSeconds(600, 1_000, 31_000)).toBe(570);
 		expect(displayEtaSeconds(20, 1_000, 31_000)).toBe(0);
+	});
+
+	test("only allows arrival focus for the navigation-selected stop", () => {
+		const stop = { id: "1847", operator: "dublinbus" as const };
+		expect(isCurrentSelectedStop(stop, "1847", "dublinbus")).toBe(true);
+		expect(isCurrentSelectedStop(stop, null, null)).toBe(false);
+		expect(isCurrentSelectedStop(stop, "1848", "dublinbus")).toBe(false);
+		expect(isCurrentSelectedStop(stop, "1847", "goahead")).toBe(false);
+	});
+
+	test("keeps route and stop queries isolated when restoring a session", () => {
+		const queries = initialBusSearchQueries({
+			busSearchTab: "stop",
+			routeQuery: "39A",
+			stopQuery: "1847",
+		});
+		expect(queries).toEqual({ routeQuery: "39A", stopQuery: "1847" });
+		expect(
+			activeBusSearchQuery("route", queries.routeQuery, queries.stopQuery),
+		).toBe("39A");
+		expect(
+			activeBusSearchQuery("stop", queries.routeQuery, queries.stopQuery),
+		).toBe("1847");
 	});
 });
 

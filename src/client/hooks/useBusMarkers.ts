@@ -116,6 +116,7 @@ interface UseBusMarkersOptions {
 	>;
 	leafletMap: React.RefObject<L.Map | null>;
 	busClusterLayer: React.RefObject<L.MarkerClusterGroup | L.LayerGroup | null>;
+	layerGeneration: number;
 }
 
 export function useBusMarkers({
@@ -131,6 +132,7 @@ export function useBusMarkers({
 	onRouteJump,
 	leafletMap,
 	busClusterLayer,
+	layerGeneration,
 }: UseBusMarkersOptions): {
 	busMarkers: React.MutableRefObject<Map<string, BusMarkerEntry>>;
 	busShapeLayerRef: React.RefObject<L.Polyline | null>;
@@ -603,6 +605,7 @@ export function useBusMarkers({
 		busDirection,
 		busOperator,
 		getAnimationDurationMs,
+		layerGeneration,
 	]);
 
 	// -------------------------------------------------------------------------

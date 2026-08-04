@@ -3,21 +3,35 @@ import "leaflet.markercluster";
 (window as unknown as { L: typeof L }).L = L;
 
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useReducer,
+	useRef,
+	useState,
+} from "react";
 import { createRoot } from "react-dom/client";
 import type {
 	BusOperator,
 	BusShape,
-	BusVehicle,
 	FocusContext,
 	LuasStop,
 	TrainFocusSummary,
 	VehicleBounds,
 } from "../types";
 import { isStandalonePwa, trackEvent } from "./analytics";
+import {
+	busNavigationReducer,
+	createInitialBusNavigation,
+	planBusStopSelection,
+	shouldClearBusFocusForRouteSelection,
+} from "./busNavigation";
 import AboutModal from "./components/AboutModal";
+import BusMapViewToggle from "./components/BusMapViewToggle";
 import BusSearchPanel, {
 	type BusStopSummary,
+	type StopSearchResult,
 } from "./components/BusSearchPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
 import FavoritesModal from "./components/FavoritesModal";
@@ -48,13 +62,13 @@ import { type Mode, useVehicleMap } from "./hooks/useVehicleMap";
 import { useVehiclePolling } from "./hooks/useVehiclePolling";
 import {
 	boundsSignature,
-	busInBounds,
+	selectVisibleBuses,
 	stableVisibleBuses,
 	type VisibleBusCache,
 } from "./hooks/visibleBuses";
 import { useLocale } from "./i18n";
 import {
-	type BusSearchTab,
+	type BusMapView,
 	clearBusSearchSession,
 	clearLuasSearchSession,
 	loadBusSearchSession,
@@ -66,6 +80,11 @@ import { registerServiceWorker } from "./sw-register";
 import "./style.css";
 
 const LOW_LOCATION_ACCURACY_M = 500;
+
+// Stable identity for the Live-view case where no stop snapshot is loaded.
+// An inline `?? []` would hand useBusStopMarkers a fresh array every render
+// and tear its effects down on every poll tick.
+const NO_BUS_STOPS: StopSearchResult[] = [];
 
 const savedSession = loadSession();
 const savedBusSearch = loadBusSearchSession();
@@ -123,12 +142,21 @@ function App() {
 	const [busOperator, setBusOperator] = useState<BusOperator>(
 		savedSession.busOperator ?? "dublinbus",
 	);
-	const [busRoute, setBusRoute] = useState<string | null>(
-		savedBusSearch.busRoute ?? null,
+	const [busNavigation, dispatchBusNavigation] = useReducer(
+		busNavigationReducer,
+		undefined,
+		() => createInitialBusNavigation(savedSession.busMapView, savedBusSearch),
 	);
-	const [busDirection, setBusDirection] = useState<string | null>(
-		savedBusSearch.busDirection ?? null,
-	);
+	const {
+		view: busMapView,
+		route: busRoute,
+		direction: busDirection,
+		stopId: busStopId,
+		stopOperator: busStopOperator,
+	} = busNavigation;
+	const busSearchTab = busMapView === "stops" ? "stop" : "route";
+	const [busStops, setBusStops] = useState<StopSearchResult[] | null>(null);
+	const [busStopsLoading, setBusStopsLoading] = useState(false);
 	const [trainEmptyNoticeVisible, setTrainEmptyNoticeVisible] = useState(false);
 	const [trainEmptyNoticeRequest, setTrainEmptyNoticeRequest] = useState(0);
 	const trainEmptyNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -174,15 +202,6 @@ function App() {
 		busRoute,
 		busDirection,
 		focusContext?.tripId ?? null,
-	);
-	const [busSearchTab, setBusSearchTab] = useState<BusSearchTab>(
-		savedBusSearch.busSearchTab ?? "route",
-	);
-	const [busStopId, setBusStopId] = useState<string | null>(
-		savedBusSearch.busStopId ?? null,
-	);
-	const [busStopOperator, setBusStopOperator] = useState<BusOperator | null>(
-		savedBusSearch.busStopOperator ?? null,
 	);
 	const [busStopSummary, setBusStopSummary] = useState<BusStopSummary | null>(
 		null,
@@ -230,18 +249,15 @@ function App() {
 	// user sees only their bus + the partial route to their stop. Flipping back
 	// to full fleet is one click on the "All buses" button.
 	const visibleBuses = useMemo(() => {
-		let nextBuses: BusVehicle[];
-		if (focusContext) {
-			nextBuses = buses.filter((b) => b.tripId === focusContext.tripId);
-		} else if (mode === "bus" && !busRoute) {
-			nextBuses = busViewportBounds
-				? buses.filter((b) => busInBounds(b, busViewportBounds))
-				: [];
-		} else {
-			nextBuses = buses;
-		}
+		const nextBuses = selectVisibleBuses(buses, {
+			isBusMode: mode === "bus",
+			mapView: busMapView,
+			hasRoute: busRoute !== null,
+			bounds: busViewportBounds,
+			focusTripId: focusContext?.tripId ?? null,
+		});
 		return stableVisibleBuses(nextBuses, visibleBusesCacheRef.current);
-	}, [buses, busRoute, busViewportBounds, focusContext, mode]);
+	}, [buses, busMapView, busRoute, busViewportBounds, focusContext, mode]);
 	const busRouteSummary =
 		mode === "bus" && busRoute && busDirection
 			? {
@@ -252,16 +268,6 @@ function App() {
 				}
 			: null;
 
-	const clearBusFocusState = useCallback(() => {
-		setBusStopId(null);
-		setBusStopOperator(null);
-		setBusStopSummary(null);
-		setFocusContext(null);
-		setBusFocusStopsAway(null);
-		setArrivalFocusResetSignal((n) => n + 1);
-		setArrivalFocusStatus("idle");
-	}, []);
-
 	const clearBusArrivalFocusState = useCallback(() => {
 		setFocusContext(null);
 		setBusFocusStopsAway(null);
@@ -269,16 +275,37 @@ function App() {
 		setArrivalFocusStatus("idle");
 	}, []);
 
+	const resetBusFocusState = useCallback(() => {
+		setBusStopSummary(null);
+		clearBusArrivalFocusState();
+	}, [clearBusArrivalFocusState]);
+
+	const applyBusStopSelection = useCallback(
+		(id: string | null, operator: BusOperator | null) => {
+			const plan = planBusStopSelection(busNavigation, id, operator);
+			dispatchBusNavigation(plan.action);
+			if (plan.resetFocus) resetBusFocusState();
+		},
+		[busNavigation, resetBusFocusState],
+	);
+
 	const showBusRouteOverview = useCallback(
 		(route: string, direction: string, operator?: BusOperator) => {
 			if (operator) setBusOperator(operator);
-			setBusRoute(route);
-			setBusDirection(direction);
-			setBusSearchTab("route");
-			clearBusFocusState();
+			dispatchBusNavigation({ type: "show-route", route, direction });
+			resetBusFocusState();
 			setPanelCollapsed(false);
 		},
-		[clearBusFocusState],
+		[resetBusFocusState],
+	);
+
+	const handleSelectMapBusStop = useCallback(
+		(stop: StopSearchResult) => {
+			applyBusStopSelection(stop.id, stop.operator);
+			setPanelCollapsed(false);
+			trackEvent("event/map/bus-stop");
+		},
+		[applyBusStopSelection],
 	);
 
 	const {
@@ -311,6 +338,11 @@ function App() {
 			initialView: savedSession.mapView ?? null,
 			focusContext,
 			onBusViewportBoundsChange: handleBusViewportBoundsChange,
+			busMapView,
+			busStops: busStops ?? NO_BUS_STOPS,
+			selectedBusStopId: busStopId,
+			selectedBusStopOperator: busStopOperator,
+			onSelectBusStop: handleSelectMapBusStop,
 			onTrainFocusSummary: setTrainFocusSummary,
 			onFocusSegmentStatus: (status) => {
 				setArrivalFocusStatus(status);
@@ -330,6 +362,30 @@ function App() {
 	);
 	const [locating, setLocating] = useState(false);
 	const { toast, showToast } = useToast();
+
+	useEffect(() => {
+		if (mode !== "bus" || busMapView !== "stops" || busStops !== null) return;
+		let cancelled = false;
+		setBusStopsLoading(true);
+		fetch("/api/bus/stops")
+			.then((response) => {
+				if (!response.ok) throw new Error(`HTTP ${response.status}`);
+				return response.json() as Promise<StopSearchResult[]>;
+			})
+			.then((stops) => {
+				if (!cancelled) setBusStops(stops);
+			})
+			.catch(() => {
+				if (cancelled) return;
+				showToast(t("bus.map.stops.error"));
+			})
+			.finally(() => {
+				if (!cancelled) setBusStopsLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [busMapView, busStops, mode, showToast, t]);
 	const [showAbout, setShowAbout] = useState(false);
 	const [seenAbout, setSeenAbout] = useState<boolean>(() => {
 		try {
@@ -505,6 +561,7 @@ function App() {
 			saveSession({
 				mode,
 				busOperator,
+				busMapView,
 				mapView: lastMapViewRef.current,
 			});
 		};
@@ -517,7 +574,7 @@ function App() {
 			document.removeEventListener("visibilitychange", onVisibility);
 			window.removeEventListener("pagehide", save);
 		};
-	}, [mode, busOperator, getMapView]);
+	}, [mode, busOperator, busMapView, getMapView]);
 
 	useEffect(() => {
 		if (!focusContext) setBusFocusStopsAway(null);
@@ -663,30 +720,25 @@ function App() {
 		clearTrainFocus();
 	}, [clearTrainFocus]);
 
-	const handlePickStopFavorite = useCallback((s: BusStopFavorite) => {
-		setMode((current) => (current === "bus" ? current : "bus"));
-		setBusRoute(null);
-		setBusDirection(null);
-		setFocusContext(null);
-		setArrivalFocusStatus("idle");
-		setBusSearchTab("stop");
-		setBusStopId(s.stopId);
-		setBusStopOperator(s.operator);
-		setPanelCollapsed(false);
-	}, []);
+	const handlePickStopFavorite = useCallback(
+		(s: BusStopFavorite) => {
+			setMode("bus");
+			applyBusStopSelection(s.stopId, s.operator);
+			setPanelCollapsed(false);
+		},
+		[applyBusStopSelection],
+	);
 
-	const handlePickLuasStopFavorite = useCallback((s: LuasStopFavorite) => {
-		setMode((current) => (current === "luas" ? current : "luas"));
-		setBusRoute(null);
-		setBusDirection(null);
-		setBusStopId(null);
-		setBusStopOperator(null);
-		setBusStopSummary(null);
-		setFocusContext(null);
-		setArrivalFocusStatus("idle");
-		setLuasStopId(s.stopId);
-		setPanelCollapsed(false);
-	}, []);
+	const handlePickLuasStopFavorite = useCallback(
+		(s: LuasStopFavorite) => {
+			setMode("luas");
+			dispatchBusNavigation({ type: "clear-all" });
+			resetBusFocusState();
+			setLuasStopId(s.stopId);
+			setPanelCollapsed(false);
+		},
+		[resetBusFocusState],
+	);
 
 	const handleSelectBusRoute = useCallback(
 		(r: string | null, op?: BusOperator) => {
@@ -694,15 +746,15 @@ function App() {
 			if (op && op !== busOperatorRef.current) {
 				setBusOperator(op);
 			}
-			setBusRoute(r);
-			setBusDirection(null);
-			setBusSearchTab("route");
-			clearBusFocusState();
+			dispatchBusNavigation({ type: "select-route", route: r });
+			if (shouldClearBusFocusForRouteSelection(busMapView, r)) {
+				resetBusFocusState();
+			}
 			if (r !== null) {
 				setPanelCollapsed(false);
 			}
 		},
-		[clearBusFocusState],
+		[busMapView, resetBusFocusState],
 	);
 
 	const handleSelectBusDirection = useCallback(
@@ -710,7 +762,7 @@ function App() {
 			if (direction && busRoute) {
 				showBusRouteOverview(busRoute, direction);
 			} else {
-				setBusDirection(direction);
+				dispatchBusNavigation({ type: "set-direction", direction });
 			}
 		},
 		[busRoute, showBusRouteOverview],
@@ -724,23 +776,21 @@ function App() {
 		[closePopup],
 	);
 
-	const handleBusTabChange = useCallback((tab: BusSearchTab) => {
-		setBusSearchTab(tab);
-		if (tab === "route") {
-			setFocusContext(null);
-			setArrivalFocusResetSignal((n) => n + 1);
-			setArrivalFocusStatus("idle");
-		}
-	}, []);
+	const handleBusMapViewChange = useCallback(
+		(view: BusMapView) => {
+			if (view === busMapView) return;
+			dispatchBusNavigation({ type: "set-view", view });
+			resetBusFocusState();
+		},
+		[busMapView, resetBusFocusState],
+	);
 
 	const handleStopIdChange = useCallback(
 		(id: string | null, op: BusOperator | null) => {
 			if (id !== null) trackEvent("event/search/bus-stop");
-			setBusStopId(id);
-			setBusStopOperator(op);
-			setArrivalFocusStatus("idle");
+			applyBusStopSelection(id, op);
 		},
-		[],
+		[applyBusStopSelection],
 	);
 
 	const handlePickArrival = useCallback(
@@ -755,8 +805,7 @@ function App() {
 		) => {
 			// Clear any selected route so the user lands in all-buses mode; the
 			// full vehicle response already includes the target trip for focusing.
-			setBusRoute(null);
-			setBusDirection(null);
+			dispatchBusNavigation({ type: "clear-route" });
 			setArrivalFocusStatus("pending");
 			setBusFocusStopsAway({
 				tripId: arrival.tripId,
@@ -785,7 +834,6 @@ function App() {
 	const handleStopSummaryChange = useCallback(
 		(summary: BusStopSummary | null) => {
 			setBusStopSummary(summary);
-			if (summary) setBusSearchTab("stop");
 		},
 		[],
 	);
@@ -802,16 +850,10 @@ function App() {
 			setMode(m);
 			setSearchCodes(null);
 			clearTrainFocus();
-			setBusRoute(null);
-			setBusDirection(null);
-			setBusStopId(null);
-			setBusStopOperator(null);
-			setBusStopSummary(null);
+			dispatchBusNavigation({ type: "clear-all" });
+			resetBusFocusState();
 			setLuasStopId(null);
 			setLuasStopSummary(null);
-			setBusSearchTab(m === "bus" ? "stop" : "route");
-			setFocusContext(null);
-			setArrivalFocusStatus("idle");
 			setPanelCollapsed(true);
 			// SearchPanel rehydrates from/to queries from this sessionStorage key
 			// on mount, so App-state clearing alone isn't enough — clear the
@@ -822,7 +864,7 @@ function App() {
 			if (m !== "bus") clearBusSearchSession();
 			if (m !== "luas") clearLuasSearchSession();
 		},
-		[clearTrainFocus],
+		[clearTrainFocus, resetBusFocusState],
 	);
 
 	const showNoTrainPositions = mode === "train" && trainEmptyNoticeVisible;
@@ -880,6 +922,13 @@ function App() {
 			)}
 			<OfflineBanner />
 			{mode === "bus" && <RealtimeBanner health={busRealtimeHealth} />}
+			{mode === "bus" && (
+				<BusMapViewToggle
+					view={busMapView}
+					onChange={handleBusMapViewChange}
+					stopsLoading={busStopsLoading}
+				/>
+			)}
 			{toast && (
 				<div className="app-toast" role="alert">
 					<div className="app-toast__text">
@@ -998,7 +1047,6 @@ function App() {
 					isFavorite={busIsFav}
 					onToggleFavorite={onToggleBusFav}
 					busSearchTab={busSearchTab}
-					onTabChange={handleBusTabChange}
 					busStopId={busStopId}
 					busStopOperator={busStopOperator}
 					onStopIdChange={handleStopIdChange}
@@ -1031,12 +1079,16 @@ function App() {
 					type="button"
 					className="back-to-all-btn"
 					onClick={() => {
-						setBusRoute(null);
-						setBusDirection(null);
+						dispatchBusNavigation({ type: "clear-route" });
 						clearBusArrivalFocusState();
 					}}
 				>
-					&larr; {t("bus.back.all")}
+					&larr;{" "}
+					{t(
+						busMapView === "stops" && focusContext !== null
+							? "bus.back.stops"
+							: "bus.back.all",
+					)}
 				</button>
 			)}
 			{mode === "train" && searchCodes !== null && (
