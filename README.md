@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache-2.0">
   <img src="https://img.shields.io/badge/runtime-Bun-000000" alt="Runtime: Bun">
 </p>
 
@@ -127,5 +127,6 @@ See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
 ## License
 
-Púca is licensed under the GNU Affero General Public License v3.0 only.
-See [LICENSE](LICENSE).
+Púca's original source code is licensed under the Apache License 2.0.
+See [LICENSE](LICENSE). Transit data, map tiles, and other third-party materials
+remain subject to their respective providers' terms and licenses.

@@ -3,7 +3,7 @@
 	"description": "Real-time bus, train, and Luas tracker for Ireland.",
 	"type": "module",
 	"private": true,
-	"license": "AGPL-3.0-only",
+	"license": "Apache-2.0",
 	"homepage": "https://puca.dev",
 	"repository": {
 		"type": "git",
