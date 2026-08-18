@@ -23,6 +23,8 @@ import os
 import sys
 from collections import defaultdict
 
+from gtfs_json_helpers import select_best_trip_stops
+
 GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
 DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data"))
 
@@ -123,27 +125,19 @@ def main():
     print(f"Irish Rail trips: {len(all_trip_ids):,}", file=sys.stderr)
 
     # ── 3. Stream stop_times.txt once ─────────────────────────────────────────
-    # Collect: per trip -> list of (sequence, stop_id)
-    trip_stops: dict[str, list] = defaultdict(list)
-
-    line_count = 0
-    with open(f"{GTFS_DIR}/stop_times.txt", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            line_count += 1
-            if line_count % 2_000_000 == 0:
-                print(f"  ...{line_count:,} rows read", file=sys.stderr)
-            tid = row["trip_id"]
-            if tid not in all_trip_ids:
-                continue
-            trip_stops[tid].append((int(row["stop_sequence"]), row["stop_id"]))
-
+    trip_ranks = {tid: rank for rank, tid in enumerate(trip_meta)}
+    best_trips, trip_stops, used_stop_ids, trip_endpoints, line_count, trips_with_data = (
+        select_best_trip_stops(
+            f"{GTFS_DIR}/stop_times.txt",
+            trip_meta,
+            all_trip_ids,
+            trip_ranks,
+            collect_endpoints=True,
+        )
+    )
+    best_trips = {key: best_trips.get(key, trips[0]) for key, trips in route_dir_trips.items()}
     print(f"stop_times rows read: {line_count:,}", file=sys.stderr)
-    print(f"Trips with stop data: {len(trip_stops)}", file=sys.stderr)
-
-    # Sort each trip's stops by sequence
-    for tid in trip_stops:
-        trip_stops[tid].sort(key=lambda x: x[0])
+    print(f"Trips with stop data: {trips_with_data}", file=sys.stderr)
 
     # ── 4. Load all stops ─────────────────────────────────────────────────────
     stops_dict: dict[str, dict] = {}
@@ -158,12 +152,6 @@ def main():
 
     # ── 5. Load shapes.txt for Irish Rail shape_ids ────────────────────────────
     # Collect needed shape_ids: those used by the best trip per route+direction
-    # First, determine best trip per route+direction (most stops)
-    best_trips: dict[tuple, str] = {}
-    for key, trips in route_dir_trips.items():
-        best = max(trips, key=lambda t: len(trip_stops.get(t, [])))
-        best_trips[key] = best
-
     needed_shape_ids: set[str] = set()
     for tid in best_trips.values():
         needed_shape_ids.add(trip_meta[tid]["shape_id"])
@@ -231,14 +219,8 @@ def main():
     print(f"Written: {OUT_ROUTES} ({size_kb:.1f} KB)", file=sys.stderr)
 
     # ── 8. Build train-stops.json ─────────────────────────────────────────────
-    # Collect all stop_ids used by any Irish Rail trip
-    used_stop_ids: set[str] = set()
-    for tid in all_trip_ids:
-        for _, sid in trip_stops.get(tid, []):
-            used_stop_ids.add(sid)
-
     train_stops: dict[str, dict] = {}
-    for sid in used_stop_ids:
+    for sid in sorted(used_stop_ids):
         s = stops_dict.get(sid)
         if s:
             train_stops[sid] = s
@@ -252,11 +234,10 @@ def main():
     # For each trip, get first and last stop name, build key "origin|dest"
     endpoints: dict[str, dict] = {}
     for tid, meta in trip_meta.items():
-        stops_seq = trip_stops.get(tid, [])
-        if len(stops_seq) < 2:
+        endpoint = trip_endpoints.get(tid)
+        if endpoint is None:
             continue
-        first_sid = stops_seq[0][1]
-        last_sid = stops_seq[-1][1]
+        first_sid, last_sid = endpoint
         first_name = stops_dict.get(first_sid, {}).get("name", "")
         last_name = stops_dict.get(last_sid, {}).get("name", "")
         if not first_name or not last_name:
