@@ -36,7 +36,8 @@ import math
 import os
 import sys
 from collections import defaultdict
-from gtfs_json_helpers import write_operator_stops_json
+
+from gtfs_json_helpers import select_best_trip_stops, write_operator_stops_json
 
 GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
 DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data"))
@@ -212,24 +213,39 @@ def main():
     print(f"Route+direction combos: {len(route_dir_trips)}", file=sys.stderr)
 
     # ── 3. Stream stop_times.txt once ─────────────────────────────────────────
-    trip_stops: dict[str, list] = defaultdict(list)
-    line_count = 0
-    with open(f"{GTFS_DIR}/stop_times.txt", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            line_count += 1
-            if line_count % 2_000_000 == 0:
-                print(f"  ...{line_count:,} stop_times rows read", file=sys.stderr)
-            tid = row["trip_id"]
-            if tid not in all_trip_ids:
-                continue
-            trip_stops[tid].append((int(row["stop_sequence"]), row["stop_id"]))
+    shape_trip_counts: dict[tuple, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    trip_ranks: dict[str, int] = {}
+    for rank, (tid, meta) in enumerate(trip_meta.items()):
+        trip_ranks[tid] = rank
+        key = (meta["route_id"], meta["direction_id"])
+        sid = meta["shape_id"]
+        if sid:
+            shape_trip_counts[key][sid] += 1
 
+    candidate_trip_ids: set[str] = set()
+    candidate_trips_by_key: dict[tuple, list[str]] = {}
+    for key, trips in route_dir_trips.items():
+        counts = shape_trip_counts.get(key, {})
+        if counts:
+            modal_sid = max(counts.items(), key=lambda x: (x[1], x[0]))[0]
+            candidates = [tid for tid in trips if trip_meta[tid].get("shape_id") == modal_sid]
+        else:
+            candidates = trips
+        candidate_trips_by_key[key] = candidates
+        candidate_trip_ids.update(candidates)
+
+    best_trips, trip_stops, used_stop_ids, _, line_count, trips_with_data = select_best_trip_stops(
+        f"{GTFS_DIR}/stop_times.txt",
+        trip_meta,
+        candidate_trip_ids,
+        trip_ranks,
+    )
+    best_trips = {
+        key: best_trips.get(key, candidate_trips_by_key[key][0])
+        for key in route_dir_trips
+    }
     print(f"stop_times rows read: {line_count:,}", file=sys.stderr)
-    print(f"Trips with stop data: {len(trip_stops)}", file=sys.stderr)
-
-    for tid in trip_stops:
-        trip_stops[tid].sort(key=lambda x: x[0])
+    print(f"Trips with stop data: {trips_with_data}", file=sys.stderr)
 
     # ── 4. Load stops ──────────────────────────────────────────────────────────
     stops_dict: dict[str, dict] = {}
@@ -249,25 +265,6 @@ def main():
     # headsign represent the route. "Coords and stops from the same trip" is
     # the invariant that keeps stops on the polyline (prior bug: stops from
     # longest trip + coords from pre-existing shape → stops floated off line).
-    shape_trip_counts: dict[tuple, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for tid, meta in trip_meta.items():
-        key = (meta["route_id"], meta["direction_id"])
-        sid = meta["shape_id"]
-        if sid:
-            shape_trip_counts[key][sid] += 1
-
-    best_trips: dict[tuple, str] = {}
-    for key, trips in route_dir_trips.items():
-        counts = shape_trip_counts.get(key, {})
-        if counts:
-            # Tie-break by sid lexicographic for deterministic builds.
-            modal_sid = max(counts.items(), key=lambda x: (x[1], x[0]))[0]
-            modal_trips = [t for t in trips if trip_meta[t].get("shape_id") == modal_sid]
-            best = max(modal_trips, key=lambda t: len(trip_stops.get(t, [])))
-        else:
-            best = max(trips, key=lambda t: len(trip_stops.get(t, [])))
-        best_trips[key] = best
-
     needed_shape_ids: set[str] = set()
     for tid in best_trips.values():
         sid = trip_meta[tid]["shape_id"]
@@ -403,7 +400,7 @@ def main():
     print(f"Written: {OUT_ROUTES} ({size_kb2:.1f} KB, {len(route_list)} routes)", file=sys.stderr)
 
     # ── 9. Build dublinbus-stops.json ─────────────────────────────────────────
-    write_operator_stops_json(OUT_STOPS, stops_dict, trip_stops)
+    write_operator_stops_json(OUT_STOPS, stops_dict, used_stop_ids)
 
     # ── 10. Summary ───────────────────────────────────────────────────────────
     print("\n=== Summary ===", file=sys.stderr)

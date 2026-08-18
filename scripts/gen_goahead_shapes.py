@@ -21,7 +21,8 @@ import math
 import os
 import sys
 from collections import defaultdict
-from gtfs_json_helpers import write_operator_stops_json
+
+from gtfs_json_helpers import select_best_trip_stops, write_operator_stops_json
 
 GTFS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gtfs"))
 DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "src", "data"))
@@ -116,24 +117,17 @@ def main():
     print(f"Route+direction combos: {len(route_dir_trips)}", file=sys.stderr)
 
     # ── 3. Stream stop_times.txt once ─────────────────────────────────────────
-    trip_stops: dict[str, list] = defaultdict(list)
-    line_count = 0
-    with open(f"{GTFS_DIR}/stop_times.txt", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            line_count += 1
-            if line_count % 1_000_000 == 0:
-                print(f"  ...{line_count:,} stop_times rows read", file=sys.stderr)
-            tid = row["trip_id"]
-            if tid not in all_trip_ids:
-                continue
-            trip_stops[tid].append((int(row["stop_sequence"]), row["stop_id"]))
-
+    trip_ranks = {tid: rank for rank, tid in enumerate(trip_meta)}
+    best_trips, trip_stops, used_stop_ids, _, line_count, trips_with_data = select_best_trip_stops(
+        f"{GTFS_DIR}/stop_times.txt",
+        trip_meta,
+        all_trip_ids,
+        trip_ranks,
+        progress_every=1_000_000,
+    )
+    best_trips = {key: best_trips.get(key, trips[0]) for key, trips in route_dir_trips.items()}
     print(f"stop_times rows read: {line_count:,}", file=sys.stderr)
-    print(f"Trips with stop data: {len(trip_stops)}", file=sys.stderr)
-
-    for tid in trip_stops:
-        trip_stops[tid].sort(key=lambda x: x[0])
+    print(f"Trips with stop data: {trips_with_data}", file=sys.stderr)
 
     # ── 4. Load stops ──────────────────────────────────────────────────────────
     stops_dict: dict[str, dict] = {}
@@ -148,11 +142,6 @@ def main():
     print(f"Stops loaded: {len(stops_dict):,}", file=sys.stderr)
 
     # ── 5. Determine best trip per route+direction ─────────────────────────────
-    best_trips: dict[tuple, str] = {}
-    for key, trips in route_dir_trips.items():
-        best = max(trips, key=lambda t: len(trip_stops.get(t, [])))
-        best_trips[key] = best
-
     needed_shape_ids: set[str] = set()
     for tid in best_trips.values():
         sid = trip_meta[tid]["shape_id"]
@@ -224,7 +213,7 @@ def main():
     print(f"Written: {OUT_ROUTES} ({size_kb2:.1f} KB, {len(route_list)} routes)", file=sys.stderr)
 
     # ── 9. Build goahead-stops.json ───────────────────────────────────────────
-    write_operator_stops_json(OUT_STOPS, stops_dict, trip_stops)
+    write_operator_stops_json(OUT_STOPS, stops_dict, used_stop_ids)
 
     # ── 10. Summary ───────────────────────────────────────────────────────────
     print("\n=== Summary ===", file=sys.stderr)
