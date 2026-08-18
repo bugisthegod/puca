@@ -60,9 +60,19 @@
     "longName": "Dublin - Dunshaughlin - Trim"
   },
   {
+    "id": "2 109D a",
+    "shortName": "109D",
+    "longName": "DCU - Trim"
+  },
+  {
     "id": "2 109X d",
     "shortName": "109X",
     "longName": "Dublin - Kells - Cavan Hourly Express"
+  },
+  {
+    "id": "2 110D a",
+    "shortName": "110D",
+    "longName": "DCU - Kennedy Road"
   },
   {
     "id": "2 111 d",
@@ -303,6 +313,11 @@
     "id": "2 220A a",
     "shortName": "220A",
     "longName": "South Mall - Fountainstown"
+  },
+  {
+    "id": "2 220C a",
+    "shortName": "220C",
+    "longName": "MTU - Crosshaven"
   },
   {
     "id": "2 220X c d",
