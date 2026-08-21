@@ -22,7 +22,7 @@ jobs:
   prepare:
     name: Generate JSON, open PR, and enable auto-merge
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
