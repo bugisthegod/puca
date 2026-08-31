@@ -35,10 +35,6 @@
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
   },
-  "connolly|lansdowne road": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "connolly|hazelhatch and celbridge": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
@@ -116,10 +112,6 @@
     "directionId": 1
   },
   "hazelhatch and celbridge|dublin heuston": {
-    "routeId": "DUB-WATERFORD-I",
-    "directionId": 1
-  },
-  "thomastown|dublin heuston": {
     "routeId": "DUB-WATERFORD-I",
     "directionId": 1
   },
@@ -208,12 +200,12 @@
     "directionId": 1
   },
   "ballybrophy|limerick (colbert)": {
-    "routeId": "DUB-NEN-LIM-I",
-    "directionId": 0
+    "routeId": "LIM-BALLYBROP-I",
+    "directionId": 1
   },
   "limerick (colbert)|ballybrophy": {
-    "routeId": "DUB-NEN-LIM-I",
-    "directionId": 1
+    "routeId": "LIM-BALLYBROP-I",
+    "directionId": 0
   },
   "limerick junction|waterford (plunkett)": {
     "routeId": "LIMERICK-WAT-O",
@@ -263,11 +255,15 @@
     "routeId": "MAL-COBH-O",
     "directionId": 0
   },
+  "connolly|lansdowne road": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
   "dun laoghaire (mallin)|greystones": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "lansdowne road|greystones": {
+  "connolly|dun laoghaire (mallin)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -275,7 +271,7 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "connolly|dun laoghaire (mallin)": {
+  "lansdowne road|greystones": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -335,11 +331,11 @@
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },
-  "lansdowne road|malahide": {
+  "lansdowne road|howth": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
-  "lansdowne road|howth": {
+  "lansdowne road|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
@@ -621,14 +617,6 @@
   },
   "connolly|mullingar": {
     "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 0
-  },
-  "nenagh|ballybrophy": {
-    "routeId": "DUB-NEN-LIM-I",
-    "directionId": 1
-  },
-  "ballybrophy|nenagh": {
-    "routeId": "DUB-NEN-LIM-I",
     "directionId": 0
   }
 }
