@@ -57,12 +57,7 @@ const sampleOfficialDate = new Date(`${sampleArrivalsDay}T12:45:00Z`);
 const sampleOfficialDatePlus15Sec = new Date(`${sampleArrivalsDay}T12:45:15Z`);
 const sampleOfficialDatePlus1Sec = new Date(`${sampleArrivalsDay}T12:45:01Z`);
 const sampleArrivalsYmd = sampleArrivalsDay.replaceAll("-", "");
-const sampleArrivalsWeekday = new Intl.DateTimeFormat("en-IE", {
-	timeZone: "Europe/Dublin",
-	weekday: "long",
-})
-	.format(sampleArrivalsDate)
-	.toLowerCase();
+const sampleArrivalsWeekday = "saturday";
 const originalFetch = globalThis.fetch;
 const originalDate = globalThis.Date;
 
@@ -138,7 +133,7 @@ function dublinLocalDate(ymd: string, time: string): Date {
 		Date.UTC(year, month - 1, day, hour, minute, second),
 	);
 	const parts = Object.fromEntries(
-		new Intl.DateTimeFormat("en-IE", {
+		new Intl.DateTimeFormat("en-IE-u-nu-latn", {
 			timeZone: "Europe/Dublin",
 			year: "numeric",
 			month: "2-digit",
@@ -146,7 +141,7 @@ function dublinLocalDate(ymd: string, time: string): Date {
 			hour: "2-digit",
 			minute: "2-digit",
 			second: "2-digit",
-			hour12: false,
+			hourCycle: "h23",
 		})
 			.formatToParts(utcGuess)
 			.map((part) => [part.type, part.value]),
@@ -164,12 +159,12 @@ function dublinLocalDate(ymd: string, time: string): Date {
 
 function dublinSeconds(date: Date): number {
 	const parts = Object.fromEntries(
-		new Intl.DateTimeFormat("en-IE", {
+		new Intl.DateTimeFormat("en-IE-u-nu-latn", {
 			timeZone: "Europe/Dublin",
 			hour: "2-digit",
 			minute: "2-digit",
 			second: "2-digit",
-			hour12: false,
+			hourCycle: "h23",
 		})
 			.formatToParts(date)
 			.map((part) => [part.type, part.value]),

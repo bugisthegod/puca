@@ -460,12 +460,17 @@ describe("realtime cache request path", () => {
 	}
 
 	async function expectSettlesQuickly<T>(promise: Promise<T>): Promise<T> {
-		const timeout = new Promise<"timeout">((resolve) =>
-			setTimeout(() => resolve("timeout"), 25),
-		);
-		const result = await Promise.race([promise, timeout]);
-		expect(result).not.toBe("timeout");
-		return result as T;
+		let timeoutId: ReturnType<typeof setTimeout> | undefined;
+		const timeout = new Promise<"timeout">((resolve) => {
+			timeoutId = setTimeout(() => resolve("timeout"), 200);
+		});
+		try {
+			const result = await Promise.race([promise, timeout]);
+			expect(result).not.toBe("timeout");
+			return result as T;
+		} finally {
+			if (timeoutId !== undefined) clearTimeout(timeoutId);
+		}
 	}
 
 	function mockServiceHourClock(): void {

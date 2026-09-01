@@ -83,7 +83,7 @@ export function fmtTime(t: string): string {
 // any timezone, and Ireland observes DST (UTC in winter, UTC+1 in summer).
 // Reading getHours() on a naive Date would drift by 1 hour for half the year
 // and arbitrarily for a client who has changed their system clock.
-const DUBLIN_TIME_FMT = new Intl.DateTimeFormat("en-IE", {
+const DUBLIN_TIME_FMT = new Intl.DateTimeFormat("en-IE-u-nu-latn", {
 	timeZone: "Europe/Dublin",
 	hourCycle: "h23",
 	hour: "2-digit",
