@@ -24,6 +24,11 @@ const GTFS_DIR = "gtfs";
 const OUT_DIR = "src/data";
 const LUAS_AGENCY_ID = "10000";
 
+// Generated JSON must be byte-for-byte stable across machines and ICU versions.
+function compareCodePoints(a: string, b: string): number {
+	return a < b ? -1 : a > b ? 1 : 0;
+}
+
 async function parseCsvRows(
 	path: string,
 	onRow: (row: string[]) => void,
@@ -233,7 +238,7 @@ const luasStops: LuasStop[] = [...groupedStops.values()]
 		lng: Number((group.lngSum / group.ids.length).toFixed(7)),
 		line: group.line,
 	}))
-	.sort((a, b) => a.name.localeCompare(b.name));
+	.sort((a, b) => compareCodePoints(a.name, b.name));
 
 const serviceCalendar: Record<string, [string, string, string]> = {};
 await forEachCsvRow("calendar.txt", (row, columns) => {
@@ -268,7 +273,7 @@ await forEachCsvRow("calendar_dates.txt", (row, columns) => {
 
 const sortedArrivalsByStop = Object.fromEntries(
 	[...arrivalsByStop.entries()]
-		.sort(([a], [b]) => a.localeCompare(b))
+		.sort(([a], [b]) => compareCodePoints(a, b))
 		.map(([stopId, list]) => [stopId, list.sort((a, b) => a[2] - b[2])]),
 );
 

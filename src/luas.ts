@@ -117,7 +117,7 @@ function buildArrivalsByPlatformId(
 	return result;
 }
 
-const dublinDateFormatter = new Intl.DateTimeFormat("en-IE", {
+const dublinDateFormatter = new Intl.DateTimeFormat("en-IE-u-nu-latn", {
 	timeZone: "Europe/Dublin",
 	year: "numeric",
 	month: "2-digit",
@@ -125,22 +125,12 @@ const dublinDateFormatter = new Intl.DateTimeFormat("en-IE", {
 	hour: "2-digit",
 	minute: "2-digit",
 	second: "2-digit",
-	hour12: false,
-	weekday: "long",
+	hourCycle: "h23",
 });
-const SERVICE_DAY_INDEX: Record<string, number> = {
-	monday: 0,
-	tuesday: 1,
-	wednesday: 2,
-	thursday: 3,
-	friday: 4,
-	saturday: 5,
-	sunday: 6,
-};
 
 function dublinParts(date: Date): {
 	ymd: string;
-	weekday: string;
+	dayIndex: number;
 	seconds: number;
 } {
 	const parts = Object.fromEntries(
@@ -148,9 +138,12 @@ function dublinParts(date: Date): {
 			.formatToParts(date)
 			.map((part) => [part.type, part.value]),
 	);
+	const year = Number(parts.year);
+	const month = Number(parts.month);
+	const day = Number(parts.day);
 	return {
 		ymd: `${parts.year}${parts.month}${parts.day}`,
-		weekday: String(parts.weekday ?? "").toLowerCase(),
+		dayIndex: (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7,
 		seconds:
 			Number(parts.hour) * 3600 +
 			Number(parts.minute) * 60 +
@@ -161,7 +154,7 @@ function dublinParts(date: Date): {
 function isServiceActive(
 	serviceId: string,
 	ymd: string,
-	weekday: string,
+	dayIndex: number,
 ): boolean {
 	const exception = arrivalData.exceptions.find(
 		([exceptionServiceId, date]) =>
@@ -174,8 +167,7 @@ function isServiceActive(
 	if (!service) return false;
 	const [days, startDate, endDate] = service;
 	if (ymd < startDate || ymd > endDate) return false;
-	const dayIndex = SERVICE_DAY_INDEX[weekday];
-	return dayIndex !== undefined && days[dayIndex] === "1";
+	return days[dayIndex] === "1";
 }
 
 function formatDeparture(seconds: number): string {
@@ -407,20 +399,20 @@ function realtimeArrivalDisplayKey(
 
 function previousDublinCalendarDay(ymd: string): {
 	ymd: string;
-	weekday: string;
+	dayIndex: number;
 } {
 	const year = Number(ymd.slice(0, 4));
 	const month = Number(ymd.slice(4, 6));
 	const day = Number(ymd.slice(6, 8));
 	const previousNoonUtc = new Date(Date.UTC(year, month - 1, day - 1, 12));
 	const parts = dublinParts(previousNoonUtc);
-	return { ymd: parts.ymd, weekday: parts.weekday };
+	return { ymd: parts.ymd, dayIndex: parts.dayIndex };
 }
 
-function activeServiceSetForParts(ymd: string, weekday: string): Set<string> {
+function activeServiceSetForParts(ymd: string, dayIndex: number): Set<string> {
 	return new Set(
 		Object.keys(arrivalData.services).filter((serviceId) =>
-			isServiceActive(serviceId, ymd, weekday),
+			isServiceActive(serviceId, ymd, dayIndex),
 		),
 	);
 }
@@ -451,12 +443,12 @@ export function getLuasStopArrivals(
 	const nowParts = dublinParts(now);
 	const todayServices = activeServiceSetForParts(
 		nowParts.ymd,
-		nowParts.weekday,
+		nowParts.dayIndex,
 	);
 	const yesterdayParts = previousDublinCalendarDay(nowParts.ymd);
 	const yesterdayServices = activeServiceSetForParts(
 		yesterdayParts.ymd,
-		yesterdayParts.weekday,
+		yesterdayParts.dayIndex,
 	);
 	const nowSec = nowParts.seconds;
 	const candidates: LuasArrival[] = [];
@@ -587,12 +579,12 @@ export function getLuasStopArrivalsRealtimeFirst(
 	const nowParts = dublinParts(now);
 	const todayServices = activeServiceSetForParts(
 		nowParts.ymd,
-		nowParts.weekday,
+		nowParts.dayIndex,
 	);
 	const yesterdayParts = previousDublinCalendarDay(nowParts.ymd);
 	const yesterdayServices = activeServiceSetForParts(
 		yesterdayParts.ymd,
-		yesterdayParts.weekday,
+		yesterdayParts.dayIndex,
 	);
 	const nowSec = nowParts.seconds;
 	const currentStopName = normalizeDestinationName(stop.name);

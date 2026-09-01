@@ -18,36 +18,64 @@ export function clampMins(raw: string | null, fallback: number): number {
 	return Math.min(120, Math.max(1, n));
 }
 
+// Irish Rail's "today" is Dublin's today — not fly's UTC today, which can be
+// yesterday during summer-evening / early-morning windows.
+const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE-u-nu-latn", {
+	timeZone: "Europe/Dublin",
+	day: "numeric",
+	month: "numeric",
+	year: "numeric",
+});
+
+const TRAIN_MONTHS = [
+	"jan",
+	"feb",
+	"mar",
+	"apr",
+	"may",
+	"jun",
+	"jul",
+	"aug",
+	"sep",
+	"oct",
+	"nov",
+	"dec",
+] as const;
+
 // Irish Rail TrainDate format: "6 may 2026" / "06 may 2026" (lowercase short month).
 // Day 1-31, month must be a real short name, year within ±1 of today — keeps
 // cache keys bounded so an attacker can't blow up the cache by varying ?date=.
 // Frontend doesn't send ?date= at all (server defaults to today), so failing
 // validation simply falls back to today is fine.
-const TRAIN_DATE_RE =
-	/^(0?[1-9]|[12]\d|3[01]) (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec) \d{4}$/;
+const TRAIN_DATE_RE = new RegExp(
+	`^(0?[1-9]|[12]\\d|3[01]) (${TRAIN_MONTHS.join("|")}) \\d{4}$`,
+);
 
-export function isValidTrainDate(raw: string): boolean {
+function dublinDateParts(date: Date): {
+	day: number;
+	month: number;
+	year: number;
+} {
+	const parts = Object.fromEntries(
+		DUBLIN_DATE_FMT.formatToParts(date).map((part) => [part.type, part.value]),
+	);
+	return {
+		day: Number(parts.day),
+		month: Number(parts.month),
+		year: Number(parts.year),
+	};
+}
+
+export function isValidTrainDate(raw: string, now: Date = new Date()): boolean {
 	if (!TRAIN_DATE_RE.test(raw)) return false;
 	const year = parseInt(raw.slice(-4), 10);
-	const thisYear = new Date().getFullYear();
+	const thisYear = dublinDateParts(now).year;
 	return year >= thisYear - 1 && year <= thisYear + 1;
 }
 
-// Irish Rail's "today" is Dublin's today — not fly's UTC today, which can be
-// yesterday during summer-evening / early-morning windows.
-const DUBLIN_DATE_FMT = new Intl.DateTimeFormat("en-IE", {
-	timeZone: "Europe/Dublin",
-	day: "numeric",
-	month: "short",
-	year: "numeric",
-});
-
-export function todayFormatted(): string {
-	const parts = DUBLIN_DATE_FMT.formatToParts(new Date());
-	const day = parts.find((p) => p.type === "day")?.value;
-	const month = parts.find((p) => p.type === "month")?.value.toLowerCase();
-	const year = parts.find((p) => p.type === "year")?.value;
-	return `${day} ${month} ${year}`;
+export function todayFormatted(now: Date = new Date()): string {
+	const { day, month, year } = dublinDateParts(now);
+	return `${day} ${TRAIN_MONTHS[month - 1]} ${year}`;
 }
 
 export function staticFile(path: string, ttlSec: number) {

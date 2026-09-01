@@ -45,31 +45,34 @@ describe("clampMins", () => {
 });
 
 describe("isValidTrainDate", () => {
-	const year = new Date().getFullYear();
+	const referenceNow = new Date("2026-06-01T12:00:00Z");
+	const year = referenceNow.getUTCFullYear();
 
 	test("accepts Irish Rail formatted dates", () => {
-		expect(isValidTrainDate(`6 may ${year}`)).toBe(true);
-		expect(isValidTrainDate(`06 may ${year}`)).toBe(true);
-		expect(isValidTrainDate(`31 dec ${year - 1}`)).toBe(true);
-		expect(isValidTrainDate(`1 jan ${year + 1}`)).toBe(true);
+		expect(isValidTrainDate(`6 may ${year}`, referenceNow)).toBe(true);
+		expect(isValidTrainDate(`06 may ${year}`, referenceNow)).toBe(true);
+		expect(isValidTrainDate(`31 dec ${year - 1}`, referenceNow)).toBe(true);
+		expect(isValidTrainDate(`1 jan ${year + 1}`, referenceNow)).toBe(true);
 	});
 
 	test("rejects malformed dates", () => {
-		expect(isValidTrainDate("")).toBe(false);
-		expect(isValidTrainDate(`32 may ${year}`)).toBe(false);
-		expect(isValidTrainDate(`0 may ${year}`)).toBe(false);
-		expect(isValidTrainDate(`6 xyz ${year}`)).toBe(false);
-		expect(isValidTrainDate(`6 May ${year}`)).toBe(false);
-		expect(isValidTrainDate(`6 may ${year} extra`)).toBe(false);
+		expect(isValidTrainDate("", referenceNow)).toBe(false);
+		expect(isValidTrainDate(`32 may ${year}`, referenceNow)).toBe(false);
+		expect(isValidTrainDate(`0 may ${year}`, referenceNow)).toBe(false);
+		expect(isValidTrainDate(`6 xyz ${year}`, referenceNow)).toBe(false);
+		expect(isValidTrainDate(`6 May ${year}`, referenceNow)).toBe(false);
+		expect(isValidTrainDate(`6 may ${year} extra`, referenceNow)).toBe(false);
 	});
 
 	test("bounds the year to ±1 so cache keys stay bounded", () => {
-		expect(isValidTrainDate(`6 may ${year - 2}`)).toBe(false);
-		expect(isValidTrainDate(`6 may ${year + 2}`)).toBe(false);
+		expect(isValidTrainDate(`6 may ${year - 2}`, referenceNow)).toBe(false);
+		expect(isValidTrainDate(`6 may ${year + 2}`, referenceNow)).toBe(false);
 	});
 
-	test("todayFormatted output is itself a valid train date", () => {
-		expect(isValidTrainDate(todayFormatted())).toBe(true);
+	test("todayFormatted uses Irish Rail's fixed September abbreviation", () => {
+		const september = new Date("2026-09-01T12:00:00Z");
+		expect(todayFormatted(september)).toBe("1 sep 2026");
+		expect(isValidTrainDate(todayFormatted(september), september)).toBe(true);
 	});
 });
 

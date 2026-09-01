@@ -37,7 +37,11 @@ jobs:
       - name: Download latest NTA GTFS
         run: |
           mkdir -p gtfs
-          curl -fL "${NTA_ZIP_URL}?_=$(date +%s)" -o /tmp/GTFS_Realtime.zip
+          curl -fL \
+            --retry 5 \
+            --retry-delay 15 \
+            "${NTA_ZIP_URL}?_=$(date +%s)" \
+            -o /tmp/GTFS_Realtime.zip
           unzip -q -o /tmp/GTFS_Realtime.zip -d gtfs
           python3 - <<'PY'
           from pathlib import Path
