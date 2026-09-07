@@ -95,11 +95,11 @@
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "mallow|tralee casement station": {
+  "dublin heuston|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "dublin heuston|tralee casement station": {
+  "mallow|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
@@ -136,10 +136,6 @@
     "directionId": 1
   },
   "hazelhatch and celbridge|dublin heuston": {
-    "routeId": "DUB-WATERFORD-I",
-    "directionId": 1
-  },
-  "thomastown|dublin heuston": {
     "routeId": "DUB-WATERFORD-I",
     "directionId": 1
   },
@@ -180,7 +176,7 @@
     "directionId": 1
   },
   "athlone|dublin heuston": {
-    "routeId": "DUB-GALWAY-O",
+    "routeId": "DUB-WESTPORT-I",
     "directionId": 1
   },
   "westport|dublin heuston": {
@@ -207,15 +203,15 @@
     "routeId": "DUB-WESTPORT-I",
     "directionId": 0
   },
-  "galway (ceannt)|athenry": {
-    "routeId": "GALWAY-LIM-I",
-    "directionId": 1
-  },
   "galway (ceannt)|limerick (colbert)": {
     "routeId": "GALWAY-LIM-I",
     "directionId": 1
   },
   "ennis|limerick (colbert)": {
+    "routeId": "GALWAY-LIM-I",
+    "directionId": 1
+  },
+  "galway (ceannt)|athenry": {
     "routeId": "GALWAY-LIM-I",
     "directionId": 1
   },
@@ -275,16 +271,16 @@
     "routeId": "LIMERICK-WAT-O",
     "directionId": 0
   },
-  "cork (kent)|mallow": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 1
-  },
   "cobh|cork (kent)": {
     "routeId": "MAL-COBH-O",
     "directionId": 1
   },
   "midleton|cork (kent)": {
     "routeId": "MAL-COBH-O",
+    "directionId": 1
+  },
+  "cork (kent)|mallow": {
+    "routeId": "DUB-CORK-O",
     "directionId": 1
   },
   "cobh|mallow": {
@@ -419,15 +415,11 @@
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
-  "dublin heuston|mallow": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
   "charleville|cork (kent)": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
-  "dublin heuston|limerick junction": {
+  "dublin heuston|mallow": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
@@ -551,10 +543,6 @@
     "routeId": "DUB-EUROPORT-I",
     "directionId": 0
   },
-  "athlone|athenry": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 0
-  },
   "galway (ceannt)|dublin heuston": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 1
@@ -595,27 +583,23 @@
     "routeId": "DUB-LIMERICK-I",
     "directionId": 1
   },
-  "athenry|limerick (colbert)": {
-    "routeId": "DUB-LIMERICK-I",
-    "directionId": 1
-  },
   "athenry|dublin heuston": {
     "routeId": "DUB-LIMERICK-I",
     "directionId": 1
   },
-  "athenry|ennis": {
+  "athenry|limerick (colbert)": {
     "routeId": "DUB-LIMERICK-I",
     "directionId": 1
-  },
-  "limerick (colbert)|athenry": {
-    "routeId": "DUB-LIMERICK-I",
-    "directionId": 0
   },
   "limerick junction|limerick (colbert)": {
     "routeId": "DUB-LIMERICK-I",
     "directionId": 0
   },
   "thurles|limerick (colbert)": {
+    "routeId": "DUB-LIMERICK-I",
+    "directionId": 0
+  },
+  "limerick (colbert)|athenry": {
     "routeId": "DUB-LIMERICK-I",
     "directionId": 0
   },
@@ -659,10 +643,6 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
   },
-  "longford|connolly": {
-    "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 1
-  },
   "maynooth|dun laoghaire (mallin)": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
@@ -688,10 +668,6 @@
     "directionId": 0
   },
   "connolly|mullingar": {
-    "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 0
-  },
-  "drumcondra|maynooth": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 0
   }
