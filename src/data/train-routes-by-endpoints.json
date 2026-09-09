@@ -3,10 +3,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "connolly|maynooth": {
-    "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 0
-  },
   "clonsilla|m3 parkway": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 0
@@ -139,10 +135,6 @@
     "routeId": "DUB-WATERFORD-I",
     "directionId": 1
   },
-  "dublin heuston|kildare": {
-    "routeId": "DUB-WATERFORD-I",
-    "directionId": 0
-  },
   "dublin heuston|newbridge": {
     "routeId": "DUB-WATERFORD-I",
     "directionId": 0
@@ -168,6 +160,10 @@
     "directionId": 0
   },
   "thomastown|waterford (plunkett)": {
+    "routeId": "DUB-WATERFORD-I",
+    "directionId": 0
+  },
+  "dublin heuston|kildare": {
     "routeId": "DUB-WATERFORD-I",
     "directionId": 0
   },
@@ -277,10 +273,6 @@
   },
   "midleton|cork (kent)": {
     "routeId": "MAL-COBH-O",
-    "directionId": 1
-  },
-  "cork (kent)|mallow": {
-    "routeId": "DUB-CORK-O",
     "directionId": 1
   },
   "cobh|mallow": {
@@ -403,7 +395,7 @@
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
-  "mallow|dublin heuston": {
+  "cork (kent)|mallow": {
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
@@ -416,10 +408,6 @@
     "directionId": 0
   },
   "charleville|cork (kent)": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
-  "dublin heuston|mallow": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
@@ -551,14 +539,6 @@
     "routeId": "DUB-GALWAY-O",
     "directionId": 1
   },
-  "athenry|athlone": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 1
-  },
-  "dublin heuston|athenry": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 0
-  },
   "dublin heuston|galway (ceannt)": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 0
@@ -583,23 +563,11 @@
     "routeId": "DUB-LIMERICK-I",
     "directionId": 1
   },
-  "athenry|dublin heuston": {
-    "routeId": "DUB-LIMERICK-I",
-    "directionId": 1
-  },
-  "athenry|limerick (colbert)": {
-    "routeId": "DUB-LIMERICK-I",
-    "directionId": 1
-  },
   "limerick junction|limerick (colbert)": {
     "routeId": "DUB-LIMERICK-I",
     "directionId": 0
   },
   "thurles|limerick (colbert)": {
-    "routeId": "DUB-LIMERICK-I",
-    "directionId": 0
-  },
-  "limerick (colbert)|athenry": {
     "routeId": "DUB-LIMERICK-I",
     "directionId": 0
   },
@@ -646,6 +614,10 @@
   "maynooth|dun laoghaire (mallin)": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
+  },
+  "connolly|maynooth": {
+    "routeId": "DUB-MAYNOOTH-O",
+    "directionId": 0
   },
   "docklands|m3 parkway": {
     "routeId": "DUB-MAYNOOTH-O",
