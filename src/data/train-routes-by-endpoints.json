@@ -43,10 +43,6 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 0
   },
-  "howth|greystones": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "howth|bray (daly)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
@@ -109,6 +105,10 @@
   },
   "sligo (macdiarmada)|connolly": {
     "routeId": "DUB-SLIGO-O",
+    "directionId": 1
+  },
+  "howth|greystones": {
+    "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
   "connolly|sligo (macdiarmada)": {
