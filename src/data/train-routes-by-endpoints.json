@@ -63,15 +63,15 @@
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 1
   },
-  "portlaoise|kildare": {
-    "routeId": "DUB-PORTLAOIS-O",
-    "directionId": 1
-  },
   "newbridge|grand canal dock": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 1
   },
   "hazelhatch and celbridge|grand canal dock": {
+    "routeId": "DUB-PORTLAOIS-O",
+    "directionId": 1
+  },
+  "portlaoise|kildare": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 1
   },
@@ -83,15 +83,15 @@
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
   },
-  "kildare|portlaoise": {
-    "routeId": "DUB-PORTLAOIS-O",
-    "directionId": 0
-  },
   "grand canal dock|hazelhatch and celbridge": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
   },
   "grand canal dock|newbridge": {
+    "routeId": "DUB-PORTLAOIS-O",
+    "directionId": 0
+  },
+  "kildare|portlaoise": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
   },
@@ -163,10 +163,6 @@
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "kildare|dublin heuston": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 1
-  },
   "waterford (plunkett)|dublin heuston": {
     "routeId": "DUB-WATERFORD-I",
     "directionId": 1
@@ -177,6 +173,10 @@
   },
   "carlow|dublin heuston": {
     "routeId": "DUB-WATERFORD-I",
+    "directionId": 1
+  },
+  "kildare|dublin heuston": {
+    "routeId": "DUB-GALWAY-O",
     "directionId": 1
   },
   "athy|dublin heuston": {
@@ -199,15 +199,15 @@
     "routeId": "DUB-WATERFORD-I",
     "directionId": 1
   },
-  "dublin heuston|kildare": {
-    "routeId": "DUB-WATERFORD-I",
-    "directionId": 0
-  },
   "dublin heuston|newbridge": {
     "routeId": "DUB-WATERFORD-I",
     "directionId": 0
   },
   "dublin heuston|waterford (plunkett)": {
+    "routeId": "DUB-WATERFORD-I",
+    "directionId": 0
+  },
+  "dublin heuston|kildare": {
     "routeId": "DUB-WATERFORD-I",
     "directionId": 0
   },
@@ -251,11 +251,11 @@
     "routeId": "DUB-WESTPORT-I",
     "directionId": 1
   },
-  "westport|athlone": {
+  "westport|kildare": {
     "routeId": "DUB-WESTPORT-I",
     "directionId": 1
   },
-  "westport|kildare": {
+  "westport|athlone": {
     "routeId": "DUB-WESTPORT-I",
     "directionId": 1
   },
@@ -341,10 +341,6 @@
   },
   "cobh|mallow": {
     "routeId": "MAL-COBH-O",
-    "directionId": 1
-  },
-  "cork (kent)|mallow": {
-    "routeId": "DUB-CORK-O",
     "directionId": 1
   },
   "cork (kent)|cobh": {
@@ -495,10 +491,6 @@
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
-  "cork (kent)|portlaoise": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 1
-  },
   "cork (kent)|thurles": {
     "routeId": "DUB-CORK-O",
     "directionId": 1
@@ -507,11 +499,19 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "portarlington|dublin heuston": {
+  "cork (kent)|mallow": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 1
+  },
+  "cork (kent)|portlaoise": {
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
   "cork (kent)|portarlington": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 1
+  },
+  "portarlington|dublin heuston": {
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
@@ -532,10 +532,6 @@
     "directionId": 0
   },
   "portarlington|cork (kent)": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
-  "portlaoise|charleville": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
@@ -627,15 +623,15 @@
     "routeId": "DUB-GALWAY-O",
     "directionId": 1
   },
-  "galway (ceannt)|athlone": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 1
-  },
   "galway (ceannt)|kildare": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 1
   },
   "athlone|kildare": {
+    "routeId": "DUB-GALWAY-O",
+    "directionId": 1
+  },
+  "galway (ceannt)|athlone": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 1
   },
