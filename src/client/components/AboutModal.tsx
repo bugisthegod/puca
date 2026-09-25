@@ -216,21 +216,23 @@ export default function AboutModal({
 					onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 8)}
 				>
 					<div className="about-hero">
-						<div className="about-hero__mark">
-							<PucaMark />
+						<div className="about-hero__identity">
+							<div className="about-hero__mark">
+								<PucaMark size={54} />
+							</div>
+							<div>
+								<p className="about-hero__eyebrow">{t("about.hero.eyebrow")}</p>
+								<h2 className="about-hero__name">Púca</h2>
+							</div>
 						</div>
-						<h2 className="about-hero__name">Púca</h2>
 						<div className="about-hero__pron">
 							<span>POO-ka</span>
 							<em>· {t("about.hero.subline")}</em>
 						</div>
+						<p className="about-hero__intro">{t("about.hero.intro")}</p>
 						<p className="about-hero__tag">{t("about.hero.tag")}</p>
-					</div>
 
-					<div className="about-divider" />
-
-					{onShowTour && (
-						<section className="about-block">
+						{onShowTour && (
 							<button
 								type="button"
 								className="about-tour-btn"
@@ -238,13 +240,16 @@ export default function AboutModal({
 							>
 								{t("about.tour.btn")}
 							</button>
-						</section>
-					)}
+						)}
+					</div>
 
 					{onToggleCompass && (
 						<>
 							<div className="about-divider" />
 							<section className="about-block about-settings">
+								<p className="about-block__label">
+									{t("about.settings.heading")}
+								</p>
 								{onToggleCompass && (
 									<SettingRow
 										label={t("about.compass.label")}
@@ -284,106 +289,95 @@ export default function AboutModal({
 						<>
 							<div className="about-divider" />
 
-							<section className="about-block">
-								<div className="about-install-callout">
-									<div className="about-install__heading">
-										<svg
-											viewBox="0 0 24 24"
-											width="18"
-											height="18"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="2"
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											aria-hidden="true"
-										>
-											<rect x="5" y="2" width="14" height="20" rx="2.5" />
-											<path d="M11 18h2" />
-										</svg>
-										{t("about.install.heading")}
-									</div>
-									{canInstall && (
-										<button
-											type="button"
-											className="about-install-btn"
-											onClick={() => {
-												void triggerInstall();
-											}}
-										>
-											<svg
-												viewBox="0 0 24 24"
-												width="16"
-												height="16"
-												fill="none"
-												stroke="currentColor"
-												strokeWidth="2"
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												aria-hidden="true"
+							<section className="about-block about-install-block">
+								<details className="about-install-callout">
+									<summary className="about-install__heading">
+										<span>{t("about.install.heading")}</span>
+										<small>{t("about.install.reveal")}</small>
+									</summary>
+									<div className="about-install__body">
+										{canInstall && (
+											<button
+												type="button"
+												className="about-install-btn"
+												onClick={() => {
+													void triggerInstall();
+												}}
 											>
-												<path d="M12 3v12" />
-												<path d="M7 10l5 5 5-5" />
-												<path d="M5 21h14" />
-											</svg>
-											{t("about.install.btn")}
-										</button>
-									)}
-									<div className="about-install">
-										<div className="about-install__card">
-											<div className="about-install__platform">
 												<svg
 													viewBox="0 0 24 24"
-													width="14"
-													height="14"
-													fill="currentColor"
+													width="16"
+													height="16"
+													fill="none"
+													stroke="currentColor"
+													strokeWidth="2"
+													strokeLinecap="round"
+													strokeLinejoin="round"
 													aria-hidden="true"
 												>
-													<path d="M17.6 13.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.8-3.6.8-.7 0-1.9-.8-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.7 2.4 3 2.4 1.2-.1 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.6-1-2.6-4.1zM15.2 6.4c.7-.8 1.1-1.9 1-3-.9.1-2.1.6-2.7 1.4-.6.7-1.2 1.8-1 2.9 1 0 2-.5 2.7-1.3z" />
+													<path d="M12 3v12" />
+													<path d="M7 10l5 5 5-5" />
+													<path d="M5 21h14" />
 												</svg>
-												{t("about.install.iphone.platform")}
+												{t("about.install.btn")}
+											</button>
+										)}
+										<div className="about-install">
+											<div className="about-install__card">
+												<div className="about-install__platform">
+													<svg
+														viewBox="0 0 24 24"
+														width="14"
+														height="14"
+														fill="currentColor"
+														aria-hidden="true"
+													>
+														<path d="M17.6 13.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.8-3.6.8-.7 0-1.9-.8-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.7 2.4 3 2.4 1.2-.1 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.6-1-2.6-4.1zM15.2 6.4c.7-.8 1.1-1.9 1-3-.9.1-2.1.6-2.7 1.4-.6.7-1.2 1.8-1 2.9 1 0 2-.5 2.7-1.3z" />
+													</svg>
+													{t("about.install.iphone.platform")}
+												</div>
+												<ol className="about-install__steps">
+													<li>{t("about.install.iphone.s1")}</li>
+													<li
+														dangerouslySetInnerHTML={{
+															__html: t("about.install.iphone.s2"),
+														}}
+													/>
+													<li
+														dangerouslySetInnerHTML={{
+															__html: t("about.install.iphone.s3"),
+														}}
+													/>
+												</ol>
 											</div>
-											<ol className="about-install__steps">
-												<li>{t("about.install.iphone.s1")}</li>
-												<li
-													dangerouslySetInnerHTML={{
-														__html: t("about.install.iphone.s2"),
-													}}
-												/>
-												<li
-													dangerouslySetInnerHTML={{
-														__html: t("about.install.iphone.s3"),
-													}}
-												/>
-											</ol>
-										</div>
-										<div className="about-install__card">
-											<div className="about-install__platform">
-												<svg
-													viewBox="0 0 24 24"
-													width="14"
-													height="14"
-													fill="currentColor"
-													aria-hidden="true"
-												>
-													<path d="M17.5 11.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-11 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10.9-5.6l1.4-2.4a.3.3 0 1 0-.5-.3l-1.4 2.4A8.3 8.3 0 0 0 12 4.2c-1.7 0-3.3.4-4.7 1.3L5.9 3.2a.3.3 0 1 0-.5.3l1.4 2.4A7.7 7.7 0 0 0 3.5 12h17a7.7 7.7 0 0 0-3.1-6.1zM3.5 13v6a1.5 1.5 0 0 0 1.5 1.5h1v2a1.5 1.5 0 0 0 3 0v-2h6v2a1.5 1.5 0 0 0 3 0v-2h1A1.5 1.5 0 0 0 20.5 19v-6h-17z" />
-												</svg>
-												{t("about.install.android.platform")}
+											<div className="about-install__card">
+												<div className="about-install__platform">
+													<svg
+														viewBox="0 0 24 24"
+														width="14"
+														height="14"
+														fill="currentColor"
+														aria-hidden="true"
+													>
+														<path d="M17.5 11.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-11 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10.9-5.6l1.4-2.4a.3.3 0 1 0-.5-.3l-1.4 2.4A8.3 8.3 0 0 0 12 4.2c-1.7 0-3.3.4-4.7 1.3L5.9 3.2a.3.3 0 1 0-.5.3l1.4 2.4A7.7 7.7 0 0 0 3.5 12h17a7.7 7.7 0 0 0-3.1-6.1zM3.5 13v6a1.5 1.5 0 0 0 1.5 1.5h1v2a1.5 1.5 0 0 0 3 0v-2h6v2a1.5 1.5 0 0 0 3 0v-2h1A1.5 1.5 0 0 0 20.5 19v-6h-17z" />
+													</svg>
+													{t("about.install.android.platform")}
+												</div>
+												<ol className="about-install__steps">
+													<li>{t("about.install.android.s1")}</li>
+													<li
+														dangerouslySetInnerHTML={{
+															__html: t("about.install.android.s2"),
+														}}
+													/>
+												</ol>
 											</div>
-											<ol className="about-install__steps">
-												<li>{t("about.install.android.s1")}</li>
-												<li
-													dangerouslySetInnerHTML={{
-														__html: t("about.install.android.s2"),
-													}}
-												/>
-											</ol>
 										</div>
+										<p className="about-install__note">
+											{t("about.install.note")}
+										</p>
 									</div>
-									<p className="about-install__note">
-										{t("about.install.note")}
-									</p>
-								</div>
+								</details>
 							</section>
 						</>
 					)}
@@ -391,13 +385,15 @@ export default function AboutModal({
 					<div className="about-divider" />
 
 					<section className="about-block about-actions">
+						<p className="about-block__label about-actions__label">
+							{t("about.actions.heading")}
+						</p>
 						<div className="about-action about-action--share">
 							<button
 								type="button"
 								className={`about-share-btn${shareCopied ? " is-copied" : ""}`}
 								onClick={handleShare}
 							>
-								<span aria-hidden="true">🔗</span>
 								{shareCopied ? t("about.share.copied") : t("about.share.btn")}
 							</button>
 						</div>
@@ -410,7 +406,6 @@ export default function AboutModal({
 								className="about-feedback-btn"
 								onClick={() => trackEvent("event/about/feedback")}
 							>
-								<span aria-hidden="true">🍀</span>
 								{t("about.feedback.btn")}
 							</a>
 						</div>
@@ -423,7 +418,6 @@ export default function AboutModal({
 								className="about-donate-btn"
 								onClick={() => trackEvent("event/about/donate")}
 							>
-								<span aria-hidden="true">🍭</span>
 								{t("about.donate.btn")}
 							</a>
 						</div>
