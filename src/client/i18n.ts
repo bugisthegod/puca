@@ -60,12 +60,15 @@ const EN = {
 	"about.info.btn.aria": "About {label}",
 
 	// AboutModal — hero
+	"about.hero.eyebrow": "About",
 	"about.hero.subline": "Irish folklore",
+	"about.hero.intro":
+		"Named after the shapeshifting figure of Irish folklore, Púca is a live map of Ireland’s trains, buses and Luas.",
 	"about.hero.tag":
-		"A shapeshifting spirit said to haunt Ireland's roads after dark — sometimes guiding weary travellers home, sometimes leading them astray for its own amusement. This map watches its modern cousins — trains and buses — as they flit across the island in real time.",
+		"Built for the moments when you just want to know what’s moving, where it is, and whether it’s coming.",
 
 	// AboutModal — tour button
-	"about.tour.btn": "Take the tour",
+	"about.tour.btn": "Take a short tour",
 
 	"about.share.btn": "Share Púca",
 	"about.share.copied": "Copied",
@@ -76,6 +79,7 @@ const EN = {
 	"about.lang.label": "Language",
 
 	// AboutModal — Compass setting
+	"about.settings.heading": "Map settings",
 	"about.compass.label": "Compass",
 	"about.compass.info":
 		"Shows which way you're facing on the map. Off by default; if your device asks for permission every time, keeping it off is recommended.",
@@ -83,7 +87,8 @@ const EN = {
 	"about.compass.on": "On",
 
 	// AboutModal — Install card
-	"about.install.heading": "Install as an app",
+	"about.install.heading": "Add Púca to your home screen",
+	"about.install.reveal": "How to install",
 	"about.install.btn": "Install Púca",
 	"about.install.iphone.platform": "iPhone · Safari",
 	"about.install.iphone.s1": "Tap the Share button.",
@@ -96,6 +101,7 @@ const EN = {
 	"about.install.note": "For a better experience, install to your home screen.",
 
 	"about.feedback.btn": "Send feedback",
+	"about.actions.heading": "More from Púca",
 
 	// AboutModal — footer
 	"about.footer.line1":
@@ -323,12 +329,15 @@ const ZH: Record<Key, string> = {
 	"about.info.btn.aria": "关于 {label}",
 
 	// AboutModal — hero
+	"about.hero.eyebrow": "关于",
 	"about.hero.subline": "爱尔兰民间传说",
+	"about.hero.intro":
+		"Púca 得名于爱尔兰民间传说中的变形精灵，是一张追踪爱尔兰列车、公交与 Luas 的实时地图。",
 	"about.hero.tag":
-		"Púca 是爱尔兰民间传说中的变形精灵，常在夜色降临后游荡于爱尔兰的道路 —— 有时为疲惫的旅人指路回家，有时却为消遣引人误入歧途。这张地图实时追踪它的现代亲戚 —— 在岛上来回穿梭的列车与公交。",
+		"为那些简单的问题而做：什么正在移动、它在哪里，以及它到底来不来。",
 
 	// AboutModal — tour button
-	"about.tour.btn": "查看引导",
+	"about.tour.btn": "快速了解 Púca",
 
 	"about.share.btn": "分享 Púca",
 	"about.share.copied": "已复制",
@@ -339,6 +348,7 @@ const ZH: Record<Key, string> = {
 	"about.lang.label": "语言",
 
 	// AboutModal — Compass setting
+	"about.settings.heading": "地图设置",
 	"about.compass.label": "指南针",
 	"about.compass.info":
 		"在地图上显示你面朝的方向。默认关闭；如果设备每次都弹权限提醒，建议保持关闭。",
@@ -346,7 +356,8 @@ const ZH: Record<Key, string> = {
 	"about.compass.on": "开",
 
 	// AboutModal — Install card
-	"about.install.heading": "安装为应用",
+	"about.install.heading": "将 Púca 添加到主屏幕",
+	"about.install.reveal": "查看安装方法",
 	"about.install.btn": "安装 Púca",
 	"about.install.iphone.platform": "iPhone · Safari",
 	"about.install.iphone.s1": "点击分享按钮。",
@@ -359,6 +370,7 @@ const ZH: Record<Key, string> = {
 	"about.install.note": "为了更好的体验，建议添加到主屏幕。",
 
 	"about.feedback.btn": "发送反馈",
+	"about.actions.heading": "更多",
 
 	// AboutModal — footer
 	"about.footer.line1":
