@@ -23,8 +23,14 @@ import {
 } from "./locationLogic";
 import type { Mode } from "./useVehicleMap";
 
+// This browser key is public; restrict its allowed websites in CARTO.
+const CARTO_API_KEY =
+	typeof process !== "undefined"
+		? (process.env.PUBLIC_CARTO_API_KEY ?? "")
+		: "";
 const TILE_VOYAGER =
-	"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+	"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" +
+	(CARTO_API_KEY ? `?key=${encodeURIComponent(CARTO_API_KEY)}` : "");
 
 const DEFAULT_CENTER: L.LatLngExpression = [53.35, -6.26];
 const DEFAULT_ZOOM = 8;

@@ -6,7 +6,7 @@ RUN bun install --frozen-lockfile --production
 
 COPY src/ src/
 COPY public/ public/
-COPY index.html tsconfig.json ./
+COPY index.html tsconfig.json bunfig.toml ./
 
 EXPOSE 3000
 CMD ["bun", "run", "src/server/index.ts"]

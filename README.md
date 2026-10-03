@@ -82,6 +82,18 @@ cp .env.example .env
 
 Then set `NTA_API_KEY` in `.env`.
 
+Set `PUBLIC_CARTO_API_KEY` to your [CARTO Basemaps key](https://www.carto.com/basemaps/apikey/)
+to remove the basemap watermark. This key is included in browser tile requests;
+restrict allowed websites in the CARTO dashboard to your production domain and
+local development address. Restart the dev server after changing it.
+
+For Fly.io, set the same variable before deploying the updated app:
+
+```bash
+fly secrets set PUBLIC_CARTO_API_KEY='YOUR_KEY' -a puca
+fly deploy -a puca
+```
+
 Run locally:
 
 ```bash
