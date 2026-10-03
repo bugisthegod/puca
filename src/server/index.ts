@@ -54,6 +54,8 @@ import { hasOriginAccess, rateLimit } from "./rateLimit.ts";
 const SW_CACHE_VERSION = process.env.FLY_MACHINE_VERSION ?? "dev";
 const parsedPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
+// Always inline a string so the browser never needs a runtime process global.
+process.env.PUBLIC_CARTO_API_KEY ??= "";
 let allBusStopsJsonCache: string | null = null;
 // Copied into an exact-fit buffer once. Bun.gzipSync returns a view whose
 // byteLength may be smaller than its backing buffer, and handing that raw
