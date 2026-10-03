@@ -403,10 +403,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "grand canal dock|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "lansdowne road|greystones": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
@@ -491,11 +487,11 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
-  "lansdowne road|malahide": {
+  "lansdowne road|howth": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
-  "lansdowne road|howth": {
+  "lansdowne road|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
