@@ -27,10 +27,6 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
   },
-  "howth|dun laoghaire (mallin)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "m3 parkway|docklands": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
@@ -53,10 +49,6 @@
   },
   "m3 parkway|connolly": {
     "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 1
-  },
-  "malahide|dun laoghaire (mallin)": {
-    "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
   "howth|greystones": {
@@ -175,19 +167,7 @@
     "routeId": "DUB-TRALEE-O",
     "directionId": 1
   },
-  "tralee casement station|killarney": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 1
-  },
   "tralee casement station|dublin heuston": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 1
-  },
-  "killarney|mallow": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 1
-  },
-  "killarney|dublin heuston": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 1
   },
@@ -195,27 +175,11 @@
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "cork (kent)|killarney": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 0
-  },
-  "killarney|tralee casement station": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 0
-  },
   "dublin heuston|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "dublin heuston|killarney": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 0
-  },
   "mallow|tralee casement station": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 0
-  },
-  "mallow|killarney": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
@@ -391,10 +355,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "connolly|dun laoghaire (mallin)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "connolly|grand canal dock": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
@@ -404,6 +364,10 @@
     "directionId": 1
   },
   "lansdowne road|greystones": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "howth|dun laoghaire (mallin)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -439,10 +403,6 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
-  "dun laoghaire (mallin)|malahide": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
   "connolly|howth": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
@@ -460,10 +420,6 @@
     "directionId": 0
   },
   "bray (daly)|howth": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "dun laoghaire (mallin)|howth": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
@@ -495,6 +451,10 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
+  "dun laoghaire (mallin)|howth": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
   "dun laoghaire (mallin)|connolly": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
@@ -516,10 +476,6 @@
     "directionId": 0
   },
   "charleville|cork (kent)": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
-  "killarney|cork (kent)": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
@@ -583,10 +539,6 @@
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },
-  "gorey|wicklow": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
   "gorey|bray (daly)": {
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
@@ -595,23 +547,7 @@
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },
-  "rosslare europort|wicklow": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
   "rosslare europort|bray (daly)": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
-  "wicklow|connolly": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
-  "wicklow|dun laoghaire (mallin)": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
-  "wicklow|bray (daly)": {
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },
@@ -631,23 +567,7 @@
     "routeId": "DUB-EUROPORT-I",
     "directionId": 0
   },
-  "connolly|wicklow": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 0
-  },
-  "dun laoghaire (mallin)|wicklow": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 0
-  },
-  "bray (daly)|wicklow": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 0
-  },
   "bray (daly)|rosslare europort": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 0
-  },
-  "wicklow|rosslare europort": {
     "routeId": "DUB-EUROPORT-I",
     "directionId": 0
   },
