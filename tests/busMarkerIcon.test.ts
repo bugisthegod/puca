@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	buildBusIconSpec,
+	busHalloweenCostume,
 	busOperatorMarkerClass,
 } from "../src/client/hooks/busMarkerIcon";
 import type { BusVehicle } from "../src/types";
@@ -30,7 +31,7 @@ describe("bus marker icon spec", () => {
 		expect(busOperatorMarkerClass("goahead")).toBe("bus-marker--goahead");
 	});
 
-	test("builds a normal bus icon with bus silhouette and compact dimensions", () => {
+	test("builds a Halloween icon with a readable route label", () => {
 		const spec = buildBusIconSpec(bus(), "dublinbus");
 
 		expect(spec.className).toBe("bus-marker");
@@ -38,8 +39,30 @@ describe("bus marker icon spec", () => {
 		expect(spec.html).toContain("bus-label");
 		expect(spec.html).toContain(">C1<");
 		expect(spec.html).not.toContain("bus-puca");
-		expect(spec.iconSize).toEqual([44, 30]);
-		expect(spec.iconAnchor).toEqual([22, 15]);
+		expect(spec.html).toContain(
+			`/${busHalloweenCostume(bus(), "dublinbus")}-marker.png?v=paper-mix-2`,
+		);
+		expect(spec.iconSize).toEqual([44, 52]);
+		expect(spec.iconAnchor).toEqual([22, 18]);
+	});
+
+	test("distributes all three costumes and keeps a vehicle stable across updates", () => {
+		const original = busHalloweenCostume(bus(), "dublinbus");
+		expect(
+			busHalloweenCostume(
+				bus({ lat: 53.4, timestamp: 2000, tripId: "new-trip" }),
+				"dublinbus",
+			),
+		).toBe(original);
+		const costumes = new Set(
+			Array.from({ length: 100 }, (_, i) =>
+				busHalloweenCostume(bus({ label: `vehicle-${i}` }), "dublinbus"),
+			),
+		);
+		expect(costumes).toEqual(new Set(["pumpkin", "bat", "witch"]));
+		expect(busHalloweenCostume(bus({ label: "" }), "dublinbus")).toBe(
+			busHalloweenCostume(bus({ label: "", timestamp: 3000 }), "dublinbus"),
+		);
 	});
 
 	test("adds operator and stale classes, swaps to Púca art, and uses taller dimensions", () => {

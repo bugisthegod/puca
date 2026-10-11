@@ -5,7 +5,10 @@ import {
 	type BusAnimationDurationStrategy,
 	computeBusCurrentDistance,
 } from "./busAnimation";
-import { makeBusIcon as makeBusMarkerIcon } from "./busMarkerIcon";
+import {
+	busHalloweenCostume,
+	makeBusIcon as makeBusMarkerIcon,
+} from "./busMarkerIcon";
 import {
 	type BusTripPopupData,
 	buildBusPopupHTML as buildBusPopupContentHTML,
@@ -218,6 +221,7 @@ export function useBusMarkers({
 		trip: BusTripPopupData | null,
 	): string {
 		return buildBusPopupContentHTML(bus, trip, {
+			artwork: busHalloweenCostume(bus, operatorForBus(bus)),
 			showRouteJump: Boolean(
 				onSelectBusRouteRef.current &&
 					currentBusRouteRef.current !== bus.routeShortName,
@@ -653,6 +657,7 @@ export function useBusMarkers({
 		let detailsRendered = false;
 
 		busShapeLayerRef.current = L.polyline(dirData.coords, {
+			className: "night-route",
 			color: routeColor,
 			weight: 6,
 			opacity: 0.85,
@@ -700,6 +705,7 @@ export function useBusMarkers({
 				for (const branch of v.branches) {
 					if (branch.length < 2) continue;
 					const pl = L.polyline(branch, {
+						className: "night-route night-route--variant",
 						color: routeColor,
 						weight: 3,
 						opacity: 0.35,
@@ -718,6 +724,7 @@ export function useBusMarkers({
 			const stopsVisible = activeMap.getZoom() >= STOP_MIN_ZOOM;
 			for (const stop of activeDirData.stops ?? []) {
 				const m = L.circleMarker([stop.lat, stop.lng], {
+					className: "night-route-stop",
 					radius: 6,
 					color: routeColor,
 					weight: 2.5,

@@ -135,8 +135,17 @@ Bun.serve({
 		"/public/icon-512.png": staticFile("./public/icon-512.png", 604800),
 		"/icon.svg": staticFile("./public/icon.svg", 604800),
 		"/public/icon.svg": staticFile("./public/icon.svg", 604800),
+		"/puca-halloween.png": staticFile("./public/puca-halloween.png", 604800),
+		"/pumpkin-marker.png": staticFile("./public/pumpkin-marker.png", 604800),
+		"/bat-marker.png": staticFile("./public/bat-marker.png", 604800),
+		"/train-marker.png": staticFile("./public/train-marker.png", 604800),
+		"/witch-marker.png": staticFile("./public/witch-marker.png", 604800),
 		"/puca-jack-o.svg": staticFile("./public/puca-jack-o.svg", 604800),
 		"/public/puca-jack-o.svg": staticFile("./public/puca-jack-o.svg", 604800),
+		"/puca-sleeping-halloween.png": staticFile(
+			"./public/puca-sleeping-halloween.png",
+			604800,
+		),
 		"/puca-sleeping.svg": staticFile("./public/puca-sleeping.svg", 604800),
 		"/public/puca-sleeping.svg": staticFile(
 			"./public/puca-sleeping.svg",

@@ -1,0 +1,44 @@
+# Púca Halloween artwork
+
+## Active assets
+
+- `splash.png`: exact user-supplied revised launch illustration (851 × 1849), including the Halloween wordmark.
+- `puca-character.png`: transparent witch-hat Púca mascot used in About.
+- `pumpkin-marker.png`: approved side-view paper-puppet pumpkin bus, four cream windows and two charcoal wheels.
+- `bat-marker.png`: approved layered plum bat, amber eyes and cream edge.
+- `train-marker.png`: approved green front-view Halloween train with pumpkin charm and ghost steam.
+- `witch-marker.png`: approved right-facing witch, purple hat/cape and gold broom.
+
+Runtime marker files in `public/` are 192 × 192 RGBA, displayed at36px. `busMarkerIcon.ts` assigns one of the three costumes by a stable hash of operator and vehicle label, falling back to tripId. Route labels and operator colors remain. Stale data keeps the original ghost cue.
+
+`bun scripts/gen_splash.ts` regenerates seven iPhone launch images and the384px About mascot. Marker exports use proportional Lanczos resizing of the transparent masters.
+
+## ImageGen provenance
+
+All cutouts use built-in ImageGen with true transparency.
+
+- About extraction: preserve the supplied ghost's cream body, squeezed > < eyes, dash mouth, witch hat, orange ribbon/badge and pumpkin basket; remove scene, wordmark and floating accent rays without redesign.
+- Bat/witch extraction: preserve the approved paper collage shapes, colors, pose and ivory edges; remove map, route badges, text and surrounding decoration.
+- Pumpkin bus: preserve original bus side silhouette, four windows and two wheels; use matte layered orange pumpkin panels, olive roof stem, plum window borders and cream backing in the approved paper-puppet style. Final extraction removes only the navy background and preserves the selected design.
+
+Unused concept variants and obsolete runtime bus images have been removed from the project.
+
+Train extraction uses built-in ImageGen: isolate the approved upper green train, preserve paper layers, cream rim, windows, orange lamps, pumpkin charm and ghost steam; remove background and map with true transparency. Runtime export is 192px RGBA; displayed at 30 × 36px. Train status is shown in the detail text; map status dots and colored glows are disabled.
+
+Vehicle artwork scales gradually from zoom 13 to 17 (1× to 4/3×). Train and bus popup headers show matching 80px artwork. Cache versions: paper-mix-2 and green-halloween-2.
+
+## Sleeping Púca — 2026-10-08
+
+`puca-sleeping.png` is the transparent master; runtime
+`public/puca-sleeping-halloween.png` is a proportional 384px export. Used in
+night/off-hours, empty train results, empty bus arrivals and empty favorites.
+Decoration is aria-hidden; existing explanatory text and actions remain.
+
+Built-in ImageGen prompt: preserve the approved cream scalloped ghost and purple
+witch hat/orange pumpkin badge; change eyes to closed sleeping eyelids and tilt
+head slightly; place one jack-o-lantern beside it, remove held basket; compact
+composition and transparent background. Final selected master is
+`exec-313d4945-aad2-4ddb-8533-96c1102454ba.png` from this chat's generated images.
+
+Luas concept images were generated but never copied into the project or wired
+into code, following the user's cancellation.

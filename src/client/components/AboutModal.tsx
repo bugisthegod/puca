@@ -4,7 +4,6 @@ import { trackEvent } from "../analytics";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
 import { useLocale } from "../i18n";
-import PucaMark from "./PucaMark";
 
 type AboutModalProps = {
 	onClose: () => void;
@@ -217,7 +216,13 @@ export default function AboutModal({
 				>
 					<div className="about-hero">
 						<div className="about-hero__mark">
-							<PucaMark />
+							<img
+								src="/puca-halloween.png?v=witch-1"
+								width={128}
+								height={128}
+								alt=""
+								aria-hidden="true"
+							/>
 						</div>
 						<h2 className="about-hero__name">Púca</h2>
 						<div className="about-hero__pron">

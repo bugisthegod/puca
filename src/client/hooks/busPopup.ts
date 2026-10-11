@@ -22,6 +22,7 @@ export type BusTripPopupData = {
 
 export type BusPopupOptions = {
 	showRouteJump: boolean;
+	artwork?: "pumpkin" | "bat" | "witch";
 };
 
 export function busPopupStatusFromDelay(sec: number | null): {
@@ -140,12 +141,17 @@ export function buildBusPopupHTML(
 		: "";
 	return `
     <div class="popup-content">
+      <div class="popup-vehicle-hero">
+        ${options.artwork ? `<img class="popup-vehicle-art" src="/${options.artwork}-marker.png?v=paper-mix-2" width="80" height="80" alt="" aria-hidden="true" />` : ""}
+        <div class="popup-vehicle-heading">
       <div class="popup-header-row">
         <div class="popup-title">${escapeHtml(bus.routeShortName)}</div>
         ${jumpBtn}
       </div>
       ${originDest}
       ${metaHtml}
+        </div>
+      </div>
       ${staleBanner}
       ${body}
     </div>

@@ -8,8 +8,8 @@
 	"lang": "en-IE",
 	"categories": ["travel", "navigation"],
 	"display": "standalone",
-	"background_color": "#16161c",
-	"theme_color": "#16161c",
+	"background_color": "#111629",
+	"theme_color": "#111629",
 	"icons": [
 		{
 			"src": "/icon-192.png",
