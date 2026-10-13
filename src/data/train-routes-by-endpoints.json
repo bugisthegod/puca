@@ -1,4 +1,8 @@
 {
+  "maynooth|grand canal dock": {
+    "routeId": "DUB-MAYNOOTH-O",
+    "directionId": 1
+  },
   "maynooth|connolly": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
@@ -7,23 +11,7 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
   },
-  "maynooth|grand canal dock": {
-    "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 1
-  },
-  "howth junction and donaghmede|grand canal dock": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "howth|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "howth|grand canal dock": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "dun laoghaire (mallin)|bray (daly)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -35,10 +23,6 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
   },
-  "malahide|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "maynooth|dublin pearse": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
@@ -48,10 +32,6 @@
     "directionId": 1
   },
   "howth|greystones": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "malahide|grand canal dock": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -79,7 +59,7 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 0
   },
-  "bray (daly)|greystones": {
+  "malahide|bray (daly)": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
@@ -93,22 +73,6 @@
   },
   "connolly|mullingar": {
     "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 0
-  },
-  "limerick (colbert)|ballybrophy": {
-    "routeId": "LIM-BALLYBROP-I",
-    "directionId": 0
-  },
-  "nenagh|ballybrophy": {
-    "routeId": "DUB-NEN-LIM-I",
-    "directionId": 1
-  },
-  "ballybrophy|limerick (colbert)": {
-    "routeId": "LIM-BALLYBROP-I",
-    "directionId": 1
-  },
-  "ballybrophy|nenagh": {
-    "routeId": "DUB-NEN-LIM-I",
     "directionId": 0
   },
   "portlaoise|dublin heuston": {
@@ -151,19 +115,7 @@
     "routeId": "DUB-SLIGO-O",
     "directionId": 1
   },
-  "sligo (macdiarmada)|dromod": {
-    "routeId": "DUB-SLIGO-O",
-    "directionId": 1
-  },
-  "dromod|connolly": {
-    "routeId": "DUB-SLIGO-O",
-    "directionId": 1
-  },
   "connolly|sligo (macdiarmada)": {
-    "routeId": "DUB-SLIGO-O",
-    "directionId": 0
-  },
-  "connolly|dromod": {
     "routeId": "DUB-SLIGO-O",
     "directionId": 0
   },
@@ -171,15 +123,7 @@
     "routeId": "DUB-SLIGO-O",
     "directionId": 0
   },
-  "dromod|sligo (macdiarmada)": {
-    "routeId": "DUB-SLIGO-O",
-    "directionId": 0
-  },
   "tralee casement station|mallow": {
-    "routeId": "DUB-TRALEE-O",
-    "directionId": 1
-  },
-  "tralee casement station|cork (kent)": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 1
   },
@@ -187,15 +131,19 @@
     "routeId": "DUB-TRALEE-O",
     "directionId": 1
   },
+  "tralee casement station|cork (kent)": {
+    "routeId": "DUB-TRALEE-O",
+    "directionId": 1
+  },
   "cork (kent)|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "dublin heuston|tralee casement station": {
+  "mallow|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
-  "mallow|tralee casement station": {
+  "dublin heuston|tralee casement station": {
     "routeId": "DUB-TRALEE-O",
     "directionId": 0
   },
@@ -267,15 +215,7 @@
     "routeId": "DUB-WESTPORT-I",
     "directionId": 0
   },
-  "sixmilebridge|limerick (colbert)": {
-    "routeId": "GALWAY-LIM-I",
-    "directionId": 0
-  },
   "galway (ceannt)|limerick (colbert)": {
-    "routeId": "GALWAY-LIM-I",
-    "directionId": 1
-  },
-  "galway (ceannt)|ennis": {
     "routeId": "GALWAY-LIM-I",
     "directionId": 1
   },
@@ -291,15 +231,15 @@
     "routeId": "GALWAY-LIM-I",
     "directionId": 1
   },
+  "galway (ceannt)|ennis": {
+    "routeId": "GALWAY-LIM-I",
+    "directionId": 1
+  },
   "limerick (colbert)|galway (ceannt)": {
     "routeId": "GALWAY-LIM-I",
     "directionId": 0
   },
   "limerick (colbert)|ennis": {
-    "routeId": "GALWAY-LIM-I",
-    "directionId": 0
-  },
-  "ennis|galway (ceannt)": {
     "routeId": "GALWAY-LIM-I",
     "directionId": 0
   },
@@ -310,6 +250,14 @@
   "nenagh|limerick (colbert)": {
     "routeId": "LIM-BALLYBROP-I",
     "directionId": 1
+  },
+  "ballybrophy|limerick (colbert)": {
+    "routeId": "LIM-BALLYBROP-I",
+    "directionId": 1
+  },
+  "limerick (colbert)|ballybrophy": {
+    "routeId": "LIM-BALLYBROP-I",
+    "directionId": 0
   },
   "limerick junction|waterford (plunkett)": {
     "routeId": "LIMERICK-WAT-O",
@@ -329,10 +277,6 @@
   },
   "cobh|mallow": {
     "routeId": "MAL-COBH-O",
-    "directionId": 1
-  },
-  "connolly|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
   "cork (kent)|mallow": {
@@ -359,30 +303,6 @@
     "routeId": "MAL-COBH-O",
     "directionId": 0
   },
-  "connolly|lansdowne road": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "howth junction and donaghmede|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "connolly|greystones": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "connolly|grand canal dock": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "lansdowne road|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
-  "lansdowne road|greystones": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "howth|connolly": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
@@ -391,39 +311,11 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
   },
-  "grand canal dock|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
   "bray (daly)|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
   "greystones|howth": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "dublin pearse|malahide": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "greystones|malahide": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "greystones|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "connolly|howth": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "connolly|howth junction and donaghmede": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "grand canal dock|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
@@ -435,11 +327,7 @@
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
-  "grand canal dock|howth junction and donaghmede": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "grand canal dock|howth": {
+  "greystones|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
@@ -447,19 +335,7 @@
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },
-  "bray (daly)|dun laoghaire (mallin)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
   "greystones|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "lansdowne road|howth": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "lansdowne road|malahide": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
@@ -471,23 +347,15 @@
     "routeId": "DUB-BFT-O",
     "directionId": 0
   },
+  "connolly|bray (daly)": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
   "cork (kent)|dublin heuston": {
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
-  "limerick junction|dublin heuston": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 1
-  },
   "dublin heuston|cork (kent)": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
-  "charleville|cork (kent)": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
-  "dublin heuston|limerick junction": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
@@ -551,15 +419,7 @@
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },
-  "gorey|bray (daly)": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
   "grand canal dock|drogheda (macbride)": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 1
-  },
-  "rosslare europort|bray (daly)": {
     "routeId": "DUB-EUROPORT-I",
     "directionId": 1
   },
@@ -576,10 +436,6 @@
     "directionId": 1
   },
   "connolly|rosslare europort": {
-    "routeId": "DUB-EUROPORT-I",
-    "directionId": 0
-  },
-  "bray (daly)|rosslare europort": {
     "routeId": "DUB-EUROPORT-I",
     "directionId": 0
   },
@@ -608,10 +464,6 @@
     "directionId": 0
   },
   "tullamore|galway (ceannt)": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 0
-  },
-  "athlone|galway (ceannt)": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 0
   },
@@ -646,5 +498,169 @@
   "maynooth|bray (daly)": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
+  },
+  "howth junction and donaghmede|grand canal dock": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "connolly|lansdowne road": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "howth|grand canal dock": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "dun laoghaire (mallin)|bray (daly)": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "malahide|grand canal dock": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "bray (daly)|greystones": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "nenagh|ballybrophy": {
+    "routeId": "DUB-NEN-LIM-I",
+    "directionId": 1
+  },
+  "ballybrophy|nenagh": {
+    "routeId": "DUB-NEN-LIM-I",
+    "directionId": 0
+  },
+  "sligo (macdiarmada)|dromod": {
+    "routeId": "DUB-SLIGO-O",
+    "directionId": 1
+  },
+  "dromod|connolly": {
+    "routeId": "DUB-SLIGO-O",
+    "directionId": 1
+  },
+  "connolly|dromod": {
+    "routeId": "DUB-SLIGO-O",
+    "directionId": 0
+  },
+  "dromod|sligo (macdiarmada)": {
+    "routeId": "DUB-SLIGO-O",
+    "directionId": 0
+  },
+  "sixmilebridge|limerick (colbert)": {
+    "routeId": "GALWAY-LIM-I",
+    "directionId": 0
+  },
+  "ennis|galway (ceannt)": {
+    "routeId": "GALWAY-LIM-I",
+    "directionId": 0
+  },
+  "lansdowne road|greystones": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "lansdowne road|bray (daly)": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "howth junction and donaghmede|connolly": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "connolly|greystones": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "connolly|grand canal dock": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "grand canal dock|connolly": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "dublin pearse|malahide": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "greystones|bray (daly)": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "connolly|howth": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "connolly|howth junction and donaghmede": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "grand canal dock|malahide": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "grand canal dock|howth junction and donaghmede": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "grand canal dock|howth": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "bray (daly)|dun laoghaire (mallin)": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "lansdowne road|malahide": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "lansdowne road|howth": {
+    "routeId": "BRAY-HOWTH-I",
+    "directionId": 0
+  },
+  "limerick junction|dublin heuston": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 1
+  },
+  "charleville|cork (kent)": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 0
+  },
+  "dublin heuston|limerick junction": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 0
+  },
+  "gorey|bray (daly)": {
+    "routeId": "DUB-EUROPORT-I",
+    "directionId": 1
+  },
+  "rosslare europort|bray (daly)": {
+    "routeId": "DUB-EUROPORT-I",
+    "directionId": 1
+  },
+  "bray (daly)|rosslare europort": {
+    "routeId": "DUB-EUROPORT-I",
+    "directionId": 0
+  },
+  "galway (ceannt)|ballinasloe": {
+    "routeId": "DUB-GALWAY-O",
+    "directionId": 1
+  },
+  "ballinasloe|athlone": {
+    "routeId": "DUB-GALWAY-O",
+    "directionId": 1
+  },
+  "athlone|galway (ceannt)": {
+    "routeId": "DUB-GALWAY-O",
+    "directionId": 0
+  },
+  "athlone|ballinasloe": {
+    "routeId": "DUB-GALWAY-O",
+    "directionId": 0
+  },
+  "ballinasloe|galway (ceannt)": {
+    "routeId": "DUB-GALWAY-O",
+    "directionId": 0
   }
 }
