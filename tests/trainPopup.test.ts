@@ -384,3 +384,15 @@ describe("buildTrainPopupHTML", () => {
 		expect(html).not.toContain("movements-table");
 	});
 });
+
+test("train artwork is a horn button in loading, loaded, and error popups", () => {
+	for (const html of [
+		buildTrainPopupHTML(train()),
+		buildTrainPopupWithMovements(train(), []),
+		buildTrainPopupErrorHTML(train()),
+	]) {
+		expect(html).toContain('data-sound="train"');
+		expect(html).toContain('aria-label="Play train horn"');
+		expect(html).toContain("/train-marker.png");
+	}
+});

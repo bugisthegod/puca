@@ -35,6 +35,11 @@ import BusSearchPanel, {
 } from "./components/BusSearchPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
 import FavoritesModal from "./components/FavoritesModal";
+import HalloweenNotice, {
+	canOpenHalloweenNotice,
+	markHalloweenNoticeSeen,
+	shouldShowHalloweenNotice,
+} from "./components/HalloweenNotice";
 import InfoPanel from "./components/InfoPanel";
 import LuasSearchPanel, {
 	type LuasStopSummary,
@@ -387,6 +392,11 @@ function App() {
 		};
 	}, [busMapView, busStops, mode, showToast, t]);
 	const [showAbout, setShowAbout] = useState(false);
+	const [showHalloween, setShowHalloween] = useState(shouldShowHalloweenNotice);
+	function closeHalloween() {
+		markHalloweenNoticeSeen();
+		setShowHalloween(false);
+	}
 	const [seenAbout, setSeenAbout] = useState<boolean>(() => {
 		try {
 			return localStorage.getItem(ABOUT_SEEN_KEY) === "1";
@@ -994,6 +1004,14 @@ function App() {
 			{showAbout && (
 				<AboutModal
 					onClose={() => setShowAbout(false)}
+					onShowHalloween={
+						canOpenHalloweenNotice()
+							? () => {
+									setShowAbout(false);
+									setShowHalloween(true);
+								}
+							: undefined
+					}
 					onShowTour={() => {
 						setShowAbout(false);
 						openTour();
@@ -1009,7 +1027,10 @@ function App() {
 					}
 				/>
 			)}
-			{showTour && <OnboardingTour steps={tourSteps} onClose={closeTour} />}
+			{showHalloween && <HalloweenNotice onClose={closeHalloween} />}
+			{showTour && !showHalloween && (
+				<OnboardingTour steps={tourSteps} onClose={closeTour} />
+			)}
 			{showFavs && (
 				<FavoritesModal
 					onClose={handleCloseFavorites}

@@ -73,6 +73,7 @@ describe("bus marker icon spec", () => {
 		);
 		expect(spec.html).toContain("bus-puca");
 		expect(spec.html).toContain("<svg");
+		expect(spec.html).not.toContain("/puca-puppet.png");
 		expect(spec.html).not.toContain("<img");
 		expect(spec.html).not.toContain("puca-jack-o.svg");
 		expect(spec.html).not.toContain("bus-icon");

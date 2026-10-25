@@ -1,6 +1,7 @@
 import type { Feature, LineString } from "geojson";
 import { useEffect, useRef } from "react";
 import type { BusOperator, BusShape, BusVehicle } from "../../types";
+import { playVehicleSound } from "../vehicleSound";
 import {
 	type BusAnimationDurationStrategy,
 	computeBusCurrentDistance,
@@ -142,6 +143,8 @@ export function useBusMarkers({
 	busStopMarkersRef: React.MutableRefObject<L.CircleMarker[]>;
 } {
 	const busMarkers = useRef<Map<string, BusMarkerEntry>>(new Map());
+	// Keep dismissal through async popup content replacement, scoped to each opening.
+	const dismissedSoundHints = useRef(new WeakSet<L.Popup>());
 	const busShapeLayerRef = useRef<L.Polyline | null>(null);
 	const busStopMarkersRef = useRef<L.CircleMarker[]>([]);
 	// Single ring marker on the polyline's terminus stop. Pairs with the search
@@ -229,10 +232,28 @@ export function useBusMarkers({
 		});
 	}
 
-	function wireRouteJumpButton(popup: L.Popup) {
-		const btn = popup.getElement?.()?.querySelector(".popup-route-jump");
+	function wirePopupButtons(popup: L.Popup) {
+		const soundButton = popup
+			.getElement?.()
+			?.querySelector<HTMLButtonElement>(".popup-vehicle-sound");
+		if (soundButton) {
+			soundButton.classList.toggle(
+				"popup-vehicle-sound--hint",
+				!dismissedSoundHints.current.has(popup),
+			);
+			soundButton.onclick = (event) => {
+				event.stopPropagation();
+				dismissedSoundHints.current.add(popup);
+				soundButton.classList.remove("popup-vehicle-sound--hint");
+				void playVehicleSound(soundButton.dataset.sound);
+			};
+		}
+
+		const btn = popup
+			.getElement?.()
+			?.querySelector<HTMLButtonElement>(".popup-route-jump");
 		if (!btn) return;
-		btn.addEventListener("click", () => {
+		btn.onclick = () => {
 			const route = decodeURIComponent(btn.getAttribute("data-route") ?? "");
 			const dir = btn.getAttribute("data-dir") ?? "";
 			const operatorRaw = btn.getAttribute(
@@ -247,7 +268,7 @@ export function useBusMarkers({
 					onSelectBusRouteRef.current?.(route, dir, operator);
 				}
 			}
-		});
+		};
 	}
 
 	function scrollPopupToCurrent(marker: L.Marker) {
@@ -306,14 +327,14 @@ export function useBusMarkers({
 			const popup = marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildBusPopupHTML(bus, trip.stops ? trip : null));
-				wireRouteJumpButton(popup);
+				wirePopupButtons(popup);
 				scrollPopupToCurrent(marker);
 			}
 		} catch {
 			const popup = marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildBusPopupHTML(bus, { stops: [] }));
-				wireRouteJumpButton(popup);
+				wirePopupButtons(popup);
 			}
 		} finally {
 			busTripInFlight.delete(bus.tripId);
@@ -344,7 +365,10 @@ export function useBusMarkers({
 				paddingBottomRight: L.point(16, 16),
 			});
 			const popup = marker.getPopup();
-			if (popup) wireRouteJumpButton(popup);
+			if (popup) {
+				dismissedSoundHints.current.delete(popup);
+				wirePopupButtons(popup);
+			}
 			// Instant re-highlight from cache on re-open (markercluster event storms
 			// or second click). Fetch below will overwrite if shapeId resolves later.
 			const cached = busMarkers.current.get(bus.tripId)?.shapeId;

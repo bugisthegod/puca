@@ -8,6 +8,7 @@ import { useLocale } from "../i18n";
 type AboutModalProps = {
 	onClose: () => void;
 	onShowTour?: () => void;
+	onShowHalloween?: () => void;
 	compassPref?: boolean;
 	onToggleCompass?: (next: boolean) => void;
 };
@@ -113,6 +114,7 @@ function SettingRow({
 export default function AboutModal({
 	onClose,
 	onShowTour,
+	onShowHalloween,
 	compassPref,
 	onToggleCompass,
 }: AboutModalProps) {
@@ -234,6 +236,15 @@ export default function AboutModal({
 
 					<div className="about-divider" />
 
+					{onShowHalloween && (
+						<button
+							type="button"
+							className="about-tour-btn"
+							onClick={onShowHalloween}
+						>
+							🎃 {t("halloween.title")}
+						</button>
+					)}
 					{onShowTour && (
 						<section className="about-block">
 							<button

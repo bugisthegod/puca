@@ -135,6 +135,17 @@ Bun.serve({
 		"/public/icon-512.png": staticFile("./public/icon-512.png", 604800),
 		"/icon.svg": staticFile("./public/icon.svg", 604800),
 		"/public/icon.svg": staticFile("./public/icon.svg", 604800),
+		"/witch-laugh.mp3": staticFile("./public/witch-laugh.mp3", 604800),
+		"/puca-ghost.wav": staticFile("./public/puca-ghost.wav", 604800),
+		"/train-whistle.mp3": staticFile("./public/train-whistle.mp3", 604800),
+		"/halloween-notice-zh.webp": staticFile(
+			"./public/halloween-notice-zh.webp",
+			604800,
+		),
+		"/halloween-notice-en.webp": staticFile(
+			"./public/halloween-notice-en.webp",
+			604800,
+		),
 		"/puca-halloween.png": staticFile("./public/puca-halloween.png", 604800),
 		"/pumpkin-marker.png": staticFile("./public/pumpkin-marker.png", 604800),
 		"/bat-marker.png": staticFile("./public/bat-marker.png", 604800),

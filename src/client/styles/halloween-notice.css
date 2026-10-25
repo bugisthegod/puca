@@ -1,0 +1,57 @@
+.halloween-notice {
+	box-sizing: border-box;
+	width: min(440px, calc(100vw - 24px), calc((100dvh - 24px) * 0.532));
+	max-width: none;
+	max-height: calc(100dvh - 24px);
+	padding: 0;
+	border: 0;
+	background: transparent;
+	overflow: visible;
+	filter: drop-shadow(0 16px 28px #100b2480);
+}
+.halloween-notice::backdrop {
+	background: #100d21b8;
+	backdrop-filter: blur(5px);
+}
+.halloween-notice__poster {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+.halloween-notice__close,
+.halloween-notice__cta {
+	position: absolute;
+	border: 0;
+	padding: 0;
+	background: transparent;
+	cursor: pointer;
+}
+.halloween-notice__close {
+	top: 1%;
+	right: 0;
+	width: 11%;
+	height: 6%;
+	min-width: 32px;
+	min-height: 32px;
+	border-radius: 50%;
+}
+.halloween-notice__cta {
+	left: 10%;
+	right: 9%;
+	top: 85%;
+	height: 6.5%;
+	border-radius: 14px;
+}
+.halloween-notice button:focus-visible {
+	outline: 3px solid #f5ad4e;
+	outline-offset: 2px;
+}
+.halloween-notice__accessible {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

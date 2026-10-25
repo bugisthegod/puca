@@ -12,6 +12,7 @@ import {
 	parseRoute,
 	parseTrainProgress,
 } from "../../utils";
+import { playVehicleSound } from "../vehicleSound";
 import { projectOntoRoute } from "./routeProjection";
 import {
 	makeTrainHitIcon,
@@ -337,6 +338,17 @@ export function useTrainMarkers({
 		}
 	}
 
+	function wireTrainSound(popup: L.Popup | undefined) {
+		const button = popup
+			?.getElement?.()
+			?.querySelector<HTMLButtonElement>(".popup-vehicle-sound");
+		if (!button) return;
+		button.onclick = (event) => {
+			event.stopPropagation();
+			void playVehicleSound("train");
+		};
+	}
+
 	async function onMarkerClick(
 		trainCode: string,
 		options?: { preserveSummary?: boolean },
@@ -355,6 +367,7 @@ export function useTrainMarkers({
 				autoPan: false,
 			})
 			.openPopup();
+		wireTrainSound(marker.getPopup());
 		leafletMap.current?.panTo(marker.getLatLng(), {
 			animate: true,
 			duration: 0.4,
@@ -367,6 +380,7 @@ export function useTrainMarkers({
 			const popup = marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildTrainPopupWithMovements(train, movements));
+				wireTrainSound(popup);
 				// Scroll to current stop after DOM updates
 				requestAnimationFrame(() => {
 					const wrap = document.querySelector(".popup-table-wrap");
@@ -385,6 +399,7 @@ export function useTrainMarkers({
 			const popup = e.marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildTrainPopupErrorHTML(e.train));
+				wireTrainSound(popup);
 			}
 		}
 	}
