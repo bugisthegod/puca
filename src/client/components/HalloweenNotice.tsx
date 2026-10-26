@@ -101,7 +101,7 @@ export default function HalloweenNotice({ onClose }: { onClose: () => void }) {
 		}
 		setCutting(true);
 		// Still leave the notice if an animation is interrupted or disabled.
-		closeTimer.current = setTimeout(onClose, 1400);
+		closeTimer.current = setTimeout(onClose, 2100);
 	}
 	useBackToClose(onClose);
 	useEffect(() => {
