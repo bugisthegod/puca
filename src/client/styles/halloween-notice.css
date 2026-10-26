@@ -79,17 +79,17 @@
 	color: #392242;
 	filter: drop-shadow(0 1px 2px #fff5e2);
 	pointer-events: none;
-	animation: halloween-cut 460ms ease-in-out both;
+	animation: halloween-cut 900ms ease-in-out both;
 }
 .halloween-notice--cutting .halloween-notice__stub {
-	animation: halloween-stub-away 1100ms ease-in both;
+	animation: halloween-stub-away 1800ms ease-in both;
 }
 .halloween-notice--cutting .halloween-notice__poster--top,
 .halloween-notice--cutting .halloween-notice__close {
-	animation: halloween-ticket-away 1100ms ease-in both;
+	animation: halloween-ticket-away 1800ms ease-in both;
 }
 .halloween-notice--cutting::backdrop {
-	animation: halloween-map-reveal 1100ms ease-in both;
+	animation: halloween-map-reveal 1800ms ease-in both;
 }
 .halloween-notice--cutting .halloween-notice__cta {
 	pointer-events: none;
@@ -134,11 +134,11 @@
 }
 @keyframes halloween-stub-away {
 	0%,
-	40% {
+	50% {
 		transform: translateY(0) rotate(0);
 		opacity: 1;
 	}
-	55% {
+	65% {
 		transform: translateY(12px) rotate(2deg);
 		opacity: 1;
 	}
@@ -149,7 +149,7 @@
 }
 @keyframes halloween-ticket-away {
 	0%,
-	58% {
+	65% {
 		transform: translateY(0);
 		opacity: 1;
 	}
@@ -160,7 +160,7 @@
 }
 @keyframes halloween-map-reveal {
 	0%,
-	58% {
+	65% {
 		opacity: 1;
 	}
 	100% {
