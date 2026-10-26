@@ -1,7 +1,7 @@
 let audioContext: AudioContext | undefined;
-const recordingBuffers: Partial<
-	Record<"witch" | "puca" | "train", Promise<AudioBuffer>>
-> = {};
+type RecordedSound = "witch" | "puca" | "train" | "bat";
+const recordingBuffers: Partial<Record<RecordedSound, Promise<AudioBuffer>>> =
+	{};
 let playing = false;
 
 type Tone = {
@@ -53,48 +53,7 @@ function playTone(context: AudioContext, start: number, tone: Tone) {
 	return voice;
 }
 
-function playWingFlaps(context: AudioContext, start: number) {
-	const buffer = context.createBuffer(
-		1,
-		Math.ceil(context.sampleRate * 0.12),
-		context.sampleRate,
-	);
-	const samples = buffer.getChannelData(0);
-	for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
-	let lastFlap: AudioBufferSourceNode | undefined;
-	for (let i = 0; i < 5; i++) {
-		const flap = context.createBufferSource();
-		const filter = context.createBiquadFilter();
-		const volume = context.createGain();
-		const at = start + i * 0.14;
-		flap.buffer = buffer;
-		filter.type = "bandpass";
-		filter.Q.value = 0.55;
-		filter.frequency.setValueAtTime(650, at);
-		filter.frequency.linearRampToValueAtTime(1500, at + 0.035);
-		filter.frequency.exponentialRampToValueAtTime(350, at + 0.12);
-		volume.gain.setValueAtTime(0, at);
-		volume.gain.linearRampToValueAtTime(0.22, at + 0.025);
-		volume.gain.exponentialRampToValueAtTime(0.001, at + 0.12);
-		flap.connect(filter);
-		filter.connect(volume);
-		volume.connect(context.destination);
-		flap.onended = () => {
-			flap.disconnect();
-			filter.disconnect();
-			volume.disconnect();
-		};
-		flap.start(at);
-		flap.stop(at + 0.12);
-		lastFlap = flap;
-	}
-	return lastFlap;
-}
-
-async function playRecording(
-	context: AudioContext,
-	sound: "witch" | "puca" | "train",
-) {
+async function playRecording(context: AudioContext, sound: RecordedSound) {
 	// On-demand clips; sources documented in assets/halloween/README.md.
 	recordingBuffers[sound] ??= (async () => {
 		const url =
@@ -102,7 +61,9 @@ async function playRecording(
 				? "/witch-laugh.mp3?v=cackle-1"
 				: sound === "train"
 					? "/train-whistle.mp3?v=foley-3320-1"
-					: "/puca-ghost.wav?v=cute-1";
+					: sound === "bat"
+						? "/bat-wings.wav?v=flap-546823-1"
+						: "/puca-ghost.wav?v=cute-1";
 		const response = await fetch(url, {
 			signal: AbortSignal.timeout(8000),
 		});
@@ -151,11 +112,9 @@ export async function playVehicleSound(
 		const context = audioContext;
 		const start = context.currentTime;
 		const playback =
-			sound === "witch" || sound === "puca" || sound === "train"
+			sound !== "pumpkin"
 				? await playRecording(context, sound)
-				: sound === "bat"
-					? playWingFlaps(context, start)
-					: PUMPKIN_HORN.map((tone) => playTone(context, start, tone)).at(-1);
+				: PUMPKIN_HORN.map((tone) => playTone(context, start, tone)).at(-1);
 		if (playback) {
 			playback.addEventListener(
 				"ended",

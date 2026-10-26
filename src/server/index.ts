@@ -138,6 +138,7 @@ Bun.serve({
 		"/witch-laugh.mp3": staticFile("./public/witch-laugh.mp3", 604800),
 		"/puca-ghost.wav": staticFile("./public/puca-ghost.wav", 604800),
 		"/train-whistle.mp3": staticFile("./public/train-whistle.mp3", 604800),
+		"/bat-wings.wav": staticFile("./public/bat-wings.wav", 604800),
 		"/halloween-notice-zh.webp": staticFile(
 			"./public/halloween-notice-zh.webp",
 			604800,

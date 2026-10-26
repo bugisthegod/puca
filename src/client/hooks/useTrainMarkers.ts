@@ -201,6 +201,7 @@ export function useTrainMarkers({
 	) => Promise<FocusTrainResult>;
 } {
 	const markers = useRef<Map<string, TrainMarkerEntry>>(new Map());
+	const dismissedSoundHints = useRef(new WeakSet<L.Popup>());
 
 	// Stable refs for values used in closures (avoids stale captures)
 	const modeRef = useRef<Mode>(mode);
@@ -342,9 +343,15 @@ export function useTrainMarkers({
 		const button = popup
 			?.getElement?.()
 			?.querySelector<HTMLButtonElement>(".popup-vehicle-sound");
-		if (!button) return;
+		if (!button || !popup) return;
+		button.classList.toggle(
+			"popup-vehicle-sound--hint",
+			!dismissedSoundHints.current.has(popup),
+		);
 		button.onclick = (event) => {
 			event.stopPropagation();
+			dismissedSoundHints.current.add(popup);
+			button.classList.remove("popup-vehicle-sound--hint");
 			void playVehicleSound("train");
 		};
 	}
@@ -367,7 +374,9 @@ export function useTrainMarkers({
 				autoPan: false,
 			})
 			.openPopup();
-		wireTrainSound(marker.getPopup());
+		const openedPopup = marker.getPopup();
+		if (openedPopup) dismissedSoundHints.current.delete(openedPopup);
+		wireTrainSound(openedPopup);
 		leafletMap.current?.panTo(marker.getLatLng(), {
 			animate: true,
 			duration: 0.4,

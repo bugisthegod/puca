@@ -127,16 +127,25 @@ describe("vehicle sound lifecycle", () => {
 		expect(requests).toBe(0);
 	});
 
-	test("bat uses only wing noise and repeat clicks wait for the entire sound to end", async () => {
+	test("bat plays the selected wing recording and blocks overlap until it ends", async () => {
+		const urls: string[] = [];
+		globalThis.fetch = (async (url: string) => {
+			urls.push(url);
+			return new Response(new Uint8Array([1, 2]));
+		}) as unknown as typeof fetch;
 		const { playVehicleSound } = await player();
 		await playVehicleSound("bat");
 		const context = FakeContext.instances[0]!;
-		expect(context.sources.length).toBeGreaterThan(1);
+		expect(urls).toEqual(["/bat-wings.wav?v=flap-546823-1"]);
+		expect(context.sources).toHaveLength(1);
 		expect(context.oscillators).toHaveLength(0);
-		context.sources[0]!.finish();
 		await playVehicleSound("pumpkin");
 		expect(context.oscillators).toHaveLength(0);
-		context.sources.at(-1)!.finish();
+		context.sources[0]!.finish();
+		await playVehicleSound("bat");
+		expect(urls).toHaveLength(1);
+		expect(context.sources).toHaveLength(2);
+		context.sources[1]!.finish();
 		await playVehicleSound("pumpkin");
 		expect(context.oscillators.length).toBeGreaterThan(0);
 	});

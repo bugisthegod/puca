@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { Scissors } from "lucide-preact";
+import { useEffect, useRef, useState } from "react";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useLocale } from "../i18n";
 
@@ -20,8 +21,8 @@ export function canOpenHalloweenNotice(now = new Date()): boolean {
 	);
 }
 
-export function shouldShowHalloweenNotice(): boolean {
-	if (!isHalloweenEventActive()) return false;
+export function shouldShowHalloweenNotice(now = new Date()): boolean {
+	if (!isHalloweenEventActive(now)) return false;
 	try {
 		return localStorage.getItem(SEEN_KEY) !== "1";
 	} catch {
@@ -29,27 +30,62 @@ export function shouldShowHalloweenNotice(): boolean {
 	}
 }
 
-export function markHalloweenNoticeSeen() {
-	if (!isHalloweenEventActive()) return;
+export function markHalloweenNoticeSeen(now = new Date()) {
+	if (!isHalloweenEventActive(now)) return;
 	try {
 		localStorage.setItem(SEEN_KEY, "1");
 	} catch {}
 }
 
+// A phone can resume the same PWA page days later without mounting App again.
+export function watchHalloweenNotice(onAvailable: () => void): () => void {
+	const check = () => {
+		if (!document.hidden && shouldShowHalloweenNotice()) onAvailable();
+	};
+	document.addEventListener("visibilitychange", check);
+	window.addEventListener("pageshow", check);
+	check();
+	return () => {
+		document.removeEventListener("visibilitychange", check);
+		window.removeEventListener("pageshow", check);
+	};
+}
+
 export default function HalloweenNotice({ onClose }: { onClose: () => void }) {
 	const { t, locale } = useLocale();
 	const dialogRef = useRef<HTMLDialogElement>(null);
+	const [cutting, setCutting] = useState(false);
+	const cutStarted = useRef(false);
+	const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
+	const posterSrc = `/halloween-notice-${locale}.webp?v=oct26-1`;
+
+	function startCut() {
+		if (cutStarted.current) return;
+		cutStarted.current = true;
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			onClose();
+			return;
+		}
+		setCutting(true);
+		// Still leave the notice if an animation is interrupted or disabled.
+		closeTimer.current = setTimeout(onClose, 1400);
+	}
 	useBackToClose(onClose);
 	useEffect(() => {
 		const dialog = dialogRef.current;
 		dialog?.showModal();
-		return () => dialog?.close();
+		return () => {
+			clearTimeout(closeTimer.current);
+			dialog?.close();
+		};
 	}, []);
 
 	return (
 		<dialog
 			ref={dialogRef}
-			className="halloween-notice"
+			className={`halloween-notice${cutting ? " halloween-notice--cutting" : ""}`}
 			aria-labelledby="halloween-title"
 			aria-describedby="halloween-description"
 			onCancel={(event) => {
@@ -65,11 +101,33 @@ export default function HalloweenNotice({ onClose }: { onClose: () => void }) {
 				</p>
 			</div>
 			<img
-				className="halloween-notice__poster"
-				src={`/halloween-notice-${locale}.webp?v=oct26-1`}
+				className="halloween-notice__poster halloween-notice__poster--top"
+				src={posterSrc}
+				width={720}
+				height={locale === "zh" ? 1353 : 1355}
 				alt=""
 				aria-hidden="true"
 			/>
+			<div
+				className="halloween-notice__stub"
+				aria-hidden="true"
+				onAnimationEnd={(event) => {
+					if (event.target === event.currentTarget && cutting) onClose();
+				}}
+			>
+				<img
+					className="halloween-notice__poster halloween-notice__poster--stub"
+					src={posterSrc}
+					alt=""
+				/>
+			</div>
+			{cutting && (
+				<Scissors
+					className="halloween-notice__scissors"
+					size={22}
+					aria-hidden="true"
+				/>
+			)}
 			<button
 				type="button"
 				className="halloween-notice__close"
@@ -80,7 +138,8 @@ export default function HalloweenNotice({ onClose }: { onClose: () => void }) {
 				type="button"
 				className="halloween-notice__cta"
 				aria-label={t("halloween.cta")}
-				onClick={onClose}
+				disabled={cutting}
+				onClick={startCut}
 			/>
 		</dialog>
 	);

@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-preact";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "../analytics";
@@ -239,10 +240,20 @@ export default function AboutModal({
 					{onShowHalloween && (
 						<button
 							type="button"
-							className="about-tour-btn"
+							className="about-halloween-link"
 							onClick={onShowHalloween}
 						>
-							🎃 {t("halloween.title")}
+							<img
+								src="/puca-halloween.png?v=witch-1"
+								width={40}
+								height={40}
+								alt=""
+							/>
+							<span className="about-halloween-link__copy">
+								<span>{t("halloween.title")}</span>
+								<small>{t("halloween.dates")}</small>
+							</span>
+							<ArrowUpRight size={18} aria-hidden="true" />
 						</button>
 					)}
 					{onShowTour && (
