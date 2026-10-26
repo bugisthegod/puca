@@ -9,13 +9,14 @@
 
 import { $ } from "bun";
 
-const BG = "#16161c";
-const ICON_VIEWBOX = 512;
-
-const iconSvg = await Bun.file("public/icon.svg").text();
-const innerStart = iconSvg.indexOf(">") + 1;
-const innerEnd = iconSvg.lastIndexOf("</svg>");
-const iconInner = iconSvg.slice(innerStart, innerEnd);
+// Approved full-screen artwork and its transparent mascot cutout are kept in
+// assets/halloween so all exported images can be reproduced.
+const splash = Buffer.from(
+	await Bun.file("assets/halloween/splash.png").arrayBuffer(),
+).toString("base64");
+const character = Buffer.from(
+	await Bun.file("assets/halloween/puca-character.png").arrayBuffer(),
+).toString("base64");
 
 // Portrait splash sizes for current iPhones (~2020 onward).
 // dw/dh = CSS px (logical), dpr = pixel ratio. PNG dimensions = dw*dpr × dh*dpr.
@@ -35,19 +36,10 @@ await $`mkdir -p public/splash`.quiet();
 for (const s of SPLASHES) {
 	const w = s.dw * s.dpr;
 	const h = s.dh * s.dpr;
-	const iconPx = Math.round(Math.min(w, h) * 0.44);
-	const x = Math.round((w - iconPx) / 2);
-	const y = Math.round((h - iconPx) / 2 - h * 0.1);
-
-	const fontSize = Math.round(iconPx * 0.18);
-	const textGap = Math.round(iconPx * 0.16);
-	// SVG <text> y is the baseline; approximate cap-top via 0.8 * fontSize.
-	const textBaselineY = y + iconPx + textGap + Math.round(fontSize * 0.8);
-
+	// Cover preserves the artwork's proportions. Shorter SE screens crop only
+	// the outer scenery; the central mascot and wordmark stay in frame.
 	const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
-  <rect width="${w}" height="${h}" fill="${BG}"/>
-  <svg width="${iconPx}" height="${iconPx}" x="${x}" y="${y}" viewBox="0 0 ${ICON_VIEWBOX} ${ICON_VIEWBOX}">${iconInner}</svg>
-  <text x="${w / 2}" y="${textBaselineY}" text-anchor="middle" font-family="-apple-system, Helvetica, Arial, sans-serif" font-size="${fontSize}" font-weight="600" fill="#ffffff">Púca</text>
+  <image width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" href="data:image/png;base64,${splash}"/>
 </svg>`;
 
 	const tmp = `public/splash/.${s.name}.svg`;
@@ -57,3 +49,11 @@ for (const s of SPLASHES) {
 	await $`rm ${tmp}`.quiet();
 	console.log(`generated ${png} (${w}x${h})`);
 }
+
+// Three physical pixels per CSS pixel for the 128px About-page mascot.
+const characterSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="384" height="384"><image width="384" height="384" href="data:image/png;base64,${character}"/></svg>`;
+const characterTmp = "public/splash/.puca-halloween.svg";
+await Bun.write(characterTmp, characterSvg);
+await $`rsvg-convert ${characterTmp} -o public/puca-halloween.png`.quiet();
+await $`rm ${characterTmp}`.quiet();
+console.log("generated public/puca-halloween.png (384x384, transparent)");

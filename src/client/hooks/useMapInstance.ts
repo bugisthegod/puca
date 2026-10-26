@@ -25,8 +25,8 @@ import type { Mode } from "./useVehicleMap";
 
 // This browser key is public; restrict its allowed websites in CARTO.
 const CARTO_API_KEY = process.env.PUBLIC_CARTO_API_KEY ?? "";
-const TILE_VOYAGER =
-	"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" +
+const TILE_NIGHT =
+	"https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" +
 	(CARTO_API_KEY ? `?key=${encodeURIComponent(CARTO_API_KEY)}` : "");
 
 const DEFAULT_CENTER: L.LatLngExpression = [53.35, -6.26];
@@ -435,7 +435,8 @@ export function useMapInstance(
 			IRELAND_MAP_BOUNDS[1],
 		);
 		const map = L.map(mapRef.current, {
-			preferCanvas: true,
+			// SVG paths let the theme apply lantern halos without extra map layers.
+			preferCanvas: false,
 			fadeAnimation: true,
 			zoomControl: false,
 			maxBounds: irelandBounds,
@@ -476,9 +477,9 @@ export function useMapInstance(
 			);
 		}
 
-		const baseLayer = L.tileLayer(TILE_VOYAGER, {
+		const baseLayer = L.tileLayer(TILE_NIGHT, {
 			...BASE_TILE_OPTIONS,
-			className: "tile-voyager",
+			className: "tile-night",
 		});
 		baseLayer.addTo(map);
 		// Ensure base tile stays behind railway overlay
@@ -509,6 +510,14 @@ export function useMapInstance(
 		map.on("moveend", () => {
 			zoomingRef.current = false;
 		});
+		const updateVehicleArtworkScale = () => {
+			const scale = 1 + Math.max(0, Math.min(1, (map.getZoom() - 13) / 4)) / 3;
+			map
+				.getContainer()
+				.style.setProperty("--vehicle-art-scale", String(scale));
+		};
+		updateVehicleArtworkScale();
+		map.on("zoomend", updateVehicleArtworkScale);
 		// Load stations for route line drawing in popups
 		getStationsOnce().then((data) => {
 			const m = new Map<string, Station>();
@@ -531,6 +540,7 @@ export function useMapInstance(
 				}
 			}
 			map.off("resize", applyIrelandMinZoom);
+			map.off("zoomend", updateVehicleArtworkScale);
 			teardownCompass();
 			if (locationWatchIdRef.current !== null) {
 				navigator.geolocation.clearWatch(locationWatchIdRef.current);

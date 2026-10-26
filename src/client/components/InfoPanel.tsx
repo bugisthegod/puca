@@ -230,7 +230,7 @@ function OffHoursPanel({
 		<div id="info-panel" className={`off-hours-panel off-hours-panel--${mode}`}>
 			<img
 				className="off-hours-panel__puca"
-				src="/puca-sleeping.svg?v=transparent-1"
+				src="/puca-sleeping-halloween.png?v=sleep-1"
 				alt=""
 				aria-hidden="true"
 			/>

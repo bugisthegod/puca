@@ -1,0 +1,438 @@
+/* Púca Night Wander — presentation only. Imported last so the existing
+   layouts, responsive rules, status semantics and interaction states survive. */
+:root {
+	color-scheme: dark;
+	--bg-surface: #252137;
+	--bg-elevated: #2b263e;
+	--bg-muted: #332d48;
+	--bg-highlight: #46342d;
+	--bg-row-hover: #37304b;
+	--text-primary: #f5f0ff;
+	--text-secondary: #d0c8e3;
+	--text-muted: #aaa0c2;
+	--text-faint: #bdb3d2;
+	--border-subtle: #3a324e;
+	--border-strong: #58436e;
+	--brand-dark: #ffc174;
+	--brand-mid: #b95a16;
+	--brand-light: #ffa94f;
+	--status-ontime-bg: #203d36;
+	--status-ontime-text: #79e0a5;
+	--status-late-bg: #44371e;
+	--status-late-text: #ffcf79;
+	--status-early-bg: #472a37;
+	--status-early-text: #ff9aab;
+	--popup-dir-bg: #332d48;
+	--popup-dir-text: #d0c8e3;
+	--map-bg: #111827;
+	--glass-bg: rgba(35, 29, 52, 0.92);
+	--glass-border: rgba(162, 111, 207, 0.5);
+	--glass-text: #f5f0ff;
+	--shadow-panel:
+		0 4px 24px rgba(7, 9, 24, 0.48), 0 0 0 1px rgba(160, 106, 206, 0.12) inset;
+	--night-lantern: #ffad52;
+}
+
+/* Filter only base imagery; vehicles, overlays and attribution keep their
+   own colors. Native dark tiles retain readable labels at every zoom. */
+.tile-night {
+	filter: invert(0.04) sepia(0.65) hue-rotate(190deg) saturate(3)
+		brightness(1.5);
+}
+
+.leaflet-control-attribution.leaflet-control,
+.leaflet-control-attribution a {
+	color: #c5bbdd;
+}
+
+/* Keep Leaflet's dynamic opacity (including zoom hiding and branch selection)
+   untouched. A static halo adds no timers, animation or additional layers. */
+.night-route {
+	stroke: var(--night-lantern);
+	stroke-width: 4px;
+	filter: drop-shadow(0 0 2px #ffd49a) drop-shadow(0 0 4px #df7528);
+}
+
+.night-route--variant {
+	stroke-width: 3px;
+	filter: none;
+}
+
+.night-route-stop {
+	stroke: var(--night-lantern);
+	fill: #fff2d9;
+	filter: drop-shadow(0 0 4px #ff9c42);
+}
+
+.focus-stop {
+	background: #fff2d9;
+	border-color: var(--night-lantern);
+	box-shadow: 0 0 7px rgba(255, 160, 66, 0.75);
+}
+
+.route-end-marker {
+	filter: drop-shadow(0 0 5px #ff9c42);
+}
+
+.bus-cluster {
+	background: rgba(58, 39, 36, 0.94);
+	border-color: var(--op-dublinbus);
+	color: #ffbd65;
+	box-shadow: 0 0 7px rgba(255, 169, 79, 0.32);
+}
+
+.bus-cluster--buseireann {
+	background: #392331;
+	border-color: var(--op-buseireann);
+	color: #ffabb0;
+	box-shadow: 0 0 7px rgba(213, 43, 30, 0.32);
+}
+
+.bus-cluster--goahead {
+	background: #202b46;
+	border-color: #549fea;
+	color: #b2d8ff;
+	box-shadow: 0 0 7px rgba(30, 107, 184, 0.4);
+}
+
+.bus-icon,
+.train-icon {
+	filter: drop-shadow(0 1px 2px #090d1c) drop-shadow(0 0 3px currentColor);
+}
+
+.train-icon--halloween {
+	position: relative;
+	filter: drop-shadow(0 1px 2px #090d1c);
+	transform: scale(var(--vehicle-art-scale, 1));
+	transform-origin: 11px 11px;
+}
+
+.train-marker .train-icon--halloween img {
+	position: absolute;
+	left: -4px;
+	top: -12px;
+	width: 30px;
+	height: 36px;
+	object-fit: contain;
+}
+
+.bus-label {
+	box-shadow:
+		0 1px 3px #090d1c,
+		0 0 5px rgba(255, 169, 79, 0.3);
+}
+
+.bus-marker .bus-icon--halloween {
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	transform: scale(var(--vehicle-art-scale, 1));
+	transform-origin: center;
+	filter: drop-shadow(0 1px 2px #090d1c)
+		drop-shadow(0 0 4px rgba(255, 169, 79, 0.55));
+}
+
+.bus-icon--halloween img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.bus-marker:has(.bus-icon--halloween) .bus-label {
+	margin-top: calc(1px + (var(--vehicle-art-scale, 1) - 1) * 18px);
+}
+
+.popup-vehicle-hero {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.leaflet-popup-content .popup-vehicle-art {
+	width: 80px;
+	height: 80px;
+	flex: 0 0 80px;
+	object-fit: contain;
+}
+
+.popup-vehicle-heading {
+	flex: 1;
+	min-width: 0;
+}
+
+.empty-state-puca {
+	display: block;
+	width: 120px;
+	height: 80px;
+	object-fit: contain;
+	margin: 0 auto 8px;
+}
+
+.off-hours-panel .off-hours-panel__puca {
+	width: 60px;
+	height: 48px;
+	object-fit: contain;
+}
+
+#info-panel.mode-switch,
+#info-panel.off-hours-panel,
+.bus-map-focus-popover,
+.station-dropdown,
+.stop-tooltip.leaflet-tooltip {
+	background: var(--glass-bg);
+	border-color: var(--glass-border);
+	box-shadow: var(--shadow-panel);
+}
+
+.mode-switch--train .mode-switch__option--train,
+.mode-switch--bus .mode-switch__option--bus,
+.mode-switch--luas .mode-switch__option--luas,
+.off-hours-panel__mode[aria-pressed="true"] {
+	background: var(--night-lantern);
+	color: #33200e;
+	box-shadow:
+		0 0 10px rgba(255, 169, 79, 0.28),
+		0 0 0 1px #ffd197 inset;
+}
+
+.search-field input {
+	background: rgba(185, 151, 221, 0.08);
+	border-color: rgba(167, 128, 204, 0.35);
+}
+
+.search-field input::placeholder {
+	color: #b3a7cc;
+}
+
+.search-field input:focus {
+	border-color: var(--night-lantern);
+	box-shadow: 0 0 0 2px rgba(255, 169, 79, 0.12);
+}
+
+.station-dropdown li:hover,
+.station-dropdown li.highlighted,
+.bus-map-focus-popover__option.is-selected,
+.stop-selected,
+.stop-arrival--selected {
+	background: rgba(255, 169, 79, 0.12);
+}
+
+.stop-selected,
+.stop-arrival--selected {
+	border-color: rgba(255, 169, 79, 0.4);
+	box-shadow: 0 0 0 1px rgba(255, 169, 79, 0.25) inset;
+}
+
+.stop-selected--dublinbus {
+	border-left-color: var(--op-dublinbus);
+}
+.stop-selected--buseireann {
+	border-left-color: var(--op-buseireann);
+}
+.stop-selected--goahead {
+	border-left-color: var(--op-goahead);
+}
+.stop-selected--loading {
+	background: rgba(255, 255, 255, 0.05);
+	border-color: rgba(255, 255, 255, 0.12);
+}
+
+.stop-arrival--selected:hover:not(:disabled) {
+	background: rgba(255, 169, 79, 0.18);
+}
+
+.search-btn:hover:not(:disabled):not(.clear-btn),
+.popup-route-jump:hover,
+.back-to-all-btn,
+.back-to-all-btn:hover,
+.movements-table thead {
+	color: #33200e;
+}
+
+.popup-dir {
+	color: var(--popup-dir-text);
+}
+.popup-stale-banner {
+	background: #44371e;
+	border-color: #806036;
+}
+.popup-stale-text strong {
+	color: #ffcf79;
+}
+.movements-table tbody tr.movement-pass-through,
+.movements-table tbody tr.movement-pass-through:nth-child(even) {
+	background: var(--bg-muted);
+}
+.movements-table tbody tr.movement-current.movement-pass-through {
+	background: var(--bg-highlight);
+}
+
+/* About, settings and favorites previously had light surface overrides. */
+.about-modal {
+	background: #252137;
+	border-color: var(--glass-border);
+	color: var(--text-primary);
+}
+
+.about-hero__name,
+.about-install__heading,
+.about-install__platform,
+.about-install__steps strong,
+.about-setting-row__label {
+	color: var(--text-primary);
+}
+
+.about-hero__pron em,
+.about-block__label,
+.about-block__note,
+.about-install__note,
+.about-footer,
+.about-setting-row__info {
+	color: var(--text-muted);
+}
+
+.about-hero__tag,
+.about-install__steps,
+.about-theme-btn,
+.about-modal__lang__btn {
+	color: var(--text-secondary);
+}
+
+.about-divider {
+	background: var(--border-subtle);
+}
+.about-modal__close,
+.about-modal__lang,
+.about-theme-toggle,
+.about-install__card,
+.fav-row,
+.fav-row:hover,
+.fav-title-row__edit,
+.fav-section-header__move,
+.fav-row__confirm-action,
+.fav-row__confirm-cancel {
+	background: var(--bg-elevated);
+	border-color: var(--border-strong);
+	color: var(--text-secondary);
+}
+
+.about-modal__close:hover,
+.about-modal__lang__btn:hover:not(.is-active),
+.about-theme-btn:hover:not(.is-active),
+.fav-title-row__edit:hover,
+.fav-section-header__move:hover:not(:disabled),
+.fav-row__remove:hover {
+	background: var(--bg-muted);
+	color: var(--text-primary);
+}
+
+.about-modal__lang__btn.is-active,
+.about-theme-btn.is-active,
+.fav-title-row__edit.is-active {
+	background: rgba(255, 169, 79, 0.18);
+	color: #ffc174;
+}
+
+.about-install-callout {
+	background: rgba(255, 169, 79, 0.06);
+	border-color: rgba(255, 169, 79, 0.25);
+}
+
+.fav-row__remove {
+	color: var(--text-secondary);
+	border-color: var(--border-strong);
+}
+
+.fav-star[aria-pressed="true"],
+.fav-star:hover {
+	color: var(--night-lantern);
+}
+
+.bus-map-focus-popover__option:has(input:focus-visible) {
+	outline-color: var(--night-lantern);
+}
+
+.direction-btn {
+	background: rgba(162, 111, 207, 0.12);
+	border-color: var(--glass-border);
+	color: #e2d6f6;
+}
+.direction-btn:hover {
+	background: rgba(255, 169, 79, 0.15);
+	border-color: var(--night-lantern);
+	color: #ffc174;
+}
+
+.about-tour-btn,
+.about-feedback-btn,
+.about-share-btn.is-copied {
+	background: rgba(255, 169, 79, 0.1);
+	border-color: rgba(255, 169, 79, 0.4);
+	color: #ffc174;
+}
+.about-tour-btn:hover,
+.about-feedback-btn:hover {
+	background: rgba(255, 169, 79, 0.18);
+	border-color: var(--night-lantern);
+	color: #ffd49a;
+}
+
+.tour__tooltip {
+	background: var(--glass-bg);
+}
+.tour__highlight {
+	border-color: var(--night-lantern);
+	animation-name: night-tour-pulse;
+}
+@keyframes night-tour-pulse {
+	0%,
+	100% {
+		border-color: rgba(255, 169, 79, 0.95);
+	}
+	50% {
+		border-color: rgba(255, 169, 79, 0.55);
+	}
+}
+
+.tour__btn--primary {
+	background: var(--night-lantern);
+	color: #33200e;
+}
+.error-fallback {
+	background: var(--map-bg);
+}
+.error-fallback__title {
+	color: var(--text-primary);
+}
+.error-fallback__text {
+	color: var(--text-secondary);
+}
+.error-fallback__btn {
+	background: var(--brand-mid);
+}
+.error-fallback__btn:hover {
+	background: #914612;
+}
+
+.tour__btn--primary:hover {
+	background: #ffc174;
+}
+
+/* Match the approved witch-hat artwork without changing About-page content. */
+.about-hero__mark img {
+	display: block;
+	object-fit: contain;
+}
+.about-hero::before {
+	background: radial-gradient(
+		circle,
+		rgba(140, 91, 173, 0.16) 0%,
+		rgba(140, 91, 173, 0) 60%
+	);
+}
+.about-hero__pron {
+	background: rgba(140, 91, 173, 0.1);
+	border-color: var(--glass-border);
+}

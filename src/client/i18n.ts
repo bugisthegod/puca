@@ -54,6 +54,16 @@ if (typeof window !== "undefined") {
 }
 
 const EN = {
+	"halloween.close": "Close Halloween announcement",
+	"halloween.dates": "26 OCT — 31 OCT",
+	"halloween.title": "Púca is out to play",
+	"halloween.body":
+		"Pumpkin buses, bats and witches are joining your journeys this Halloween.",
+	"halloween.sound":
+		"Tap a character in a vehicle’s popup to hear its sound. Listen out for the train whistle, too!",
+	"halloween.cta": "Let’s find some ghosts",
+	"halloween.footer": "Find this again in About.",
+
 	// AboutModal — chrome
 	"about.dialog.aria": "About Púca",
 	"about.close": "Close",
@@ -299,6 +309,8 @@ const EN = {
 	"popup.bus.empty": "No upcoming stop data available.",
 	"popup.bus.showall": "Show all {route}",
 	"popup.bus.vehicle": "Vehicle {label}",
+	"popup.bus.sound": "Play Halloween sound",
+	"popup.train.sound": "Play train horn",
 	"popup.bus.stale.title": "Púca ran off with this bus",
 	"popup.bus.stale.body": "Heh heh, times below may be off.",
 	"popup.bus.col.num": "#",
@@ -317,6 +329,15 @@ const EN = {
 type Key = keyof typeof EN;
 
 const ZH: Record<Key, string> = {
+	"halloween.close": "关闭万圣节活动说明",
+	"halloween.dates": "10.26 — 10.31",
+	"halloween.title": "Púca 出来捣蛋啦",
+	"halloween.body": "南瓜巴士、蝙蝠和女巫，这个万圣节陪你一起等车。",
+	"halloween.sound":
+		"点点车辆弹窗里的角色，听听它们的声音。小火车也有自己的汽笛声哦！",
+	"halloween.cta": "开始捉鬼",
+	"halloween.footer": "可在「关于」里再次查看。",
+
 	// AboutModal — chrome
 	"about.dialog.aria": "关于 Púca",
 	"about.close": "关闭",
@@ -554,6 +575,8 @@ const ZH: Record<Key, string> = {
 	"popup.bus.empty": "暂无即将到站的数据。",
 	"popup.bus.showall": "显示全部 {route}",
 	"popup.bus.vehicle": "车辆 {label}",
+	"popup.bus.sound": "播放万圣节音效",
+	"popup.train.sound": "播放火车汽笛",
 	"popup.bus.stale.title": "Púca 把这辆公交开跑了",
 	"popup.bus.stale.body": "嘿嘿，下面的时间可能不准。",
 	"popup.bus.col.num": "#",

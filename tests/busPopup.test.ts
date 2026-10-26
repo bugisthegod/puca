@@ -116,6 +116,36 @@ describe("buildBusPopupHTML", () => {
 		expect(html).toContain("popup-status--red");
 	});
 
+	test("uses Púca in the hero for stale vehicles even with a Halloween costume", () => {
+		const html = buildBusPopupHTML(bus({ stale: true }), trip, {
+			showRouteJump: true,
+			artwork: "pumpkin",
+		});
+
+		expect(html).toContain("popup-vehicle-art");
+		expect(html).toContain("<svg");
+		expect(html).not.toContain("/puca-puppet.png");
+		expect(html).not.toContain("/pumpkin-marker.png");
+		const liveHtml = buildBusPopupHTML(bus(), trip, {
+			showRouteJump: true,
+			artwork: "pumpkin",
+		});
+		expect(liveHtml).toContain("/pumpkin-marker.png");
+		expect(liveHtml).not.toContain("/puca-puppet.png");
+	});
+
+	test("assigns each costume its own sound and stale vehicles the ghost sound", () => {
+		for (const artwork of ["pumpkin", "bat", "witch"] as const) {
+			const options = { showRouteJump: false, artwork };
+			expect(buildBusPopupHTML(bus(), trip, options)).toContain(
+				`data-sound="${artwork}"`,
+			);
+			expect(buildBusPopupHTML(bus({ stale: true }), trip, options)).toContain(
+				'data-sound="puca"',
+			);
+		}
+	});
+
 	test("renders stale banner and falls back to trip id when vehicle label is empty", () => {
 		const html = buildBusPopupHTML(bus({ label: "", stale: true }), trip, {
 			showRouteJump: false,

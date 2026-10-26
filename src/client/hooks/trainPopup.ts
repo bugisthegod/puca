@@ -142,7 +142,10 @@ function buildTrainPopupShell(
 ): string {
 	return `
     <div class="popup-content">
-      ${trainPopupHeader(train, movements)}
+      <div class="popup-vehicle-hero">
+        <button class="popup-vehicle-sound" type="button" data-sound="train" aria-label="${t("popup.train.sound")}" title="${t("popup.train.sound")}"><img class="popup-vehicle-art" src="/train-marker.png?v=green-halloween-2" width="80" height="80" alt="" aria-hidden="true" /></button>
+        <div class="popup-vehicle-heading">${trainPopupHeader(train, movements)}</div>
+      </div>
       ${bodyHtml}
     </div>
   `;

@@ -26,15 +26,18 @@ const PRECACHE_URLS = [
 	"/icon-512.png",
 	"/icon.svg",
 	"/puca-jack-o.svg?v=transparent-1",
+	"/puca-halloween.png?v=witch-1",
+	"/pumpkin-marker.png?v=paper-mix-2",
+	"/bat-marker.png?v=paper-mix-2",
+	"/witch-marker.png?v=paper-mix-2",
+	"/train-marker.png?v=green-halloween-2",
 	"/puca-sleeping.svg?v=transparent-1",
-	"/splash/iphone-17-pro-max.png",
-	"/splash/iphone-17.png",
-	"/splash/iphone-16-pro-max.png",
-	"/splash/iphone-16-pro.png",
-	"/splash/iphone-plus.png",
-	"/splash/iphone-base.png",
-	"/splash/iphone-se.png",
+	"/puca-sleeping-halloween.png?v=sleep-1",
+	"/halloween-notice-zh.webp?v=oct26-1",
+	"/halloween-notice-en.webp?v=oct26-1",
 ];
+// iOS requests its matching splash image on demand. Fetching all device sizes
+// here would delay every service worker update by roughly 13MB.
 
 self.addEventListener("install", (event) => {
 	event.waitUntil(
@@ -73,7 +76,7 @@ function isTileRequest(url) {
 	if (url.search) return false;
 
 	const cartoMatch = url.pathname.match(
-		/^\/rastertiles\/(?:voyager|dark_all)\/(\d{1,2})\/\d+\/\d+(?:@2x)?\.png$/,
+		/^\/(?:rastertiles\/)?(?:voyager|dark_all)\/(\d{1,2})\/\d+\/\d+(?:@2x)?\.png$/,
 	);
 	const railwayMatch = url.pathname.match(
 		/^\/standard\/(\d{1,2})\/\d+\/\d+\.png$/,

@@ -617,6 +617,58 @@
 	}
 }
 
+.about-halloween-link {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: calc(100% - 48px);
+	margin: 18px 24px 0;
+	padding: 12px 14px;
+	border: 1px solid rgba(184, 123, 52, 0.2);
+	border-radius: 14px;
+	background: rgba(184, 123, 52, 0.06);
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: background 0.18s;
+}
+
+.about-halloween-link:hover {
+	background: rgba(184, 123, 52, 0.12);
+}
+
+.about-halloween-link:focus-visible {
+	outline: 2px solid #d99649;
+	outline-offset: 3px;
+}
+
+.about-halloween-link > img {
+	flex-shrink: 0;
+	object-fit: contain;
+}
+
+.about-halloween-link__copy {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 5px;
+	font-size: 0.9rem;
+	font-weight: 600;
+}
+
+.about-halloween-link__copy small {
+	font-size: 0.65rem;
+	font-weight: 500;
+	letter-spacing: 0.12em;
+	opacity: 0.6;
+}
+
+.about-halloween-link > svg {
+	flex-shrink: 0;
+	opacity: 0.55;
+}
+
 .about-tour-btn {
 	display: block;
 	width: 100%;

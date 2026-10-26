@@ -12,6 +12,7 @@ import {
 	parseRoute,
 	parseTrainProgress,
 } from "../../utils";
+import { playVehicleSound } from "../vehicleSound";
 import { projectOntoRoute } from "./routeProjection";
 import {
 	makeTrainHitIcon,
@@ -200,6 +201,7 @@ export function useTrainMarkers({
 	) => Promise<FocusTrainResult>;
 } {
 	const markers = useRef<Map<string, TrainMarkerEntry>>(new Map());
+	const dismissedSoundHints = useRef(new WeakSet<L.Popup>());
 
 	// Stable refs for values used in closures (avoids stale captures)
 	const modeRef = useRef<Mode>(mode);
@@ -337,6 +339,23 @@ export function useTrainMarkers({
 		}
 	}
 
+	function wireTrainSound(popup: L.Popup | undefined) {
+		const button = popup
+			?.getElement?.()
+			?.querySelector<HTMLButtonElement>(".popup-vehicle-sound");
+		if (!button || !popup) return;
+		button.classList.toggle(
+			"popup-vehicle-sound--hint",
+			!dismissedSoundHints.current.has(popup),
+		);
+		button.onclick = (event) => {
+			event.stopPropagation();
+			dismissedSoundHints.current.add(popup);
+			button.classList.remove("popup-vehicle-sound--hint");
+			void playVehicleSound("train");
+		};
+	}
+
 	async function onMarkerClick(
 		trainCode: string,
 		options?: { preserveSummary?: boolean },
@@ -355,6 +374,9 @@ export function useTrainMarkers({
 				autoPan: false,
 			})
 			.openPopup();
+		const openedPopup = marker.getPopup();
+		if (openedPopup) dismissedSoundHints.current.delete(openedPopup);
+		wireTrainSound(openedPopup);
 		leafletMap.current?.panTo(marker.getLatLng(), {
 			animate: true,
 			duration: 0.4,
@@ -367,6 +389,7 @@ export function useTrainMarkers({
 			const popup = marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildTrainPopupWithMovements(train, movements));
+				wireTrainSound(popup);
 				// Scroll to current stop after DOM updates
 				requestAnimationFrame(() => {
 					const wrap = document.querySelector(".popup-table-wrap");
@@ -385,6 +408,7 @@ export function useTrainMarkers({
 			const popup = e.marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildTrainPopupErrorHTML(e.train));
+				wireTrainSound(popup);
 			}
 		}
 	}

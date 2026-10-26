@@ -1,9 +1,7 @@
 import type { BusVehicle } from "../../types";
 import { escapeHtml } from "../../utils";
 import { t as i18n } from "../i18n";
-
-export const PUCA_IMG_HTML =
-	'<img src="/puca-jack-o.svg?v=transparent-1" alt="" aria-hidden="true" loading="lazy" decoding="async" />';
+import { PUCA_MARKER_SVG } from "./busMarkerIcon";
 
 export type BusTripStop = {
 	sequence: number;
@@ -22,6 +20,7 @@ export type BusTripPopupData = {
 
 export type BusPopupOptions = {
 	showRouteJump: boolean;
+	artwork?: "pumpkin" | "bat" | "witch";
 };
 
 export function busPopupStatusFromDelay(sec: number | null): {
@@ -129,9 +128,17 @@ export function buildBusPopupHTML(
       <span class="popup-dir">${i18n("popup.bus.vehicle", { label: vehicleLabel })}</span>
     </div>
   `;
+	const vehicleArt = bus.stale
+		? `<span class="popup-vehicle-art">${PUCA_MARKER_SVG}</span>`
+		: options.artwork
+			? `<img class="popup-vehicle-art" src="/${options.artwork}-marker.png?v=paper-mix-2" width="80" height="80" alt="" aria-hidden="true" />`
+			: "";
+	const vehicleArtButton = vehicleArt
+		? `<button class="popup-vehicle-sound" type="button" data-sound="${bus.stale ? "puca" : options.artwork}" aria-label="${i18n("popup.bus.sound")}" title="${i18n("popup.bus.sound")}">${vehicleArt}</button>`
+		: "";
 	const staleBanner = bus.stale
 		? `<div class="popup-stale-banner">
-         <div class="popup-stale-icon">${PUCA_IMG_HTML}</div>
+         <div class="popup-stale-icon">${PUCA_MARKER_SVG}</div>
          <div class="popup-stale-text">
            <strong>${i18n("popup.bus.stale.title")}</strong>
            <span>${i18n("popup.bus.stale.body")}</span>
@@ -140,12 +147,17 @@ export function buildBusPopupHTML(
 		: "";
 	return `
     <div class="popup-content">
+      <div class="popup-vehicle-hero">
+        ${vehicleArtButton}
+        <div class="popup-vehicle-heading">
       <div class="popup-header-row">
         <div class="popup-title">${escapeHtml(bus.routeShortName)}</div>
         ${jumpBtn}
       </div>
       ${originDest}
       ${metaHtml}
+        </div>
+      </div>
       ${staleBanner}
       ${body}
     </div>

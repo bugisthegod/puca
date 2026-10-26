@@ -353,6 +353,7 @@ export function useFocusSegment({
 			// ancestor. Hiding the line during the 1.1s animation and restoring
 			// opacity on zoom-end avoids the "stroke bleeds into a blob" look.
 			const polyline = L.polyline(slicedCoords, {
+				className: "night-route",
 				color,
 				weight: 5,
 				opacity: 0,
