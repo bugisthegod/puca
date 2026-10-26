@@ -14,15 +14,27 @@ test("Halloween announcement runs Oct 26–31 in Dublin", () => {
 	expect(isHalloweenEventActive(new Date("2026-11-01T00:00:00Z"))).toBe(false);
 });
 
-test("a PWA opened before launch announces on resume, then stays quiet after dismissal", () => {
+test("PWA resume waits for existing dialogs and their history cleanup before announcing", () => {
 	const originalDocument = Object.getOwnPropertyDescriptor(
 		globalThis,
 		"document",
 	);
 	const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+	const originalObserver = Object.getOwnPropertyDescriptor(
+		globalThis,
+		"MutationObserver",
+	);
 	const originalStorage = globalThis.localStorage;
-	const doc = Object.assign(new EventTarget(), { hidden: false });
-	const win = new EventTarget();
+	let modalOpen = false;
+	let changed: (() => void) | undefined;
+	const doc = Object.assign(new EventTarget(), {
+		hidden: false,
+		body: {},
+		querySelector: () => (modalOpen ? {} : null),
+	});
+	const win = Object.assign(new EventTarget(), {
+		history: { state: null as { puca: string } | null },
+	});
 	let seen: string | null = null;
 	let announcements = 0;
 	let cleanup = () => {};
@@ -33,6 +45,18 @@ test("a PWA opened before launch announces on resume, then stays quiet after dis
 	Object.defineProperty(globalThis, "window", {
 		configurable: true,
 		value: win,
+	});
+	Object.defineProperty(globalThis, "MutationObserver", {
+		configurable: true,
+		value: class {
+			constructor(private callback: () => void) {}
+			observe() {
+				changed = this.callback;
+			}
+			disconnect() {
+				changed = undefined;
+			}
+		},
 	});
 	globalThis.localStorage = {
 		getItem: () => seen,
@@ -49,17 +73,40 @@ test("a PWA opened before launch announces on resume, then stays quiet after dis
 		doc.dispatchEvent(new Event("visibilitychange"));
 		expect(announcements).toBe(0);
 		doc.hidden = false;
+		modalOpen = true;
+		win.history.state = { puca: "modal" };
 		doc.dispatchEvent(new Event("visibilitychange"));
+		expect(announcements).toBe(0);
+		expect(changed).toBeDefined();
+		// Removing About/Favorites alone isn't enough: history.back is async.
+		modalOpen = false;
+		changed?.();
+		expect(announcements).toBe(0);
+		win.history.state = null;
+		win.dispatchEvent(new Event("popstate"));
 		expect(announcements).toBe(1);
+		expect(changed).toBeUndefined();
 		markHalloweenNoticeSeen();
 		win.dispatchEvent(new Event("pageshow"));
 		doc.dispatchEvent(new Event("visibilitychange"));
 		expect(announcements).toBe(1);
 		seen = null;
-		cleanup();
+		// Dialogs without history entries (the tour) also release the reminder.
+		modalOpen = true;
 		win.dispatchEvent(new Event("pageshow"));
-		doc.dispatchEvent(new Event("visibilitychange"));
 		expect(announcements).toBe(1);
+		modalOpen = false;
+		changed?.();
+		expect(announcements).toBe(2);
+		// Cleanup removes observers as well as all lifecycle listeners.
+		modalOpen = true;
+		win.dispatchEvent(new Event("pageshow"));
+		cleanup();
+		expect(changed).toBeUndefined();
+		win.dispatchEvent(new Event("pageshow"));
+		win.dispatchEvent(new Event("popstate"));
+		doc.dispatchEvent(new Event("visibilitychange"));
+		expect(announcements).toBe(2);
 	} finally {
 		cleanup();
 		setSystemTime();
@@ -70,6 +117,9 @@ test("a PWA opened before launch announces on resume, then stays quiet after dis
 		if (originalWindow)
 			Object.defineProperty(globalThis, "window", originalWindow);
 		else Reflect.deleteProperty(globalThis, "window");
+		if (originalObserver)
+			Object.defineProperty(globalThis, "MutationObserver", originalObserver);
+		else Reflect.deleteProperty(globalThis, "MutationObserver");
 	}
 });
 

@@ -39,15 +39,46 @@ export function markHalloweenNoticeSeen(now = new Date()) {
 
 // A phone can resume the same PWA page days later without mounting App again.
 export function watchHalloweenNotice(onAvailable: () => void): () => void {
+	let waitingForModal: MutationObserver | undefined;
+	const stopWaiting = () => {
+		waitingForModal?.disconnect();
+		waitingForModal = undefined;
+	};
 	const check = () => {
-		if (!document.hidden && shouldShowHalloweenNotice()) onAvailable();
+		if (!shouldShowHalloweenNotice()) {
+			stopWaiting();
+			return;
+		}
+		if (document.hidden) return;
+		if (
+			document.querySelector('dialog[open], [aria-modal="true"]') ||
+			window.history.state?.puca === "modal"
+		) {
+			// Observe only while blocked. About/Favorites also need their async
+			// history.back() to finish before a new modal installs its listener.
+			if (!waitingForModal) {
+				waitingForModal = new MutationObserver(check);
+				waitingForModal.observe(document.body, {
+					childList: true,
+					subtree: true,
+					attributes: true,
+					attributeFilter: ["open", "aria-modal"],
+				});
+			}
+			return;
+		}
+		stopWaiting();
+		onAvailable();
 	};
 	document.addEventListener("visibilitychange", check);
 	window.addEventListener("pageshow", check);
+	window.addEventListener("popstate", check);
 	check();
 	return () => {
+		stopWaiting();
 		document.removeEventListener("visibilitychange", check);
 		window.removeEventListener("pageshow", check);
+		window.removeEventListener("popstate", check);
 	};
 }
 
