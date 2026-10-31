@@ -5,14 +5,13 @@ import {
 } from "../src/client/hooks/trainMarkerIcon";
 
 describe("train marker icon spec", () => {
-	test("builds a train marker div icon spec with green Halloween artwork and color-driven status", () => {
+	test("builds a train marker div icon spec with color-driven SVG", () => {
 		const spec = buildTrainIconSpec("#4caf50");
 
 		expect(spec.className).toBe("train-marker");
 		expect(spec.html).toContain("train-icon");
 		expect(spec.html).toContain('style="color:#4caf50"');
-		expect(spec.html).toContain("/train-marker.png?v=green-halloween-2");
-		expect(spec.html).not.toContain("train-status-dot");
+		expect(spec.html).toContain("<svg");
 		expect(spec.iconSize).toEqual([22, 22]);
 		expect(spec.iconAnchor).toEqual([11, 11]);
 	});

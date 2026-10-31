@@ -35,12 +35,6 @@ import BusSearchPanel, {
 } from "./components/BusSearchPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
 import FavoritesModal from "./components/FavoritesModal";
-import HalloweenNotice, {
-	canOpenHalloweenNotice,
-	markHalloweenNoticeSeen,
-	shouldShowHalloweenNotice,
-	watchHalloweenNotice,
-} from "./components/HalloweenNotice";
 import InfoPanel from "./components/InfoPanel";
 import LuasSearchPanel, {
 	type LuasStopSummary,
@@ -393,16 +387,6 @@ function App() {
 		};
 	}, [busMapView, busStops, mode, showToast, t]);
 	const [showAbout, setShowAbout] = useState(false);
-	const [halloweenNotice, setHalloweenNotice] = useState<
-		"automatic" | "manual" | null
-	>(() => (shouldShowHalloweenNotice() ? "automatic" : null));
-	useEffect(
-		() =>
-			watchHalloweenNotice(() => {
-				setHalloweenNotice((current) => current ?? "automatic");
-			}),
-		[],
-	);
 	const [seenAbout, setSeenAbout] = useState<boolean>(() => {
 		try {
 			return localStorage.getItem(ABOUT_SEEN_KEY) === "1";
@@ -883,18 +867,6 @@ function App() {
 		[clearTrainFocus, resetBusFocusState],
 	);
 
-	function closeHalloween() {
-		if (halloweenNotice === "automatic") {
-			markHalloweenNoticeSeen();
-			handleModeChange("bus");
-			dispatchBusNavigation({ type: "set-view", view: "live" });
-			// Let the campaign lead straight to the vehicles this visit.
-			// The regular tour remains available from About and on a later visit.
-			setShowTour(false);
-		}
-		setHalloweenNotice(null);
-	}
-
 	const showNoTrainPositions = mode === "train" && trainEmptyNoticeVisible;
 	const showTrainEmptyNoticeIfUnavailable = useCallback(() => {
 		requestTrainEmptyNotice();
@@ -1022,14 +994,6 @@ function App() {
 			{showAbout && (
 				<AboutModal
 					onClose={() => setShowAbout(false)}
-					onShowHalloween={
-						canOpenHalloweenNotice()
-							? () => {
-									setShowAbout(false);
-									setHalloweenNotice("manual");
-								}
-							: undefined
-					}
 					onShowTour={() => {
 						setShowAbout(false);
 						openTour();
@@ -1045,10 +1009,7 @@ function App() {
 					}
 				/>
 			)}
-			{halloweenNotice && <HalloweenNotice onClose={closeHalloween} />}
-			{showTour && !halloweenNotice && (
-				<OnboardingTour steps={tourSteps} onClose={closeTour} />
-			)}
+			{showTour && <OnboardingTour steps={tourSteps} onClose={closeTour} />}
 			{showFavs && (
 				<FavoritesModal
 					onClose={handleCloseFavorites}
