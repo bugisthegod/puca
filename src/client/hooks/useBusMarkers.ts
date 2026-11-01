@@ -1,19 +1,16 @@
 import type { Feature, LineString } from "geojson";
 import { useEffect, useRef } from "react";
 import type { BusOperator, BusShape, BusVehicle } from "../../types";
-import { playVehicleSound } from "../vehicleSound";
 import {
 	type BusAnimationDurationStrategy,
 	computeBusCurrentDistance,
 } from "./busAnimation";
-import {
-	busHalloweenCostume,
-	makeBusIcon as makeBusMarkerIcon,
-} from "./busMarkerIcon";
+import { makeBusIcon as makeBusMarkerIcon } from "./busMarkerIcon";
 import {
 	type BusTripPopupData,
 	buildBusPopupHTML as buildBusPopupContentHTML,
 } from "./busPopup";
+import { bindBusRouteJumpButton } from "./busRouteJumpButton";
 import {
 	busRouteColor,
 	reconcileSelectedVariant,
@@ -143,8 +140,6 @@ export function useBusMarkers({
 	busStopMarkersRef: React.MutableRefObject<L.CircleMarker[]>;
 } {
 	const busMarkers = useRef<Map<string, BusMarkerEntry>>(new Map());
-	// Keep dismissal through async popup content replacement, scoped to each opening.
-	const dismissedSoundHints = useRef(new WeakSet<L.Popup>());
 	const busShapeLayerRef = useRef<L.Polyline | null>(null);
 	const busStopMarkersRef = useRef<L.CircleMarker[]>([]);
 	// Single ring marker on the polyline's terminus stop. Pairs with the search
@@ -224,7 +219,6 @@ export function useBusMarkers({
 		trip: BusTripPopupData | null,
 	): string {
 		return buildBusPopupContentHTML(bus, trip, {
-			artwork: busHalloweenCostume(bus, operatorForBus(bus)),
 			showRouteJump: Boolean(
 				onSelectBusRouteRef.current &&
 					currentBusRouteRef.current !== bus.routeShortName,
@@ -232,43 +226,15 @@ export function useBusMarkers({
 		});
 	}
 
-	function wirePopupButtons(popup: L.Popup) {
-		const soundButton = popup
-			.getElement?.()
-			?.querySelector<HTMLButtonElement>(".popup-vehicle-sound");
-		if (soundButton) {
-			soundButton.classList.toggle(
-				"popup-vehicle-sound--hint",
-				!dismissedSoundHints.current.has(popup),
-			);
-			soundButton.onclick = (event) => {
-				event.stopPropagation();
-				dismissedSoundHints.current.add(popup);
-				soundButton.classList.remove("popup-vehicle-sound--hint");
-				void playVehicleSound(soundButton.dataset.sound);
-			};
-		}
-
-		const btn = popup
-			.getElement?.()
-			?.querySelector<HTMLButtonElement>(".popup-route-jump");
-		if (!btn) return;
-		btn.onclick = () => {
-			const route = decodeURIComponent(btn.getAttribute("data-route") ?? "");
-			const dir = btn.getAttribute("data-dir") ?? "";
-			const operatorRaw = btn.getAttribute(
-				"data-operator",
-			) as BusOperator | null;
-			const operator = operatorRaw || undefined;
-			if (route && dir) {
-				leafletMap.current?.closePopup();
-				if (onRouteJump.current) {
-					onRouteJump.current(route, dir, operator);
-				} else {
-					onSelectBusRouteRef.current?.(route, dir, operator);
-				}
+	function wireRouteJumpButton(popup: L.Popup) {
+		bindBusRouteJumpButton(popup.getElement?.(), (route, dir, operator) => {
+			leafletMap.current?.closePopup();
+			if (onRouteJump.current) {
+				onRouteJump.current(route, dir, operator);
+			} else {
+				onSelectBusRouteRef.current?.(route, dir, operator);
 			}
-		};
+		});
 	}
 
 	function scrollPopupToCurrent(marker: L.Marker) {
@@ -327,14 +293,14 @@ export function useBusMarkers({
 			const popup = marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildBusPopupHTML(bus, trip.stops ? trip : null));
-				wirePopupButtons(popup);
+				wireRouteJumpButton(popup);
 				scrollPopupToCurrent(marker);
 			}
 		} catch {
 			const popup = marker.getPopup();
 			if (popup?.isOpen()) {
 				popup.setContent(buildBusPopupHTML(bus, { stops: [] }));
-				wirePopupButtons(popup);
+				wireRouteJumpButton(popup);
 			}
 		} finally {
 			busTripInFlight.delete(bus.tripId);
@@ -365,10 +331,7 @@ export function useBusMarkers({
 				paddingBottomRight: L.point(16, 16),
 			});
 			const popup = marker.getPopup();
-			if (popup) {
-				dismissedSoundHints.current.delete(popup);
-				wirePopupButtons(popup);
-			}
+			if (popup) wireRouteJumpButton(popup);
 			// Instant re-highlight from cache on re-open (markercluster event storms
 			// or second click). Fetch below will overwrite if shapeId resolves later.
 			const cached = busMarkers.current.get(bus.tripId)?.shapeId;
@@ -681,7 +644,6 @@ export function useBusMarkers({
 		let detailsRendered = false;
 
 		busShapeLayerRef.current = L.polyline(dirData.coords, {
-			className: "night-route",
 			color: routeColor,
 			weight: 6,
 			opacity: 0.85,
@@ -729,7 +691,6 @@ export function useBusMarkers({
 				for (const branch of v.branches) {
 					if (branch.length < 2) continue;
 					const pl = L.polyline(branch, {
-						className: "night-route night-route--variant",
 						color: routeColor,
 						weight: 3,
 						opacity: 0.35,
@@ -748,7 +709,6 @@ export function useBusMarkers({
 			const stopsVisible = activeMap.getZoom() >= STOP_MIN_ZOOM;
 			for (const stop of activeDirData.stops ?? []) {
 				const m = L.circleMarker([stop.lat, stop.lng], {
-					className: "night-route-stop",
 					radius: 6,
 					color: routeColor,
 					weight: 2.5,

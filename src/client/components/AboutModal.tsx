@@ -1,15 +1,15 @@
-import { ArrowUpRight } from "lucide-preact";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "../analytics";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
 import { useLocale } from "../i18n";
+import HalloweenArchive from "./HalloweenArchive";
+import PucaMark from "./PucaMark";
 
 type AboutModalProps = {
 	onClose: () => void;
 	onShowTour?: () => void;
-	onShowHalloween?: () => void;
 	compassPref?: boolean;
 	onToggleCompass?: (next: boolean) => void;
 };
@@ -115,7 +115,6 @@ function SettingRow({
 export default function AboutModal({
 	onClose,
 	onShowTour,
-	onShowHalloween,
 	compassPref,
 	onToggleCompass,
 }: AboutModalProps) {
@@ -219,13 +218,7 @@ export default function AboutModal({
 				>
 					<div className="about-hero">
 						<div className="about-hero__mark">
-							<img
-								src="/puca-halloween.png?v=witch-1"
-								width={128}
-								height={128}
-								alt=""
-								aria-hidden="true"
-							/>
+							<PucaMark />
 						</div>
 						<h2 className="about-hero__name">Púca</h2>
 						<div className="about-hero__pron">
@@ -237,25 +230,8 @@ export default function AboutModal({
 
 					<div className="about-divider" />
 
-					{onShowHalloween && (
-						<button
-							type="button"
-							className="about-halloween-link"
-							onClick={onShowHalloween}
-						>
-							<img
-								src="/puca-halloween.png?v=witch-1"
-								width={40}
-								height={40}
-								alt=""
-							/>
-							<span className="about-halloween-link__copy">
-								<span>{t("halloween.title")}</span>
-								<small>{t("halloween.dates")}</small>
-							</span>
-							<ArrowUpRight size={18} aria-hidden="true" />
-						</button>
-					)}
+					<HalloweenArchive />
+
 					{onShowTour && (
 						<section className="about-block">
 							<button

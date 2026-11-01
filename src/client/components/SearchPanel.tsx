@@ -6,7 +6,6 @@ import type { FocusTrainResult } from "../hooks/useTrainMarkers";
 import { useLocale } from "../i18n";
 import { getStationsOnce } from "../stationsClient";
 import FavStar from "./FavStar";
-import { SleepingPuca } from "./SleepingPuca";
 
 interface SearchPanelProps {
 	onSearch: (codes: string[]) => void;
@@ -443,7 +442,6 @@ function SearchPanel({
 						) : (
 							<div className="search-result-header">
 								<span className="search-result-msg no-results">
-									<SleepingPuca />
 									{t("train.search.results.empty")}
 								</span>
 								{from && to && (

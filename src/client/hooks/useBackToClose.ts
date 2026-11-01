@@ -80,12 +80,13 @@ let registerModal: ReturnType<typeof createModalHistory> | undefined;
 // If we depended on [onClose] directly, any parent re-render with an inline
 // arrow would re-run cleanup → history.back() (async popstate) → fires the
 // freshly-attached new listener → closes the modal unexpectedly.
-export function useBackToClose(onClose: () => void) {
+export function useBackToClose(onClose: () => void, enabled = true) {
 	const onCloseRef = useRef(onClose);
 	onCloseRef.current = onClose;
 
 	useEffect(() => {
+		if (!enabled) return;
 		registerModal ??= createModalHistory(window);
 		return registerModal(() => onCloseRef.current());
-	}, []);
+	}, [enabled]);
 }

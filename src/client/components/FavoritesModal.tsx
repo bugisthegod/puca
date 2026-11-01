@@ -10,7 +10,6 @@ import type {
 import { busKey, luasStopKey, stopKey, trainKey } from "../favorites";
 import { useBackToClose } from "../hooks/useBackToClose";
 import { useLocale } from "../i18n";
-import { SleepingPuca } from "./SleepingPuca";
 
 type Props = {
 	onClose: () => void;
@@ -319,12 +318,7 @@ function FavoritesModal({
 								</button>
 							)}
 						</div>
-						{empty && (
-							<div className="fav-empty">
-								<SleepingPuca />
-								{t("favs.empty")}
-							</div>
-						)}
+						{empty && <div className="fav-empty">{t("favs.empty")}</div>}
 						{visibleSectionIds.map((sectionId, index) => (
 							<section
 								key={sectionId}

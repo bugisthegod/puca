@@ -28,7 +28,6 @@ import {
 	type UnifiedResult,
 } from "./busSearchModel";
 import FavStar from "./FavStar";
-import { SleepingPuca } from "./SleepingPuca";
 
 export type {
 	BusStopSummary,
@@ -770,7 +769,6 @@ function BusSearchPanel({
 											arrivals &&
 											arrivals.length === 0 && (
 												<div className="stop-arrivals__empty">
-													<SleepingPuca />
 													{t("bus.search.arrivals.empty")}
 												</div>
 											)}

@@ -6,6 +6,7 @@
 @import "./styles/offline.css";
 @import "./styles/info-panel.css";
 @import "./styles/about.css";
+@import "./styles/halloween-archive.css";
 @import "./styles/favorites.css";
 @import "./styles/settings.css";
 @import "./styles/search.css";
@@ -14,7 +15,3 @@
 @import "./styles/markers.css";
 @import "./styles/tour.css";
 @import "./styles/error-boundary.css";
-
-@import "./styles/night-theme.css";
-
-@import "./styles/halloween-notice.css";

@@ -54,15 +54,26 @@ if (typeof window !== "undefined") {
 }
 
 const EN = {
-	"halloween.close": "Close Halloween announcement",
-	"halloween.dates": "26 OCT — 31 OCT",
-	"halloween.title": "Púca is out to play",
-	"halloween.body":
-		"Pumpkin buses, bats and witches are joining your journeys this Halloween.",
-	"halloween.sound":
-		"Tap a character in a vehicle’s popup to hear its sound. Listen out for the train whistle, too!",
-	"halloween.cta": "Let’s find some ghosts",
-	"halloween.footer": "Find this again in About.",
+	"halloween.archive.cutTicket": "Cut the ticket",
+	"halloween.archive.playSound": "Play {character} sound",
+	"halloween.archive.tapSound": "Tap to hear",
+	"halloween.archive.label": "Past events",
+	"halloween.archive.title": "Púca is out to play",
+	"halloween.archive.ended": "Ended",
+	"halloween.archive.intro":
+		"The event has ended. Keep the little characters and your ticket here — swipe to revisit them.",
+	"halloween.archive.cards": "Halloween keepsakes",
+	"halloween.archive.ticket": "The Halloween ticket",
+	"halloween.archive.ticketAlt":
+		"Original Halloween ticket for 26–31 October 2026. Pumpkin buses, bats and witches joined the map, with character sounds and a train whistle. This event has ended; Activate the ticket button to replay the original scissors animation.",
+	"halloween.archive.pumpkin": "Pumpkin bus",
+	"halloween.archive.bat": "Little bat",
+	"halloween.archive.witch": "The witch",
+	"halloween.archive.train": "Little train",
+	"halloween.archive.puca": "Púca in costume",
+	"halloween.archive.sleeping": "Sleepy Púca",
+	"halloween.archive.previous": "Previous card",
+	"halloween.archive.next": "Next card",
 
 	// AboutModal — chrome
 	"about.dialog.aria": "About Púca",
@@ -309,8 +320,6 @@ const EN = {
 	"popup.bus.empty": "No upcoming stop data available.",
 	"popup.bus.showall": "Show all {route}",
 	"popup.bus.vehicle": "Vehicle {label}",
-	"popup.bus.sound": "Play Halloween sound",
-	"popup.train.sound": "Play train horn",
 	"popup.bus.stale.title": "Púca ran off with this bus",
 	"popup.bus.stale.body": "Heh heh, times below may be off.",
 	"popup.bus.col.num": "#",
@@ -329,14 +338,26 @@ const EN = {
 type Key = keyof typeof EN;
 
 const ZH: Record<Key, string> = {
-	"halloween.close": "关闭万圣节活动说明",
-	"halloween.dates": "10.26 — 10.31",
-	"halloween.title": "Púca 出来捣蛋啦",
-	"halloween.body": "南瓜巴士、蝙蝠和女巫，这个万圣节陪你一起等车。",
-	"halloween.sound":
-		"点点车辆弹窗里的角色，听听它们的声音。小火车也有自己的汽笛声哦！",
-	"halloween.cta": "开始捉鬼",
-	"halloween.footer": "可在「关于」里再次查看。",
+	"halloween.archive.cutTicket": "开始捉鬼，剪开车票",
+	"halloween.archive.playSound": "播放{character}的声音",
+	"halloween.archive.tapSound": "点我听声音",
+	"halloween.archive.label": "往期活动",
+	"halloween.archive.title": "Púca 出来捣蛋啦",
+	"halloween.archive.ended": "已结束",
+	"halloween.archive.intro":
+		"活动已经结束，小伙伴和车票都留在这里。左右滑动，重温这段旅程。",
+	"halloween.archive.cards": "万圣节纪念卡片",
+	"halloween.archive.ticket": "万圣节纪念车票",
+	"halloween.archive.ticketAlt":
+		"2026 年 10 月 26 日至 31 日万圣节活动原版车票。南瓜巴士、蝙蝠和女巫曾来到地图，并带来角色音效和火车汽笛。活动已结束，点击车票按钮可重播原来的剪票动画。",
+	"halloween.archive.pumpkin": "南瓜巴士",
+	"halloween.archive.bat": "小蝙蝠",
+	"halloween.archive.witch": "女巫",
+	"halloween.archive.train": "小火车",
+	"halloween.archive.puca": "变装的 Púca",
+	"halloween.archive.sleeping": "睡着的 Púca",
+	"halloween.archive.previous": "上一张卡片",
+	"halloween.archive.next": "下一张卡片",
 
 	// AboutModal — chrome
 	"about.dialog.aria": "关于 Púca",
@@ -575,8 +596,6 @@ const ZH: Record<Key, string> = {
 	"popup.bus.empty": "暂无即将到站的数据。",
 	"popup.bus.showall": "显示全部 {route}",
 	"popup.bus.vehicle": "车辆 {label}",
-	"popup.bus.sound": "播放万圣节音效",
-	"popup.train.sound": "播放火车汽笛",
 	"popup.bus.stale.title": "Púca 把这辆公交开跑了",
 	"popup.bus.stale.body": "嘿嘿，下面的时间可能不准。",
 	"popup.bus.col.num": "#",
