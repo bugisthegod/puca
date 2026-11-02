@@ -643,10 +643,6 @@
     "routeId": "DUB-GALWAY-O",
     "directionId": 1
   },
-  "athenry|athlone": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 1
-  },
   "dublin heuston|galway (ceannt)": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 0
@@ -668,10 +664,6 @@
     "directionId": 0
   },
   "portarlington|galway (ceannt)": {
-    "routeId": "DUB-GALWAY-O",
-    "directionId": 0
-  },
-  "dublin heuston|athenry": {
     "routeId": "DUB-GALWAY-O",
     "directionId": 0
   },
