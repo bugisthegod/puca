@@ -12,6 +12,7 @@ import {
 	parseRoute,
 	parseTrainProgress,
 } from "../../utils";
+import { attachPopupScrollbar } from "./popupScrollbar";
 import { projectOntoRoute } from "./routeProjection";
 import {
 	makeTrainHitIcon,
@@ -76,7 +77,9 @@ function trainOverlapKey(train: Train): string {
 
 function trainOverlapOffset(index: number, total: number): TrainMarkerOffset {
 	if (total <= 1) return { x: 0, y: 0 };
-	const radius = total === 2 ? 14 : total <= 4 ? 16 : 20;
+	// Hit targets are 40px wide. Keep neighbouring centres at least 44px
+	// apart, so both the icons and their tap areas can be selected separately.
+	const radius = Math.ceil(44 / (2 * Math.sin(Math.PI / total)));
 	const angle =
 		total === 2
 			? index * Math.PI
@@ -369,13 +372,27 @@ export function useTrainMarkers({
 				popup.setContent(buildTrainPopupWithMovements(train, movements));
 				// Scroll to current stop after DOM updates
 				requestAnimationFrame(() => {
-					const wrap = document.querySelector(".popup-table-wrap");
-					const current = document.querySelector("tr.movement-current");
+					const wrap = popup
+						.getElement()
+						?.querySelector<HTMLElement>(".popup-table-wrap");
+					if (wrap) attachPopupScrollbar(wrap);
+					const current = wrap?.querySelector("tr.movement-current");
 					if (wrap && current) {
+						const currentRect = current.getBoundingClientRect();
 						const rowTop =
-							(current as HTMLElement).offsetTop -
-							(wrap as HTMLElement).offsetTop;
-						wrap.scrollTop = rowTop;
+							currentRect.top -
+							wrap.getBoundingClientRect().top +
+							wrap.scrollTop;
+						const headerHeight =
+							wrap.querySelector("thead")?.getBoundingClientRect().height ?? 0;
+						// Centre within the visible rows below the sticky table header.
+						const rowOffset =
+							headerHeight +
+							Math.max(
+								0,
+								(wrap.clientHeight - headerHeight - currentRect.height) / 2,
+							);
+						wrap.scrollTop = Math.max(0, rowTop - rowOffset);
 					}
 				});
 			}

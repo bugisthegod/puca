@@ -13,6 +13,7 @@ export type BusTripStop = {
 	scheduledArrivalSec: number | null;
 	expectedArrivalSec: number | null;
 	arrivalDelaySec: number | null;
+	scheduleRelationship?: string;
 	isCurrent?: boolean;
 };
 
@@ -89,12 +90,19 @@ export function buildBusPopupHTML(
 		? trip.stops
 				.map((s, i) => {
 					const isCurrent = i === currentIdx;
+					const isSkipped = s.scheduleRelationship === "SKIPPED";
+					const rowClass = [
+						isCurrent ? "movement-current" : "",
+						isSkipped ? "movement-skipped" : "",
+					]
+						.filter(Boolean)
+						.join(" ");
 					return `
-            <tr class="${isCurrent ? "movement-current" : ""}">
+            <tr class="${rowClass}">
               <td>${s.sequence}${isCurrent ? " ▶" : ""}</td>
               <td>${escapeHtml(s.name)}</td>
               <td>${formatBusPopupSec(s.scheduledArrivalSec)}</td>
-              <td>${formatBusPopupSec(s.expectedArrivalSec)}</td>
+              <td>${isSkipped ? `<span class="popup-skipped-label">${i18n("popup.bus.skipped")}</span>` : formatBusPopupSec(s.expectedArrivalSec)}</td>
             </tr>
           `;
 				})
@@ -121,7 +129,11 @@ export function buildBusPopupHTML(
 			? `<div class="popup-route">${escapeHtml(stops[0]?.name ?? "")} → ${escapeHtml(stops[stops.length - 1]?.name ?? "")}</div>`
 			: "";
 	const currentStop = trip && currentIdx >= 0 ? trip.stops[currentIdx] : null;
-	const status = busPopupStatusFromDelay(currentStop?.arrivalDelaySec ?? null);
+	const status = busPopupStatusFromDelay(
+		currentStop?.scheduleRelationship === "SKIPPED"
+			? null
+			: (currentStop?.arrivalDelaySec ?? null),
+	);
 	const vehicleLabel = escapeHtml(bus.label || bus.tripId);
 	const metaHtml = `
     <div class="popup-meta">

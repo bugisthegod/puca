@@ -654,21 +654,48 @@
 
 .about-action--donate {
 	grid-column: 1 / -1;
-	display: flex;
-	justify-content: center;
-	padding-top: 6px;
+	order: 2;
 }
 
 .about-action--source {
-	grid-column: 1 / -1;
-	display: flex;
-	justify-content: center;
-	margin-top: -2px;
+	order: 1;
+}
+
+.about-action--release {
+	order: 1;
 }
 
 .about-action > a,
 .about-action > button {
 	height: 100%;
+	width: 100%;
+	min-height: 44px;
+	box-sizing: border-box;
+	border-radius: 12px;
+}
+
+.about-release-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 9px 14px;
+	border: 1px solid rgba(37, 168, 100, 0.34);
+	background: rgba(37, 168, 100, 0.08);
+	color: #198754;
+	font: inherit;
+	font-size: 0.88rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.about-release-btn:hover {
+	background: rgba(37, 168, 100, 0.14);
+}
+
+.about-actions :is(button, a):focus-visible {
+	outline: 2px solid #25a864;
+	outline-offset: 3px;
 }
 
 .about-share-btn {

@@ -80,6 +80,37 @@ describe("bus popup formatting", () => {
 });
 
 describe("buildBusPopupHTML", () => {
+	for (const [locale, label] of [
+		["en", "Skipped"],
+		["zh", "不停靠"],
+	] as const) {
+		test(`labels skipped stops in ${locale} without showing an ETA or delay status`, () => {
+			setLocale(locale);
+			try {
+				const skippedTrip = {
+					stops: trip.stops.map((stop) => ({
+						...stop,
+						scheduleRelationship: stop.sequence === 2 ? "SKIPPED" : "SCHEDULED",
+					})),
+				};
+				const html = buildBusPopupHTML(bus(), skippedTrip, {
+					showRouteJump: false,
+				});
+				expect(html).toContain('class="movement-current movement-skipped"');
+				expect(html).toContain(
+					`<span class="popup-skipped-label">${label}</span>`,
+				);
+				expect(html).toContain("Current &lt;Stop&gt;");
+				expect(html).toContain("08:05");
+				expect(html).toContain("08:00");
+				expect(html).not.toContain("08:15");
+				expect(html).not.toContain('class="popup-status ');
+			} finally {
+				setLocale("en");
+			}
+		});
+	}
+
 	test("renders a loading popup without a route jump button by default", () => {
 		const html = buildBusPopupHTML(bus(), null, { showRouteJump: false });
 
