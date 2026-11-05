@@ -1,6 +1,18 @@
 .release-notice {
+	--release-top-gap: calc(16px + env(safe-area-inset-top, 0px));
+	--release-bottom-gap: calc(16px + env(safe-area-inset-bottom, 0px));
+	position: fixed;
+	/* Center inside the smallest viewport, even while mobile browser bars
+	   change after a reload. The map intentionally uses the larger viewport. */
+	inset-inline: 0;
+	inset-block-start: var(--release-top-gap);
+	inset-block-end: calc(100% - 100svh + var(--release-bottom-gap));
+	margin: auto;
 	width: min(440px, calc(100vw - 24px));
-	max-height: min(760px, calc(100dvh - 32px));
+	max-height: min(
+		760px,
+		calc(100svh - var(--release-top-gap) - var(--release-bottom-gap))
+	);
 	box-sizing: border-box;
 	padding: 0;
 	overflow: hidden;
@@ -195,7 +207,7 @@
 .release-notice__footer {
 	flex: 0 0 auto;
 	padding: 14px 24px 10px;
-	padding-bottom: max(10px, env(safe-area-inset-bottom));
+	/* The dialog's outer gap already clears the bottom safe area. */
 	border-top: 1px solid #deded0;
 	background: #faf8ef;
 	box-shadow: 0 -6px 18px rgb(31 61 39 / 4%);
