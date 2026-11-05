@@ -134,6 +134,10 @@ Bun.serve({
 		"/icon-512.png": staticFile("./public/icon-512.png", 604800),
 		"/public/icon-512.png": staticFile("./public/icon-512.png", 604800),
 		"/icon.svg": staticFile("./public/icon.svg", 604800),
+		"/updates/puca-dublin-46a.webp": staticFile(
+			"./public/updates/puca-dublin-46a.webp",
+			604800,
+		),
 		"/public/icon.svg": staticFile("./public/icon.svg", 604800),
 		"/events/halloween-2026/halloween-notice-en.webp": staticFile(
 			"./public/events/halloween-2026/halloween-notice-en.webp",

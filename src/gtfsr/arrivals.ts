@@ -116,6 +116,18 @@ export function decideStopArrival(
 	tripStopCoords: TripStopPoint[],
 	nowSec: number,
 ): StopArrivalDecision {
+	// A diversion can skip this stop even while GPS shows the bus upstream.
+	// Only this exact stop occurrence is affected; do not propagate SKIPPED.
+	if (
+		live.stopTimeUpdates.some(
+			(update) =>
+				update.sequence === row.stop_sequence &&
+				update.scheduleRelationship === "SKIPPED",
+		)
+	) {
+		return { keep: false };
+	}
+
 	const closestStop = findClosestTripStop(vehicle, tripStopCoords);
 	const vehicleSeq = closestStop?.sequence ?? null;
 	const vehicleScheduledArrivalSec = closestStop?.arrivalSec ?? null;

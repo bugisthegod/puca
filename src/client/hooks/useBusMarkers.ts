@@ -1,6 +1,7 @@
 import type { Feature, LineString } from "geojson";
 import { useEffect, useRef } from "react";
 import type { BusOperator, BusShape, BusVehicle } from "../../types";
+import { useLocale } from "../i18n";
 import {
 	type BusAnimationDurationStrategy,
 	computeBusCurrentDistance,
@@ -11,12 +12,14 @@ import {
 	buildBusPopupHTML as buildBusPopupContentHTML,
 } from "./busPopup";
 import { bindBusRouteJumpButton } from "./busRouteJumpButton";
+import { isBusTripCacheFresh } from "./busTripCache";
 import {
 	busRouteColor,
 	reconcileSelectedVariant,
 	variantStyleForShape,
 } from "./busVariantStyle";
 import { getMapFitPadding } from "./mapFitPadding";
+import { attachPopupScrollbar } from "./popupScrollbar";
 import {
 	buildRouteLine,
 	buildRouteLookup,
@@ -58,6 +61,8 @@ const ROUTE_DETAIL_FALLBACK_MS = ROUTE_FLY_DURATION_MS + 700;
 export interface BusMarkerEntry {
 	marker: L.Marker;
 	bus: BusVehicle;
+	tripData?: BusTripPopupData | null;
+	tripUpdatedAtMs?: number;
 	// Latest GPS lat/lng — used for viewport culling and as the off-route LERP target.
 	targetLat: number;
 	targetLng: number;
@@ -139,6 +144,7 @@ export function useBusMarkers({
 	busShapeLayerRef: React.RefObject<L.Polyline | null>;
 	busStopMarkersRef: React.MutableRefObject<L.CircleMarker[]>;
 } {
+	const { locale } = useLocale();
 	const busMarkers = useRef<Map<string, BusMarkerEntry>>(new Map());
 	const busShapeLayerRef = useRef<L.Polyline | null>(null);
 	const busStopMarkersRef = useRef<L.CircleMarker[]>([]);
@@ -247,6 +253,7 @@ export function useBusMarkers({
 			const current = root.querySelector(
 				"tr.movement-current",
 			) as HTMLElement | null;
+			if (wrap) attachPopupScrollbar(wrap);
 			if (!wrap || !current) return;
 			// getBoundingClientRect sidesteps the offsetParent chain — a <tr>'s
 			// offsetParent is usually the <table>, not the wrap, so the naive
@@ -265,12 +272,13 @@ export function useBusMarkers({
 
 	async function loadBusTrip(bus: BusVehicle, marker: L.Marker) {
 		if (busTripInFlight.has(bus.tripId)) return;
-		// If the popup already shows loaded trip data, skip the refetch — but
-		// still snap to the current stop, because Leaflet rebuilds the popup DOM
-		// on each reopen and scrollTop resets to 0.
+		// Reuse fresh content on reopen; refresh expired data without blanking
+		// the table so upstream SKIPPED changes can reach the popup.
+		const cachedEntry = busMarkers.current.get(bus.tripId);
 		const existingPopup = marker.getPopup();
 		const existingContent = existingPopup?.getContent?.();
 		if (
+			isBusTripCacheFresh(cachedEntry?.tripUpdatedAtMs) &&
 			typeof existingContent === "string" &&
 			existingContent.includes("popup-table-wrap")
 		) {
@@ -286,18 +294,25 @@ export function useBusMarkers({
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const trip = await res.json();
 			const entry = busMarkers.current.get(bus.tripId);
-			if (entry && typeof trip.shapeId === "string") {
+			// A route/mode change may have replaced this marker while fetching.
+			if (!entry || entry.marker !== marker) return;
+			entry.tripData = Array.isArray(trip.stops) ? trip : null;
+			entry.tripUpdatedAtMs = entry.tripData ? Date.now() : undefined;
+			if (typeof trip.shapeId === "string") {
 				entry.shapeId = trip.shapeId;
 				highlightVariant(trip.shapeId);
 			}
 			const popup = marker.getPopup();
 			if (popup?.isOpen()) {
-				popup.setContent(buildBusPopupHTML(bus, trip.stops ? trip : null));
+				popup.setContent(buildBusPopupHTML(entry.bus, entry.tripData ?? null));
 				wireRouteJumpButton(popup);
 				scrollPopupToCurrent(marker);
 			}
 		} catch {
 			const popup = marker.getPopup();
+			// Keep the previous table on transient failures; leave its timestamp
+			// expired so the next reopen retries instead of caching the failure.
+			if (cachedEntry?.tripData) return;
 			if (popup?.isOpen()) {
 				popup.setContent(buildBusPopupHTML(bus, { stops: [] }));
 				wireRouteJumpButton(popup);
@@ -794,6 +809,19 @@ export function useBusMarkers({
 		// Intentional deps: stop marker zoom gating follows bus mode and route shape.
 		// Marker refs are read in place on each zoom event.
 	}, [mode, busShape]);
+
+	// Leaflet owns popup HTML outside React; rebuild cached content on language changes.
+	useEffect(() => {
+		for (const entry of busMarkers.current.values()) {
+			const popup = entry.marker.getPopup();
+			if (!popup) continue;
+			popup.setContent(buildBusPopupHTML(entry.bus, entry.tripData ?? null));
+			if (popup.isOpen()) {
+				wireRouteJumpButton(popup);
+				scrollPopupToCurrent(entry.marker);
+			}
+		}
+	}, [locale]);
 
 	return { busMarkers, busShapeLayerRef, busStopMarkersRef };
 }

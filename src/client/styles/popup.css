@@ -246,10 +246,35 @@
 	max-height: 260px;
 	overflow-y: auto;
 	overflow-x: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(90 105 96 / 35%) transparent;
 	margin-top: 6px;
 	border-radius: 6px;
 	border: 1px solid var(--border-strong);
 	background: var(--bg-surface);
+}
+
+/* Bus and train tables share a quiet scrollbar, including older WebKit. */
+.popup-table-wrap::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.popup-table-wrap::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.popup-table-wrap::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background: rgb(90 105 96 / 35%);
+}
+
+.popup-table-wrap::-webkit-scrollbar-thumb:hover {
+	background: rgb(90 105 96 / 55%);
+}
+
+.popup-table-wrap::-webkit-scrollbar-corner {
+	background: transparent;
 }
 
 .movements-table {
@@ -326,6 +351,18 @@
 	color: var(--text-muted);
 }
 
+.movements-table tbody tr.movement-skipped td {
+	color: var(--text-muted);
+}
+
+.movements-table tbody tr.movement-skipped td:nth-child(2) {
+	text-decoration: line-through;
+}
+
+.popup-skipped-label {
+	font-weight: 600;
+}
+
 /* ============================================================
    Direction picker
    ============================================================ */
@@ -389,5 +426,38 @@
 
 	.leaflet-popup-content-wrapper {
 		border-radius: 8px;
+	}
+}
+
+/* Keep the native touch scrollbar; desktop gets a thumb over the table. */
+.popup-table-shell {
+	position: relative;
+}
+.popup-scroll-thumb {
+	display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+	.popup-table-shell > .popup-table-wrap {
+		scrollbar-width: none;
+	}
+	.popup-table-shell > .popup-table-wrap::-webkit-scrollbar {
+		display: none;
+	}
+	.popup-scroll-thumb:not([hidden]) {
+		display: block;
+		position: absolute;
+		right: 3px;
+		width: 5px;
+		border-radius: 999px;
+		background: rgb(90 105 96 / 35%);
+		z-index: 2;
+		touch-action: none;
+		cursor: grab;
+	}
+	.popup-scroll-thumb:hover {
+		background: rgb(90 105 96 / 55%);
+	}
+	.popup-scroll-thumb:active {
+		cursor: grabbing;
 	}
 }

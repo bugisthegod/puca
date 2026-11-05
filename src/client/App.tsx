@@ -43,6 +43,7 @@ import OfflineBanner from "./components/OfflineBanner";
 import OnboardingTour, { type TourStep } from "./components/OnboardingTour";
 import PucaMark from "./components/PucaMark";
 import RealtimeBanner from "./components/RealtimeBanner";
+import ReleaseNotice from "./components/ReleaseNotice";
 import SearchPanel from "./components/SearchPanel";
 import {
 	type BusFavorite,
@@ -67,6 +68,7 @@ import {
 	type VisibleBusCache,
 } from "./hooks/visibleBuses";
 import { useLocale } from "./i18n";
+import { hasUnreadRelease, markReleaseSeen } from "./releases";
 import {
 	type BusMapView,
 	clearBusSearchSession,
@@ -387,6 +389,11 @@ function App() {
 		};
 	}, [busMapView, busStops, mode, showToast, t]);
 	const [showAbout, setShowAbout] = useState(false);
+	const [showRelease, setShowRelease] = useState(hasUnreadRelease);
+	function closeRelease() {
+		markReleaseSeen();
+		setShowRelease(false);
+	}
 	const [seenAbout, setSeenAbout] = useState<boolean>(() => {
 		try {
 			return localStorage.getItem(ABOUT_SEEN_KEY) === "1";
@@ -994,6 +1001,10 @@ function App() {
 			{showAbout && (
 				<AboutModal
 					onClose={() => setShowAbout(false)}
+					onShowRelease={() => {
+						setShowAbout(false);
+						setShowRelease(true);
+					}}
 					onShowTour={() => {
 						setShowAbout(false);
 						openTour();
@@ -1010,6 +1021,9 @@ function App() {
 				/>
 			)}
 			{showTour && <OnboardingTour steps={tourSteps} onClose={closeTour} />}
+			{showRelease && !showTour && !showAbout && !showFavs && (
+				<ReleaseNotice onClose={closeRelease} />
+			)}
 			{showFavs && (
 				<FavoritesModal
 					onClose={handleCloseFavorites}

@@ -326,6 +326,14 @@ const EN = {
 	"popup.bus.col.stop": "Stop",
 	"popup.bus.col.sched": "Sched",
 	"popup.bus.col.exp": "Exp",
+	"popup.bus.skipped": "Skipped",
+	"release.title": "What’s new",
+	"release.history": "Earlier updates",
+	"release.dismiss": "Got it",
+	"release.feature": "NEW ON YOUR MAP",
+	"release.preview": "A peek at your stop list · example",
+	"release.stop.skipped": "Skipped stop",
+	"release.stop.next": "Next served stop",
 
 	// Offline
 	"offline.banner": "Offline — showing cached data",
@@ -602,6 +610,14 @@ const ZH: Record<Key, string> = {
 	"popup.bus.col.stop": "站点",
 	"popup.bus.col.sched": "计划",
 	"popup.bus.col.exp": "预计",
+	"popup.bus.skipped": "不停靠",
+	"release.title": "更新内容",
+	"release.history": "历史更新",
+	"release.dismiss": "知道了",
+	"release.feature": "地图新发现",
+	"release.preview": "站点列表会这样显示 · 示例",
+	"release.stop.skipped": "不停靠的站点",
+	"release.stop.next": "下一停靠站",
 
 	// Offline
 	"offline.banner": "离线 — 显示缓存数据",

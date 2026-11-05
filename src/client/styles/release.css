@@ -1,0 +1,330 @@
+.release-notice {
+	width: min(440px, calc(100vw - 24px));
+	max-height: min(760px, calc(100dvh - 32px));
+	box-sizing: border-box;
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid #deded0;
+	border-radius: 24px;
+	background: #faf8ef;
+	color: #193b30;
+	box-shadow: 0 28px 90px rgb(0 25 17 / 30%);
+}
+.release-notice[open] {
+	display: flex;
+	flex-direction: column;
+	animation: release-enter 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes release-enter {
+	from {
+		opacity: 0;
+		transform: translateY(12px) scale(0.985);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.release-notice[open] {
+		animation: none;
+	}
+}
+.release-notice::backdrop {
+	background: rgb(7 24 19 / 50%);
+	backdrop-filter: blur(6px);
+}
+.release-notice__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex: 0 0 auto;
+	gap: 16px;
+	padding: 16px 24px;
+}
+.release-notice__brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.release-notice__brand > span:first-child {
+	font-family: Georgia, serif;
+	font-size: 28px;
+	font-weight: 700;
+	letter-spacing: -1px;
+}
+.release-notice__edition {
+	padding-left: 12px;
+	border-left: 1px solid #cad3c0;
+	font-size: 13px;
+	color: #52664e;
+}
+.release-notice__close {
+	display: grid;
+	place-items: center;
+	flex: 0 0 36px;
+	height: 36px;
+	border: 1px solid #d5d9c8;
+	border-radius: 50%;
+	background: transparent;
+	color: #264b36;
+	cursor: pointer;
+}
+.release-notice__close:hover {
+	background: #eeeede;
+}
+.release-notice__scroll {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: #a7b7a0 transparent;
+}
+.release-notice__illustration {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 2 / 1;
+	object-fit: cover;
+	/* The asset contains painted edges; blend only the outer paper margin. */
+	mask-image: linear-gradient(
+		to bottom,
+		transparent,
+		#000 3%,
+		#000 97%,
+		transparent
+	);
+}
+.release-notice__body {
+	padding: 22px 26px 20px;
+}
+.release-notice__eyebrow {
+	margin: 0 0 12px;
+	color: #72764b;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 1.6px;
+}
+.release-notice h2 {
+	margin: 0 0 14px;
+	font-family: Georgia, serif;
+	font-size: 30px;
+	font-weight: 700;
+	line-height: 1.15;
+	letter-spacing: -0.7px;
+	text-wrap: balance;
+}
+.release-notice__body > #release-body {
+	margin: 0;
+	color: #52614f;
+	font-size: 14px;
+	line-height: 1.65;
+}
+.release-notice__preview {
+	margin: 18px 0 14px;
+	padding: 13px 14px 5px;
+	border: 1px solid #dfe7db;
+	border-radius: 12px;
+	background: #fff;
+}
+
+.release-notice__preview-head {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 6px;
+	color: #738375;
+	font-size: 9px;
+}
+
+.release-notice__stop {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 36px;
+	font-size: 12px;
+}
+
+.release-notice__stop--skipped {
+	color: #859185;
+}
+
+.release-notice__dot {
+	flex: 0 0 7px;
+	height: 7px;
+	box-sizing: border-box;
+	border: 2px solid #447459;
+	border-radius: 50%;
+	background: #fff;
+}
+
+.release-notice__stop--skipped .release-notice__dot {
+	border-color: #a8b2a2;
+}
+.release-notice__stop--skipped::after {
+	content: "";
+	position: absolute;
+	top: 23px;
+	left: 3px;
+	height: 26px;
+	border-left: 1px dashed #c7d1c2;
+}
+
+.release-notice__badge {
+	margin-left: auto;
+	padding: 3px 7px;
+	border-radius: 5px;
+	background: #f1f0e6;
+	color: #766c43;
+	font-size: 10px;
+	font-weight: 600;
+}
+
+.release-notice__time {
+	margin-left: auto;
+	font-variant-numeric: tabular-nums;
+}
+.release-notice__body > .release-notice__detail {
+	font-size: 11px;
+	color: #6b7c70;
+}
+
+.release-notice__footer {
+	flex: 0 0 auto;
+	padding: 14px 24px 10px;
+	padding-bottom: max(10px, env(safe-area-inset-bottom));
+	border-top: 1px solid #deded0;
+	background: #faf8ef;
+	box-shadow: 0 -6px 18px rgb(31 61 39 / 4%);
+}
+.release-notice__dismiss {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	width: 100%;
+	min-height: 46px;
+	border: 0;
+	border-radius: 12px;
+	background: #174b36;
+	color: #faf8ef;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.release-notice__dismiss:hover {
+	background: #226145;
+}
+.release-notice button:focus-visible {
+	outline: 3px solid #96b66d;
+	outline-offset: 3px;
+}
+.release-notice__date {
+	display: block;
+	margin-top: 7px;
+	color: #879081;
+	font-size: 9px;
+	text-align: center;
+	letter-spacing: 1px;
+}
+.release-notice__history {
+	margin-top: 20px;
+	border-top: 1px solid #dfe7db;
+}
+
+.release-notice__history summary {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 44px;
+	list-style: none;
+	color: #42634e;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.release-notice__history summary::-webkit-details-marker {
+	display: none;
+}
+.release-notice__history summary > svg {
+	margin-left: auto;
+	transition: transform 0.15s;
+}
+.release-notice__history[open] summary > svg {
+	transform: rotate(180deg);
+}
+.release-notice__history summary:focus-visible {
+	outline: 2px solid #96b66d;
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.release-notice__history-count {
+	padding: 1px 6px;
+	border-radius: 5px;
+	background: #eaf0e4;
+	font-size: 10px;
+	font-variant-numeric: tabular-nums;
+}
+
+.release-notice__timeline {
+	margin: 5px 0 0 4px;
+	padding: 0 0 0 18px;
+	border-left: 1px solid #d4decd;
+	list-style: none;
+}
+
+.release-notice__timeline li {
+	position: relative;
+	padding: 0 0 20px;
+}
+.release-notice__timeline li:last-child {
+	padding-bottom: 4px;
+}
+.release-notice__timeline li::before {
+	content: "";
+	position: absolute;
+	top: 4px;
+	left: -22px;
+	width: 5px;
+	height: 5px;
+	border: 1px solid #78966a;
+	border-radius: 50%;
+	background: #fafbf7;
+}
+
+.release-notice__timeline time {
+	color: #738375;
+	font-size: 10px;
+	letter-spacing: 0.5px;
+}
+.release-notice__timeline h3 {
+	margin: 6px 0 4px;
+	color: #294d39;
+	font-size: 13px;
+	font-weight: 600;
+}
+.release-notice__timeline p {
+	margin: 0;
+	color: #6b7c70;
+	font-size: 11px;
+	line-height: 1.7;
+}
+
+@media (max-width: 360px) {
+	.release-notice__body {
+		padding-inline: 20px;
+	}
+	.release-notice__header,
+	.release-notice__footer {
+		padding-inline: 20px;
+	}
+	.release-notice h2 {
+		font-size: 26px;
+	}
+}

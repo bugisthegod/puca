@@ -1008,6 +1008,57 @@ describe("decideStopArrival", () => {
 		};
 	}
 
+	for (const hasGps of [false, true]) {
+		test(`excludes an explicitly skipped stop with GPS=${hasGps}`, () => {
+			const live: LiveTripData = {
+				routeId: "R39A",
+				directionId: 1,
+				stopTimeUpdates: [
+					{
+						sequence: 8,
+						stopId: "T8",
+						arrivalDelaySec: null,
+						departureDelaySec: null,
+						scheduleRelationship: "SKIPPED",
+					},
+				],
+			};
+			const vehicle = hasGps ? tripStopCoords[6]! : null;
+			expect(
+				decideStopArrival(userRow, live, vehicle, tripStopCoords, nowSec),
+			).toEqual({ keep: false });
+		});
+	}
+
+	for (const skippedSequence of [7, 9]) {
+		test(`keeps a served stop when only sequence ${skippedSequence} is skipped`, () => {
+			const live: LiveTripData = {
+				routeId: "R39A",
+				directionId: 1,
+				stopTimeUpdates: [
+					{
+						sequence: skippedSequence,
+						stopId: `T${skippedSequence}`,
+						arrivalDelaySec: null,
+						departureDelaySec: null,
+						scheduleRelationship: "SKIPPED",
+					},
+					{
+						sequence: 8,
+						stopId: "T8",
+						arrivalDelaySec: 600,
+						departureDelaySec: null,
+						scheduleRelationship: "SCHEDULED",
+					},
+				],
+			};
+			expect(decideStopArrival(userRow, live, null, [], nowSec)).toMatchObject({
+				keep: true,
+				etaSec: 300,
+			});
+		});
+	}
+
 	test("the bug: NTA stops 4-9 dropped, GPS shows bus still upstream → keep with Due", () => {
 		// Vehicle GPS sits exactly on sequence 8 — closest match is the user's stop.
 		const vehicle = {
