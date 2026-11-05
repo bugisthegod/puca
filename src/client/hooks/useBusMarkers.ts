@@ -298,7 +298,7 @@ export function useBusMarkers({
 			if (!entry || entry.marker !== marker) return;
 			entry.tripData = Array.isArray(trip.stops) ? trip : null;
 			entry.tripUpdatedAtMs = entry.tripData ? Date.now() : undefined;
-			if (entry && typeof trip.shapeId === "string") {
+			if (typeof trip.shapeId === "string") {
 				entry.shapeId = trip.shapeId;
 				highlightVariant(trip.shapeId);
 			}
