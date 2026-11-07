@@ -237,6 +237,7 @@ export function useVehiclePolling(
 
 	return {
 		trains,
+		clockNow,
 		buses,
 		busRealtimeHealth,
 		lastUpdatedAgeSec,

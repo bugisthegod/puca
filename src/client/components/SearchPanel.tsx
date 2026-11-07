@@ -1,13 +1,46 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { SearchResult, Station } from "../../types";
-import { collapseSelection, fmtTime } from "../../utils";
+import {
+	collapseSelection,
+	dublinSecondsSinceMidnight,
+	fmtTime,
+} from "../../utils";
 import { type Favorites, hasTrain, type TrainFavorite } from "../favorites";
 import type { FocusTrainResult } from "../hooks/useTrainMarkers";
 import { useLocale } from "../i18n";
 import { getStationsOnce } from "../stationsClient";
 import FavStar from "./FavStar";
 
+const DEPARTURE_GRACE_SECONDS = 10 * 60;
+const DAY_SECONDS = 24 * 60 * 60;
+
+export function departureWarningAt(
+	result: Pick<SearchResult, "status" | "fromDep">,
+	receivedAt: number,
+): number | null {
+	if (result.status !== "scheduled") return null;
+	const time = /^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/.exec(
+		result.fromDep.trim(),
+	);
+	if (!time) return null;
+	const departure =
+		Number(time[1]) * 3600 + Number(time[2]) * 60 + Number(time[3] ?? 0);
+	// Irish Rail also uses midnight as a placeholder for missing departures.
+	if (departure === 0) return null;
+	const delta = departure - dublinSecondsSinceMidnight(new Date(receivedAt));
+	// Results cover a short window around the search. Resolve the clock time
+	// to the nearest day once, so a result left open won't wrap to tomorrow.
+	const offset = ((delta + DAY_SECONDS * 1.5) % DAY_SECONDS) - DAY_SECONDS / 2;
+	return (
+		Math.floor(receivedAt / 1000) * 1000 +
+		(offset + DEPARTURE_GRACE_SECONDS) * 1000
+	);
+}
+
+type DisplaySearchResult = SearchResult & { warningAt: number | null };
+
 interface SearchPanelProps {
+	clockNow: number;
 	onSearch: (codes: string[]) => void;
 	onClear: () => void;
 	onTrainSelect: (
@@ -23,6 +56,7 @@ interface SearchPanelProps {
 }
 
 function SearchPanel({
+	clockNow,
 	onSearch,
 	onClear,
 	onTrainSelect,
@@ -45,7 +79,7 @@ function SearchPanel({
 	const [focusedField, setFocusedField] = useState<"from" | "to" | null>(null);
 	const [highlightIndex, setHighlightIndex] = useState(-1);
 	const [loading, setLoading] = useState(false);
-	const [results, setResults] = useState<SearchResult[] | null>(null);
+	const [results, setResults] = useState<DisplaySearchResult[] | null>(null);
 	// Snapshot of station names at search time — so the rendered result rows
 	// don't shift when the user edits the input after searching.
 	const [searchedNames, setSearchedNames] = useState<{
@@ -155,7 +189,13 @@ function SearchPanel({
 				`/api/trains/search?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`,
 			);
 			const data: SearchResult[] = await res.json();
-			setResults(data);
+			const receivedAt = Date.now();
+			setResults(
+				data.map((result) => ({
+					...result,
+					warningAt: departureWarningAt(result, receivedAt),
+				})),
+			);
 			const activeCodes = data
 				.filter((r) => r.status === "running" || r.status === "ready")
 				.map((r) => r.code);
@@ -369,57 +409,63 @@ function SearchPanel({
 								</div>
 								<ul className="train-list">
 									{results.map((r) => {
-										const canFocus =
-											r.status === "running" || r.status === "ready";
+										const status =
+											r.warningAt !== null && clockNow >= r.warningAt
+												? "unconfirmed"
+												: r.status;
+										async function selectTrain() {
+											if (status === "scheduled") {
+												onShowToast(
+													t("train.toast.noLocation.title"),
+													t("train.toast.scheduled.body"),
+												);
+												return;
+											}
+											if (status === "unconfirmed") {
+												onShowToast(
+													t("train.status.unconfirmed"),
+													t("train.search.departure.unconfirmed"),
+												);
+												return;
+											}
+											if (status === "unmapped") {
+												onShowToast(
+													t("train.toast.noLocation.title"),
+													t("train.toast.unmapped.body"),
+												);
+												return;
+											}
+
+											const result = await onTrainSelect(r.code, from);
+											if (result === "unavailable") {
+												onShowToast(t("train.toast.noLocation.title"));
+											} else if (
+												result === "focused" &&
+												window.innerWidth <= 600
+											) {
+												onCollapsedChange(true);
+											}
+										}
 										return (
 											<li
 												key={r.code}
-												className={`train-item train-item--${r.status}`}
+												className={`train-item train-item--${status}`}
 												role="button"
 												tabIndex={0}
-												onClick={async () => {
-													if (!canFocus) {
-														onShowToast(t("train.toast.notonmap.title"));
-														return;
-													}
-													const result = await onTrainSelect(r.code, from);
-													if (result === "unavailable") {
-														onShowToast(t("train.toast.notonmap.title"));
-														return;
-													}
-													if (result === "cancelled") return;
-													if (window.innerWidth <= 600) onCollapsedChange(true);
-												}}
-												onKeyDown={async (e) => {
+												onClick={selectTrain}
+												onKeyDown={(e) => {
 													if (e.key === "Enter" || e.key === " ") {
 														e.preventDefault();
-														if (!canFocus) {
-															onShowToast(t("train.toast.notonmap.title"));
-															return;
-														}
-														const result = await onTrainSelect(r.code, from);
-														if (result === "unavailable") {
-															onShowToast(t("train.toast.notonmap.title"));
-															return;
-														}
-														if (result === "cancelled") return;
-														if (window.innerWidth <= 600)
-															onCollapsedChange(true);
+														void selectTrain();
 													}
 												}}
 											>
 												<div className="train-item-header">
 													<span className="train-item-code">{r.code}</span>
 													<span
-														className={`train-item-status train-item-status--${r.status}`}
+														className={`train-item-status train-item-status--${status}`}
 													>
-														{r.status === "running"
-															? t("train.status.running")
-															: r.status === "ready"
-																? t("train.status.ready")
-																: r.status === "unmapped"
-																	? t("train.status.unmapped")
-																	: t("train.status.scheduled")}
+														{t(`train.status.${status}`)}
 													</span>
 												</div>
 												<div className="train-item-route">
@@ -434,6 +480,11 @@ function SearchPanel({
 														{searchedNames?.to}: {fmtTime(r.toArr)}
 													</span>
 												</div>
+												{status === "unconfirmed" && (
+													<div className="train-item-warning">
+														{t("train.search.departure.unconfirmed")}
+													</div>
+												)}
 											</li>
 										);
 									})}

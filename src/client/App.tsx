@@ -193,6 +193,7 @@ function App() {
 	);
 	const {
 		trains,
+		clockNow,
 		buses,
 		busRealtimeHealth,
 		lastUpdatedAgeSec,
@@ -1041,6 +1042,7 @@ function App() {
 			{mode === "train" ? (
 				<SearchPanel
 					key={searchResetKey}
+					clockNow={clockNow}
 					onSearch={handleTrainSearch}
 					onClear={handleClearTrainSearch}
 					onTrainSelect={handleTrainSelect}

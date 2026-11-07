@@ -196,7 +196,12 @@ const EN = {
 	"train.status.ready": "Ready",
 	"train.status.unmapped": "No position",
 	"train.status.scheduled": "Scheduled",
-	"train.toast.notonmap.title": "Not mapped yet",
+	"train.status.unconfirmed": "Departure unconfirmed",
+	"train.search.departure.unconfirmed":
+		"Departure time has passed. Check station announcements.",
+	"train.toast.noLocation.title": "Live location unavailable",
+	"train.toast.scheduled.body": "See the search result for the departure time.",
+	"train.toast.unmapped.body": "This train is running.",
 
 	// App — back-to-all-buses button
 	"bus.back.all": "All buses",
@@ -483,7 +488,11 @@ const ZH: Record<Key, string> = {
 	"train.status.ready": "待发",
 	"train.status.unmapped": "暂无定位",
 	"train.status.scheduled": "尚未运行",
-	"train.toast.notonmap.title": "暂未上图",
+	"train.status.unconfirmed": "发车未确认",
+	"train.search.departure.unconfirmed": "已过发车时间，请留意车站公告。",
+	"train.toast.noLocation.title": "这班车暂无实时位置",
+	"train.toast.scheduled.body": "请参考搜索结果里的发车时间。",
+	"train.toast.unmapped.body": "这班车正在运行。",
 
 	// App — back-to-all-buses button
 	"bus.back.all": "全部公交",

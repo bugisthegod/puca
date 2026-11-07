@@ -37,6 +37,7 @@ import {
 	clampMins,
 	createServerTimer,
 	detailedHealth,
+	filterTrainMapPositions,
 	hasUsableTrainPosition,
 	isValidTrainDate,
 	logSlowRequest,
@@ -259,7 +260,7 @@ Bun.serve({
 			if (!isInServiceHours("train")) return Response.json([], { headers });
 			try {
 				const trains = await getCurrentTrains();
-				return Response.json(trains, { headers });
+				return Response.json(filterTrainMapPositions(trains), { headers });
 			} catch (err) {
 				log.error("http.trains.failed", errToMeta(err));
 				return Response.json([], { status: 502 });
@@ -307,7 +308,9 @@ Bun.serve({
 				]);
 
 				const fromMap = new Map(fromData.map((f) => [f.trainCode, f]));
-				const currentMap = new Map(currentTrains.map((t) => [t.code, t]));
+				const currentMap = new Map(
+					filterTrainMapPositions(currentTrains).map((t) => [t.code, t]),
+				);
 
 				// Only show trains that still stop at `from` in the upcoming window.
 				// If a train no longer appears in fromData, it has already departed

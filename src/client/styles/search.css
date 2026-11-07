@@ -287,6 +287,24 @@
 	color: #bbb;
 }
 
+.train-item--unconfirmed {
+	cursor: default;
+}
+
+.train-item-status--unconfirmed,
+.train-item-warning {
+	color: #ffb74d;
+}
+
+.train-item-status--unconfirmed {
+	background: rgba(255, 152, 0, 0.18);
+}
+
+.train-item-warning {
+	margin-top: 4px;
+	font-size: 0.72rem;
+}
+
 .train-item-route {
 	font-size: 0.72rem;
 	color: #aaa;

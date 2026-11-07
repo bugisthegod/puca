@@ -1,6 +1,7 @@
 import { getGtfsrHealthSnapshot, type Operator } from "../gtfsr.ts";
 import { log } from "../logger.ts";
-import { OPERATORS } from "../types.ts";
+import { OPERATORS, type Train } from "../types.ts";
+import { dublinMinutesSinceMidnight, parseTrainProgress } from "../utils.ts";
 
 export const VALID_OPERATORS = new Set<Operator>(OPERATORS);
 
@@ -76,6 +77,34 @@ export function isValidTrainDate(raw: string, now: Date = new Date()): boolean {
 export function todayFormatted(now: Date = new Date()): string {
 	const { day, month, year } = dublinDateParts(now);
 	return `${day} ${TRAIN_MONTHS[month - 1]} ${year}`;
+}
+
+const EARLY_TRAIN_TOLERANCE_MINUTES = 15;
+
+export function filterTrainMapPositions(
+	trains: Train[],
+	now: Date = new Date(),
+): Train[] {
+	const today = todayFormatted(now);
+	const departureCutoff =
+		dublinMinutesSinceMidnight(now) + EARLY_TRAIN_TOLERANCE_MINUTES;
+
+	return trains.filter((train) => {
+		// Scope the check to today's services so an overnight run is retained.
+		const date = train.date.trim().toLowerCase().replace(/^0/, "");
+		if (train.status !== "R" || date !== today) return true;
+
+		const departure = train.message.match(
+			/(?:^|\\r\\n|\\n|\r?\n)([01]\d|2[0-3]):([0-5]\d)\s+-\s+/,
+		);
+		if (!departure) return true;
+		const departureMinutes = Number(departure[1]) * 60 + Number(departure[2]);
+		if (departureMinutes <= departureCutoff) return true;
+
+		// Irish Rail can report a future service as already departed. Hide that
+		// position, but keep arrivals (a train can be waiting at its origin).
+		return parseTrainProgress(train.message)?.kind !== "departed";
+	});
 }
 
 export function staticFile(path: string, ttlSec: number) {

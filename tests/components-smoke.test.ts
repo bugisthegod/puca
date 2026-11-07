@@ -11,6 +11,7 @@ import {
 	type RouteWithOperator,
 } from "../src/client/components/BusSearchPanel";
 import { trainFocusSummaryMeta } from "../src/client/components/InfoPanel";
+import { departureWarningAt } from "../src/client/components/SearchPanel";
 import { t } from "../src/client/i18n";
 
 describe("BusSearchPanel smoke helpers", () => {
@@ -106,6 +107,36 @@ describe("BusSearchPanel smoke helpers", () => {
 		expect(
 			activeBusSearchQuery("stop", queries.routeQuery, queries.stopQuery),
 		).toBe("1847");
+	});
+});
+
+describe("train search departure warning", () => {
+	test("starts ten minutes after the displayed boarding time in Dublin", () => {
+		const receivedAt = Date.parse("2026-07-07T09:04:30Z"); // 10:04 in Dublin
+		const warningAt = departureWarningAt(
+			{ status: "scheduled", fromDep: "10:00:15" },
+			receivedAt,
+		);
+		expect(warningAt).toBe(Date.parse("2026-07-07T09:10:15Z"));
+	});
+
+	test("uses the next day's departure when a search is made before midnight", () => {
+		expect(
+			departureWarningAt(
+				{ status: "scheduled", fromDep: "00:05" },
+				Date.parse("2026-11-07T23:55:00Z"),
+			),
+		).toBe(Date.parse("2026-11-08T00:15:00Z"));
+	});
+
+	test("leaves running trains without GPS and unknown departure times alone", () => {
+		const receivedAt = Date.parse("2026-11-07T10:25:00Z");
+		expect(
+			departureWarningAt({ status: "unmapped", fromDep: "10:00" }, receivedAt),
+		).toBeNull();
+		expect(
+			departureWarningAt({ status: "scheduled", fromDep: "00:00" }, receivedAt),
+		).toBeNull();
 	});
 });
 
