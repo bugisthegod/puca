@@ -127,10 +127,6 @@
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 1
   },
-  "hazelhatch and celbridge|dublin pearse": {
-    "routeId": "DUB-PORTLAOIS-O",
-    "directionId": 1
-  },
   "dublin heuston|portlaoise": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
@@ -148,10 +144,6 @@
     "directionId": 0
   },
   "connolly|newbridge": {
-    "routeId": "DUB-PORTLAOIS-O",
-    "directionId": 0
-  },
-  "dublin pearse|hazelhatch and celbridge": {
     "routeId": "DUB-PORTLAOIS-O",
     "directionId": 0
   },
@@ -504,10 +496,6 @@
     "directionId": 0
   },
   "bray (daly)|drogheda (macbride)": {
-    "routeId": "DUB-DRO/DUN-O",
-    "directionId": 0
-  },
-  "dublin pearse|dundalk (clarke)": {
     "routeId": "DUB-DRO/DUN-O",
     "directionId": 0
   },
