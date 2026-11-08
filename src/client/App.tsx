@@ -584,10 +584,6 @@ function App() {
 		};
 	}, [mode, busOperator, busMapView, getMapView]);
 
-	useEffect(() => {
-		if (!focusContext) setBusFocusStopsAway(null);
-	}, [focusContext]);
-
 	async function handleLocate() {
 		if (locating) return;
 		trackEvent("event/location/request");
