@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
   pull-requests: write
 
 concurrency:
@@ -14,7 +15,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP: puca
   FEED_INFO_FILE: .github/data/feed_info.txt
   NTA_ZIP_URL: https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip
 
@@ -22,7 +22,7 @@ jobs:
   prepare:
     name: Generate JSON, open PR, and enable auto-merge
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -31,8 +31,6 @@ jobs:
           persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
-
-      - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Download latest NTA GTFS
         run: |
@@ -57,33 +55,7 @@ jobs:
 
       - name: Check feed version
         id: feed
-        run: |
-          DATA=$(sed -n '2p' /tmp/feed_info.txt | tr -d '\r')
-          UUID=$(echo "$DATA" | awk -F',' '{print $6}')
-          START=$(echo "$DATA" | awk -F',' '{print $4}')
-          END=$(echo "$DATA" | awk -F',' '{print $5}')
-
-          ACK_DATA=$(sed -n '2p' "$FEED_INFO_FILE" 2>/dev/null | tr -d '\r')
-          ACK_UUID=$(echo "$ACK_DATA" | awk -F',' '{print $6}')
-          ACK_START=$(echo "$ACK_DATA" | awk -F',' '{print $4}')
-          ACK_END=$(echo "$ACK_DATA" | awk -F',' '{print $5}')
-
-          echo "uuid=$UUID" >> "$GITHUB_OUTPUT"
-          echo "feed_start=$START" >> "$GITHUB_OUTPUT"
-          echo "feed_end=$END" >> "$GITHUB_OUTPUT"
-          echo "ack_uuid=$ACK_UUID" >> "$GITHUB_OUTPUT"
-          echo "ack_feed_start=$ACK_START" >> "$GITHUB_OUTPUT"
-          echo "ack_feed_end=$ACK_END" >> "$GITHUB_OUTPUT"
-
-          echo "Repo feed UUID: '${ACK_UUID:-missing}'"
-          echo "Latest zip feed UUID: '$UUID'"
-
-          if [ -n "$UUID" ] && [ "$UUID" = "$ACK_UUID" ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Feed already matches repo marker; no PR needed."
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
+        run: python3 scripts/schedule_artifacts.py compare >> "$GITHUB_OUTPUT"
 
       - name: Generate JSON data
         if: steps.feed.outputs.changed == 'true'
@@ -94,6 +66,52 @@ jobs:
         run: |
           mkdir -p "$(dirname "$FEED_INFO_FILE")"
           cp /tmp/feed_info.txt "$FEED_INFO_FILE"
+
+      - name: Find existing archives
+        id: archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          SOURCE_NAME="nta-gtfs-${{ steps.feed.outputs.uuid }}"
+          SCHEDULE_NAME=$(python3 scripts/schedule_artifacts.py name)
+          echo "schedule_name=$SCHEDULE_NAME" >> "$GITHUB_OUTPUT"
+          for KIND in source schedules; do
+            if [ "$KIND" = source ]; then NAME="$SOURCE_NAME"; else NAME="$SCHEDULE_NAME"; fi
+            ID=$(gh api --method GET "repos/${GH_REPO}/actions/artifacts" -f name="$NAME" --jq '[.artifacts[] | select(.expired == false)] | first | .id // empty')
+            if [ -z "$ID" ]; then MISSING=true; else MISSING=false; fi
+            echo "${KIND}_missing=$MISSING" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Archive GTFS source (including unchanged feeds)
+        if: steps.archives.outputs.source_missing == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nta-gtfs-${{ steps.feed.outputs.uuid }}
+          path: /tmp/GTFS_Realtime.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
+
+      - name: Generate and check schedule DBs before opening PR
+        if: steps.archives.outputs.schedules_missing == 'true'
+        run: |
+          python3 scripts/verify_schedule_feed.py
+          bun run db:generate
+          python3 scripts/schedule_artifacts.py pack
+
+      - name: Archive verified schedule DBs
+        if: steps.archives.outputs.schedules_missing == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.archives.outputs.schedule_name }}
+          path: /tmp/nta-schedules/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
+
+      - name: Verify archived DBs match this PR
+        uses: ./.github/actions/prepare-schedule-dbs
 
       - name: Open data update PR
         id: pr
@@ -113,6 +131,12 @@ jobs:
           fi
 
           BRANCH="bot/nta-data-${{ steps.feed.outputs.uuid }}"
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --base main --state open --json url --jq '.[0].url // empty')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "url=$EXISTING_PR" >> "$GITHUB_OUTPUT"
+            echo "Existing data PR found; archives are ready. Update that branch with current main before merging."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
@@ -142,7 +166,7 @@ jobs:
 
           ## Follow-up
 
-          This workflow continues after opening the PR, uploads matching schedule SQLite DBs to Fly, then enables auto-merge after the upload succeeds. The PR will merge after required checks pass.
+          Schedule DBs have been generated, integrity-checked, and archived before this PR is opened. Required checks verify the archived DBs match this PR. After merge, deployment restores those verified DBs, deploys the app, then uploads matching DBs. Ordinary code deployments do not replace DBs. Production DBs are never changed by PR preparation.
 
           Generated by `.github/workflows/prepare-data-update.yml`.
           BODY
@@ -154,47 +178,6 @@ jobs:
             --title "chore: update NTA static data (${{ steps.feed.outputs.feed_start }})" \
             --body "$BODY")"
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
-
-      - name: Generate schedule DBs
-        if: steps.feed.outputs.changed == 'true'
-        run: bun run db:generate
-
-      - name: Check generated DBs
-        if: steps.feed.outputs.changed == 'true'
-        run: |
-          python3 - <<'PY'
-          import sqlite3
-          from pathlib import Path
-
-          dbs = (
-              "bus-schedule.db",
-              "buseireann-schedule.db",
-              "goahead-schedule.db",
-          )
-
-          for name in dbs:
-              path = Path("src/data") / name
-              if not path.exists():
-                  raise SystemExit(f"Missing DB: {path}")
-
-              with sqlite3.connect(path) as con:
-                  integrity = con.execute("PRAGMA integrity_check").fetchone()[0]
-                  stop_times = con.execute("SELECT COUNT(*) FROM stop_times").fetchone()[0]
-
-              if integrity != "ok":
-                  raise SystemExit(f"{name}: integrity_check={integrity}")
-              if stop_times <= 0:
-                  raise SystemExit(f"{name}: no stop_times rows")
-
-              print(f"{name}: {stop_times:,} stop_times rows, {path.stat().st_size / 1024 / 1024:.1f} MB")
-          PY
-
-      - name: Upload DBs to Fly volume
-        if: steps.feed.outputs.changed == 'true'
-        run: bun run db:upload
-        env:
-          APP: ${{ env.APP }}
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Enable PR auto-merge
         if: steps.feed.outputs.changed == 'true' && steps.pr.outputs.url != ''

@@ -1,10 +1,27 @@
 # See https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
 
 name: CI / Deploy
+permissions:
+  contents: read
+  actions: read
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      replace_schedules:
+        description: Retry uploading verified schedules for the current main app
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      replace_schedules:
+        type: boolean
+        default: false
+    secrets:
+      FLY_API_TOKEN:
+        required: true
 jobs:
   test:
     name: Test
@@ -20,13 +37,58 @@ jobs:
       - run: bun run build
 
   deploy:
-    name: Deploy app
+    name: Deploy app and matching schedules
     needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    concurrency: deploy-group    # optional: ensure only one action runs at a time
+    timeout-minutes: 30
+    # Serialize app deployment and DB replacement with manual DB uploads.
+    concurrency:
+      group: db-upload
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - name: Decide whether schedules need replacement
+        id: schedules
         env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          FORCE: ${{ inputs.replace_schedules || false }}
+        run: |
+          LATEST=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$LATEST" != "$GITHUB_SHA" ]; then
+            # Do not report success: later runs use the last successful run as
+            # the baseline for schedules actually deployed to production.
+            echo "::error::Superseded deployment; refusing to overwrite newer main. Deploy current main instead."
+            exit 1
+          fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
+          BASE=$(gh run list --repo "$GH_REPO" --workflow fly-deploy.yml --branch main --status success --limit 1 --json headSha --jq '.[0].headSha // empty')
+          if [ "$FORCE" = true ]; then
+            CHANGED=true
+          else
+            if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ]; then
+              # No known successful release: require verified DBs rather than
+              # assuming the immediately previous push reached production.
+              CHANGED=true
+            else
+              CHANGED=$(python3 scripts/schedule_artifacts.py changed --base "$BASE" --head "$GITHUB_SHA")
+            fi
+          fi
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/prepare-schedule-dbs
+        if: steps.schedules.outputs.current == 'true' && steps.schedules.outputs.changed == 'true'
+      - run: flyctl deploy --remote-only
+        if: steps.schedules.outputs.current == 'true'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Upload matching schedule DBs
+        if: steps.schedules.outputs.current == 'true' && steps.schedules.outputs.changed == 'true'
+        run: bun run db:upload
+        env:
+          APP: puca
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

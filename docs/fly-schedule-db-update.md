@@ -9,9 +9,9 @@ the Fly volume separately.
 
 ## GitHub Actions Update
 
-For schedule DB-only updates, use the GitHub runner to download the NTA GTFS
-feed, generate the DBs, and upload them to the Fly volume. This avoids slow local
-uploads of large files.
+Use `Prepare data update PR` for a new NTA feed. Production data changes only
+after its PR passes checks, merges, and the main deployment runs. Large DBs are
+generated and uploaded by the GitHub runner.
 
 Before first use:
 
@@ -32,26 +32,71 @@ Run manually:
 
 `Prepare data update PR` will:
 
-1. Download the latest `GTFS_Realtime.zip`.
-2. Extract it into the runner's `gtfs/` directory.
-3. Compare the zip's `feed_info.txt` `feed_version` with `.github/data/feed_info.txt`.
-4. Exit early when the versions match.
-5. Run `bun run json:generate` when the version differs or the marker is missing.
-6. Put `src/data/*.json` and `.github/data/feed_info.txt` into the same PR.
-7. Continue without waiting for the PR to merge, then run `bun run db:generate`.
-8. Run `PRAGMA integrity_check` and row-count checks on all three SQLite DBs.
-9. Run `bun run db:upload`.
-10. Delete the three live DB files and any leftover `.new` files in `/data`.
-11. Restart the Fly app to release deleted SQLite file handles.
-12. Upload the three new DBs directly to their final filenames and verify remote file sizes.
-13. Restart the Fly app once more so the process opens the replacement DBs.
+1. Download and extract the latest `GTFS_Realtime.zip`.
+2. Parse its `feed_info.txt` and the repository marker with the same CSV parser.
+3. Generate JSON and update the marker only when the feed version changes.
+4. Check for source and schedule archives even when the feed version is unchanged.
+5. Archive a missing source zip as `nta-gtfs-<feed_version>` for 90 days.
+6. For a missing schedule artifact, verify the feed/route IDs, generate all three
+   DBs, and run SQLite integrity and nonempty row-count checks.
+7. Archive the checked DBs with a manifest of input and DB SHA-256 checksums.
+   The artifact name contains the feed version and an input fingerprint, including
+   bus JSON and schedule generator scripts. Retention is 90 days.
+8. Restore and verify the artifact, then open the data PR (or reuse an existing
+   open PR) and enable auto-merge. No Fly access or production writes happen here.
+
+The required `test` job for `bot/nta-data-*` branches also restores the artifact
+and verifies it matches that PR before merging. Existing data branches must be
+updated with main to receive changed tests and workflow checks.
+
+After merge, `CI / Deploy` will:
+
+1. Run tests, type checking, lint, audit, and build checks.
+2. Skip a deployment superseded by a newer main commit.
+3. Compare bus data, the feed marker, and DB generator scripts against the last
+   successful main deployment. This also catches data changes from a failed or
+   cancelled deployment; comparing only the immediately previous push would not.
+4. Only when schedules changed, download the matching pre-merge artifact and
+   verify its inputs, DB checksums, integrity, and row counts before deployment.
+   A missing artifact stops the data deployment; there is no fallback to a newer
+   NTA feed. Ordinary code pushes need no archive and do not replace DBs.
+5. Deploy the app image. If schedules changed, run `bun run db:upload`: delete old
+   DBs and `.new` leftovers, restart to release handles, upload and verify all
+   replacements, then restart again.
+
+Deployment and manual DB uploads share a concurrency group. The app deployment
+and DB upload are sequential, so brief schedule lookup downtime is still expected.
+A failed upload requires a retry; this is not an atomic deployment or automatic
+rollback. Run `CI / Deploy` on current main with `replace_schedules` enabled to
+retry the entire app/DB deployment, or run `Repair schedule deployment` on main. The repair entry point reuses the
+full checked app/DB deployment, rather than uploading DBs against an unknown app
+version. Both restore checked artifacts.
+
+If an archive is missing or expired, rerun `Prepare data update PR` to backfill
+it, even when the repository already has that feed marker. If NTA has moved on,
+prepare and deploy the newer data PR rather than uploading a newer feed to an
+older app. Do not bypass the version and checksum checks.
+
+## Rolling Out This Workflow Change
+
+For the existing November 11 incident, land only `tests/gtfsr.test.ts` first.
+Update #251 with that test fix, let required checks pass, merge it, and confirm
+the existing app deployment restores matching live vehicle routes. The existing
+workflow has already uploaded that feed's DBs; do not replace them again to fix
+its failing tests.
+
+Land this workflow refactor separately after recovery. Since it does not change
+bus data, its first main deployment skips DB restoration/upload and does not
+require a legacy artifact. Then run `Prepare data update PR` to backfill the
+current feed's archives. New feeds will be checked and archived before their
+PRs are created.
 
 The tracked `.github/data/feed_info.txt` file is the repository's "processed
 feed" marker. It replaced the older `.github/data/last-feed-uuid` marker while
 preserving the full `feed_info.txt` contents.
 
-There is no automatic feed checker. The entry point is the manual
-`Prepare data update PR` workflow. When deciding whether to continue, the
+`Prepare data update PR` runs daily at 00:00 UTC and can also be run manually.
+When deciding whether to continue, the
 workflow downloads the full zip and reads the `feed_info.txt` inside it. Do not
 use the lightweight `feed_info.txt` endpoint for this decision.
 
