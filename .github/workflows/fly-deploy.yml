@@ -14,14 +14,6 @@ on:
         description: Retry uploading verified schedules for the current main app
         type: boolean
         default: false
-  workflow_call:
-    inputs:
-      replace_schedules:
-        type: boolean
-        default: false
-    secrets:
-      FLY_API_TOKEN:
-        required: true
 jobs:
   test:
     name: Test
