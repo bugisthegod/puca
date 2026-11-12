@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       replace_schedules:
-        description: Retry uploading verified schedules for the current main app
+        description: Redeploy the current main app and replace all verified schedule DBs
         type: boolean
         default: false
 jobs:

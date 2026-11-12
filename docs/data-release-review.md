@@ -45,9 +45,9 @@ included in the same baseline query as automatic releases.
 Local checks cover the actual release decision shell with mocked GitHub/remote
 Git commands: failed-data retry, ordinary code skip, forced repair, superseded
 run refusal, and missing history. Bundle tests cover input binding, checksums,
-incomplete/empty data, quoted CSV, and restoring matching DBs. Full project
-checks and actionlint also run; these are not a substitute for the first real
-GitHub/Fly release after adoption.
+incomplete/empty data, quoted CSV, and restoring matching DBs. Local validation also includes full project checks and actionlint; CI runs
+project checks but does not currently run actionlint. These checks are not a
+substitute for the first real GitHub/Fly release after adoption.
 
 Archives retain 90 days. App and DB replacement remain sequential, not atomic;
 there is brief schedule lookup downtime during DB upload and no automatic rollback.

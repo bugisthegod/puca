@@ -114,36 +114,29 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 
 ## Fly.io deployment
 
-### Replacing SQLite DBs on the Fly volume
+### Schedule DB releases and recovery
 
-`src/data/*.db` is excluded by both `.gitignore` and `.dockerignore`, so `fly deploy` never touches schedule DBs on the `/data` volume. DB upload intentionally accepts brief schedule lookup downtime: delete all live DBs, restart to release deleted SQLite file handles, upload all three replacement DBs directly to their final names, then restart once.
+`src/data/*.db` is excluded by both `.gitignore` and `.dockerignore`. The normal
+release path is GitHub Actions: `Prepare data update PR` generates and verifies
+matching JSON/DB artifacts before opening a PR; `CI / Deploy` deploys the app
+and then replaces DBs when schedule data changed.
 
-```bash
-APP=puca
+For retries or repair, run **Actions → CI / Deploy → Run workflow**, select
+**main**, and enable **replace_schedules**. This redeploys the app and replaces
+all three verified DBs, and records success in the normal deployment baseline.
+If an artifact is missing, run preparation to backfill it (or prepare a new data
+PR if NTA has advanced). Never upload the latest feed's DBs to an older app.
 
-# 1. Wake machine if auto-stopped
-fly machine list -a $APP
-fly machine start <machine-id> -a $APP
+Do not use standalone `fly deploy`, `fly sftp put`, or `bun run db:upload` as the
+normal release/repair path. The upload script is an internal workflow step.
+Direct Fly commands are reserved for explicitly authorized emergency recovery;
+verify the exact deployed app/feed and local DB provenance first, and afterwards
+run the managed release to restore a reliable deployment baseline.
 
-# 2. Preflight
-fly ssh console -a $APP -C "sh -c 'df -h /data && ls -la /data/'"
-
-# 3. Delete old DBs and any failed-upload leftovers
-fly ssh console -a $APP -C "rm -f /data/bus-schedule.db /data/buseireann-schedule.db /data/goahead-schedule.db /data/bus-schedule.db.new /data/buseireann-schedule.db.new /data/goahead-schedule.db.new"
-
-# 4. Restart so deleted inodes are released
-fly apps restart $APP
-
-# 5. Upload replacements directly to final names
-fly sftp put src/data/bus-schedule.db /data/bus-schedule.db -a $APP
-fly sftp put src/data/buseireann-schedule.db /data/buseireann-schedule.db -a $APP
-fly sftp put src/data/goahead-schedule.db /data/goahead-schedule.db -a $APP
-
-# 6. Restart once so app opens the replacements
-fly apps restart $APP
-```
-
-Auto-stop (`auto_stop_machines = 'stop'`) watches HTTP idleness, not SSH. Multi-minute uploads generally complete fine; if interrupted mid-upload, rerun `bun run db:upload`.
+DB replacement intentionally permits brief schedule lookup downtime: delete old
+files, restart to release handles, upload replacements, then restart again.
+Auto-stop watches HTTP idleness, not SSH. See
+[the release runbook](docs/fly-schedule-db-update.md) for verification and recovery.
 
 ## Persistence rules
 
