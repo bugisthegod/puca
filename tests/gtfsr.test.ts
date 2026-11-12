@@ -8,6 +8,7 @@ import {
 	getAllBusVehicles,
 	getAllOperatorsBusVehicles,
 	getBusRouteShape,
+	getBusRoutes,
 	getBusTripStops,
 	getBusTripUpdateRealtimeHealth,
 	getBusVehicleRealtimeHealth,
@@ -21,6 +22,22 @@ import {
 	shouldConsiderStopArrivalTrip,
 } from "../src/gtfsr";
 import { getTripUpdateCacheMeta } from "../src/gtfsr/tripUpdates";
+
+// Resolve current feed IDs so upstream ID migrations do not break cache tests.
+function routeId(
+	operator: "dublinbus" | "buseireann",
+	shortName: string,
+): string {
+	const route = getBusRoutes(operator).find(
+		(route) => route.shortName === shortName,
+	);
+	if (!route) throw new Error(`Missing test route: ${operator}/${shortName}`);
+	return route.id;
+}
+
+const dublin38A = routeId("dublinbus", "38A");
+const dublin1 = routeId("dublinbus", "1");
+const eireann100 = routeId("buseireann", "100");
 
 const stops = {
 	S1: { name: "Stop One", lat: 53.1, lng: -6.1 },
@@ -408,7 +425,7 @@ describe("realtime cache request path", () => {
 	function tripUpdateForTest(): LiveTripData & { tripId: string } {
 		return {
 			tripId: "T1",
-			routeId: "1 38A c a",
+			routeId: dublin38A,
 			directionId: 0,
 			stopTimeUpdates: [
 				{
@@ -429,7 +446,7 @@ describe("realtime cache request path", () => {
 					vehicle: {
 						trip: {
 							trip_id: `trip-${label}`,
-							route_id: "1 38A c a",
+							route_id: dublin38A,
 							direction_id: 0,
 						},
 						position: { latitude: lat, longitude: -6.26 },
@@ -445,7 +462,7 @@ describe("realtime cache request path", () => {
 		return Response.json({
 			entity: tripIds.map((tripId) => ({
 				trip_update: {
-					trip: { trip_id: tripId, route_id: "1 38A c a", direction_id: 0 },
+					trip: { trip_id: tripId, route_id: dublin38A, direction_id: 0 },
 					stop_time_update: [
 						{
 							stop_sequence: 1,
@@ -517,7 +534,7 @@ describe("realtime cache request path", () => {
 		globalThis.fetch = slowFetch.fetch;
 		const cachedVehicle: GtfsVehiclePosition = {
 			tripId: "T1",
-			routeId: "1 38A c a",
+			routeId: dublin38A,
 			lat: 53.35,
 			lng: -6.26,
 			bearing: null,
@@ -551,7 +568,7 @@ describe("realtime cache request path", () => {
 			vehicles: [
 				{
 					tripId: "DUB-1",
-					routeId: "1 1 e a",
+					routeId: dublin1,
 					lat: 53.35,
 					lng: -6.26,
 					bearing: null,
@@ -562,7 +579,7 @@ describe("realtime cache request path", () => {
 				},
 				{
 					tripId: "BE-100",
-					routeId: "2 100 c e",
+					routeId: eireann100,
 					lat: 53.71,
 					lng: -6.35,
 					bearing: null,
@@ -596,7 +613,7 @@ describe("realtime cache request path", () => {
 			vehicles: [
 				{
 					tripId: "DUB-1",
-					routeId: "1 1 e a",
+					routeId: dublin1,
 					lat: 53.35,
 					lng: -6.26,
 					bearing: null,
@@ -607,7 +624,7 @@ describe("realtime cache request path", () => {
 				},
 				{
 					tripId: "BE-100",
-					routeId: "2 100 c e",
+					routeId: eireann100,
 					lat: 53.71,
 					lng: -6.35,
 					bearing: null,
@@ -645,7 +662,7 @@ describe("realtime cache request path", () => {
 			vehicles: [
 				{
 					tripId: "DUB-1",
-					routeId: "1 1 e a",
+					routeId: dublin1,
 					lat: 53.35,
 					lng: -6.26,
 					bearing: null,
@@ -656,7 +673,7 @@ describe("realtime cache request path", () => {
 				},
 				{
 					tripId: "BE-100",
-					routeId: "2 100 c e",
+					routeId: eireann100,
 					lat: 53.71,
 					lng: -6.35,
 					bearing: null,
@@ -709,7 +726,7 @@ describe("realtime cache request path", () => {
 		globalThis.fetch = slowFetch.fetch;
 		const cachedVehicle: GtfsVehiclePosition = {
 			tripId: "T1",
-			routeId: "1 38A c a",
+			routeId: dublin38A,
 			lat: 53.35,
 			lng: -6.26,
 			bearing: null,
@@ -888,7 +905,7 @@ describe("realtime cache request path", () => {
 			vehicles: [
 				{
 					tripId: "T1",
-					routeId: "1 38A c a",
+					routeId: dublin38A,
 					lat: 53.35,
 					lng: -6.26,
 					bearing: null,
@@ -911,7 +928,7 @@ describe("realtime cache request path", () => {
 					"T1",
 					{
 						tripId: "T1",
-						routeId: "1 38A c a",
+						routeId: dublin38A,
 						directionId: 0,
 						stopTimeUpdates: [
 							{
