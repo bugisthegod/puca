@@ -1,5 +1,9 @@
 name: Test
 
+permissions:
+  contents: read
+  actions: read
+
 on:
   push:
     branches-ignore:
@@ -13,3 +17,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - run: bun run check
+      - name: Verify pre-merge schedule artifact for data PRs
+        if: startsWith(github.ref, 'refs/heads/bot/nta-data-')
+        uses: ./.github/actions/prepare-schedule-dbs

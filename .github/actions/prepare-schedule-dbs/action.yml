@@ -1,0 +1,22 @@
+name: Restore verified schedule DBs
+description: Download pre-merge checked DBs and verify their input and database checksums
+runs:
+  using: composite
+  steps:
+    - name: Restore matching schedule artifact
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        ARTIFACT_NAME=$(python3 scripts/schedule_artifacts.py name)
+        RUN_ID=$(gh api --method GET "repos/${GH_REPO}/actions/artifacts" \
+          -f name="$ARTIFACT_NAME" --jq '[.artifacts[] | select(.expired == false)] | sort_by(.created_at) | last | .workflow_run.id // empty')
+        if [ -z "$RUN_ID" ]; then
+          echo "::error::Missing verified schedule artifact $ARTIFACT_NAME. Run Prepare data update PR before merging data changes; unchanged feeds also backfill artifacts."
+          exit 1
+        fi
+        ARTIFACT_DIR=$(mktemp -d "${RUNNER_TEMP:-/tmp}/nta-schedules.XXXXXX")
+        trap 'rm -rf "$ARTIFACT_DIR"' EXIT
+        gh run download "$RUN_ID" --repo "$GH_REPO" --name "$ARTIFACT_NAME" --dir "$ARTIFACT_DIR"
+        python3 scripts/schedule_artifacts.py restore --directory "$ARTIFACT_DIR"
