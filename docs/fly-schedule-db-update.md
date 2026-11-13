@@ -61,9 +61,13 @@ After merge, `CI / Deploy` will:
    verify its inputs, DB checksums, integrity, and row counts before deployment.
    A missing artifact stops the data deployment; there is no fallback to a newer
    NTA feed. Ordinary code pushes need no archive and do not replace DBs.
-5. Deploy the app image. If schedules changed, run `bun run db:upload`: delete old
+5. Deploy the app image. If schedules changed, run `bun run db:upload`: identify
+   the single app machine mounting `/data`, start it if stopped or suspended,
+   and wait for the started state and SSH readiness before deleting anything.
+   All SSH, SFTP, and restart commands target that same machine. Missing or
+   multiple volume owners stop the replacement for operator review. Delete old
    DBs and `.new` leftovers, restart to release handles, upload and verify all
-   replacements, then restart again.
+   replacements, then restart again. Wait for SSH readiness after each restart.
 
 Automatic and manually triggered deployments share a concurrency group. The
 app deployment and DB upload are sequential, so brief schedule lookup downtime
