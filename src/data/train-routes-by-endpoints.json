@@ -55,12 +55,12 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
   },
-  "m3 parkway|connolly": {
-    "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 1
-  },
   "howth|greystones": {
     "routeId": "BRAY-HOWTH-I",
+    "directionId": 1
+  },
+  "m3 parkway|connolly": {
+    "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
   },
   "malahide|greystones": {
@@ -95,13 +95,13 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 0
   },
-  "dublin pearse|maynooth": {
-    "routeId": "DUB-MAYNOOTH-O",
-    "directionId": 0
-  },
   "bray (daly)|greystones": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
+  },
+  "dublin pearse|maynooth": {
+    "routeId": "DUB-MAYNOOTH-O",
+    "directionId": 0
   },
   "grand canal dock|longford": {
     "routeId": "DUB-MAYNOOTH-O",
