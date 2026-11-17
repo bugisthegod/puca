@@ -183,4 +183,5 @@ jobs:
         if: steps.feed.outputs.changed == 'true' && steps.pr.outputs.url != ''
         env:
           GH_TOKEN: ${{ secrets.DATA_UPDATE_TOKEN }}
-        run: gh pr merge "${{ steps.pr.outputs.url }}" --squash --auto --delete-branch
+        # Branch cleanup runs after merge in cleanup-data-branch.yml.
+        run: gh pr merge "${{ steps.pr.outputs.url }}" --squash --auto
