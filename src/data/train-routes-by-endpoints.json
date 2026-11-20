@@ -323,10 +323,6 @@
     "routeId": "MAL-COBH-O",
     "directionId": 1
   },
-  "cork (kent)|mallow": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 1
-  },
   "cork (kent)|cobh": {
     "routeId": "MAL-COBH-O",
     "directionId": 0
@@ -443,15 +439,15 @@
     "routeId": "DUB-CORK-O",
     "directionId": 1
   },
+  "cork (kent)|mallow": {
+    "routeId": "DUB-CORK-O",
+    "directionId": 1
+  },
   "dublin heuston|cork (kent)": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
   "charleville|cork (kent)": {
-    "routeId": "DUB-CORK-O",
-    "directionId": 0
-  },
-  "dublin heuston|mallow": {
     "routeId": "DUB-CORK-O",
     "directionId": 0
   },
