@@ -75,10 +75,6 @@
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 1
   },
-  "connolly|lansdowne road": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "connolly|maynooth": {
     "routeId": "DUB-MAYNOOTH-O",
     "directionId": 0
@@ -343,10 +339,6 @@
     "routeId": "MAL-COBH-O",
     "directionId": 0
   },
-  "lansdowne road|bray (daly)": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 1
-  },
   "connolly|greystones": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 1
@@ -416,14 +408,6 @@
     "directionId": 0
   },
   "greystones|connolly": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "lansdowne road|malahide": {
-    "routeId": "BRAY-HOWTH-I",
-    "directionId": 0
-  },
-  "lansdowne road|howth": {
     "routeId": "BRAY-HOWTH-I",
     "directionId": 0
   },
