@@ -2,7 +2,12 @@
   {
     "id": "BRAY-HOWTH-I",
     "shortName": "DART",
-    "longName": "Bray - Howth"
+    "longName": "Bray - Howth - Inbound"
+  },
+  {
+    "id": "BRAY-HOWTH-O",
+    "shortName": "DART",
+    "longName": "Bray - Howth - Outbound"
   },
   {
     "id": "DUB-BFT-I",
@@ -15,83 +20,163 @@
     "longName": "Dublin - Belfast"
   },
   {
+    "id": "DUB-CORK-I",
+    "shortName": "InterCity",
+    "longName": "Dublin - Cork - Inbound"
+  },
+  {
     "id": "DUB-CORK-O",
     "shortName": "InterCity",
-    "longName": "Dublin - Cork"
+    "longName": "Dublin - Cork - Outbound"
+  },
+  {
+    "id": "DUB-DRO/DUN-I",
+    "shortName": "rail",
+    "longName": "Dublin - Drogheda/Dundalk - Inbound"
   },
   {
     "id": "DUB-DRO/DUN-O",
     "shortName": "rail",
-    "longName": "Dublin - Drogheda/Dundalk"
+    "longName": "Dublin - Drogheda/Dundalk - Outbound"
   },
   {
     "id": "DUB-EUROPORT-I",
     "shortName": "rail",
-    "longName": "Dublin - Europort"
+    "longName": "Dublin - Europort - Inbound"
+  },
+  {
+    "id": "DUB-EUROPORT-O",
+    "shortName": "rail",
+    "longName": "Dublin - Europort - Outbound"
+  },
+  {
+    "id": "DUB-GALWAY-I",
+    "shortName": "rail",
+    "longName": "Dublin - Galway - Inbound"
   },
   {
     "id": "DUB-GALWAY-O",
     "shortName": "rail",
-    "longName": "Dublin - Galway"
+    "longName": "Dublin - Galway - Outbound"
   },
   {
     "id": "DUB-LIMERICK-I",
     "shortName": "rail",
-    "longName": "Dublin - Limerick"
+    "longName": "Dublin - Limerick - Inbound"
+  },
+  {
+    "id": "DUB-LIMERICK-O",
+    "shortName": "rail",
+    "longName": "Dublin - Limerick - Outbound"
+  },
+  {
+    "id": "DUB-MAYNOOTH-I",
+    "shortName": "rail",
+    "longName": "Dublin - Maynooth - Inbound"
   },
   {
     "id": "DUB-MAYNOOTH-O",
     "shortName": "rail",
-    "longName": "Dublin - Maynooth"
+    "longName": "Dublin - Maynooth - Outbound"
   },
   {
     "id": "DUB-NEN-LIM-I",
     "shortName": "rail",
-    "longName": "Dublin - Limerick via Nenagh"
+    "longName": "Dublin - Limerick via Nenagh - Inbound"
+  },
+  {
+    "id": "DUB-NEN-LIM-O",
+    "shortName": "rail",
+    "longName": "Dublin - Limerick via Nenagh - Outbound"
+  },
+  {
+    "id": "DUB-PORTLAOIS-I",
+    "shortName": "Commuter",
+    "longName": "Dublin - Portlaoise - Inbound"
   },
   {
     "id": "DUB-PORTLAOIS-O",
     "shortName": "Commuter",
-    "longName": "Dublin - Portlaoise"
+    "longName": "Dublin - Portlaoise - Outbound"
+  },
+  {
+    "id": "DUB-SLIGO-I",
+    "shortName": "rail",
+    "longName": "Dublin - Sligo - Inbound"
   },
   {
     "id": "DUB-SLIGO-O",
     "shortName": "rail",
-    "longName": "Dublin - Sligo"
+    "longName": "Dublin - Sligo - Outbound"
+  },
+  {
+    "id": "DUB-TRALEE-I",
+    "shortName": "rail",
+    "longName": "Dublin - Tralee - Inbound"
   },
   {
     "id": "DUB-TRALEE-O",
     "shortName": "rail",
-    "longName": "Dublin - Tralee"
+    "longName": "Dublin - Tralee - Outbound"
   },
   {
     "id": "DUB-WATERFORD-I",
     "shortName": "rail",
-    "longName": "Dublin - Waterford"
+    "longName": "Dublin - Waterford - Inbound"
+  },
+  {
+    "id": "DUB-WATERFORD-O",
+    "shortName": "rail",
+    "longName": "Dublin - Waterford - Outbound"
   },
   {
     "id": "DUB-WESTPORT-I",
     "shortName": "rail",
-    "longName": "Dublin - Westport"
+    "longName": "Dublin - Westport - Inbound"
+  },
+  {
+    "id": "DUB-WESTPORT-O",
+    "shortName": "rail",
+    "longName": "Dublin - Westport - Outbound"
   },
   {
     "id": "GALWAY-LIM-I",
     "shortName": "rail",
-    "longName": "Limerick - Galway"
+    "longName": "Limerick - Galway - Inbound"
+  },
+  {
+    "id": "GALWAY-LIM-O",
+    "shortName": "rail",
+    "longName": "Limerick - Galway - Outbound"
   },
   {
     "id": "LIM-BALLYBROP-I",
     "shortName": "rail",
-    "longName": "Limerick - Ballybrophy"
+    "longName": "Limerick - Ballybrophy - Inbound"
+  },
+  {
+    "id": "LIM-BALLYBROP-O",
+    "shortName": "rail",
+    "longName": "Limerick - Ballybrophy - Outbound"
+  },
+  {
+    "id": "LIMERICK-WAT-I",
+    "shortName": "rail",
+    "longName": "Waterford - Limerick - Inbound"
   },
   {
     "id": "LIMERICK-WAT-O",
     "shortName": "rail",
-    "longName": "Waterford - Limerick"
+    "longName": "Waterford - Limerick - Outbound"
+  },
+  {
+    "id": "MAL-COBH-I",
+    "shortName": "rail",
+    "longName": "Mallow - Cobh - Inbound"
   },
   {
     "id": "MAL-COBH-O",
     "shortName": "rail",
-    "longName": "Mallow - Cobh"
+    "longName": "Mallow - Cobh - Outbound"
   }
 ]
